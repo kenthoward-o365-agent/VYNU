@@ -82,16 +82,16 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: Venue
         <p className="text-xs text-muted-foreground mb-3">
           Sign up for our loyalty program and earn points with every order.
         </p>
-        <Button variant="outline" size="sm" className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10" onClick={onSignup}>
-          <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+        <Button variant="outline" className="w-full h-12 text-sm rounded-2xl border-primary/30 text-primary hover:bg-primary/10" onClick={onSignup}>
+          <UserPlus className="h-4 w-4 mr-2" />
           Sign up & earn rewards
         </Button>
-        <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-primary" onClick={onSignin}>
-          <LogIn className="h-3.5 w-3.5 mr-1.5" />
+        <Button variant="ghost" className="w-full h-12 text-sm rounded-2xl text-muted-foreground hover:text-primary" onClick={onSignin}>
+          <LogIn className="h-4 w-4 mr-2" />
           Already have an account? Sign in
         </Button>
       </div>
-      <Button onClick={onStart} size="lg" className="w-full max-w-xs h-14 text-lg rounded-2xl">
+      <Button onClick={onStart} size="lg" className="w-full max-w-xs h-12 text-sm rounded-2xl">
         Continue as Guest
       </Button>
       <p className="text-muted-foreground text-xs mt-4">
@@ -105,25 +105,23 @@ function FloatingActions({ onStart, onSignup, onSignin }: { onStart: () => void;
   return (
     <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
       <div className="max-w-xs mx-auto space-y-2">
-        <Button onClick={onStart} size="lg" className="w-full h-14 text-lg rounded-2xl">
+        <Button onClick={onStart} size="lg" className="w-full h-12 text-sm rounded-2xl">
           Continue as Guest
         </Button>
         <Button
           variant="outline"
-          size="sm"
-          className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10"
+          className="w-full h-12 text-sm rounded-2xl border-primary/30 text-primary hover:bg-primary/10"
           onClick={onSignup}
         >
-          <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+          <UserPlus className="h-4 w-4 mr-2" />
           Sign up & earn rewards
         </Button>
         <Button
           variant="ghost"
-          size="sm"
-          className="w-full text-xs text-muted-foreground hover:text-primary"
+          className="w-full h-12 text-sm rounded-2xl text-muted-foreground hover:text-primary"
           onClick={onSignin}
         >
-          <LogIn className="h-3.5 w-3.5 mr-1.5" />
+          <LogIn className="h-4 w-4 mr-2" />
           Already have an account? Sign in
         </Button>
       </div>
