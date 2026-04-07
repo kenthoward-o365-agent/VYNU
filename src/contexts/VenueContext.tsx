@@ -35,6 +35,7 @@ interface VenueContextType {
   groups: VenueGroup[];
   isGroupAdmin: boolean;
   isTablessAdmin: boolean;
+  venueRole: string | null;
   loading: boolean;
   setVenue: (v: Venue | null) => void;
   switchVenue: (venueId: string) => void;
