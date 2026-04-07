@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface MenuItem {
@@ -48,7 +49,10 @@ export default function MenuBuilder() {
   const [importMode, setImportMode] = useState<"url" | "pdf" | null>(null);
   const [importUrl, setImportUrl] = useState("");
   const [importText, setImportText] = useState("");
+  const [importPdfBase64, setImportPdfBase64] = useState<string | null>(null);
+  const [importFileName, setImportFileName] = useState("");
   const [importing, setImporting] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [newCatName, setNewCatName] = useState("");
   const [form, setForm] = useState({
@@ -144,6 +148,8 @@ export default function MenuBuilder() {
       const body: any = { venue_id: venue.id };
       if (importMode === "url") {
         body.url = importUrl;
+      } else if (importPdfBase64) {
+        body.pdf_base64 = importPdfBase64;
       } else {
         body.text = importText;
       }
@@ -158,6 +164,8 @@ export default function MenuBuilder() {
       setImportMode(null);
       setImportUrl("");
       setImportText("");
+      setImportPdfBase64(null);
+      setImportFileName("");
       fetchData();
     } catch (e: any) {
       toast.error(e.message || "Import failed");
@@ -166,17 +174,34 @@ export default function MenuBuilder() {
     }
   };
 
-  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    // Read as text for now (works for text-based PDFs when parsed server-side)
-    // For real PDF parsing we send the text content
+  const handleFileSelect = (file: File) => {
+    if (file.type !== "application/pdf") {
+      toast.error("Please upload a PDF file");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("PDF must be under 10MB");
+      return;
+    }
+    setImportFileName(file.name);
     const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const text = ev.target?.result as string;
-      setImportText(text);
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      // Strip the data URL prefix to get raw base64
+      const base64 = result.split(",")[1];
+      setImportPdfBase64(base64);
     };
-    reader.readAsText(file);
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      setImportMode("pdf");
+      handleFileSelect(file);
+    }
   };
 
   const toggleTag = (arr: string[], tag: string) =>
@@ -330,7 +355,10 @@ export default function MenuBuilder() {
       </Dialog>
 
       {/* AI Import Dialog */}
-      <Dialog open={importDialogOpen} onOpenChange={(open) => { setImportDialogOpen(open); if (!open) setImportMode(null); }}>
+      <Dialog open={importDialogOpen} onOpenChange={(open) => {
+        setImportDialogOpen(open);
+        if (!open) { setImportMode(null); setImportPdfBase64(null); setImportFileName(""); setDragging(false); }
+      }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -344,6 +372,22 @@ export default function MenuBuilder() {
               <p className="text-sm text-muted-foreground">
                 Import your entire menu automatically. Just provide a source and AI will extract all items, categories, prices, allergens, and dietary tags.
               </p>
+
+              {/* Drop zone */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={handleDrop}
+                className={cn(
+                  "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
+                  dragging ? "border-primary bg-primary/5" : "border-border"
+                )}
+              >
+                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm font-medium text-foreground">Drop a PDF menu here</p>
+                <p className="text-xs text-muted-foreground mt-1">or choose an option below</p>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setImportMode("url")}
@@ -361,8 +405,8 @@ export default function MenuBuilder() {
                 >
                   <FileText className="h-8 w-8 text-primary" />
                   <div className="text-center">
-                    <p className="font-medium text-foreground">Paste Text / PDF</p>
-                    <p className="text-xs text-muted-foreground">Paste menu text content</p>
+                    <p className="font-medium text-foreground">Upload PDF</p>
+                    <p className="text-xs text-muted-foreground">Or paste menu text</p>
                   </div>
                 </button>
               </div>
@@ -389,22 +433,59 @@ export default function MenuBuilder() {
             </div>
           ) : (
             <div className="space-y-4">
-              <div>
-                <Label>Menu Text</Label>
-                <Textarea
-                  placeholder="Paste your full menu text here — item names, descriptions, prices..."
-                  value={importText}
-                  onChange={(e) => setImportText(e.target.value)}
-                  rows={10}
+              {/* PDF upload area */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={handleDrop}
+                className={cn(
+                  "border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer",
+                  dragging ? "border-primary bg-primary/5" : importPdfBase64 ? "border-success bg-success/5" : "border-border"
+                )}
+                onClick={() => document.getElementById("pdf-input")?.click()}
+              >
+                {importPdfBase64 ? (
+                  <>
+                    <FileText className="h-8 w-8 mx-auto text-success mb-2" />
+                    <p className="text-sm font-medium text-foreground">{importFileName}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Click or drop to replace</p>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm font-medium text-foreground">Click or drop PDF here</p>
+                    <p className="text-xs text-muted-foreground mt-1">Max 10MB</p>
+                  </>
+                )}
+                <input
+                  id="pdf-input"
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Paste the text from your PDF menu, or type/paste your menu items
-                </p>
               </div>
-              <Button onClick={handleImport} disabled={!importText.trim() || importing} className="w-full">
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">or paste text</span></div>
+              </div>
+
+              <Textarea
+                placeholder="Paste menu text here..."
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                rows={5}
+              />
+
+              <Button
+                onClick={handleImport}
+                disabled={(!importPdfBase64 && !importText.trim()) || importing}
+                className="w-full"
+              >
                 {importing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Importing...</> : <><Sparkles className="h-4 w-4 mr-2" />Import Menu</>}
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setImportMode(null)} className="w-full">
+              <Button variant="ghost" size="sm" onClick={() => { setImportMode(null); setImportPdfBase64(null); setImportFileName(""); }} className="w-full">
                 ← Back
               </Button>
             </div>

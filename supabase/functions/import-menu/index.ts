@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { url, text, venue_id } = await req.json();
+    const { url, text, pdf_base64, venue_id } = await req.json();
 
     if (!venue_id) {
       return new Response(
@@ -65,17 +65,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (!url && !text) {
+    if (!url && !text && !pdf_base64) {
       return new Response(
-        JSON.stringify({ error: 'Either url or text is required' }),
+        JSON.stringify({ error: 'Provide a url, text, or pdf_base64' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     let menuText = text || '';
+    let pdfData = pdf_base64 || null;
 
     // If URL provided, scrape it
-    if (url) {
+    if (url && !pdfData) {
       console.log('Scraping URL:', url);
       let formattedUrl = url.trim();
       if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
@@ -94,7 +95,6 @@ Deno.serve(async (req) => {
       }
 
       const html = await scrapeRes.text();
-      // Strip HTML tags to get text content
       menuText = html
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
@@ -105,17 +105,17 @@ Deno.serve(async (req) => {
         .replace(/&gt;/g, '>')
         .replace(/\s+/g, ' ')
         .trim()
-        .substring(0, 30000); // Limit to ~30k chars for AI context
+        .substring(0, 30000);
     }
 
-    if (!menuText || menuText.length < 10) {
+    if (!menuText && !pdfData) {
       return new Response(
-        JSON.stringify({ error: 'Could not extract enough text from the source' }),
+        JSON.stringify({ error: 'Could not extract content from the source' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Extracted ${menuText.length} chars, sending to AI...`);
+    console.log(pdfData ? `PDF received (${pdfData.length} chars base64)` : `Text extracted (${menuText.length} chars)`);
 
     // Call AI to extract structured menu data
     const apiKey = Deno.env.get('LOVABLE_API_KEY');
@@ -125,6 +125,14 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Build user message content — multimodal for PDF, text for others
+    const userContent = pdfData
+      ? [
+          { type: 'text', text: 'Extract all menu items from this PDF menu:' },
+          { type: 'image_url', image_url: { url: `data:application/pdf;base64,${pdfData}` } }
+        ]
+      : `Extract all menu items from this text:\n\n${menuText}`;
 
     const aiRes = await fetch(LOVABLE_API_URL, {
       method: 'POST',
@@ -137,14 +145,14 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a menu extraction specialist. Extract all menu items from the provided text. 
+            content: `You are a menu extraction specialist. Extract all menu items from the provided content (text or PDF).
 Group items into categories. Detect allergens and dietary tags from descriptions.
 If prices are in AUD, keep the number as-is. If no price is found, use 0.
 Be thorough — extract every single menu item you can find.`
           },
           {
             role: 'user',
-            content: `Extract all menu items from this text:\n\n${menuText}`
+            content: userContent
           }
         ],
         tools: [{
