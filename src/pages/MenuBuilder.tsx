@@ -299,7 +299,14 @@ export default function MenuBuilder() {
             <Input placeholder="Item name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
             <Textarea placeholder="Description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
             <div className="grid grid-cols-2 gap-3">
-              <Input type="number" step="0.01" placeholder="Price ($)" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
+              <div>
+                <Input type="number" step="0.01" placeholder="Price incl. GST ($)" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
+                {form.price && parseFloat(form.price) > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ex-GST: ${(parseFloat(form.price) / 1.1).toFixed(2)} · GST: ${(parseFloat(form.price) / 11).toFixed(2)}
+                  </p>
+                )}
+              </div>
               <Input type="number" placeholder="Prep time (min)" value={form.prep_time_minutes} onChange={(e) => setForm((f) => ({ ...f, prep_time_minutes: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -594,6 +601,7 @@ function ItemCard({ item, onEdit, onDelete, onToggle }: {
         </div>
         <div className="text-right shrink-0">
           <p className="font-semibold text-foreground">${Number(item.price).toFixed(2)}</p>
+          <p className="text-[10px] text-muted-foreground">GST ${(Number(item.price) / 11).toFixed(2)}</p>
           {item.prep_time_minutes && <p className="text-xs text-muted-foreground">{item.prep_time_minutes} min</p>}
         </div>
         <div className="flex items-center gap-1 shrink-0">

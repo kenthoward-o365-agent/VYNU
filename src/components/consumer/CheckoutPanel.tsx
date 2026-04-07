@@ -277,8 +277,16 @@ const CheckoutPanel = ({
             </div>
           ))}
           <Separator />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Subtotal (ex-GST)</span>
+            <span>${(total / 1.1).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>GST (10%)</span>
+            <span>${(total / 11).toFixed(2)}</span>
+          </div>
           <div className="flex justify-between font-semibold">
-            <span>Total</span>
+            <span>Total (incl. GST)</span>
             <span>${total.toFixed(2)}</span>
           </div>
         </div>
