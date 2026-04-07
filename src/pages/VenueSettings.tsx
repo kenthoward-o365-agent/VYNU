@@ -39,7 +39,7 @@ interface StaffMember {
 
 export default function VenueSettings() {
   const { venue, venueRole, isTablessAdmin, refetch } = useVenue();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const navigate = useNavigate();
 
   const isOwner = venueRole === "owner" || isTablessAdmin;
