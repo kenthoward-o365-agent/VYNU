@@ -21,7 +21,7 @@ const venueTypes = [
 const states = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"];
 
 export default function Onboarding() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { refetch } = useVenue();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -106,6 +106,15 @@ export default function Onboarding() {
                 {loading ? "Creating..." : "Create Venue"}
               </Button>
             </form>
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => signOut()}
+              >
+                Not a venue owner? Sign out
+              </button>
+            </div>
           </CardContent>
         </Card>
       </div>
