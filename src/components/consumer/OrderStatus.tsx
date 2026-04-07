@@ -1,4 +1,5 @@
 import { CheckCircle2, Clock, ChefHat, Bell, CreditCard } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type Status = "received" | "preparing" | "ready" | "served" | "paid" | "cancelled";
@@ -35,16 +36,14 @@ const OrderStatus = ({ status, total, createdAt }: OrderStatusProps) => {
           <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
         </div>
 
-        {/* Progress Steps */}
         <div className="flex items-center justify-between relative">
-          {/* Line */}
           <div className="absolute top-4 left-8 right-8 h-0.5 bg-border" />
           <div
             className="absolute top-4 left-8 h-0.5 bg-primary transition-all duration-500"
             style={{ width: `${Math.max(0, (currentIdx / (steps.length - 1)) * 100 - 10)}%` }}
           />
 
-          {steps.map((step, i) => {
+          {steps.map((step) => {
             const isActive = statusOrder.indexOf(step.status) <= currentIdx;
             const Icon = step.icon;
             return (
@@ -75,8 +74,5 @@ const OrderStatus = ({ status, total, createdAt }: OrderStatusProps) => {
     </div>
   );
 };
-
-// Fix: need Button import
-import { Button } from "@/components/ui/button";
 
 export default OrderStatus;
