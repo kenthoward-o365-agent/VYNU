@@ -356,7 +356,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Test Card Numbers</CardTitle>
-            <CardDescription>Use these card numbers in test mode — no real charges</CardDescription>
+            <CardDescription>{isMockMode ? "Use these cards in mock mode — payments are simulated locally" : "Use these card numbers in test mode — no real charges"}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
