@@ -17,10 +17,13 @@ export type Database = {
       diner_profiles: {
         Row: {
           allergens: string[] | null
+          country_code: string | null
           created_at: string
           display_name: string | null
           email: string | null
+          first_name: string | null
           id: string
+          last_name: string | null
           phone: string | null
           preferences: Json | null
           updated_at: string
@@ -28,10 +31,13 @@ export type Database = {
         }
         Insert: {
           allergens?: string[] | null
+          country_code?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           phone?: string | null
           preferences?: Json | null
           updated_at?: string
@@ -39,10 +45,13 @@ export type Database = {
         }
         Update: {
           allergens?: string[] | null
+          country_code?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           phone?: string | null
           preferences?: Json | null
           updated_at?: string
