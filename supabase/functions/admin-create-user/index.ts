@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
       .from("venue_staff")
       .insert({
         venue_id,
-        user_id: newUser.user.id,
+        user_id: userId,
         role: userRole,
         display_name: display_name || null,
       });
@@ -137,8 +137,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        user_id: newUser.user.id,
-        email: newUser.user.email,
+        user_id: userId,
+        email,
         role: userRole,
       }),
       {
