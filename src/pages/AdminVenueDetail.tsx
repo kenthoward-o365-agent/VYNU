@@ -147,14 +147,20 @@ export default function AdminVenueDetail() {
           display_name: newUser.display_name || null,
         },
       });
-      if (error) throw error;
+      if (error) {
+        // For FunctionsHttpError, parse the response body for the real message
+        const msg = typeof error === "object" && "context" in error
+          ? (await (error as any).context?.json?.())?.error || error.message
+          : error.message;
+        throw new Error(msg || "Failed to create user");
+      }
       if (data?.error) throw new Error(data.error);
       toast({ title: "User created", description: `${newUser.email} added as ${newUser.role}` });
       setNewUserDialog(false);
       setNewUser({ email: "", password: "", display_name: "", role: "staff" });
       fetchStaff();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Error creating user", description: err.message || "Unknown error", variant: "destructive" });
     }
     setCreatingUser(false);
   };
