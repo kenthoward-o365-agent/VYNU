@@ -126,6 +126,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Build user message content — multimodal for PDF, text for others
+    const userContent = pdfData
+      ? [
+          { type: 'text', text: 'Extract all menu items from this PDF menu:' },
+          { type: 'image_url', image_url: { url: `data:application/pdf;base64,${pdfData}` } }
+        ]
+      : `Extract all menu items from this text:\n\n${menuText}`;
+
     const aiRes = await fetch(LOVABLE_API_URL, {
       method: 'POST',
       headers: {
@@ -137,14 +145,14 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a menu extraction specialist. Extract all menu items from the provided text. 
+            content: `You are a menu extraction specialist. Extract all menu items from the provided content (text or PDF).
 Group items into categories. Detect allergens and dietary tags from descriptions.
 If prices are in AUD, keep the number as-is. If no price is found, use 0.
 Be thorough — extract every single menu item you can find.`
           },
           {
             role: 'user',
-            content: `Extract all menu items from this text:\n\n${menuText}`
+            content: userContent
           }
         ],
         tools: [{
