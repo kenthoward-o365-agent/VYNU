@@ -81,7 +81,8 @@ Deno.serve(async (req) => {
     const validRoles = ["owner", "manager", "staff"];
     const userRole = validRoles.includes(role) ? role : "staff";
 
-    // Create auth user using admin API
+    // Try to create auth user; if they already exist, look them up instead
+    let userId: string;
     const { data: newUser, error: createError } =
       await adminClient.auth.admin.createUser({
         email,
@@ -90,10 +91,25 @@ Deno.serve(async (req) => {
       });
 
     if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (createError.message.includes("already been registered")) {
+        // User exists — look up their ID and assign them as staff
+        const { data: listData } = await adminClient.auth.admin.listUsers();
+        const existing = listData?.users?.find((u: any) => u.email === email);
+        if (!existing) {
+          return new Response(JSON.stringify({ error: "User exists but could not be found" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        userId = existing.id;
+      } else {
+        return new Response(JSON.stringify({ error: createError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      userId = newUser.user.id;
     }
 
     // Create venue_staff record
