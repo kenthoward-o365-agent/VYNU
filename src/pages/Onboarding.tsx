@@ -106,6 +106,15 @@ export default function Onboarding() {
                 {loading ? "Creating..." : "Create Venue"}
               </Button>
             </form>
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => signOut()}
+              >
+                Not a venue owner? Sign out
+              </button>
+            </div>
           </CardContent>
         </Card>
       </div>
