@@ -77,6 +77,7 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
   const [countrySearch, setCountrySearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
   const strength = useMemo(() => getPasswordStrength(password), [password]);
   const strengthColor = strength.score <= 2 ? "bg-destructive" : strength.score <= 3 ? "bg-yellow-500" : "bg-green-500";
@@ -232,6 +233,27 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError("Please enter your email address first.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (resetError) throw resetError;
+      setResetSent(true);
+      toast.success("Password reset link sent to your email");
+    } catch (err: any) {
+      setError(err.message || "Failed to send reset email.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = mode === "signin" ? handleSignIn : handleSignUp;
 
   // ── Sign In View ──
@@ -286,6 +308,23 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
               </button>
             </div>
           </div>
+
+          {resetSent ? (
+            <div className="bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-400 text-sm rounded-xl p-3">
+              Check your email for a password reset link. It may take a minute to arrive.
+            </div>
+          ) : (
+            <div className="text-right -mt-2">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={submitting}
+                className="text-xs text-primary hover:underline"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
 
           <Button onClick={handleSubmit} disabled={!isSigninValid || submitting} className="w-full h-12 text-base rounded-xl mt-2">
             {submitting ? "Signing in..." : "Sign In"}
