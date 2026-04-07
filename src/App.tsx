@@ -19,6 +19,7 @@ import Diners from "@/pages/Diners";
 import Loyalty from "@/pages/Loyalty";
 import GroupDashboard from "@/pages/GroupDashboard";
 import NotFound from "@/pages/NotFound";
+import ConsumerOrder from "@/pages/ConsumerOrder";
 
 const queryClient = new QueryClient();
 
