@@ -96,19 +96,21 @@ const QuantitySelector = ({
 
 const MenuItemRow = ({
   item,
-  onAddToCart,
+  quantity,
+  onQuantityChange,
 }: {
   item: MenuItem;
-  onAddToCart: (item: MenuItem, qty: number) => void;
+  quantity: number;
+  onQuantityChange: (qty: number) => void;
 }) => {
-  const [quantity, setQuantity] = useState(1);
   const isAvailable = item.is_available ?? true;
 
   return (
     <div
       className={cn(
-        "flex items-center gap-4 p-3 rounded-xl border border-border bg-card transition-colors",
-        !isAvailable && "opacity-50"
+        "flex items-center gap-4 p-3 rounded-xl border transition-colors",
+        !isAvailable && "opacity-50",
+        quantity > 0 ? "border-primary bg-primary/5" : "border-border bg-card"
       )}
     >
       {/* Column A: Image */}
@@ -147,22 +149,10 @@ const MenuItemRow = ({
         </div>
       </div>
 
-      {/* Column C: Price, Quantity, Add */}
+      {/* Column C: Price & Quantity */}
       <div className="flex flex-col items-end gap-1.5 shrink-0">
         <span className="text-sm font-bold text-primary">${item.price.toFixed(2)}</span>
-        <QuantitySelector quantity={quantity} onChange={setQuantity} />
-        <Button
-          size="sm"
-          onClick={() => {
-            for (let i = 0; i < quantity; i++) onAddToCart(item, 1);
-            setQuantity(1);
-          }}
-          disabled={!isAvailable}
-          className="h-7 text-xs rounded-full px-3 gap-1"
-        >
-          <Plus className="h-3 w-3" />
-          Add
-        </Button>
+        <QuantitySelector quantity={quantity} onChange={(q) => onQuantityChange(isAvailable ? q : 0)} />
       </div>
     </div>
   );
