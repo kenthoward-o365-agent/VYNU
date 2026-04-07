@@ -29,7 +29,7 @@ const queryClient = new QueryClient();
 
 function AppRoutes() {
   const { user, loading: authLoading } = useAuth();
-  const { venue, loading: venueLoading } = useVenue();
+  const { venue, loading: venueLoading, isTablessAdmin } = useVenue();
 
   if (authLoading || venueLoading) {
     return (
@@ -50,7 +50,7 @@ function AppRoutes() {
     );
   }
 
-  if (!venue) {
+  if (!venue && !isTablessAdmin) {
     return (
       <Routes>
         <Route path="*" element={<Onboarding />} />
