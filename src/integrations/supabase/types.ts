@@ -59,6 +59,69 @@ export type Database = {
         }
         Relationships: []
       }
+      diner_stored_cards: {
+        Row: {
+          card_brand: string | null
+          card_summary: string | null
+          created_at: string
+          diner_id: string
+          expiry_month: string | null
+          expiry_year: string | null
+          id: string
+          is_default: boolean
+          provider: string
+          shopper_reference: string
+          token_reference: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          card_brand?: string | null
+          card_summary?: string | null
+          created_at?: string
+          diner_id: string
+          expiry_month?: string | null
+          expiry_year?: string | null
+          id?: string
+          is_default?: boolean
+          provider?: string
+          shopper_reference: string
+          token_reference: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          card_brand?: string | null
+          card_summary?: string | null
+          created_at?: string
+          diner_id?: string
+          expiry_month?: string | null
+          expiry_year?: string | null
+          id?: string
+          is_default?: boolean
+          provider?: string
+          shopper_reference?: string
+          token_reference?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diner_stored_cards_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diner_stored_cards_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       diner_visits: {
         Row: {
           diner_id: string
