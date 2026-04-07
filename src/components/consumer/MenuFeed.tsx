@@ -77,19 +77,19 @@ const QuantitySelector = ({
   quantity: number;
   onChange: (q: number) => void;
 }) => (
-  <div className="flex items-center gap-1">
+  <div className="flex items-center gap-0.5">
     <button
       onClick={() => onChange(Math.max(1, quantity - 1))}
-      className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+      className="h-6 w-6 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
     >
-      <Minus className="h-3.5 w-3.5" />
+      <Minus className="h-3 w-3" />
     </button>
-    <span className="w-6 text-center text-sm font-medium">{quantity}</span>
+    <span className="w-5 text-center text-xs font-medium">{quantity}</span>
     <button
       onClick={() => onChange(quantity + 1)}
-      className="h-7 w-7 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+      className="h-6 w-6 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
     >
-      <Plus className="h-3.5 w-3.5" />
+      <Plus className="h-3 w-3" />
     </button>
   </div>
 );
@@ -108,41 +108,41 @@ const MenuItemRow = ({
   return (
     <div
       className={cn(
-        "flex items-center gap-4 p-3 rounded-xl border transition-colors",
+        "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl border transition-colors",
         !isAvailable && "opacity-50",
         quantity > 0 ? "border-primary bg-primary/5" : "border-border bg-card"
       )}
     >
       {/* Column A: Image */}
-      <div className="h-16 w-16 rounded-lg overflow-hidden shrink-0 bg-muted">
+      <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg overflow-hidden shrink-0 bg-muted">
         {item.image_url ? (
           <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/20">
-            <Flame className="h-6 w-6 text-primary/30" />
+            <Flame className="h-4 w-4 sm:h-6 sm:w-6 text-primary/30" />
           </div>
         )}
       </div>
 
       {/* Column B: Name, Description, Tags */}
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-semibold leading-tight truncate">{item.name}</h3>
+        <h3 className="text-xs sm:text-sm font-semibold leading-tight truncate">{item.name}</h3>
         {item.description && (
-          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{item.description}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 mt-0.5">{item.description}</p>
         )}
-        <div className="flex flex-wrap gap-1 mt-1">
+        <div className="flex flex-wrap gap-0.5 sm:gap-1 mt-0.5 sm:mt-1">
           {!isAvailable && (
-            <Badge variant="destructive" className="text-[9px] gap-0.5 px-1.5 py-0">
+            <Badge variant="destructive" className="text-[8px] sm:text-[9px] gap-0.5 px-1 sm:px-1.5 py-0">
               <Ban className="h-2 w-2" /> 86'd
             </Badge>
           )}
           {item.dietary_tags?.map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-[9px] gap-0.5 px-1.5 py-0">
+            <Badge key={tag} variant="secondary" className="text-[8px] sm:text-[9px] gap-0.5 px-1 sm:px-1.5 py-0">
               <Leaf className="h-2 w-2" /> {tag}
             </Badge>
           ))}
           {item.allergens?.map((allergen) => (
-            <Badge key={allergen} variant="outline" className="text-[9px] gap-0.5 px-1.5 py-0 text-warning border-warning/30">
+            <Badge key={allergen} variant="outline" className="text-[8px] sm:text-[9px] gap-0.5 px-1 sm:px-1.5 py-0 text-warning border-warning/30">
               <AlertTriangle className="h-2 w-2" /> {allergen}
             </Badge>
           ))}
@@ -150,8 +150,8 @@ const MenuItemRow = ({
       </div>
 
       {/* Column C: Price & Quantity */}
-      <div className="flex flex-col items-end gap-1.5 shrink-0">
-        <span className="text-sm font-bold text-primary">${item.price.toFixed(2)}</span>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <span className="text-xs sm:text-sm font-bold text-primary">${item.price.toFixed(2)}</span>
         <QuantitySelector quantity={quantity} onChange={(q) => onQuantityChange(isAvailable ? q : 0)} />
       </div>
     </div>
