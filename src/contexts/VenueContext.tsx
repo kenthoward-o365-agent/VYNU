@@ -53,6 +53,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   const [isGroupAdmin, setIsGroupAdmin] = useState(false);
   const [isTablessAdmin, setIsTablessAdmin] = useState(false);
   const [venueRole, setVenueRole] = useState<string | null>(null);
+  const [staffRolesMap, setStaffRolesMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   const fetchVenues = async () => {
