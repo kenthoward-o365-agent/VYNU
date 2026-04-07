@@ -304,10 +304,10 @@ export default function MenuBuilder() {
             <Textarea placeholder="Description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Input type="number" step="0.01" placeholder="Price incl. GST ($)" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
-                {form.price && parseFloat(form.price) > 0 && (
+                <Input type="number" step="0.01" placeholder="Price ($)" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
+                {form.price && parseFloat(form.price) > 0 && venueTaxes.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Ex-GST: ${(parseFloat(form.price) / 1.1).toFixed(2)} · GST: ${(parseFloat(form.price) / 11).toFixed(2)}
+                    {formatItemTaxBreakdown(parseFloat(form.price), venueTaxes)}
                   </p>
                 )}
               </div>
