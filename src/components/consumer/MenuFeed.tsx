@@ -250,6 +250,7 @@ const MobileCardFeed = ({
 const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
   const isMobile = useIsMobile();
 
   const filteredItems = items.filter((item) => {
@@ -260,6 +261,28 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
   const handleCategorySelect = (id: string | null) => {
     setActiveCategory(id);
     setCurrentIndex(0);
+  };
+
+  const handleQuantityChange = (itemId: string, qty: number) => {
+    setQuantities((prev) => {
+      if (qty <= 0) {
+        const { [itemId]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [itemId]: qty };
+    });
+  };
+
+  const selectedCount = Object.values(quantities).reduce((sum, q) => sum + q, 0);
+
+  const handleAddAllToCart = () => {
+    Object.entries(quantities).forEach(([itemId, qty]) => {
+      const item = items.find((i) => i.id === itemId);
+      if (item && qty > 0) {
+        for (let i = 0; i < qty; i++) onAddToCart(item);
+      }
+    });
+    setQuantities({});
   };
 
   if (filteredItems.length === 0) {
@@ -281,7 +304,7 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
 
   // Desktop: 3-column list view
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-[calc(100vh-4rem)] relative">
       <CategoryChips categories={categories} activeCategory={activeCategory} onSelect={handleCategorySelect} />
       <ScrollArea className="flex-1 px-4 pb-24">
         <div className="space-y-2 py-2">
@@ -289,11 +312,25 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
             <MenuItemRow
               key={item.id}
               item={item}
-              onAddToCart={(it) => onAddToCart(it)}
+              quantity={quantities[item.id] || 0}
+              onQuantityChange={(qty) => handleQuantityChange(item.id, qty)}
             />
           ))}
         </div>
       </ScrollArea>
+
+      {/* Floating Add to Order button */}
+      {selectedCount > 0 && (
+        <div className="absolute bottom-20 left-4 right-4 z-10">
+          <Button
+            onClick={handleAddAllToCart}
+            className="w-full h-12 rounded-2xl text-base gap-2 shadow-lg"
+          >
+            <Plus className="h-5 w-5" />
+            Add {selectedCount} {selectedCount === 1 ? "item" : "items"} to Order
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
