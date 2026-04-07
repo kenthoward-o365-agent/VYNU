@@ -4,10 +4,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
   LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
-  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Gift, Building2, Check
+  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Gift, Building2, Check, Sun, Moon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
@@ -31,6 +33,7 @@ const groupNavItems = [
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
   const { venue, venues, group, isGroupAdmin, switchVenue } = useVenue();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -47,7 +50,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-200 lg:static lg:translate-x-0",
-        "bg-sidebar-background text-sidebar-foreground border-r border-sidebar-border",
+        "bg-sidebar text-sidebar-foreground border-r border-sidebar-border",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-4 border-b border-sidebar-border">
@@ -130,7 +133,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           )}
         </nav>
 
-        <div className="p-3 border-t border-sidebar-border">
+        <div className="p-3 border-t border-sidebar-border space-y-1">
+          <div className="flex items-center justify-between px-3 py-2">
+            <div className="flex items-center gap-2 text-xs text-sidebar-muted">
+              {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+              <span>{theme === "dark" ? "Dark" : "Light"}</span>
+            </div>
+            <Switch
+              checked={theme === "dark"}
+              onCheckedChange={toggleTheme}
+              className="data-[state=checked]:bg-sidebar-primary data-[state=unchecked]:bg-sidebar-accent"
+            />
+          </div>
           <div className="flex items-center gap-2 px-3 py-2 text-xs text-sidebar-muted">
             <span className="truncate">{user?.email}</span>
           </div>

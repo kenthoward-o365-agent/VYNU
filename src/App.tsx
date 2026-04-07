@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { VenueProvider, useVenue } from "@/contexts/VenueContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import Auth from "@/pages/Auth";
@@ -76,24 +77,26 @@ function AppRoutes() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Public consumer ordering route — no auth required */}
-          <Route path="/order/:venueId/:tableId" element={<ConsumerOrder />} />
-          {/* All other routes go through auth */}
-          <Route path="/*" element={
-            <AuthProvider>
-              <VenueProvider>
-                <AppRoutes />
-              </VenueProvider>
-            </AuthProvider>
-          } />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public consumer ordering route — no auth required */}
+            <Route path="/order/:venueId/:tableId" element={<ConsumerOrder />} />
+            {/* All other routes go through auth */}
+            <Route path="/*" element={
+              <AuthProvider>
+                <VenueProvider>
+                  <AppRoutes />
+                </VenueProvider>
+              </AuthProvider>
+            } />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
