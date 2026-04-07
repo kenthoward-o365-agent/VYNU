@@ -40,22 +40,18 @@ export default function Onboarding() {
     if (!user) return;
     setLoading(true);
     try {
-      const { data: venueData, error: venueError } = await supabase
-        .from("venues")
-        .insert({ ...form })
-        .select()
-        .single();
-      if (venueError) throw venueError;
-
-      const { error: staffError } = await supabase
-        .from("venue_staff")
-        .insert({
-          venue_id: venueData.id,
-          user_id: user.id,
-          role: "owner" as any,
-          display_name: user.user_metadata?.display_name || user.email,
-        });
-      if (staffError) throw staffError;
+      const { data, error } = await supabase.rpc("create_venue_with_owner", {
+        _name: form.name,
+        _venue_type: form.venue_type,
+        _address: form.address || null,
+        _city: form.city || null,
+        _state: form.state,
+        _postcode: form.postcode || null,
+        _phone: form.phone || null,
+        _email: form.email || null,
+        _display_name: user.user_metadata?.display_name || user.email || null,
+      });
+      if (error) throw error;
 
       toast.success("Venue created! Let's set up your menu.");
       await refetch();
