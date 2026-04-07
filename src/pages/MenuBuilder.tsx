@@ -268,7 +268,7 @@ export default function MenuBuilder() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
               <div className="grid gap-3">
                 {items.filter((i) => !i.category_id).map((item) => (
-                  <ItemCard key={item.id} item={item} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
+                  <ItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
                 ))}
               </div>
             </div>
@@ -283,7 +283,7 @@ export default function MenuBuilder() {
                 ) : (
                   <div className="grid gap-3">
                     {catItems.map((item) => (
-                      <ItemCard key={item.id} item={item} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
+                      <ItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
                     ))}
                   </div>
                 )}
@@ -573,16 +573,17 @@ export default function MenuBuilder() {
   );
 }
 
-function ItemCard({ item, onEdit, onDelete, onToggle }: {
+function ItemCard({ item, taxes, onEdit, onDelete, onToggle }: {
   item: MenuItem;
+  taxes: TaxConfig[];
   onEdit: (i: MenuItem) => void;
   onDelete: (id: string) => void;
   onToggle: (id: string, current: boolean) => void;
 }) {
+  const taxBreakdown = taxes.length > 0 ? formatItemTaxBreakdown(Number(item.price), taxes) : "";
   return (
     <Card className={!item.is_available ? "opacity-60" : ""}>
       <CardContent className="flex items-center gap-4 py-3 px-4">
-        {/* Thumbnail */}
         {item.image_url ? (
           <div className="h-14 w-14 rounded-lg overflow-hidden shrink-0 border border-border">
             <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
@@ -605,7 +606,7 @@ function ItemCard({ item, onEdit, onDelete, onToggle }: {
         </div>
         <div className="text-right shrink-0">
           <p className="font-semibold text-foreground">${Number(item.price).toFixed(2)}</p>
-          <p className="text-[10px] text-muted-foreground">GST ${(Number(item.price) / 11).toFixed(2)}</p>
+          {taxBreakdown && <p className="text-[10px] text-muted-foreground">{taxBreakdown}</p>}
           {item.prep_time_minutes && <p className="text-xs text-muted-foreground">{item.prep_time_minutes} min</p>}
         </div>
         <div className="flex items-center gap-1 shrink-0">
