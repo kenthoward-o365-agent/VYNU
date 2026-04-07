@@ -36,15 +36,16 @@ export default function Tables() {
 
   const addTable = async () => {
     if (!venue) return;
-    const qrUrl = `${window.location.origin}/order/${venue.id}/${form.table_number}`;
-    const { error } = await supabase.from("tables").insert({
+    const { data, error } = await supabase.from("tables").insert({
       venue_id: venue.id,
       table_number: form.table_number,
       zone: form.zone || null,
       capacity: parseInt(form.capacity) || 4,
-      qr_code: qrUrl,
-    });
+    }).select().single();
     if (error) { toast.error(error.message); return; }
+    // Update qr_code with the generated table ID
+    const qrUrl = `${window.location.origin}/order/${venue.id}/${data.id}`;
+    await supabase.from("tables").update({ qr_code: qrUrl }).eq("id", data.id);
     toast.success("Table added");
     setDialogOpen(false);
     setForm({ table_number: "", zone: "", capacity: "4" });
