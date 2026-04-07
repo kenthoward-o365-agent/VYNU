@@ -198,7 +198,10 @@ export default function MenuBuilder() {
           <h2 className="text-2xl font-bold text-foreground">Menu Builder</h2>
           <p className="text-muted-foreground">{items.length} items across {categories.length} categories</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => { setImportMode(null); setImportDialogOpen(true); }}>
+            <Sparkles className="h-4 w-4 mr-1" />AI Import
+          </Button>
           <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm"><Plus className="h-4 w-4 mr-1" />Category</Button>
