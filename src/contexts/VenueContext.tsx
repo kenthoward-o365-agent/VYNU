@@ -66,6 +66,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       .eq("user_id", user.id)
       .eq("is_active", true);
 
+    const staffRoles = Object.fromEntries((staffData || []).map((s) => [s.venue_id, s.role]));
     const venueIds = (staffData || []).map((s) => s.venue_id);
 
     if (venueIds.length > 0) {
