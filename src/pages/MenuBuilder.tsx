@@ -48,7 +48,10 @@ export default function MenuBuilder() {
   const [importMode, setImportMode] = useState<"url" | "pdf" | null>(null);
   const [importUrl, setImportUrl] = useState("");
   const [importText, setImportText] = useState("");
+  const [importPdfBase64, setImportPdfBase64] = useState<string | null>(null);
+  const [importFileName, setImportFileName] = useState("");
   const [importing, setImporting] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [newCatName, setNewCatName] = useState("");
   const [form, setForm] = useState({
