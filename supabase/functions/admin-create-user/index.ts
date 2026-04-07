@@ -19,7 +19,9 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Not authenticated" }, 401);
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "Not authenticated" }, 401);
+    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -29,10 +31,13 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const {
-      data: { user: caller },
-    } = await callerClient.auth.getUser();
-    if (!caller) return json({ error: "Not authenticated" }, 401);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await callerClient.auth.getClaims(token);
+    const callerId = claimsData?.claims?.sub;
+
+    if (claimsError || !callerId) {
+      return json({ error: "Not authenticated" }, 401);
+    }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
@@ -40,7 +45,7 @@ Deno.serve(async (req) => {
     const { data: roleData } = await adminClient
       .from("user_roles")
       .select("id")
-      .eq("user_id", caller.id)
+      .eq("user_id", callerId)
       .eq("role", "tabless_admin")
       .maybeSingle();
     const isTablessAdmin = !!roleData;
@@ -51,7 +56,7 @@ Deno.serve(async (req) => {
       const { data } = await adminClient
         .from("venue_staff")
         .select("id")
-        .eq("user_id", caller.id)
+        .eq("user_id", callerId)
         .eq("venue_id", venueId)
         .in("role", ["owner", "manager"])
         .eq("is_active", true)
