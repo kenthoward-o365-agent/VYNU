@@ -289,30 +289,31 @@ const CheckoutPanel = ({
               <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
             </div>
           ))}
-          <Separator />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Subtotal (ex-GST)</span>
-            <span>${(total / 1.1).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>GST (10%)</span>
-            <span>${(total / 11).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between font-semibold">
-            <span>Total (incl. GST)</span>
-            <span>${total.toFixed(2)}</span>
-          </div>
-        </div>
-
-        {paymentEnabled === false && (
-          <div className="bg-muted rounded-xl p-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              Payments will be collected at the venue. Tap below to confirm your order.
-            </p>
-          </div>
-        )}
-
-        {paymentEnabled && (
+          {(() => {
+            const taxResult = calculateTaxes(total, venueTaxes);
+            const hasExclusive = venueTaxes.some((t) => !t.is_inclusive);
+            return (
+              <>
+                <Separator />
+                {taxResult.lines.map((line, i) => (
+                  <div key={i} className="flex justify-between text-xs text-muted-foreground">
+                    <span>{line.name} ({line.is_inclusive ? "incl." : "added"})</span>
+                    <span>${line.amount.toFixed(2)}</span>
+                  </div>
+                ))}
+                {venueTaxes.length > 0 && taxResult.lines.some((l) => l.is_inclusive) && (
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Subtotal (ex-tax)</span>
+                    <span>${taxResult.subtotalExTax.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-semibold">
+                  <span>Total{hasExclusive ? " (incl. tax)" : ""}</span>
+                  <span>${taxResult.grandTotal.toFixed(2)}</span>
+                </div>
+              </>
+            );
+          })()}
           <>
             <Separator />
 
