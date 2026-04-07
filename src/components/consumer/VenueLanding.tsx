@@ -5,6 +5,7 @@ import type { LandingSection } from "@/components/landing-editor/types";
 
 interface VenueLandingProps {
   venue: {
+    id?: string;
     name: string;
     venue_type: string;
     logo_url?: string | null;
@@ -14,6 +15,7 @@ interface VenueLandingProps {
   };
   tableNumber: string;
   onStart: () => void;
+  onSignup: () => void;
 }
 
 function tryParseJsonSections(raw: string): LandingSection[] | null {
@@ -24,16 +26,15 @@ function tryParseJsonSections(raw: string): LandingSection[] | null {
   return null;
 }
 
-const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
+const VenueLanding = ({ venue, tableNumber, onStart, onSignup }: VenueLandingProps) => {
   if (venue.landing_page_html) {
-    // Try JSON sections first
     const sections = tryParseJsonSections(venue.landing_page_html);
 
     if (sections) {
       return (
         <div className="min-h-screen relative">
           <LandingSectionRenderer sections={sections} tableNumber={tableNumber} />
-          <FloatingActions onStart={onStart} />
+          <FloatingActions onStart={onStart} onSignup={onSignup} />
         </div>
       );
     }
@@ -43,7 +44,7 @@ const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
     return (
       <div className="min-h-screen relative">
         <div dangerouslySetInnerHTML={{ __html: processedHtml }} />
-        <FloatingActions onStart={onStart} />
+        <FloatingActions onStart={onStart} onSignup={onSignup} />
       </div>
     );
   }
@@ -80,7 +81,7 @@ const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
         <p className="text-xs text-muted-foreground mb-3">
           Sign up for our loyalty program and earn points with every order.
         </p>
-        <Button variant="outline" size="sm" className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10" onClick={onStart}>
+        <Button variant="outline" size="sm" className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10" onClick={onSignup}>
           <UserPlus className="h-3.5 w-3.5 mr-1.5" />
           Sign up & start ordering
         </Button>
@@ -95,7 +96,7 @@ const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
   );
 };
 
-function FloatingActions({ onStart }: { onStart: () => void }) {
+function FloatingActions({ onStart, onSignup }: { onStart: () => void; onSignup: () => void }) {
   return (
     <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
       <div className="max-w-xs mx-auto space-y-2">
@@ -106,7 +107,7 @@ function FloatingActions({ onStart }: { onStart: () => void }) {
           variant="outline"
           size="sm"
           className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10"
-          onClick={onStart}
+          onClick={onSignup}
         >
           <UserPlus className="h-3.5 w-3.5 mr-1.5" />
           Sign up & start ordering
