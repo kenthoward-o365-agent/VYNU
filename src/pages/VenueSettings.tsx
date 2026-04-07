@@ -97,10 +97,24 @@ export default function VenueSettings() {
     const userIds = staffList.map((s) => s.user_id);
     if (userIds.length > 0) {
       try {
-        const { data: emailData } = await supabase.functions.invoke("admin-create-user", {
-          body: { action: "list_emails", user_ids: userIds, venue_id: venue.id },
-        });
-        if (emailData?.emails) setStaffEmails(emailData.emails);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if (accessToken) {
+          const resp = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: JSON.stringify({ action: "list_emails", user_ids: userIds, venue_id: venue.id }),
+            }
+          );
+          const emailData = await resp.json();
+          if (emailData?.emails) setStaffEmails(emailData.emails);
+        }
       } catch {}
     }
   };
@@ -115,14 +129,24 @@ export default function VenueSettings() {
   };
 
   const invokeUserFn = async (body: any) => {
-    const { data, error } = await supabase.functions.invoke("admin-create-user", { body });
-    if (error) {
-      const msg = typeof error === "object" && "context" in error
-        ? (await (error as any).context?.json?.())?.error || error.message
-        : error.message;
-      throw new Error(msg || "Request failed");
-    }
-    if (data?.error) throw new Error(data.error);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) throw new Error("Not authenticated. Please sign in again.");
+
+    const resp = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify(body),
+      }
+    );
+    const data = await resp.json();
+    if (!resp.ok || data?.error) throw new Error(data?.error || `Request failed: ${resp.status}`);
     return data;
   };
 
