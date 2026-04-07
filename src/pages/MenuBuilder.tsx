@@ -563,6 +563,16 @@ function ItemCard({ item, onEdit, onDelete, onToggle }: {
   return (
     <Card className={!item.is_available ? "opacity-60" : ""}>
       <CardContent className="flex items-center gap-4 py-3 px-4">
+        {/* Thumbnail */}
+        {item.image_url ? (
+          <div className="h-14 w-14 rounded-lg overflow-hidden shrink-0 border border-border">
+            <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
+          </div>
+        ) : (
+          <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
+          </div>
+        )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-medium text-foreground truncate">{item.name}</span>
