@@ -10,6 +10,7 @@ import CartPanel, { CartItem } from "@/components/consumer/CartPanel";
 import AIChatOverlay from "@/components/consumer/AIChatOverlay";
 import OrderStatus from "@/components/consumer/OrderStatus";
 import VenueDiscovery from "@/components/consumer/VenueDiscovery";
+import DinerSignup from "@/components/consumer/DinerSignup";
 
 interface VenueInfo {
   id: string;
@@ -57,6 +58,7 @@ const ConsumerOrder = () => {
   const [tab, setTab] = useState<"feed" | "chat" | "cart" | "profile">("feed");
   const [showChat, setShowChat] = useState(false);
   const [started, setStarted] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
   const [resolvedTableId, setResolvedTableId] = useState<string | null>(null);
@@ -212,10 +214,27 @@ const ConsumerOrder = () => {
     );
   }
 
+  if (showSignup && venue) {
+    return (
+      <ConsumerLayout>
+        <DinerSignup
+          venueId={venue.id}
+          onComplete={() => { setShowSignup(false); setStarted(true); }}
+          onBack={() => setShowSignup(false)}
+        />
+      </ConsumerLayout>
+    );
+  }
+
   if (!started) {
     return (
       <ConsumerLayout>
-        <VenueLanding venue={venue} tableNumber={tableNumber || "?"} onStart={() => setStarted(true)} />
+        <VenueLanding
+          venue={venue}
+          tableNumber={tableNumber || "?"}
+          onStart={() => setStarted(true)}
+          onSignup={() => setShowSignup(true)}
+        />
       </ConsumerLayout>
     );
   }
