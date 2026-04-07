@@ -429,6 +429,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_venue_with_owner: {
+        Args: {
+          _address?: string
+          _city?: string
+          _display_name?: string
+          _email?: string
+          _name: string
+          _phone?: string
+          _postcode?: string
+          _state?: string
+          _venue_type?: string
+        }
+        Returns: string
+      }
       is_venue_manager: {
         Args: { _user_id: string; _venue_id: string }
         Returns: boolean
