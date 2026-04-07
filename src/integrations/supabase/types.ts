@@ -510,6 +510,24 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       venue_group_staff: {
         Row: {
           created_at: string
@@ -634,6 +652,9 @@ export type Database = {
           postcode: string | null
           settings: Json | null
           state: string | null
+          subscription_notes: string | null
+          subscription_plan: string | null
+          subscription_status: string | null
           timezone: string | null
           updated_at: string
           venue_type: string
@@ -655,6 +676,9 @@ export type Database = {
           postcode?: string | null
           settings?: Json | null
           state?: string | null
+          subscription_notes?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string | null
           timezone?: string | null
           updated_at?: string
           venue_type?: string
@@ -676,6 +700,9 @@ export type Database = {
           postcode?: string | null
           settings?: Json | null
           state?: string | null
+          subscription_notes?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string | null
           timezone?: string | null
           updated_at?: string
           venue_type?: string
@@ -710,6 +737,13 @@ export type Database = {
         Returns: string
       }
       get_user_diner_profile_id: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       is_group_admin: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
@@ -728,6 +762,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "tabless_admin"
       group_staff_role: "group_admin" | "group_viewer"
       loyalty_program_type: "points" | "stamps" | "tier"
       order_status:
@@ -871,6 +906,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["tabless_admin"],
       group_staff_role: ["group_admin", "group_viewer"],
       loyalty_program_type: ["points", "stamps", "tier"],
       order_status: [
