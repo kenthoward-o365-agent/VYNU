@@ -113,6 +113,16 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       setGroup(null);
       setGroups([]);
     }
+
+    // Check tabless_admin role
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("role", "tabless_admin" as any)
+      .maybeSingle();
+    setIsTablessAdmin(!!roleData);
+
     setLoading(false);
   };
 
@@ -134,7 +144,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   useEffect(() => { fetchVenues(); }, [user]);
 
   return (
-    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, loading, setVenue, switchVenue, refetch: fetchVenues }}>
+    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, loading, setVenue, switchVenue, refetch: fetchVenues }}>
       {children}
     </VenueContext.Provider>
   );
