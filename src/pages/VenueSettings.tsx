@@ -498,13 +498,14 @@ export default function VenueSettings() {
 
         {/* ── PAYMENTS TAB ── */}
         {isManager && venue && (
-          <TabsContent value="payments" className="space-y-6">
-            <PaymentSettingsTab venueId={venue.id} />
-          </TabsContent>
-
-          <TabsContent value="taxes" className="space-y-6">
-            <TaxSettingsTab venueId={venue.id} />
-          </TabsContent>
+          <>
+            <TabsContent value="payments" className="space-y-6">
+              <PaymentSettingsTab venueId={venue.id} />
+            </TabsContent>
+            <TabsContent value="taxes" className="space-y-6">
+              <TaxSettingsTab venueId={venue.id} />
+            </TabsContent>
+          </>
         )}
       </Tabs>
     </div>
