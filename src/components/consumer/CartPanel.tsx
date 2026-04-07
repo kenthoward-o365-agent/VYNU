@@ -79,7 +79,7 @@ const CartPanel = ({ items, onUpdateQuantity, onRemove, onPlaceOrder, loading }:
           disabled={loading}
           className="w-full h-14 rounded-2xl text-base"
         >
-          {loading ? "Placing Order..." : `Place Order — $${total.toFixed(2)}`}
+          {loading ? "Processing..." : `Checkout — $${total.toFixed(2)}`}
         </Button>
       </div>
     </div>
