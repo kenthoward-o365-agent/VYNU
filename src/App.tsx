@@ -80,11 +80,18 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <VenueProvider>
-            <AppRoutes />
-          </VenueProvider>
-        </AuthProvider>
+        <Routes>
+          {/* Public consumer ordering route — no auth required */}
+          <Route path="/order/:venueId/:tableId" element={<ConsumerOrder />} />
+          {/* All other routes go through auth */}
+          <Route path="/*" element={
+            <AuthProvider>
+              <VenueProvider>
+                <AppRoutes />
+              </VenueProvider>
+            </AuthProvider>
+          } />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
