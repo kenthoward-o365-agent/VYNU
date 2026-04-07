@@ -70,8 +70,14 @@ Deno.serve(async (req) => {
     // ── LIST EMAILS for user_ids ──
     if (action === "list_emails") {
       const { user_ids, venue_id } = body;
-      if (!venue_id || !Array.isArray(user_ids)) return json({ error: "venue_id and user_ids required" }, 400);
-      if (!(await isVenueManager(venue_id))) return json({ error: "Forbidden" }, 403);
+      if (!Array.isArray(user_ids)) return json({ error: "user_ids required" }, 400);
+      // Allow "platform" as a special venue_id for admin-level queries
+      if (venue_id !== "platform") {
+        if (!venue_id) return json({ error: "venue_id required" }, 400);
+        if (!(await isVenueManager(venue_id))) return json({ error: "Forbidden" }, 403);
+      } else {
+        if (!isTablessAdmin) return json({ error: "Forbidden" }, 403);
+      }
 
       const emails: Record<string, string> = {};
       for (const uid of user_ids) {
@@ -79,6 +85,68 @@ Deno.serve(async (req) => {
         if (u?.user?.email) emails[uid] = u.user.email;
       }
       return json({ emails });
+    }
+
+    // ── CREATE ADMIN (tabless_admin role) ──
+    if (action === "create_admin") {
+      if (!isTablessAdmin) return json({ error: "Forbidden" }, 403);
+      const { email, password } = body;
+      if (!email || !password) return json({ error: "email and password are required" }, 400);
+      if (password.length < 8) return json({ error: "Password must be at least 8 characters" }, 400);
+
+      // Create or find existing auth user
+      let userId: string;
+      const { data: newUser, error: createError } =
+        await adminClient.auth.admin.createUser({ email, password, email_confirm: true });
+
+      if (createError) {
+        if (createError.message.includes("already been registered")) {
+          const { data: listData } = await adminClient.auth.admin.listUsers();
+          const existing = listData?.users?.find((u: any) => u.email === email);
+          if (!existing) return json({ error: "User exists but could not be found" }, 400);
+          userId = existing.id;
+        } else {
+          return json({ error: createError.message }, 400);
+        }
+      } else {
+        userId = newUser.user.id;
+      }
+
+      // Check if already admin
+      const { data: existingRole } = await adminClient
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("role", "tabless_admin")
+        .maybeSingle();
+
+      if (existingRole) {
+        return json({ error: "This user is already a Tab-Less admin" }, 400);
+      }
+
+      const { error: roleErr } = await adminClient
+        .from("user_roles")
+        .insert({ user_id: userId, role: "tabless_admin" });
+
+      if (roleErr) return json({ error: roleErr.message }, 500);
+      return json({ success: true, user_id: userId });
+    }
+
+    // ── REMOVE ADMIN ──
+    if (action === "remove_admin") {
+      if (!isTablessAdmin) return json({ error: "Forbidden" }, 403);
+      const { user_id: targetUserId, role_id } = body;
+      if (!targetUserId || !role_id) return json({ error: "user_id and role_id required" }, 400);
+      // Prevent removing yourself
+      if (targetUserId === callerId) return json({ error: "Cannot remove your own admin access" }, 400);
+
+      const { error: delErr } = await adminClient
+        .from("user_roles")
+        .delete()
+        .eq("id", role_id);
+
+      if (delErr) return json({ error: delErr.message }, 400);
+      return json({ success: true });
     }
 
     // ── DELETE USER (remove from venue + optionally delete auth) ──
