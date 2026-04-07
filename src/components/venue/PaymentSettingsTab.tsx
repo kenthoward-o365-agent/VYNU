@@ -166,15 +166,19 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             <div className="flex-1">
               <p className="font-medium text-sm">
                 {config.is_active
-                  ? `Payments active in ${config.environment.toUpperCase()} mode`
+                  ? isMockMode
+                    ? "Payments active in MOCK mode"
+                    : `Payments active in ${config.environment.toUpperCase()} mode`
                   : "Payments not enabled"}
               </p>
               <p className="text-xs text-muted-foreground">
                 {config.is_active
-                  ? config.environment === "test"
+                  ? isMockMode
+                    ? "Simulated payments — no Adyen account needed. Use test cards below."
+                    : config.environment === "test"
                     ? "Using Adyen test environment — no real charges"
                     : "Using Adyen LIVE environment — real transactions"
-                  : "Configure your Adyen credentials below to enable payments"}
+                  : "Enable payments below to test the full ordering flow"}
               </p>
             </div>
             <Badge variant="outline" className={config.environment === "live" ? "border-red-500/50 text-red-500" : "border-blue-500/50 text-blue-500"}>
