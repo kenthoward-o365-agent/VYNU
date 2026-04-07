@@ -60,6 +60,7 @@ const ConsumerOrder = () => {
   const [showChat, setShowChat] = useState(false);
   const [started, setStarted] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
   const [showCheckout, setShowCheckout] = useState(false);
   const [loading, setLoading] = useState(true);
   const [resolvedTableId, setResolvedTableId] = useState<string | null>(null);
@@ -203,6 +204,7 @@ const ConsumerOrder = () => {
           venueId={venue.id}
           onComplete={() => { setShowSignup(false); setStarted(true); }}
           onBack={() => setShowSignup(false)}
+          initialMode={authMode}
         />
       </ConsumerLayout>
     );
@@ -215,7 +217,8 @@ const ConsumerOrder = () => {
           venue={venue}
           tableNumber={tableNumber || "?"}
           onStart={() => setStarted(true)}
-          onSignup={() => setShowSignup(true)}
+          onSignup={() => { setAuthMode("signup"); setShowSignup(true); }}
+          onSignin={() => { setAuthMode("signin"); setShowSignup(true); }}
         />
       </ConsumerLayout>
     );
