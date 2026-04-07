@@ -42,9 +42,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const showGroupNav = isGroupAdmin || venues.length > 1;
+  const showGroupNav = !isTablessAdmin && (isGroupAdmin || venues.length > 1);
   const allNavItems = [
-    ...venueNavItems,
+    ...(isTablessAdmin ? [] : venueNavItems),
     ...(showGroupNav ? groupNavItems : []),
     ...(isTablessAdmin ? adminNavItems : []),
   ];
