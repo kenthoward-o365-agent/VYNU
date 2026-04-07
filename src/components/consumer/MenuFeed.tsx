@@ -251,7 +251,7 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const isMobile = useIsMobile();
+  
 
   const filteredItems = items.filter((item) => {
     if (activeCategory && item.category_id !== activeCategory) return false;
@@ -293,16 +293,7 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
     );
   }
 
-  if (isMobile) {
-    return (
-      <div className="flex flex-col h-[calc(100vh-4rem)]">
-        <CategoryChips categories={categories} activeCategory={activeCategory} onSelect={handleCategorySelect} />
-        <MobileCardFeed items={filteredItems} onAddToCart={onAddToCart} />
-      </div>
-    );
-  }
-
-  // Desktop: 3-column list view
+  // List view for all screen sizes
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] relative">
       <CategoryChips categories={categories} activeCategory={activeCategory} onSelect={handleCategorySelect} />
