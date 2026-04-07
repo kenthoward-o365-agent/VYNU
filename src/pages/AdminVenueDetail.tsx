@@ -64,6 +64,11 @@ export default function AdminVenueDetail() {
   });
   const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
 
+  // Group settings (for parent venues)
+  const [groupSettings, setGroupSettings] = useState<{ global_diners: boolean; global_loyalty: boolean }>({ global_diners: false, global_loyalty: false });
+  const [childVenues, setChildVenues] = useState<any[]>([]);
+  const [savingGroupSettings, setSavingGroupSettings] = useState(false);
+
   // Staff
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [newUserDialog, setNewUserDialog] = useState(false);
