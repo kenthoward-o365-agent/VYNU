@@ -92,6 +92,21 @@ export default function VenueSettings() {
         </CardContent>
       </Card>
 
+      {/* Group Assignment */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Parent Company</CardTitle>
+          <CardDescription>Group affiliation for this venue</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {venue?.group_id ? (
+            <p className="text-sm text-foreground">This venue belongs to a parent company. Manage group settings from the <strong>Parent Company</strong> page.</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">Not assigned to any parent company. Visit the Parent Company page to create or join a group.</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Landing Page Builder */}
       <Card>
         <CardHeader>
