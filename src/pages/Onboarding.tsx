@@ -21,7 +21,7 @@ const venueTypes = [
 const states = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"];
 
 export default function Onboarding() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { refetch } = useVenue();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
