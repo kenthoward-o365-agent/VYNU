@@ -122,7 +122,7 @@ export default function VenueSettings() {
   };
 
   const updateStaffRole = async (staffId: string, newRole: string) => {
-    const { error } = await supabase.from("venue_staff").update({ role: newRole }).eq("id", staffId);
+    const { error } = await supabase.from("venue_staff").update({ role: newRole as any }).eq("id", staffId);
     if (error) toast.error(error.message);
     else { toast.success("Role updated"); fetchStaff(); }
   };
