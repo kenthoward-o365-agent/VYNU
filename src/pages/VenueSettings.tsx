@@ -16,7 +16,8 @@ import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2 } from "lucide-react";
+import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard } from "lucide-react";
+import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
 
 const venueTypes = [
   { value: "restaurant", label: "Restaurant" },
@@ -236,6 +237,7 @@ export default function VenueSettings() {
           {isManager && <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>}
           {isManager && venue?.group_id && <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>}
           {isManager && venue?.group_id && <TabsTrigger value="diners"><Users className="h-3.5 w-3.5 mr-1" />Diners</TabsTrigger>}
+          {isManager && <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>}
         </TabsList>
 
         {/* ── DETAILS TAB ── */}
@@ -489,6 +491,13 @@ export default function VenueSettings() {
         {isManager && venue?.group_id && (
           <TabsContent value="diners" className="space-y-6">
             <VenueDinersTab venueId={venue?.id} groupId={venue?.group_id} />
+          </TabsContent>
+        )}
+
+        {/* ── PAYMENTS TAB ── */}
+        {isManager && venue && (
+          <TabsContent value="payments" className="space-y-6">
+            <PaymentSettingsTab venueId={venue.id} />
           </TabsContent>
         )}
       </Tabs>
