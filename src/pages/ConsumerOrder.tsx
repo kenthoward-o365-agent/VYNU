@@ -17,6 +17,7 @@ interface VenueInfo {
   logo_url: string | null;
   address: string | null;
   city: string | null;
+  landing_page_html: string | null;
 }
 
 interface MenuItem {
@@ -65,7 +66,7 @@ const ConsumerOrder = () => {
 
       // Try to find table by ID first, then fall back to table_number
       const [venueRes, itemsRes, catsRes] = await Promise.all([
-        supabase.from("venues").select("id, name, venue_type, logo_url, address, city").eq("id", venueId).single(),
+        supabase.from("venues").select("id, name, venue_type, logo_url, address, city, landing_page_html").eq("id", venueId).single(),
         supabase.from("menu_items").select("*").eq("venue_id", venueId).eq("is_available", true).order("display_order"),
         supabase.from("menu_categories").select("id, name").eq("venue_id", venueId).eq("is_active", true).order("display_order"),
       ]);
