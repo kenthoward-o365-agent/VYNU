@@ -214,6 +214,17 @@ export default function AdminVenueDetail() {
     fetchMenu();
   };
 
+  const saveGroupSettings = async () => {
+    if (!venue?.group_id) return;
+    setSavingGroupSettings(true);
+    const { error } = await supabase.from("venue_groups").update({
+      settings: { global_diners: groupSettings.global_diners, global_loyalty: groupSettings.global_loyalty },
+    }).eq("id", venue.group_id);
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else toast({ title: "Group settings saved" });
+    setSavingGroupSettings(false);
+  };
+
   if (loading) return <p className="text-muted-foreground p-6">Loading...</p>;
   if (!venue) return <p className="text-muted-foreground p-6">Venue not found.</p>;
 
