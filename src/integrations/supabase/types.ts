@@ -812,6 +812,7 @@ export type Database = {
           subscription_notes: string | null
           subscription_plan: string | null
           subscription_status: string | null
+          tax_id: string | null
           timezone: string | null
           updated_at: string
           venue_type: string
@@ -836,6 +837,7 @@ export type Database = {
           subscription_notes?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
+          tax_id?: string | null
           timezone?: string | null
           updated_at?: string
           venue_type?: string
@@ -860,6 +862,7 @@ export type Database = {
           subscription_notes?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
+          tax_id?: string | null
           timezone?: string | null
           updated_at?: string
           venue_type?: string
