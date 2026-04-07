@@ -14,16 +14,445 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      menu_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_categories_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          allergens: string[] | null
+          category_id: string | null
+          created_at: string
+          description: string | null
+          dietary_tags: string[] | null
+          display_order: number | null
+          food_cost: number | null
+          id: string
+          image_url: string | null
+          is_available: boolean | null
+          name: string
+          prep_time_minutes: number | null
+          price: number
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          allergens?: string[] | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          dietary_tags?: string[] | null
+          display_order?: number | null
+          food_cost?: number | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          name: string
+          prep_time_minutes?: number | null
+          price: number
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          allergens?: string[] | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          dietary_tags?: string[] | null
+          display_order?: number | null
+          food_cost?: number | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          name?: string
+          prep_time_minutes?: number | null
+          price?: number
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_items_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          menu_item_id: string
+          modifiers: Json | null
+          notes: string | null
+          order_id: string
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_item_id: string
+          modifiers?: Json | null
+          notes?: string | null
+          order_id: string
+          quantity?: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string
+          modifiers?: Json | null
+          notes?: string | null
+          order_id?: string
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          customer_notes: string | null
+          id: string
+          status: Database["public"]["Enums"]["order_status"]
+          table_id: string | null
+          total: number | null
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          customer_notes?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          table_id?: string | null
+          total?: number | null
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          customer_notes?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          table_id?: string | null
+          total?: number | null
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_rules: {
+        Row: {
+          created_at: string
+          days_of_week: number[] | null
+          end_date: string | null
+          end_time: string | null
+          id: string
+          is_active: boolean | null
+          modifier_percent: number
+          name: string
+          rule_type: Database["public"]["Enums"]["pricing_rule_type"]
+          start_date: string | null
+          start_time: string | null
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_of_week?: number[] | null
+          end_date?: string | null
+          end_time?: string | null
+          id?: string
+          is_active?: boolean | null
+          modifier_percent?: number
+          name: string
+          rule_type: Database["public"]["Enums"]["pricing_rule_type"]
+          start_date?: string | null
+          start_time?: string | null
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          days_of_week?: number[] | null
+          end_date?: string | null
+          end_time?: string | null
+          id?: string
+          is_active?: boolean | null
+          modifier_percent?: number
+          name?: string
+          rule_type?: Database["public"]["Enums"]["pricing_rule_type"]
+          start_date?: string | null
+          start_time?: string | null
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_rules_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tables: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          id: string
+          qr_code: string | null
+          status: string | null
+          table_number: string
+          updated_at: string
+          venue_id: string
+          zone: string | null
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          id?: string
+          qr_code?: string | null
+          status?: string | null
+          table_number: string
+          updated_at?: string
+          venue_id: string
+          zone?: string | null
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          id?: string
+          qr_code?: string | null
+          status?: string | null
+          table_number?: string
+          updated_at?: string
+          venue_id?: string
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tables_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_staff: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          is_active: boolean | null
+          role: Database["public"]["Enums"]["venue_staff_role"]
+          updated_at: string
+          user_id: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          role?: Database["public"]["Enums"]["venue_staff_role"]
+          updated_at?: string
+          user_id: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          role?: Database["public"]["Enums"]["venue_staff_role"]
+          updated_at?: string
+          user_id?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_staff_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venues: {
+        Row: {
+          address: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          operating_hours: Json | null
+          phone: string | null
+          postcode: string | null
+          settings: Json | null
+          state: string | null
+          timezone: string | null
+          updated_at: string
+          venue_type: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          operating_hours?: Json | null
+          phone?: string | null
+          postcode?: string | null
+          settings?: Json | null
+          state?: string | null
+          timezone?: string | null
+          updated_at?: string
+          venue_type?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          operating_hours?: Json | null
+          phone?: string | null
+          postcode?: string | null
+          settings?: Json | null
+          state?: string | null
+          timezone?: string | null
+          updated_at?: string
+          venue_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_venue_manager: {
+        Args: { _user_id: string; _venue_id: string }
+        Returns: boolean
+      }
+      is_venue_staff: {
+        Args: { _user_id: string; _venue_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      order_status:
+        | "received"
+        | "preparing"
+        | "ready"
+        | "served"
+        | "paid"
+        | "cancelled"
+      pricing_rule_type:
+        | "happy_hour"
+        | "late_night"
+        | "special"
+        | "event"
+        | "weather"
+      venue_staff_role: "owner" | "manager" | "staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +579,23 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      order_status: [
+        "received",
+        "preparing",
+        "ready",
+        "served",
+        "paid",
+        "cancelled",
+      ],
+      pricing_rule_type: [
+        "happy_hour",
+        "late_night",
+        "special",
+        "event",
+        "weather",
+      ],
+      venue_staff_role: ["owner", "manager", "staff"],
+    },
   },
 } as const
