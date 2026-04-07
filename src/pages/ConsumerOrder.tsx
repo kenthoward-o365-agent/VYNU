@@ -9,6 +9,7 @@ import MenuFeed from "@/components/consumer/MenuFeed";
 import CartPanel, { CartItem } from "@/components/consumer/CartPanel";
 import AIChatOverlay from "@/components/consumer/AIChatOverlay";
 import OrderStatus from "@/components/consumer/OrderStatus";
+import VenueDiscovery from "@/components/consumer/VenueDiscovery";
 
 interface VenueInfo {
   id: string;
@@ -18,6 +19,7 @@ interface VenueInfo {
   address: string | null;
   city: string | null;
   landing_page_html: string | null;
+  group_id: string | null;
 }
 
 interface MenuItem {
@@ -66,7 +68,7 @@ const ConsumerOrder = () => {
 
       // Try to find table by ID first, then fall back to table_number
       const [venueRes, itemsRes, catsRes] = await Promise.all([
-        supabase.from("venues").select("id, name, venue_type, logo_url, address, city, landing_page_html").eq("id", venueId).single(),
+        supabase.from("venues").select("id, name, venue_type, logo_url, address, city, landing_page_html, group_id").eq("id", venueId).single(),
         supabase.from("menu_items").select("*").eq("venue_id", venueId).eq("is_available", true).order("display_order"),
         supabase.from("menu_categories").select("id, name").eq("venue_id", venueId).eq("is_active", true).order("display_order"),
       ]);
@@ -244,11 +246,12 @@ const ConsumerOrder = () => {
         />
       )}
       {tab === "profile" && (
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)] px-6 text-center">
-          <div>
+        <div className="px-6 pt-8 pb-24 space-y-6">
+          <div className="text-center">
             <h2 className="text-lg font-semibold mb-2">Profile</h2>
             <p className="text-muted-foreground text-sm">Sign in to save your preferences, track loyalty points, and reorder your favourites.</p>
           </div>
+          {venue && <VenueDiscovery currentVenueId={venue.id} groupId={venue.group_id} />}
         </div>
       )}
 
