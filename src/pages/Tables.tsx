@@ -43,8 +43,9 @@ export default function Tables() {
       capacity: parseInt(form.capacity) || 4,
     }).select().single();
     if (error) { toast.error(error.message); return; }
-    // Update qr_code with the generated table ID
-    const qrUrl = `${window.location.origin}/order/${venue.id}/${data.id}`;
+    // Use published URL if available, otherwise preview URL
+    const baseUrl = getPublicBaseUrl();
+    const qrUrl = `${baseUrl}/order/${venue.id}/${data.id}`;
     await supabase.from("tables").update({ qr_code: qrUrl }).eq("id", data.id);
     toast.success("Table added");
     setDialogOpen(false);
