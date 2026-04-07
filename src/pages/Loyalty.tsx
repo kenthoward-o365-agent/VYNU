@@ -145,7 +145,7 @@ export default function Loyalty() {
                   <p className="text-sm text-muted-foreground">Type: {typeLabel(p.program_type)}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Switch checked={p.is_active ?? false} onCheckedChange={(e) => { e.preventDefault?.(); toggleActive(p.id, p.is_active); }} onClick={(e) => e.stopPropagation()} />
+                      <Switch checked={p.is_active ?? false} onCheckedChange={() => toggleActive(p.id, p.is_active)} onClick={(e) => e.stopPropagation()} />
                       <span className="text-xs text-muted-foreground">{p.is_active ? "Active" : "Paused"}</span>
                     </div>
                     <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteProgram(p.id); }}>
