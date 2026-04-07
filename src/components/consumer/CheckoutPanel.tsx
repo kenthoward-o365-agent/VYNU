@@ -136,18 +136,18 @@ const CheckoutPanel = ({
   const processPayment = async () => {
     setProcessing(true);
     try {
-      // Create the order first
-      const { data: order, error: orderError } = await supabase
+      // Create the order first — generate ID client-side to avoid needing SELECT permission
+      const orderId = crypto.randomUUID();
+      const { error: orderError } = await supabase
         .from("orders")
         .insert({
+          id: orderId,
           venue_id: venueId,
           table_id: tableId,
           total,
           status: "received" as const,
           customer_id: dinerId,
-        })
-        .select()
-        .single();
+        });
 
       if (orderError) throw orderError;
 
