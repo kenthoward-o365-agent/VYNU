@@ -57,9 +57,10 @@ export default function AdminVenueDetail() {
 
   const [form, setForm] = useState({
     name: "", venue_type: "restaurant", address: "", city: "", state: "NSW",
-    postcode: "", phone: "", email: "",
+    postcode: "", phone: "", email: "", group_id: "__none__",
     subscription_status: "trial", subscription_plan: "basic", subscription_notes: "",
   });
+  const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
 
   // Staff
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -85,10 +86,15 @@ export default function AdminVenueDetail() {
         name: data.name, venue_type: data.venue_type, address: data.address || "",
         city: data.city || "", state: data.state || "NSW", postcode: data.postcode || "",
         phone: data.phone || "", email: data.email || "",
+        group_id: data.group_id || "__none__",
         subscription_status: (data as any).subscription_status || "trial",
         subscription_plan: (data as any).subscription_plan || "basic",
         subscription_notes: (data as any).subscription_notes || "",
       });
+    }
+    // Fetch groups
+    const { data: groupData } = await supabase.from("venue_groups").select("id, name");
+    setGroups((groupData || []) as { id: string; name: string }[]);
     }
     setLoading(false);
   };
@@ -118,6 +124,7 @@ export default function AdminVenueDetail() {
       name: form.name, venue_type: form.venue_type, address: form.address || null,
       city: form.city || null, state: form.state || null, postcode: form.postcode || null,
       phone: form.phone || null, email: form.email || null,
+      group_id: form.group_id === "__none__" ? null : form.group_id,
       subscription_status: form.subscription_status,
       subscription_plan: form.subscription_plan,
       subscription_notes: form.subscription_notes || null,
@@ -227,6 +234,16 @@ export default function AdminVenueDetail() {
               <div className="grid grid-cols-2 gap-3">
                 <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
                 <Input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              </div>
+              <div>
+                <Label>Parent Company</Label>
+                <Select value={form.group_id} onValueChange={(v) => setForm({ ...form, group_id: v })} disabled={form.venue_type === "parent"}>
+                  <SelectTrigger className={`mt-1 ${form.venue_type === "parent" ? "opacity-50" : ""}`}><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">None (Standalone)</SelectItem>
+                    {groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>
