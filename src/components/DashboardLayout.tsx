@@ -33,6 +33,7 @@ const groupNavItems = [
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
   const { venue, venues, group, isGroupAdmin, switchVenue } = useVenue();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
