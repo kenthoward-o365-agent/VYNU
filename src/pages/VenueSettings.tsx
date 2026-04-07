@@ -51,6 +51,19 @@ export default function VenueSettings() {
         <h2 className="text-2xl font-bold text-foreground">Venue Settings</h2>
         <p className="text-muted-foreground">Manage your venue details</p>
       </div>
+      {venue && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Venue ID</p>
+                <p className="font-mono text-sm text-foreground">{venue.id}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(venue.id); toast.success("Venue ID copied"); }}>Copy</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Venue Details</CardTitle>
