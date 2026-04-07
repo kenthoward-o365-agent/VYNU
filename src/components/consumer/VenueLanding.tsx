@@ -27,7 +27,7 @@ function tryParseJsonSections(raw: string): LandingSection[] | null {
   return null;
 }
 
-const VenueLanding = ({ venue, tableNumber, onStart, onSignup }: VenueLandingProps) => {
+const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: VenueLandingProps) => {
   if (venue.landing_page_html) {
     const sections = tryParseJsonSections(venue.landing_page_html);
 
@@ -35,7 +35,7 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup }: VenueLandingPro
       return (
         <div className="min-h-screen relative">
           <LandingSectionRenderer sections={sections} tableNumber={tableNumber} />
-          <FloatingActions onStart={onStart} onSignup={onSignup} />
+          <FloatingActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />
         </div>
       );
     }
@@ -45,7 +45,7 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup }: VenueLandingPro
     return (
       <div className="min-h-screen relative">
         <div dangerouslySetInnerHTML={{ __html: processedHtml }} />
-        <FloatingActions onStart={onStart} onSignup={onSignup} />
+        <FloatingActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />
       </div>
     );
   }
