@@ -90,10 +90,16 @@ export default function Tables() {
           <h2 className="text-2xl font-bold text-foreground">Tables & QR Codes</h2>
           <p className="text-muted-foreground">{tables.length} tables configured</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-1" />Add Table</Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          {tables.length > 0 && (
+            <Button variant="outline" size="sm" onClick={regenerateQrUrls}>
+              <RefreshCw className="h-4 w-4 mr-1" />Refresh QR URLs
+            </Button>
+          )}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 mr-1" />Add Table</Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Add Table</DialogTitle></DialogHeader>
             <div className="space-y-4">
