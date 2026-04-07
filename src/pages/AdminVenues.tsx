@@ -31,6 +31,7 @@ interface VenueGroup {
 }
 
 const venueTypes = [
+  { value: "parent", label: "Parent Company" },
   { value: "restaurant", label: "Restaurant" },
   { value: "cafe", label: "Café" },
   { value: "bar", label: "Bar" },
@@ -140,15 +141,15 @@ export default function AdminVenues() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Type</Label>
-                  <Select value={form.venue_type} onValueChange={(v) => setForm({ ...form, venue_type: v })}>
+                  <Select value={form.venue_type} onValueChange={(v) => setForm({ ...form, venue_type: v, ...(v === "parent" ? { group_id: "__none__" } : {}) })}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>{venueTypes.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label>Parent Company</Label>
-                  <Select value={form.group_id} onValueChange={(v) => setForm({ ...form, group_id: v })}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <Select value={form.group_id} onValueChange={(v) => setForm({ ...form, group_id: v })} disabled={form.venue_type === "parent"}>
+                    <SelectTrigger className={`mt-1 ${form.venue_type === "parent" ? "opacity-50" : ""}`}><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">None (Standalone)</SelectItem>
                       {groups.map((g) => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
