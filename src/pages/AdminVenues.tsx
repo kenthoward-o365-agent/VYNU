@@ -39,6 +39,7 @@ const venueTypes = [
   { value: "fast_casual", label: "Fast Casual" },
   { value: "fine_dining", label: "Fine Dining" },
   { value: "food_truck", label: "Food Truck" },
+  { value: "bottle_shop", label: "Bottle Shop" },
 ];
 
 const typeLabels: Record<string, string> = Object.fromEntries(venueTypes.map((t) => [t.value, t.label]));
