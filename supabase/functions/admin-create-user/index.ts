@@ -55,6 +55,28 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Handle DELETE — remove an auth user
+    if (req.method === "DELETE") {
+      const { user_id } = await req.json();
+      if (!user_id) {
+        return new Response(JSON.stringify({ error: "user_id is required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error: delErr } = await adminClient.auth.admin.deleteUser(user_id);
+      if (delErr) {
+        return new Response(JSON.stringify({ error: delErr.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ success: true, deleted: user_id }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Parse request body
     const { email, password, venue_id, role, display_name } = await req.json();
 
