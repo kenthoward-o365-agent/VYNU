@@ -709,6 +709,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_user_diner_profile_id: { Args: never; Returns: string }
       is_group_admin: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
