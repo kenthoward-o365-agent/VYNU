@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface MenuItem {
@@ -43,6 +44,11 @@ export default function MenuBuilder() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importMode, setImportMode] = useState<"url" | "pdf" | null>(null);
+  const [importUrl, setImportUrl] = useState("");
+  const [importText, setImportText] = useState("");
+  const [importing, setImporting] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [newCatName, setNewCatName] = useState("");
   const [form, setForm] = useState({
@@ -131,6 +137,48 @@ export default function MenuBuilder() {
     fetchData();
   };
 
+  const handleImport = async () => {
+    if (!venue) return;
+    setImporting(true);
+    try {
+      const body: any = { venue_id: venue.id };
+      if (importMode === "url") {
+        body.url = importUrl;
+      } else {
+        body.text = importText;
+      }
+
+      const { data, error } = await supabase.functions.invoke("import-menu", { body });
+
+      if (error) { toast.error(error.message); return; }
+      if (data?.error) { toast.error(data.error); return; }
+
+      toast.success(`Imported ${data.items_created} items across ${data.categories_created} categories`);
+      setImportDialogOpen(false);
+      setImportMode(null);
+      setImportUrl("");
+      setImportText("");
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || "Import failed");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Read as text for now (works for text-based PDFs when parsed server-side)
+    // For real PDF parsing we send the text content
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const text = ev.target?.result as string;
+      setImportText(text);
+    };
+    reader.readAsText(file);
+  };
+
   const toggleTag = (arr: string[], tag: string) =>
     arr.includes(tag) ? arr.filter((t) => t !== tag) : [...arr, tag];
 
@@ -150,7 +198,10 @@ export default function MenuBuilder() {
           <h2 className="text-2xl font-bold text-foreground">Menu Builder</h2>
           <p className="text-muted-foreground">{items.length} items across {categories.length} categories</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => { setImportMode(null); setImportDialogOpen(true); }}>
+            <Sparkles className="h-4 w-4 mr-1" />AI Import
+          </Button>
           <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm"><Plus className="h-4 w-4 mr-1" />Category</Button>
@@ -275,6 +326,89 @@ export default function MenuBuilder() {
               {editingItem ? "Update Item" : "Add Item"}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Import Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={(open) => { setImportDialogOpen(open); if (!open) setImportMode(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Menu Import
+            </DialogTitle>
+          </DialogHeader>
+
+          {!importMode ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Import your entire menu automatically. Just provide a source and AI will extract all items, categories, prices, allergens, and dietary tags.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setImportMode("url")}
+                  className="flex flex-col items-center gap-3 p-6 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors"
+                >
+                  <Globe className="h-8 w-8 text-primary" />
+                  <div className="text-center">
+                    <p className="font-medium text-foreground">Website URL</p>
+                    <p className="text-xs text-muted-foreground">Paste your menu page link</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setImportMode("pdf")}
+                  className="flex flex-col items-center gap-3 p-6 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors"
+                >
+                  <FileText className="h-8 w-8 text-primary" />
+                  <div className="text-center">
+                    <p className="font-medium text-foreground">Paste Text / PDF</p>
+                    <p className="text-xs text-muted-foreground">Paste menu text content</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          ) : importMode === "url" ? (
+            <div className="space-y-4">
+              <div>
+                <Label>Menu Page URL</Label>
+                <Input
+                  placeholder="https://myrestaurant.com/menu"
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  We'll scrape the page and extract all menu items automatically
+                </p>
+              </div>
+              <Button onClick={handleImport} disabled={!importUrl.trim() || importing} className="w-full">
+                {importing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Importing...</> : <><Sparkles className="h-4 w-4 mr-2" />Import Menu</>}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setImportMode(null)} className="w-full">
+                ← Back
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <Label>Menu Text</Label>
+                <Textarea
+                  placeholder="Paste your full menu text here — item names, descriptions, prices..."
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  rows={10}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Paste the text from your PDF menu, or type/paste your menu items
+                </p>
+              </div>
+              <Button onClick={handleImport} disabled={!importText.trim() || importing} className="w-full">
+                {importing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Importing...</> : <><Sparkles className="h-4 w-4 mr-2" />Import Menu</>}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setImportMode(null)} className="w-full">
+                ← Back
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
