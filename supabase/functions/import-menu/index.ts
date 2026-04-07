@@ -5,7 +5,7 @@ const corsHeaders = {
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const LOVABLE_API_URL = "https://ai-gateway.lovable.dev/v1/chat/completions";
+const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 const EXTRACTION_SCHEMA = {
   name: "extract_menu",
