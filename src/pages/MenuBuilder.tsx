@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -58,8 +58,9 @@ export default function MenuBuilder() {
   const [form, setForm] = useState({
     name: "", description: "", price: "", prep_time_minutes: "",
     allergens: [] as string[], dietary_tags: [] as string[],
-    category_id: "", food_cost: "", is_available: true,
+    category_id: "", food_cost: "", is_available: true, image_url: "" as string,
   });
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const fetchData = async () => {
     if (!venue) return;
@@ -75,7 +76,7 @@ export default function MenuBuilder() {
 
   const openAdd = () => {
     setEditingItem(null);
-    setForm({ name: "", description: "", price: "", prep_time_minutes: "", allergens: [], dietary_tags: [], category_id: "", food_cost: "", is_available: true });
+    setForm({ name: "", description: "", price: "", prep_time_minutes: "", allergens: [], dietary_tags: [], category_id: "", food_cost: "", is_available: true, image_url: "" });
     setDialogOpen(true);
   };
 
@@ -86,7 +87,7 @@ export default function MenuBuilder() {
       prep_time_minutes: item.prep_time_minutes ? String(item.prep_time_minutes) : "",
       allergens: item.allergens || [], dietary_tags: item.dietary_tags || [],
       category_id: item.category_id || "", food_cost: item.food_cost ? String(item.food_cost) : "",
-      is_available: item.is_available ?? true,
+      is_available: item.is_available ?? true, image_url: item.image_url || "",
     });
     setDialogOpen(true);
   };
@@ -104,6 +105,7 @@ export default function MenuBuilder() {
       category_id: form.category_id || null,
       food_cost: form.food_cost ? parseFloat(form.food_cost) : null,
       is_available: form.is_available,
+      image_url: form.image_url || null,
     };
 
     if (editingItem) {
