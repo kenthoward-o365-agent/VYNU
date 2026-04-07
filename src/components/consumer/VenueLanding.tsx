@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { MapPin, Utensils, Gift, UserPlus } from "lucide-react";
+import LandingSectionRenderer from "@/components/landing-editor/LandingSectionRenderer";
+import type { LandingSection } from "@/components/landing-editor/types";
 
 interface VenueLandingProps {
   venue: {
@@ -14,31 +16,34 @@ interface VenueLandingProps {
   onStart: () => void;
 }
 
-const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
-  // Render custom landing page if venue has one
-  if (venue.landing_page_html) {
-    const processedHtml = venue.landing_page_html.replace(/\{\{TABLE\}\}/g, tableNumber);
+function tryParseJsonSections(raw: string): LandingSection[] | null {
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].type) return parsed;
+  } catch {}
+  return null;
+}
 
+const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
+  if (venue.landing_page_html) {
+    // Try JSON sections first
+    const sections = tryParseJsonSections(venue.landing_page_html);
+
+    if (sections) {
+      return (
+        <div className="min-h-screen relative">
+          <LandingSectionRenderer sections={sections} tableNumber={tableNumber} />
+          <FloatingActions onStart={onStart} />
+        </div>
+      );
+    }
+
+    // Legacy HTML fallback
+    const processedHtml = venue.landing_page_html.replace(/\{\{TABLE\}\}/g, tableNumber);
     return (
       <div className="min-h-screen relative">
         <div dangerouslySetInnerHTML={{ __html: processedHtml }} />
-        {/* Floating action buttons */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-          <div className="max-w-xs mx-auto space-y-2">
-            <Button onClick={onStart} size="lg" className="w-full h-14 text-lg rounded-2xl">
-              Continue as Guest
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10"
-              onClick={onStart}
-            >
-              <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-              Sign up & start ordering
-            </Button>
-          </div>
-        </div>
+        <FloatingActions onStart={onStart} />
       </div>
     );
   }
@@ -48,18 +53,13 @@ const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-12 text-center">
       <div className="mb-8">
         {venue.logo_url ? (
-          <img
-            src={venue.logo_url}
-            alt={venue.name}
-            className="w-24 h-24 rounded-2xl object-cover shadow-lg"
-          />
+          <img src={venue.logo_url} alt={venue.name} className="w-24 h-24 rounded-2xl object-cover shadow-lg" />
         ) : (
           <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center shadow-lg">
             <Utensils className="h-10 w-10 text-primary" />
           </div>
         )}
       </div>
-
       <h1 className="text-3xl font-bold tracking-tight mb-2">{venue.name}</h1>
       <p className="text-muted-foreground text-sm capitalize mb-1">{venue.venue_type}</p>
       {(venue.address || venue.city) && (
@@ -68,12 +68,10 @@ const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
           {[venue.address, venue.city].filter(Boolean).join(", ")}
         </p>
       )}
-
       <div className="bg-card rounded-2xl border border-border p-6 mb-6 w-full max-w-xs">
         <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Your Table</p>
         <p className="text-4xl font-bold text-primary">{tableNumber}</p>
       </div>
-
       <div className="bg-accent/50 rounded-2xl border border-primary/20 p-4 mb-6 w-full max-w-xs">
         <div className="flex items-center gap-2 mb-2">
           <Gift className="h-5 w-5 text-primary" />
@@ -82,6 +80,28 @@ const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
         <p className="text-xs text-muted-foreground mb-3">
           Sign up for our loyalty program and earn points with every order.
         </p>
+        <Button variant="outline" size="sm" className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10" onClick={onStart}>
+          <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+          Sign up & start ordering
+        </Button>
+      </div>
+      <Button onClick={onStart} size="lg" className="w-full max-w-xs h-14 text-lg rounded-2xl">
+        Continue as Guest
+      </Button>
+      <p className="text-muted-foreground text-xs mt-4">
+        No account needed · Powered by <span className="font-semibold text-primary">Tab-Less</span>
+      </p>
+    </div>
+  );
+};
+
+function FloatingActions({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+      <div className="max-w-xs mx-auto space-y-2">
+        <Button onClick={onStart} size="lg" className="w-full h-14 text-lg rounded-2xl">
+          Continue as Guest
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -92,16 +112,8 @@ const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
           Sign up & start ordering
         </Button>
       </div>
-
-      <Button onClick={onStart} size="lg" className="w-full max-w-xs h-14 text-lg rounded-2xl">
-        Continue as Guest
-      </Button>
-
-      <p className="text-muted-foreground text-xs mt-4">
-        No account needed · Powered by <span className="font-semibold text-primary">Tab-Less</span>
-      </p>
     </div>
   );
-};
+}
 
 export default VenueLanding;
