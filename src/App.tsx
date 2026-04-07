@@ -15,6 +15,9 @@ import Orders from "@/pages/Orders";
 import Pricing from "@/pages/Pricing";
 import Analytics from "@/pages/Analytics";
 import VenueSettings from "@/pages/VenueSettings";
+import Diners from "@/pages/Diners";
+import Loyalty from "@/pages/Loyalty";
+import GroupDashboard from "@/pages/GroupDashboard";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +63,9 @@ function AppRoutes() {
         <Route path="/orders" element={<Orders />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/analytics" element={<Analytics />} />
+        <Route path="/diners" element={<Diners />} />
+        <Route path="/loyalty" element={<Loyalty />} />
+        <Route path="/group" element={<GroupDashboard />} />
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

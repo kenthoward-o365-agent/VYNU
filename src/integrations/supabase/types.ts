@@ -14,6 +14,184 @@ export type Database = {
   }
   public: {
     Tables: {
+      diner_profiles: {
+        Row: {
+          allergens: string[] | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          preferences: Json | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          allergens?: string[] | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          preferences?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          allergens?: string[] | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          preferences?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      diner_visits: {
+        Row: {
+          diner_id: string
+          id: string
+          order_id: string | null
+          venue_id: string
+          visited_at: string
+        }
+        Insert: {
+          diner_id: string
+          id?: string
+          order_id?: string | null
+          venue_id: string
+          visited_at?: string
+        }
+        Update: {
+          diner_id?: string
+          id?: string
+          order_id?: string | null
+          venue_id?: string
+          visited_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diner_visits_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diner_visits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diner_visits_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_balances: {
+        Row: {
+          balance: number
+          created_at: string
+          diner_id: string
+          id: string
+          program_id: string
+          tier: string | null
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          diner_id: string
+          id?: string
+          program_id: string
+          tier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          diner_id?: string
+          id?: string
+          program_id?: string
+          tier?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_balances_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_balances_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_programs: {
+        Row: {
+          created_at: string
+          group_id: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          program_type: Database["public"]["Enums"]["loyalty_program_type"]
+          rules: Json | null
+          updated_at: string
+          venue_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          program_type?: Database["public"]["Enums"]["loyalty_program_type"]
+          rules?: Json | null
+          updated_at?: string
+          venue_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          program_type?: Database["public"]["Enums"]["loyalty_program_type"]
+          rules?: Json | null
+          updated_at?: string
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_programs_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "venue_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_programs_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_categories: {
         Row: {
           created_at: string
@@ -323,6 +501,71 @@ export type Database = {
           },
         ]
       }
+      venue_group_staff: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          role: Database["public"]["Enums"]["group_staff_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          role?: Database["public"]["Enums"]["group_staff_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          role?: Database["public"]["Enums"]["group_staff_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_group_staff_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "venue_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_groups: {
+        Row: {
+          created_at: string
+          domain: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          settings: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          settings?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          settings?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       venue_staff: {
         Row: {
           created_at: string
@@ -371,6 +614,7 @@ export type Database = {
           country: string | null
           created_at: string
           email: string | null
+          group_id: string | null
           id: string
           is_active: boolean | null
           logo_url: string | null
@@ -390,6 +634,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           email?: string | null
+          group_id?: string | null
           id?: string
           is_active?: boolean | null
           logo_url?: string | null
@@ -409,6 +654,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           email?: string | null
+          group_id?: string | null
           id?: string
           is_active?: boolean | null
           logo_url?: string | null
@@ -422,7 +668,15 @@ export type Database = {
           updated_at?: string
           venue_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "venues_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "venue_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -443,6 +697,14 @@ export type Database = {
         }
         Returns: string
       }
+      is_group_admin: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_group_member: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_venue_manager: {
         Args: { _user_id: string; _venue_id: string }
         Returns: boolean
@@ -453,6 +715,8 @@ export type Database = {
       }
     }
     Enums: {
+      group_staff_role: "group_admin" | "group_viewer"
+      loyalty_program_type: "points" | "stamps" | "tier"
       order_status:
         | "received"
         | "preparing"
@@ -594,6 +858,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      group_staff_role: ["group_admin", "group_viewer"],
+      loyalty_program_type: ["points", "stamps", "tier"],
       order_status: [
         "received",
         "preparing",
