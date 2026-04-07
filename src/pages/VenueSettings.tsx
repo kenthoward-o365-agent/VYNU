@@ -77,9 +77,11 @@ export default function VenueSettings() {
     }
   }, [venue]);
 
+  const { session } = useAuth();
+
   useEffect(() => {
-    if (venue && isManager) fetchStaff();
-  }, [venue, isManager]);
+    if (venue && isManager && session) fetchStaff();
+  }, [venue, isManager, session]);
 
   const [staffEmails, setStaffEmails] = useState<Record<string, string>>({});
 
