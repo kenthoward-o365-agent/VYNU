@@ -11,7 +11,8 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Settings, UtensilsCrossed, Users, Plus, Trash2, Eye, EyeOff, Gift, Building2 } from "lucide-react";
+import { ArrowLeft, Settings, UtensilsCrossed, Users, Plus, Trash2, Eye, EyeOff, Gift, Building2, CreditCard } from "lucide-react";
+import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 
@@ -248,6 +249,7 @@ export default function AdminVenueDetail() {
           )}
           <TabsTrigger value="menu"><UtensilsCrossed className="h-3.5 w-3.5 mr-1" />Menu</TabsTrigger>
           <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
+          <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>
         </TabsList>
 
         {/* ── DETAILS TAB ── */}
@@ -531,6 +533,11 @@ export default function AdminVenueDetail() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* ── PAYMENTS TAB ── */}
+        <TabsContent value="payments" className="space-y-6">
+          {venue && <PaymentSettingsTab venueId={venue.id} />}
         </TabsContent>
       </Tabs>
     </div>
