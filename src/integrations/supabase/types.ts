@@ -323,6 +323,71 @@ export type Database = {
           },
         ]
       }
+      venue_group_staff: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          role: Database["public"]["Enums"]["group_staff_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          role?: Database["public"]["Enums"]["group_staff_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          role?: Database["public"]["Enums"]["group_staff_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_group_staff_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "venue_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_groups: {
+        Row: {
+          created_at: string
+          domain: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          settings: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          settings?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          settings?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       venue_staff: {
         Row: {
           created_at: string
@@ -371,6 +436,7 @@ export type Database = {
           country: string | null
           created_at: string
           email: string | null
+          group_id: string | null
           id: string
           is_active: boolean | null
           logo_url: string | null
@@ -390,6 +456,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           email?: string | null
+          group_id?: string | null
           id?: string
           is_active?: boolean | null
           logo_url?: string | null
@@ -409,6 +476,7 @@ export type Database = {
           country?: string | null
           created_at?: string
           email?: string | null
+          group_id?: string | null
           id?: string
           is_active?: boolean | null
           logo_url?: string | null
@@ -422,7 +490,15 @@ export type Database = {
           updated_at?: string
           venue_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "venues_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "venue_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -443,6 +519,14 @@ export type Database = {
         }
         Returns: string
       }
+      is_group_admin: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_group_member: {
+        Args: { _group_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_venue_manager: {
         Args: { _user_id: string; _venue_id: string }
         Returns: boolean
@@ -453,6 +537,7 @@ export type Database = {
       }
     }
     Enums: {
+      group_staff_role: "group_admin" | "group_viewer"
       order_status:
         | "received"
         | "preparing"
@@ -594,6 +679,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      group_staff_role: ["group_admin", "group_viewer"],
       order_status: [
         "received",
         "preparing",
