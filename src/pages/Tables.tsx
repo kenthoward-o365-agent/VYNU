@@ -70,6 +70,17 @@ export default function Tables() {
     fetchTables();
   };
 
+  const regenerateQrUrls = async () => {
+    if (!venue || tables.length === 0) return;
+    const baseUrl = getPublicBaseUrl();
+    for (const table of tables) {
+      const qrUrl = `${baseUrl}/order/${venue.id}/${table.id}`;
+      await supabase.from("tables").update({ qr_code: qrUrl }).eq("id", table.id);
+    }
+    toast.success("QR codes updated to published URL");
+    fetchTables();
+  };
+
   const zones = [...new Set(tables.map((t) => t.zone).filter(Boolean))];
 
   return (
