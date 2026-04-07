@@ -318,6 +318,3 @@ function ItemCard({ item, onEdit, onDelete, onToggle }: {
   );
 }
 
-function UtensilsCrossedIcon(props: any) {
-  return <UtensilsCrossed {...props} />;
-}
