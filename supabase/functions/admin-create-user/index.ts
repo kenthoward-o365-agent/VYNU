@@ -62,6 +62,20 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
+    // ── LIST EMAILS for user_ids ──
+    if (action === "list_emails") {
+      const { user_ids, venue_id } = body;
+      if (!venue_id || !Array.isArray(user_ids)) return json({ error: "venue_id and user_ids required" }, 400);
+      if (!(await isVenueManager(venue_id))) return json({ error: "Forbidden" }, 403);
+
+      const emails: Record<string, string> = {};
+      for (const uid of user_ids) {
+        const { data: u } = await adminClient.auth.admin.getUserById(uid);
+        if (u?.user?.email) emails[uid] = u.user.email;
+      }
+      return json({ emails });
+    }
+
     // ── DELETE USER (remove from venue + optionally delete auth) ──
     if (action === "delete") {
       const { staff_id, venue_id, delete_auth } = body;

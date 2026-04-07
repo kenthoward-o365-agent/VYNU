@@ -81,12 +81,26 @@ export default function VenueSettings() {
     if (venue && isManager) fetchStaff();
   }, [venue, isManager]);
 
+  const [staffEmails, setStaffEmails] = useState<Record<string, string>>({});
+
   const fetchStaff = async () => {
     if (!venue) return;
     setStaffLoading(true);
     const { data } = await supabase.from("venue_staff").select("*").eq("venue_id", venue.id).order("created_at");
-    setStaff((data || []) as StaffMember[]);
+    const staffList = (data || []) as StaffMember[];
+    setStaff(staffList);
     setStaffLoading(false);
+
+    // Fetch emails for all staff user_ids
+    const userIds = staffList.map((s) => s.user_id);
+    if (userIds.length > 0) {
+      try {
+        const { data: emailData } = await supabase.functions.invoke("admin-create-user", {
+          body: { action: "list_emails", user_ids: userIds, venue_id: venue.id },
+        });
+        if (emailData?.emails) setStaffEmails(emailData.emails);
+      } catch {}
+    }
   };
 
   const save = async () => {
@@ -339,11 +353,11 @@ export default function VenueSettings() {
                         <TableRow key={s.id}>
                           <TableCell>
                             <div>
-                              <p className="font-medium text-sm">
+                             <p className="font-medium text-sm">
                                 {s.display_name || "No name"}
                                 {isSelf && <span className="text-xs text-muted-foreground ml-1">(you)</span>}
                               </p>
-                              <p className="text-xs text-muted-foreground font-mono">{s.user_id.slice(0, 12)}...</p>
+                              <p className="text-xs text-muted-foreground">{staffEmails[s.user_id] || s.user_id.slice(0, 12) + "..."}</p>
                             </div>
                           </TableCell>
                           <TableCell>
