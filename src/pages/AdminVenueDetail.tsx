@@ -323,6 +323,65 @@ export default function AdminVenueDetail() {
           <Button onClick={saveDetails} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
         </TabsContent>
 
+        {/* ── GROUP SETTINGS TAB (parent venues only) ── */}
+        {venue?.venue_type === "parent" && (
+          <TabsContent value="group-settings" className="space-y-6 max-w-2xl">
+            <Card>
+              <CardHeader>
+                <CardTitle>Diner & Loyalty Settings</CardTitle>
+                <CardDescription>Control how diners and loyalty programs apply across all child venues in this group.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-sm">Global Diner Recognition</p>
+                    <p className="text-xs text-muted-foreground">Diners are recognised and their visit history tracked across all child venues.</p>
+                  </div>
+                  <Switch checked={groupSettings.global_diners} onCheckedChange={(v) => setGroupSettings({ ...groupSettings, global_diners: v })} />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-sm">Global Loyalty Programs</p>
+                    <p className="text-xs text-muted-foreground">Group-level loyalty programs automatically apply to all child venues. Venues can still create their own programs.</p>
+                  </div>
+                  <Switch checked={groupSettings.global_loyalty} onCheckedChange={(v) => setGroupSettings({ ...groupSettings, global_loyalty: v })} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Child Venues</CardTitle>
+                <CardDescription>{childVenues.length} venue{childVenues.length !== 1 ? "s" : ""} assigned to this parent company.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {childVenues.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No child venues assigned yet. Assign venues from their detail page or the Manage Venues list.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {childVenues.map((cv) => (
+                      <div key={cv.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                        <div>
+                          <p className="text-sm font-medium">{cv.name}</p>
+                          <p className="text-xs text-muted-foreground">{cv.city || "—"}, {cv.state || "—"} · {cv.venue_type}</p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/venues/${cv.id}`)}>
+                          View
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Button onClick={saveGroupSettings} disabled={savingGroupSettings}>
+              {savingGroupSettings ? "Saving..." : "Save Group Settings"}
+            </Button>
+          </TabsContent>
+        )}
+
         {/* ── MENU TAB ── */}
         <TabsContent value="menu" className="space-y-6">
           <div className="flex items-center justify-between">
