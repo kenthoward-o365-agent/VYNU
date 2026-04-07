@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -130,6 +130,7 @@ export default function MenuBuilder() {
 
   const toggleAvailable = async (id: string, current: boolean) => {
     await supabase.from("menu_items").update({ is_available: !current }).eq("id", id);
+    toast.success(!current ? "Item is back on the menu" : "Item 86'd");
     fetchData();
   };
 
@@ -402,8 +403,15 @@ export default function MenuBuilder() {
 
             <div className="flex items-center gap-3">
               <Switch checked={form.is_available} onCheckedChange={(v) => setForm((f) => ({ ...f, is_available: v }))} />
-              <span className="text-sm">Available</span>
+              <span className="text-sm">{form.is_available ? "Available" : "86'd — Unavailable"}</span>
             </div>
+
+            {!form.is_available && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20">
+                <Ban className="h-4 w-4 text-destructive" />
+                <span className="text-sm text-destructive font-medium">This item is currently 86'd and hidden from diners</span>
+              </div>
+            )}
 
             <Button onClick={handleSave} className="w-full" disabled={!form.name || !form.price}>
               {editingItem ? "Update Item" : "Add Item"}
@@ -589,10 +597,14 @@ function ItemCard({ item, onEdit, onDelete, onToggle }: {
           {item.prep_time_minutes && <p className="text-xs text-muted-foreground">{item.prep_time_minutes} min</p>}
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <Switch
-            checked={item.is_available ?? true}
-            onCheckedChange={() => onToggle(item.id, item.is_available ?? true)}
-          />
+          <Button
+            variant={item.is_available ? "ghost" : "destructive"}
+            size="icon"
+            title={item.is_available ? "86 this item" : "Un-86 this item"}
+            onClick={() => onToggle(item.id, item.is_available ?? true)}
+          >
+            <Ban className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => onEdit(item)}><Pencil className="h-4 w-4" /></Button>
           <Button variant="ghost" size="icon" onClick={() => onDelete(item.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
         </div>
