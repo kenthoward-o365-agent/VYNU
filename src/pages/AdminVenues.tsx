@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
-import { Search, Plus, Building2, ExternalLink } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Search, Plus, Building2, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface AdminVenue {
@@ -41,11 +41,15 @@ const venueTypes = [
   { value: "food_truck", label: "Food Truck" },
 ];
 
+const typeLabels: Record<string, string> = Object.fromEntries(venueTypes.map((t) => [t.value, t.label]));
+
 const statusColors: Record<string, string> = {
   trial: "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
   active: "bg-green-500/10 text-green-600 border-green-500/30",
   suspended: "bg-destructive/10 text-destructive border-destructive/30",
 };
+
+const PAGE_SIZE = 25;
 
 export default function AdminVenues() {
   const navigate = useNavigate();
@@ -54,6 +58,8 @@ export default function AdminVenues() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
 
@@ -72,7 +78,7 @@ export default function AdminVenues() {
   const fetchData = async () => {
     setLoading(true);
     const [{ data: venueData }, { data: groupData }] = await Promise.all([
-      supabase.from("venues").select("id, name, venue_type, city, state, is_active, subscription_status, subscription_plan, group_id, created_at").order("created_at", { ascending: false }),
+      supabase.from("venues").select("id, name, venue_type, city, state, is_active, subscription_status, subscription_plan, group_id, created_at").order("name"),
       supabase.from("venue_groups").select("id, name"),
     ]);
     setVenues((venueData || []) as AdminVenue[]);
@@ -112,20 +118,30 @@ export default function AdminVenues() {
     setCreating(false);
   };
 
-  const filtered = venues.filter((v) => {
-    const matchSearch = !search || v.name.toLowerCase().includes(search.toLowerCase()) || (v.city || "").toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "all" || v.subscription_status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  const groupMap = useMemo(() => Object.fromEntries(groups.map((g) => [g.id, g.name])), [groups]);
 
-  const getGroupName = (gid: string | null) => groups.find((g) => g.id === gid)?.name;
+  const filtered = useMemo(() => {
+    return venues.filter((v) => {
+      const matchSearch = !search || v.name.toLowerCase().includes(search.toLowerCase()) || (v.city || "").toLowerCase().includes(search.toLowerCase());
+      const matchStatus = statusFilter === "all" || v.subscription_status === statusFilter;
+      const matchType = typeFilter === "all" || v.venue_type === typeFilter;
+      return matchSearch && matchStatus && matchType;
+    });
+  }, [venues, search, statusFilter, typeFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [search, statusFilter, typeFilter]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Manage Venues</h2>
-          <p className="text-muted-foreground">{venues.length} total venues</p>
+          <p className="text-muted-foreground">{filtered.length} of {venues.length} venues</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -176,18 +192,25 @@ export default function AdminVenues() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search venues..." className="pl-9" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or city..." className="pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="trial">Trial</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="suspended">Suspended</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            {venueTypes.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -197,31 +220,71 @@ export default function AdminVenues() {
       ) : filtered.length === 0 ? (
         <Card><CardContent className="py-12 text-center"><Building2 className="mx-auto h-10 w-10 text-muted-foreground mb-3" /><p className="text-muted-foreground">No venues found.</p></CardContent></Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((v) => (
-            <Card key={v.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => navigate(`/admin/venues/${v.id}`)}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-base truncate">{v.name}</CardTitle>
-                <Badge variant="outline" className={statusColors[v.subscription_status || "trial"] || ""}>
-                  {v.subscription_status || "trial"}
-                </Badge>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <p className="text-muted-foreground">{v.venue_type} · {v.city || "No city"}{v.state ? `, ${v.state}` : ""}</p>
-                {v.group_id && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Building2 className="h-3 w-3" />
-                    <span>{getGroupName(v.group_id)}</span>
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground">Plan: {v.subscription_plan || "basic"}</p>
-                <div className="flex justify-end">
-                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>City</TableHead>
+                  <TableHead>State</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Parent</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Plan</TableHead>
+                  <TableHead className="w-12"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginated.map((v) => (
+                  <TableRow key={v.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/admin/venues/${v.id}`)}>
+                    <TableCell className="font-medium">{v.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{v.city || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{v.state || "—"}</TableCell>
+                    <TableCell>{typeLabels[v.venue_type] || v.venue_type}</TableCell>
+                    <TableCell>
+                      {v.group_id ? (
+                        <span className="inline-flex items-center gap-1 text-sm">
+                          <Building2 className="h-3 w-3 text-muted-foreground" />
+                          {groupMap[v.group_id] || "Unknown"}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={statusColors[v.subscription_status || "trial"] || ""}>
+                        {v.subscription_status || "trial"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground capitalize">{v.subscription_plan || "basic"}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); navigate(`/admin/venues/${v.id}`); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage((p) => p - 1)}>
+                <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+              </Button>
+              <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</span>
+              <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage((p) => p + 1)}>
+                Next <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
