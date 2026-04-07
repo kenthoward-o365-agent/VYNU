@@ -1,94 +1,63 @@
 
 
-# Landing Page Editor — Modern UX Overhaul
+# Group (Parent Company) Creation and Venue Assignment
 
-## Problem
-GrapesJS exposes raw CSS properties, layer trees, and a code-editor mindset. Venue operators are not web designers — they need something closer to Canva or Squarespace.
+## Current State
+- `venue_groups` table exists with name, logo, settings, domain
+- `venue_group_staff` table exists for group-level permissions
+- Venues have a `group_id` column to link to a group
+- Group Dashboard page exists but is read-only stats — no way to **create** a group, **assign venues** to it, or **manage** group membership
+- The only way to set `group_id` on a venue is directly in the database
 
-## Approach: Replace GrapesJS with a Template-Based Section Editor
+## What We'll Build
 
-Instead of a generic drag-and-drop HTML editor, build a **section-based page builder** using native React components. Operators pick from pre-designed section templates, customize content via simple forms (text inputs, color pickers, image uploads), and reorder sections by dragging. No CSS knowledge needed.
+### 1. Group Management Page (rewrite `GroupDashboard.tsx`)
+Tabbed layout with:
 
-```text
-┌──────────────────────────────────────────────────┐
-│  ← Back    Landing Page Editor    [Preview] [Save]│
-├────────────┬─────────────────────┬───────────────┤
-│  SECTIONS  │                     │  EDIT PANEL   │
-│            │   Live Preview      │               │
-│ [+ Add]    │   (mobile frame)    │  Title: ___   │
-│            │                     │  Subtitle: __ │
-│ ☰ Hero     │   ┌───────────┐    │  BG Color: 🎨 │
-│ ☰ Specials │   │  Phone    │    │  Image: 📁    │
-│ ☰ Loyalty  │   │  Preview  │    │               │
-│ ☰ Hours    │   │           │    │  [Delete]     │
-│ ☰ Footer   │   └───────────┘    │               │
-└────────────┴─────────────────────┴───────────────┘
-```
+**Overview tab** — existing stats (keep as-is)
 
-## What Changes
+**Settings tab** — create or edit the group:
+- If no group exists: "Create a Parent Company" form (name, logo upload)
+- If group exists: edit name, logo, toggle `global_diners` and `global_loyalty` in settings JSONB
+- On group creation, auto-insert current user as `group_admin` in `venue_group_staff`
 
-### 1. Remove GrapesJS dependency
-- Uninstall `grapesjs` from package.json
-- Delete GrapesJS CSS overrides from `index.css`
+**Venues tab** — manage which venues belong to this group:
+- List all venues the current user owns/manages
+- Toggle to assign/unassign each venue to/from the group (updates `venues.group_id`)
+- Show venue name, city, type, and assignment status
 
-### 2. New data model: Section-based JSON
-Store landing page as a JSON array of typed sections in `landing_page_html` (reuse existing column, store JSON string):
-```json
-[
-  { "type": "hero", "title": "Welcome", "subtitle": "Scan & order", "bgColor": "#1a1a2e", "logoEmoji": "🍽️" },
-  { "type": "table-display" },
-  { "type": "featured-items", "title": "Today's Specials", "items": [...] },
-  { "type": "loyalty-cta", "heading": "Earn Rewards", "description": "..." },
-  { "type": "hours", "address": "123 Main St", "hours": "Mon-Fri 11-10" },
-  { "type": "footer", "socials": { "instagram": "...", "facebook": "..." } }
-]
-```
+**Loyalty tab** — group-level loyalty program management (from previously approved plan)
 
-### 3. New components
+**Diners tab** — aggregated diner CRM across all group venues (from previously approved plan)
 
-**`LandingPageEditor.tsx`** — Complete rewrite:
-- Left: sortable section list (drag to reorder via `@dnd-kit/sortable`) with "+ Add Section" button
-- Center: live mobile-framed preview rendering the sections
-- Right: context-sensitive edit panel — when a section is selected, show simple form fields (text inputs, color picker, emoji picker, image upload)
+### 2. Update Sidebar Navigation
+- Change "Group Dashboard" label to "Parent Company"
+- Show it for any user who is a group admin OR owns multiple venues (so they can create a group)
 
-**`LandingSectionRenderer.tsx`** — Pure render component:
-- Takes section JSON, outputs styled HTML/React for each type
-- Used in both the editor preview AND the consumer `VenueLanding.tsx`
-- Section types: `hero`, `table-display`, `loyalty-cta`, `featured-items`, `hours-location`, `social-links`, `text`, `image`, `divider`, `spacer`
+### 3. Update Onboarding Flow
+- After venue creation, offer an optional step: "Add this venue to a parent company?" with option to create a new group or skip
 
-**`SectionEditPanel.tsx`** — Form panels per section type:
-- Hero: title, subtitle, background color/gradient picker, logo upload
-- Featured items: add/remove items with name, emoji, price
-- Loyalty CTA: heading, description text
-- Hours: address, hours text
-- All use standard shadcn inputs, no CSS knowledge required
+### 4. Venue Settings — Group Assignment
+- Add a section in `VenueSettings.tsx` showing which group the venue belongs to (read-only display with group name, or "Not assigned")
 
-### 4. Section templates with thumbnails
-The "+ Add Section" opens a modal/sheet showing visual thumbnails of each available section type. One click adds it with sensible defaults.
-
-### 5. Drag-to-reorder
-Use `@dnd-kit/sortable` for the section list. Each section shows a drag handle, section type label, and a small preview thumbnail.
-
-### 6. Mobile preview frame
-Center panel wraps the preview in a phone-shaped frame (375px wide, rounded corners, notch) so operators see exactly what diners see.
-
-### 7. Update consumer rendering
-`VenueLanding.tsx` detects whether `landing_page_html` contains JSON (starts with `[`) or legacy HTML, and renders accordingly using `LandingSectionRenderer`.
+## Database Changes
+No schema changes needed — all tables and columns already exist. The `venues.group_id`, `venue_groups`, and `venue_group_staff` tables support this flow. The `settings` JSONB on `venue_groups` will store `global_diners` and `global_loyalty` flags.
 
 ## Technical Details
 
-**New dependency**: `@dnd-kit/core` + `@dnd-kit/sortable` for drag reorder
+**Files to create/edit:**
+- `src/pages/GroupDashboard.tsx` — full rewrite with tabs (Overview, Settings, Venues, Loyalty, Diners)
+- `src/components/DashboardLayout.tsx` — update group nav visibility and label
+- `src/pages/VenueSettings.tsx` — add read-only group assignment display
+- `src/pages/Loyalty.tsx` — show inherited group programs banner
+- `src/components/consumer/DinerSignup.tsx` — enroll in group programs when `global_loyalty` enabled
 
-**Files to create**:
-- `src/pages/LandingPageEditor.tsx` (rewrite)
-- `src/components/landing-editor/SectionList.tsx`
-- `src/components/landing-editor/SectionEditPanel.tsx`
-- `src/components/landing-editor/SectionAddModal.tsx`
-- `src/components/landing-editor/LandingSectionRenderer.tsx`
-- `src/components/landing-editor/MobilePreviewFrame.tsx`
+**Flow for creating a parent company:**
+1. User navigates to Parent Company page
+2. Clicks "Create Parent Company", enters name
+3. System creates `venue_groups` row, inserts user as `group_admin` in `venue_group_staff`
+4. Venues tab appears — user toggles their venues into the group
+5. Settings tab lets them enable global diners/loyalty
 
-**Files to edit**:
-- `src/components/consumer/VenueLanding.tsx` — use `LandingSectionRenderer` for JSON pages
-- `src/index.css` — remove GrapesJS overrides
-- `package.json` — remove grapesjs, add @dnd-kit
+**RLS note:** Existing policies already allow authenticated users to create groups and group admins to update them. The `venues` UPDATE policy for group admins already works for setting `group_id` on group venues.
 
