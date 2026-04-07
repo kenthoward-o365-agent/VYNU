@@ -92,7 +92,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-          {venueNavItems.map((item) => {
+          {!isTablessAdmin && venueNavItems.map((item) => {
             const active = location.pathname === item.path;
             return (
               <Link
