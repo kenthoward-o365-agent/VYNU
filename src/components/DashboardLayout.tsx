@@ -112,7 +112,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             );
           })}
 
-          {(isGroupAdmin || venues.length > 1) && (
+          {showGroupNav && (
             <>
               <div className="pt-3 pb-1 px-3">
                 <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-muted">Group</span>
