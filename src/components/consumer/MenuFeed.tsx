@@ -39,6 +39,7 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
   });
 
   const currentItem = filteredItems[currentIndex];
+  const isAvailable = currentItem?.is_available ?? true;
 
   const goNext = () => {
     if (currentIndex < filteredItems.length - 1) setCurrentIndex(currentIndex + 1);
