@@ -7,6 +7,7 @@ import BottomNav from "@/components/consumer/BottomNav";
 import VenueLanding from "@/components/consumer/VenueLanding";
 import MenuFeed from "@/components/consumer/MenuFeed";
 import CartPanel, { CartItem } from "@/components/consumer/CartPanel";
+import CheckoutPanel from "@/components/consumer/CheckoutPanel";
 import AIChatOverlay from "@/components/consumer/AIChatOverlay";
 import OrderStatus from "@/components/consumer/OrderStatus";
 import VenueDiscovery from "@/components/consumer/VenueDiscovery";
@@ -59,23 +60,22 @@ const ConsumerOrder = () => {
   const [showChat, setShowChat] = useState(false);
   const [started, setStarted] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [placingOrder, setPlacingOrder] = useState(false);
   const [resolvedTableId, setResolvedTableId] = useState<string | null>(null);
+  const [dinerId, setDinerId] = useState<string | null>(null);
 
   // Fetch venue, table, and menu data
   useEffect(() => {
     const fetchData = async () => {
       if (!venueId || !tableId) return;
 
-      // Try to find table by ID first, then fall back to table_number
       const [venueRes, itemsRes, catsRes] = await Promise.all([
         supabase.from("venues").select("id, name, venue_type, logo_url, address, city, landing_page_html, group_id").eq("id", venueId).single(),
         supabase.from("menu_items").select("*").eq("venue_id", venueId).eq("is_available", true).order("display_order"),
         supabase.from("menu_categories").select("id, name").eq("venue_id", venueId).eq("is_active", true).order("display_order"),
       ]);
 
-      // Try lookup by UUID first, fallback to table_number
       let tableRes = await supabase.from("tables").select("id, table_number").eq("id", tableId).eq("venue_id", venueId).maybeSingle();
       if (!tableRes.data) {
         tableRes = await supabase.from("tables").select("id, table_number").eq("table_number", tableId).eq("venue_id", venueId).maybeSingle();
@@ -93,6 +93,22 @@ const ConsumerOrder = () => {
 
     fetchData();
   }, [venueId, tableId]);
+
+  // Check for diner profile
+  useEffect(() => {
+    const fetchDinerProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data } = await supabase
+          .from("diner_profiles")
+          .select("id")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        if (data) setDinerId(data.id);
+      }
+    };
+    fetchDinerProfile();
+  }, [started, showSignup]);
 
   // Subscribe to order status changes
   useEffect(() => {
@@ -134,51 +150,16 @@ const ConsumerOrder = () => {
     setCart((prev) => prev.filter((c) => c.id !== id));
   };
 
-  const placeOrder = async () => {
-    if (!venueId || !resolvedTableId || cart.length === 0) return;
-    setPlacingOrder(true);
-
-    try {
-      const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          venue_id: venueId,
-          table_id: resolvedTableId,
-          total,
-          status: "received" as const,
-        })
-        .select()
-        .single();
-
-      if (orderError) throw orderError;
-
-      const orderItems = cart.map((item) => ({
-        order_id: order.id,
-        menu_item_id: item.id,
-        quantity: item.quantity,
-        unit_price: item.price,
-      }));
-
-      const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
-      if (itemsError) throw itemsError;
-
-      setActiveOrder({
-        id: order.id,
-        status: order.status as ActiveOrder["status"],
-        total: order.total || total,
-        created_at: order.created_at,
-      });
-      setCart([]);
-      setTab("feed");
-      toast.success("Order placed! 🎉");
-    } catch (err: any) {
-      console.error("Order error:", err);
-      toast.error("Failed to place order. Please try again.");
-    } finally {
-      setPlacingOrder(false);
-    }
+  const handleOrderPlaced = (orderId: string) => {
+    setActiveOrder({
+      id: orderId,
+      status: "received",
+      total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+      created_at: new Date().toISOString(),
+    });
+    setCart([]);
+    setShowCheckout(false);
+    setTab("feed");
   };
 
   const handleTabChange = (newTab: "feed" | "chat" | "cart" | "profile") => {
@@ -186,6 +167,7 @@ const ConsumerOrder = () => {
       setShowChat(true);
     } else {
       setTab(newTab);
+      if (newTab !== "cart") setShowCheckout(false);
     }
   };
 
@@ -255,13 +237,23 @@ const ConsumerOrder = () => {
       {tab === "feed" && (
         <MenuFeed items={menuItems} categories={categories} onAddToCart={addToCart} />
       )}
-      {tab === "cart" && (
+      {tab === "cart" && !showCheckout && (
         <CartPanel
           items={cart}
           onUpdateQuantity={updateQuantity}
           onRemove={removeFromCart}
-          onPlaceOrder={placeOrder}
-          loading={placingOrder}
+          onPlaceOrder={() => setShowCheckout(true)}
+          loading={false}
+        />
+      )}
+      {tab === "cart" && showCheckout && resolvedTableId && (
+        <CheckoutPanel
+          items={cart}
+          venueId={venueId!}
+          tableId={resolvedTableId}
+          dinerId={dinerId}
+          onBack={() => setShowCheckout(false)}
+          onOrderPlaced={handleOrderPlaced}
         />
       )}
       {tab === "profile" && (
