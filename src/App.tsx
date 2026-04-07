@@ -20,6 +20,8 @@ import LandingPageEditor from "@/pages/LandingPageEditor";
 import Diners from "@/pages/Diners";
 import Loyalty from "@/pages/Loyalty";
 import GroupDashboard from "@/pages/GroupDashboard";
+import AdminVenues from "@/pages/AdminVenues";
+import AdminVenueDetail from "@/pages/AdminVenueDetail";
 import NotFound from "@/pages/NotFound";
 import ConsumerOrder from "@/pages/ConsumerOrder";
 
@@ -69,6 +71,8 @@ function AppRoutes() {
         <Route path="/diners" element={<Diners />} />
         <Route path="/loyalty" element={<Loyalty />} />
         <Route path="/group" element={<GroupDashboard />} />
+        <Route path="/admin/venues" element={<AdminVenues />} />
+        <Route path="/admin/venues/:venueId" element={<AdminVenueDetail />} />
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />
         <Route path="*" element={<NotFound />} />

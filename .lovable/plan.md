@@ -1,63 +1,85 @@
 
+# Tab-Less Admin Panel
 
-# Group (Parent Company) Creation and Venue Assignment
+## Database Changes (Migration)
 
-## Current State
-- `venue_groups` table exists with name, logo, settings, domain
-- `venue_group_staff` table exists for group-level permissions
-- Venues have a `group_id` column to link to a group
-- Group Dashboard page exists but is read-only stats — no way to **create** a group, **assign venues** to it, or **manage** group membership
-- The only way to set `group_id` on a venue is directly in the database
+### 1. `user_roles` table (per security guidelines)
+```sql
+CREATE TYPE public.app_role AS ENUM ('tabless_admin');
 
-## What We'll Build
+CREATE TABLE public.user_roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  role app_role NOT NULL,
+  UNIQUE (user_id, role)
+);
+ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 
-### 1. Group Management Page (rewrite `GroupDashboard.tsx`)
-Tabbed layout with:
+-- Security definer function to check roles
+CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role = _role)
+$$;
 
-**Overview tab** — existing stats (keep as-is)
+-- Only admins can view/manage roles
+CREATE POLICY "Admins can view roles" ON public.user_roles FOR SELECT TO authenticated
+  USING (public.has_role(auth.uid(), 'tabless_admin'));
+CREATE POLICY "Admins can manage roles" ON public.user_roles FOR ALL TO authenticated
+  USING (public.has_role(auth.uid(), 'tabless_admin'));
+```
 
-**Settings tab** — create or edit the group:
-- If no group exists: "Create a Parent Company" form (name, logo upload)
-- If group exists: edit name, logo, toggle `global_diners` and `global_loyalty` in settings JSONB
-- On group creation, auto-insert current user as `group_admin` in `venue_group_staff`
+### 2. Add subscription fields to `venues`
+```sql
+ALTER TABLE public.venues 
+  ADD COLUMN subscription_status TEXT DEFAULT 'trial',
+  ADD COLUMN subscription_plan TEXT DEFAULT 'basic',
+  ADD COLUMN subscription_notes TEXT;
+```
 
-**Venues tab** — manage which venues belong to this group:
-- List all venues the current user owns/manages
-- Toggle to assign/unassign each venue to/from the group (updates `venues.group_id`)
-- Show venue name, city, type, and assignment status
+### 3. RLS policies for admin access
+- Admins can SELECT, UPDATE all venues
+- Admins can SELECT all venue_staff, diner_profiles, etc.
+- Admins can INSERT into auth (via edge function for user creation)
 
-**Loyalty tab** — group-level loyalty program management (from previously approved plan)
+## New Files
 
-**Diners tab** — aggregated diner CRM across all group venues (from previously approved plan)
+### `src/pages/AdminVenues.tsx` — Main admin page
+- **Venues list** with search, filter by status (trial/active/suspended)
+- **Create venue** dialog: name, type, city, state, parent/child toggle (assign to group)
+- **Venue detail** inline panel or click-to-expand with:
+  - Subscription status toggle (trial → active → suspended)
+  - Subscription plan selector
+  - Quick links to manage menu & users for that venue
 
-### 2. Update Sidebar Navigation
-- Change "Group Dashboard" label to "Parent Company"
-- Show it for any user who is a group admin OR owns multiple venues (so they can create a group)
+### `src/pages/AdminVenueDetail.tsx` — Single venue management
+- Tabs: **Details**, **Menu**, **Users**
+- **Details**: edit venue info, subscription status/plan
+- **Menu**: category + item creation (reuse existing Menu Builder logic but operating on any venue_id)
+- **Users**: list staff, create new admin user for the venue (calls an edge function to create auth user + venue_staff record)
 
-### 3. Update Onboarding Flow
-- After venue creation, offer an optional step: "Add this venue to a parent company?" with option to create a new group or skip
+### `supabase/functions/admin-create-user/index.ts` — Edge function
+- Accepts: email, password, venue_id, role, display_name
+- Validates caller is tabless_admin
+- Creates auth user via admin API
+- Creates venue_staff record
+- Returns the new user info
 
-### 4. Venue Settings — Group Assignment
-- Add a section in `VenueSettings.tsx` showing which group the venue belongs to (read-only display with group name, or "Not assigned")
+## Sidebar Changes (`DashboardLayout.tsx`)
+- Add admin nav section (below Group section), visible only when `has_role(uid, 'tabless_admin')` returns true
+- Items: "Manage Venues" → `/admin/venues`
 
-## Database Changes
-No schema changes needed — all tables and columns already exist. The `venues.group_id`, `venue_groups`, and `venue_group_staff` tables support this flow. The `settings` JSONB on `venue_groups` will store `global_diners` and `global_loyalty` flags.
+## Files to create:
+- `src/pages/AdminVenues.tsx`
+- `src/pages/AdminVenueDetail.tsx`  
+- `supabase/functions/admin-create-user/index.ts`
 
-## Technical Details
+## Files to edit:
+- `src/components/DashboardLayout.tsx` — add admin nav section
+- `src/App.tsx` — add admin routes
+- `src/contexts/VenueContext.tsx` — expose `isTablessAdmin` flag
 
-**Files to create/edit:**
-- `src/pages/GroupDashboard.tsx` — full rewrite with tabs (Overview, Settings, Venues, Loyalty, Diners)
-- `src/components/DashboardLayout.tsx` — update group nav visibility and label
-- `src/pages/VenueSettings.tsx` — add read-only group assignment display
-- `src/pages/Loyalty.tsx` — show inherited group programs banner
-- `src/components/consumer/DinerSignup.tsx` — enroll in group programs when `global_loyalty` enabled
-
-**Flow for creating a parent company:**
-1. User navigates to Parent Company page
-2. Clicks "Create Parent Company", enters name
-3. System creates `venue_groups` row, inserts user as `group_admin` in `venue_group_staff`
-4. Venues tab appears — user toggles their venues into the group
-5. Settings tab lets them enable global diners/loyalty
-
-**RLS note:** Existing policies already allow authenticated users to create groups and group admins to update them. The `venues` UPDATE policy for group admins already works for setting `group_id` on group venues.
-
+## Flow:
+1. Tab-Less admin logs in → sees "Admin" section in sidebar
+2. Clicks "Manage Venues" → sees all venues across the platform
+3. Can create new venues, assign to parent groups, set subscription status
+4. Can drill into a venue to create menu items and staff accounts

@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
   LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
-  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Gift, Building2, Check, Sun, Moon
+  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Gift, Building2, Check, Sun, Moon, Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -30,9 +30,13 @@ const groupNavItems = [
   { path: "/group", label: "Parent Company", icon: Building2 },
 ];
 
+const adminNavItems = [
+  { path: "/admin/venues", label: "Manage Venues", icon: Shield },
+];
+
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
-  const { venue, venues, group, isGroupAdmin, switchVenue } = useVenue();
+  const { venue, venues, group, isGroupAdmin, isTablessAdmin, switchVenue } = useVenue();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -41,6 +45,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const allNavItems = [
     ...venueNavItems,
     ...(showGroupNav ? groupNavItems : []),
+    ...(isTablessAdmin ? adminNavItems : []),
   ];
 
   return (
@@ -113,6 +118,33 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </div>
               {groupNavItems.map((item) => {
                 const active = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      active
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </>
+          )}
+
+          {isTablessAdmin && (
+            <>
+              <div className="pt-3 pb-1 px-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-muted">Admin</span>
+              </div>
+              {adminNavItems.map((item) => {
+                const active = location.pathname.startsWith(item.path);
                 return (
                   <Link
                     key={item.path}

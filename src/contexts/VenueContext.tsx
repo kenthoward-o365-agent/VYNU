@@ -34,6 +34,7 @@ interface VenueContextType {
   group: VenueGroup | null;
   groups: VenueGroup[];
   isGroupAdmin: boolean;
+  isTablessAdmin: boolean;
   loading: boolean;
   setVenue: (v: Venue | null) => void;
   switchVenue: (venueId: string) => void;
@@ -49,10 +50,11 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   const [group, setGroup] = useState<VenueGroup | null>(null);
   const [groups, setGroups] = useState<VenueGroup[]>([]);
   const [isGroupAdmin, setIsGroupAdmin] = useState(false);
+  const [isTablessAdmin, setIsTablessAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchVenues = async () => {
-    if (!user) { setVenue(null); setVenues([]); setGroup(null); setGroups([]); setIsGroupAdmin(false); setLoading(false); return; }
+    if (!user) { setVenue(null); setVenues([]); setGroup(null); setGroups([]); setIsGroupAdmin(false); setIsTablessAdmin(false); setLoading(false); return; }
     setLoading(true);
 
     // Fetch all venue_staff records for this user
@@ -111,6 +113,16 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       setGroup(null);
       setGroups([]);
     }
+
+    // Check tabless_admin role
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("role", "tabless_admin" as any)
+      .maybeSingle();
+    setIsTablessAdmin(!!roleData);
+
     setLoading(false);
   };
 
@@ -132,7 +144,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   useEffect(() => { fetchVenues(); }, [user]);
 
   return (
-    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, loading, setVenue, switchVenue, refetch: fetchVenues }}>
+    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, loading, setVenue, switchVenue, refetch: fetchVenues }}>
       {children}
     </VenueContext.Provider>
   );
