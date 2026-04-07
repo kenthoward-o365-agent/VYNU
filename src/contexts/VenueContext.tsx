@@ -62,7 +62,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     // Fetch all venue_staff records for this user
     const { data: staffData } = await supabase
       .from("venue_staff")
-      .select("venue_id")
+      .select("venue_id, role")
       .eq("user_id", user.id)
       .eq("is_active", true);
 
