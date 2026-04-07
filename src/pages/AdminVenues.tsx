@@ -92,6 +92,23 @@ export default function AdminVenues() {
     if (!form.name.trim()) return;
     setCreating(true);
 
+    let groupId = form.group_id === "__none__" ? null : form.group_id;
+
+    // If creating a parent company, auto-create a venue_groups record
+    if (form.venue_type === "parent") {
+      const { data: newGroup, error: groupErr } = await supabase
+        .from("venue_groups")
+        .insert({ name: form.name.trim() })
+        .select("id")
+        .single();
+      if (groupErr || !newGroup) {
+        toast({ title: "Error creating parent group", description: groupErr?.message, variant: "destructive" });
+        setCreating(false);
+        return;
+      }
+      groupId = newGroup.id;
+    }
+
     const insertData: any = {
       name: form.name.trim(),
       venue_type: form.venue_type,
@@ -101,7 +118,7 @@ export default function AdminVenues() {
       postcode: form.postcode || null,
       phone: form.phone || null,
       email: form.email || null,
-      group_id: form.group_id === "__none__" ? null : form.group_id,
+      group_id: groupId,
       subscription_status: "trial",
       subscription_plan: "basic",
     };
