@@ -22,6 +22,7 @@ import Loyalty from "@/pages/Loyalty";
 import GroupDashboard from "@/pages/GroupDashboard";
 import AdminVenues from "@/pages/AdminVenues";
 import AdminVenueDetail from "@/pages/AdminVenueDetail";
+import AdminStaff from "@/pages/AdminStaff";
 import NotFound from "@/pages/NotFound";
 import ConsumerOrder from "@/pages/ConsumerOrder";
 
@@ -73,6 +74,7 @@ function AppRoutes() {
         <Route path="/group" element={<GroupDashboard />} />
         <Route path="/admin/venues" element={<AdminVenues />} />
         <Route path="/admin/venues/:venueId" element={<AdminVenueDetail />} />
+        <Route path="/admin/staff" element={<AdminStaff />} />
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />
         <Route path="*" element={<NotFound />} />

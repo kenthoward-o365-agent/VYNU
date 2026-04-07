@@ -32,6 +32,7 @@ const groupNavItems = [
 
 const adminNavItems = [
   { path: "/admin/venues", label: "Manage Venues", icon: Shield },
+  { path: "/admin/staff", label: "Platform Staff", icon: Shield },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
