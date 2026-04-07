@@ -593,6 +593,53 @@ export type Database = {
         }
         Relationships: []
       }
+      venue_payment_config: {
+        Row: {
+          api_key_live: string | null
+          api_key_test: string | null
+          created_at: string
+          environment: string
+          id: string
+          is_active: boolean
+          merchant_account: string | null
+          provider: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          api_key_live?: string | null
+          api_key_test?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          is_active?: boolean
+          merchant_account?: string | null
+          provider?: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          api_key_live?: string | null
+          api_key_test?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          is_active?: boolean
+          merchant_account?: string | null
+          provider?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_payment_config_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_staff: {
         Row: {
           created_at: string
