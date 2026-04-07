@@ -83,6 +83,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       const saved = allVenues.find((v) => v.id === savedId);
       const active = saved || allVenues[0] || null;
       setVenue(active);
+      setVenueRole(active ? staffRoles[active.id] || null : null);
 
       // Fetch groups
       const { data: groupStaff } = await supabase
