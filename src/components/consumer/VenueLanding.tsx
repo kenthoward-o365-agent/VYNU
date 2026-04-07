@@ -8,15 +8,44 @@ interface VenueLandingProps {
     logo_url?: string | null;
     address?: string | null;
     city?: string | null;
+    landing_page_html?: string | null;
   };
   tableNumber: string;
   onStart: () => void;
 }
 
 const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
+  // Render custom landing page if venue has one
+  if (venue.landing_page_html) {
+    const processedHtml = venue.landing_page_html.replace(/\{\{TABLE\}\}/g, tableNumber);
+
+    return (
+      <div className="min-h-screen relative">
+        <div dangerouslySetInnerHTML={{ __html: processedHtml }} />
+        {/* Floating action buttons */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+          <div className="max-w-xs mx-auto space-y-2">
+            <Button onClick={onStart} size="lg" className="w-full h-14 text-lg rounded-2xl">
+              Continue as Guest
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10"
+              onClick={onStart}
+            >
+              <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+              Sign up & start ordering
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default landing page
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-12 text-center">
-      {/* Venue Logo / Icon */}
       <div className="mb-8">
         {venue.logo_url ? (
           <img
@@ -31,7 +60,6 @@ const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
         )}
       </div>
 
-      {/* Venue Info */}
       <h1 className="text-3xl font-bold tracking-tight mb-2">{venue.name}</h1>
       <p className="text-muted-foreground text-sm capitalize mb-1">{venue.venue_type}</p>
       {(venue.address || venue.city) && (
@@ -41,13 +69,11 @@ const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
         </p>
       )}
 
-      {/* Table Info */}
       <div className="bg-card rounded-2xl border border-border p-6 mb-6 w-full max-w-xs">
         <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Your Table</p>
         <p className="text-4xl font-bold text-primary">{tableNumber}</p>
       </div>
 
-      {/* Loyalty Signup Prompt */}
       <div className="bg-accent/50 rounded-2xl border border-primary/20 p-4 mb-6 w-full max-w-xs">
         <div className="flex items-center gap-2 mb-2">
           <Gift className="h-5 w-5 text-primary" />
@@ -60,17 +86,13 @@ const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
           variant="outline"
           size="sm"
           className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10"
-          onClick={() => {
-            // For now just proceed — profile tab handles signup
-            onStart();
-          }}
+          onClick={onStart}
         >
           <UserPlus className="h-3.5 w-3.5 mr-1.5" />
           Sign up & start ordering
         </Button>
       </div>
 
-      {/* Guest CTA */}
       <Button onClick={onStart} size="lg" className="w-full max-w-xs h-14 text-lg rounded-2xl">
         Continue as Guest
       </Button>
