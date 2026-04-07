@@ -137,6 +137,48 @@ export default function MenuBuilder() {
     fetchData();
   };
 
+  const handleImport = async () => {
+    if (!venue) return;
+    setImporting(true);
+    try {
+      const body: any = { venue_id: venue.id };
+      if (importMode === "url") {
+        body.url = importUrl;
+      } else {
+        body.text = importText;
+      }
+
+      const { data, error } = await supabase.functions.invoke("import-menu", { body });
+
+      if (error) { toast.error(error.message); return; }
+      if (data?.error) { toast.error(data.error); return; }
+
+      toast.success(`Imported ${data.items_created} items across ${data.categories_created} categories`);
+      setImportDialogOpen(false);
+      setImportMode(null);
+      setImportUrl("");
+      setImportText("");
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message || "Import failed");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Read as text for now (works for text-based PDFs when parsed server-side)
+    // For real PDF parsing we send the text content
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const text = ev.target?.result as string;
+      setImportText(text);
+    };
+    reader.readAsText(file);
+  };
+
   const toggleTag = (arr: string[], tag: string) =>
     arr.includes(tag) ? arr.filter((t) => t !== tag) : [...arr, tag];
 
