@@ -147,6 +147,8 @@ export default function MenuBuilder() {
       const body: any = { venue_id: venue.id };
       if (importMode === "url") {
         body.url = importUrl;
+      } else if (importPdfBase64) {
+        body.pdf_base64 = importPdfBase64;
       } else {
         body.text = importText;
       }
@@ -161,6 +163,8 @@ export default function MenuBuilder() {
       setImportMode(null);
       setImportUrl("");
       setImportText("");
+      setImportPdfBase64(null);
+      setImportFileName("");
       fetchData();
     } catch (e: any) {
       toast.error(e.message || "Import failed");
@@ -169,17 +173,34 @@ export default function MenuBuilder() {
     }
   };
 
-  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    // Read as text for now (works for text-based PDFs when parsed server-side)
-    // For real PDF parsing we send the text content
+  const handleFileSelect = (file: File) => {
+    if (file.type !== "application/pdf") {
+      toast.error("Please upload a PDF file");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("PDF must be under 10MB");
+      return;
+    }
+    setImportFileName(file.name);
     const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const text = ev.target?.result as string;
-      setImportText(text);
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      // Strip the data URL prefix to get raw base64
+      const base64 = result.split(",")[1];
+      setImportPdfBase64(base64);
     };
-    reader.readAsText(file);
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      setImportMode("pdf");
+      handleFileSelect(file);
+    }
   };
 
   const toggleTag = (arr: string[], tag: string) =>
