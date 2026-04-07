@@ -37,9 +37,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const showGroupNav = isGroupAdmin || venues.length > 1;
   const allNavItems = [
     ...venueNavItems,
-    ...(isGroupAdmin && group ? groupNavItems : []),
+    ...(showGroupNav ? groupNavItems : []),
   ];
 
   return (
