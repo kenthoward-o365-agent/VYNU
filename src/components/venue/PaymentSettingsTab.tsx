@@ -149,6 +149,8 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
 
   const activeKey = config.environment === "test" ? config.api_key_test : config.api_key_live;
   const hasActiveKey = !!activeKey;
+  const isMockMode = config.environment === "test" && !config.api_key_test;
+  const canEnable = config.environment === "test" || (hasActiveKey && !!config.merchant_account);
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -164,15 +166,19 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             <div className="flex-1">
               <p className="font-medium text-sm">
                 {config.is_active
-                  ? `Payments active in ${config.environment.toUpperCase()} mode`
+                  ? isMockMode
+                    ? "Payments active in MOCK mode"
+                    : `Payments active in ${config.environment.toUpperCase()} mode`
                   : "Payments not enabled"}
               </p>
               <p className="text-xs text-muted-foreground">
                 {config.is_active
-                  ? config.environment === "test"
+                  ? isMockMode
+                    ? "Simulated payments — no Adyen account needed. Use test cards below."
+                    : config.environment === "test"
                     ? "Using Adyen test environment — no real charges"
                     : "Using Adyen LIVE environment — real transactions"
-                  : "Configure your Adyen credentials below to enable payments"}
+                  : "Enable payments below to test the full ordering flow"}
               </p>
             </div>
             <Badge variant="outline" className={config.environment === "live" ? "border-red-500/50 text-red-500" : "border-blue-500/50 text-blue-500"}>
@@ -292,19 +298,32 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             </p>
           </div>
 
+          {/* Mock Mode Info */}
+          {config.environment === "test" && !config.api_key_test && (
+            <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4 space-y-1">
+              <p className="text-sm font-medium text-blue-600">Mock Mode Available</p>
+              <p className="text-xs text-muted-foreground">
+                Leave API keys blank to use <strong>mock mode</strong> — simulated payments that work end-to-end without an Adyen account. 
+                Just enable payments and save. Add real credentials later when you're ready to go live.
+              </p>
+            </div>
+          )}
+
           {/* Activate Payments */}
           <Separator />
           <div className="flex items-center justify-between">
             <div>
               <Label>Enable Payments</Label>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Turn on to accept payments from diners at this venue
+                {config.environment === "test" && !config.api_key_test
+                  ? "Enable mock payments — no credentials needed for testing"
+                  : "Turn on to accept payments from diners at this venue"}
               </p>
             </div>
             <Switch
               checked={config.is_active}
               onCheckedChange={(checked) => setConfig((c) => ({ ...c, is_active: checked }))}
-              disabled={!hasActiveKey || !config.merchant_account}
+              disabled={config.environment === "live" && (!hasActiveKey || !config.merchant_account)}
             />
           </div>
 
@@ -316,7 +335,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             <Button
               variant="outline"
               onClick={testConnection}
-              disabled={testing || !hasActiveKey || !config.merchant_account}
+              disabled={testing || (config.environment === "live" && (!hasActiveKey || !config.merchant_account))}
             >
               <ShieldCheck className="h-4 w-4 mr-2" />
               {testing ? "Testing..." : "Test Connection"}
@@ -337,7 +356,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Test Card Numbers</CardTitle>
-            <CardDescription>Use these card numbers in test mode — no real charges</CardDescription>
+            <CardDescription>{isMockMode ? "Use these cards in mock mode — payments are simulated locally" : "Use these card numbers in test mode — no real charges"}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
