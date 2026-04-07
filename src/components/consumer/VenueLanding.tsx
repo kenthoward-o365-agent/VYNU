@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { MapPin, Utensils, Gift, UserPlus } from "lucide-react";
+import { MapPin, Utensils, Gift, UserPlus, LogIn } from "lucide-react";
 import LandingSectionRenderer from "@/components/landing-editor/LandingSectionRenderer";
 import type { LandingSection } from "@/components/landing-editor/types";
 
@@ -16,6 +16,7 @@ interface VenueLandingProps {
   tableNumber: string;
   onStart: () => void;
   onSignup: () => void;
+  onSignin: () => void;
 }
 
 function tryParseJsonSections(raw: string): LandingSection[] | null {
@@ -26,7 +27,7 @@ function tryParseJsonSections(raw: string): LandingSection[] | null {
   return null;
 }
 
-const VenueLanding = ({ venue, tableNumber, onStart, onSignup }: VenueLandingProps) => {
+const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: VenueLandingProps) => {
   if (venue.landing_page_html) {
     const sections = tryParseJsonSections(venue.landing_page_html);
 
@@ -34,7 +35,7 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup }: VenueLandingPro
       return (
         <div className="min-h-screen relative">
           <LandingSectionRenderer sections={sections} tableNumber={tableNumber} />
-          <FloatingActions onStart={onStart} onSignup={onSignup} />
+          <FloatingActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />
         </div>
       );
     }
@@ -44,7 +45,7 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup }: VenueLandingPro
     return (
       <div className="min-h-screen relative">
         <div dangerouslySetInnerHTML={{ __html: processedHtml }} />
-        <FloatingActions onStart={onStart} onSignup={onSignup} />
+        <FloatingActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />
       </div>
     );
   }
@@ -83,7 +84,11 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup }: VenueLandingPro
         </p>
         <Button variant="outline" size="sm" className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10" onClick={onSignup}>
           <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-          Sign up & start ordering
+          Sign up & earn rewards
+        </Button>
+        <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-primary" onClick={onSignin}>
+          <LogIn className="h-3.5 w-3.5 mr-1.5" />
+          Already have an account? Sign in
         </Button>
       </div>
       <Button onClick={onStart} size="lg" className="w-full max-w-xs h-14 text-lg rounded-2xl">
@@ -96,7 +101,7 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup }: VenueLandingPro
   );
 };
 
-function FloatingActions({ onStart, onSignup }: { onStart: () => void; onSignup: () => void }) {
+function FloatingActions({ onStart, onSignup, onSignin }: { onStart: () => void; onSignup: () => void; onSignin: () => void }) {
   return (
     <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
       <div className="max-w-xs mx-auto space-y-2">
@@ -110,7 +115,16 @@ function FloatingActions({ onStart, onSignup }: { onStart: () => void; onSignup:
           onClick={onSignup}
         >
           <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-          Sign up & start ordering
+          Sign up & earn rewards
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full text-xs text-muted-foreground hover:text-primary"
+          onClick={onSignin}
+        >
+          <LogIn className="h-3.5 w-3.5 mr-1.5" />
+          Already have an account? Sign in
         </Button>
       </div>
     </div>

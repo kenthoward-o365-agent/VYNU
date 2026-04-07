@@ -10,6 +10,7 @@ interface DinerSignupProps {
   venueId: string;
   onComplete: () => void;
   onBack: () => void;
+  initialMode?: "signup" | "signin";
 }
 
 const COUNTRY_CODES = [
@@ -63,7 +64,8 @@ function getPasswordStrength(pw: string): { score: number; checks: { label: stri
   return { score: checks.filter((c) => c.met).length, checks };
 }
 
-const DinerSignup = ({ venueId, onComplete, onBack }: DinerSignupProps) => {
+const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: DinerSignupProps) => {
+  const [mode, setMode] = useState<"signup" | "signin">(initialMode);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
@@ -89,10 +91,49 @@ const DinerSignup = ({ venueId, onComplete, onBack }: DinerSignupProps) => {
     countrySearch ? c.label.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch) || c.country.toLowerCase().includes(countrySearch.toLowerCase()) : true
   );
 
-  const isValid = firstName.trim() && lastName.trim() && email.trim() && password.length >= 8 && strength.score >= 3;
+  const isSignupValid = firstName.trim() && lastName.trim() && email.trim() && password.length >= 8 && strength.score >= 3;
+  const isSigninValid = email.trim() && password.length >= 1;
 
-  const handleSubmit = async () => {
-    if (!isValid) return;
+  const handleSignIn = async () => {
+    if (!isSigninValid) return;
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (authError) throw authError;
+      if (!data.user) throw new Error("Sign in failed");
+
+      // Record visit if diner profile exists
+      const { data: profile } = await supabase
+        .from("diner_profiles")
+        .select("id")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+
+      if (profile) {
+        await supabase.from("diner_visits").insert({
+          diner_id: profile.id,
+          venue_id: venueId,
+        });
+      }
+
+      toast.success("Welcome back! 👋");
+      onComplete();
+    } catch (err: any) {
+      console.error("Sign in error:", err);
+      setError(err.message || "Invalid email or password. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSignUp = async () => {
+    if (!isSignupValid) return;
     setSubmitting(true);
     setError("");
 
@@ -191,6 +232,81 @@ const DinerSignup = ({ venueId, onComplete, onBack }: DinerSignupProps) => {
     }
   };
 
+  const handleSubmit = mode === "signin" ? handleSignIn : handleSignUp;
+
+  // ── Sign In View ──
+  if (mode === "signin") {
+    return (
+      <div className="min-h-screen bg-background px-5 py-6 pb-8">
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={onBack} className="p-1 -ml-1">
+            <ArrowLeft className="h-5 w-5 text-muted-foreground" />
+          </button>
+          <h1 className="text-xl font-bold text-foreground">Welcome Back</h1>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-6">
+          Sign in to access your rewards, saved preferences, and order history.
+        </p>
+
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/30 text-destructive text-sm rounded-xl p-3 mb-4">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground">Email Address</Label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="jane@example.com"
+              className="mt-1"
+            />
+          </div>
+
+          <div>
+            <Label className="text-xs font-medium text-muted-foreground">Password</Label>
+            <div className="relative mt-1">
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Your password"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <Button onClick={handleSubmit} disabled={!isSigninValid || submitting} className="w-full h-12 text-base rounded-xl mt-2">
+            {submitting ? "Signing in..." : "Sign In"}
+          </Button>
+
+          <p className="text-sm text-center text-muted-foreground">
+            Don't have an account?{" "}
+            <button
+              type="button"
+              onClick={() => { setMode("signup"); setError(""); }}
+              className="text-primary font-medium hover:underline"
+            >
+              Sign up
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Sign Up View ──
   return (
     <div className="min-h-screen bg-background px-5 py-6 pb-8">
       <div className="flex items-center gap-3 mb-6">
@@ -329,9 +445,20 @@ const DinerSignup = ({ venueId, onComplete, onBack }: DinerSignupProps) => {
           )}
         </div>
 
-        <Button onClick={handleSubmit} disabled={!isValid || submitting} className="w-full h-12 text-base rounded-xl mt-2">
+        <Button onClick={handleSubmit} disabled={!isSignupValid || submitting} className="w-full h-12 text-base rounded-xl mt-2">
           {submitting ? "Creating account..." : "Create Account"}
         </Button>
+
+        <p className="text-sm text-center text-muted-foreground">
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={() => { setMode("signin"); setError(""); }}
+            className="text-primary font-medium hover:underline"
+          >
+            Sign in
+          </button>
+        </p>
 
         <p className="text-[11px] text-center text-muted-foreground">
           By signing up you agree to our Terms of Service and Privacy Policy.
