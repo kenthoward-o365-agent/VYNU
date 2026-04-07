@@ -153,7 +153,7 @@ const CheckoutPanel = ({
 
       // Insert order items
       const orderItems = items.map((item) => ({
-        order_id: order.id,
+        order_id: orderId,
         menu_item_id: item.id,
         quantity: item.quantity,
         unit_price: item.price,
@@ -180,7 +180,7 @@ const CheckoutPanel = ({
           venue_id: venueId,
           amount: total,
           currency: "AUD",
-          reference: `order_${order.id}`,
+          reference: `order_${orderId}`,
           return_url: window.location.href,
         };
 
@@ -208,9 +208,9 @@ const CheckoutPanel = ({
 
         if (result.resultCode === "Authorised") {
           // Update order status to paid
-          await supabase.from("orders").update({ status: "paid" as any }).eq("id", order.id);
+          await supabase.from("orders").update({ status: "paid" as any }).eq("id", orderId);
           toast.success("Payment successful! 🎉");
-          onOrderPlaced(order.id);
+          onOrderPlaced(orderId);
         } else if (result.resultCode === "RedirectShopper") {
           // 3DS redirect
           if (result.action?.url) {
@@ -220,13 +220,13 @@ const CheckoutPanel = ({
         } else {
           toast.error(`Payment ${result.resultCode || "failed"}: ${result.refusalReason || "Please try again"}`);
           // Clean up the order
-          await supabase.from("order_items").delete().eq("order_id", order.id);
-          await supabase.from("orders").delete().eq("id", order.id);
+          await supabase.from("order_items").delete().eq("order_id", orderId);
+          await supabase.from("orders").delete().eq("id", orderId);
         }
       } else {
         // No payment processing, just place the order
         toast.success("Order placed! 🎉");
-        onOrderPlaced(order.id);
+        onOrderPlaced(orderId);
       }
     } catch (err: any) {
       console.error("Checkout error:", err);
