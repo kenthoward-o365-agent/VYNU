@@ -439,7 +439,7 @@ export default function VenueSettings() {
         )}
 
         {/* ── LOYALTY TAB ── */}
-        {isManager && (
+        {isManager && venue?.group_id && (
           <TabsContent value="loyalty" className="space-y-6">
             <VenueLoyaltyTab venueId={venue?.id} groupId={venue?.group_id} />
           </TabsContent>
