@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { MapPin, Utensils } from "lucide-react";
+import { MapPin, Utensils, Gift, UserPlus } from "lucide-react";
 
 interface VenueLandingProps {
   venue: {
@@ -42,18 +42,41 @@ const VenueLanding = ({ venue, tableNumber, onStart }: VenueLandingProps) => {
       )}
 
       {/* Table Info */}
-      <div className="bg-card rounded-2xl border border-border p-6 mb-8 w-full max-w-xs">
+      <div className="bg-card rounded-2xl border border-border p-6 mb-6 w-full max-w-xs">
         <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Your Table</p>
         <p className="text-4xl font-bold text-primary">{tableNumber}</p>
       </div>
 
-      {/* CTA */}
+      {/* Loyalty Signup Prompt */}
+      <div className="bg-accent/50 rounded-2xl border border-primary/20 p-4 mb-6 w-full max-w-xs">
+        <div className="flex items-center gap-2 mb-2">
+          <Gift className="h-5 w-5 text-primary" />
+          <p className="text-sm font-semibold text-foreground">Earn rewards</p>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Sign up for our loyalty program and earn points with every order.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10"
+          onClick={() => {
+            // For now just proceed — profile tab handles signup
+            onStart();
+          }}
+        >
+          <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+          Sign up & start ordering
+        </Button>
+      </div>
+
+      {/* Guest CTA */}
       <Button onClick={onStart} size="lg" className="w-full max-w-xs h-14 text-lg rounded-2xl">
-        Start Ordering
+        Continue as Guest
       </Button>
 
       <p className="text-muted-foreground text-xs mt-4">
-        Powered by <span className="font-semibold text-primary">Tab-Less</span>
+        No account needed · Powered by <span className="font-semibold text-primary">Tab-Less</span>
       </p>
     </div>
   );
