@@ -95,7 +95,6 @@ export default function AdminVenueDetail() {
     // Fetch groups
     const { data: groupData } = await supabase.from("venue_groups").select("id, name");
     setGroups((groupData || []) as { id: string; name: string }[]);
-    }
     setLoading(false);
   };
 
