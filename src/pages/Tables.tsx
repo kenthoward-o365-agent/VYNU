@@ -6,9 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, QrCode, Trash2 } from "lucide-react";
+import { Plus, QrCode, Trash2, RefreshCw } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+
+function getPublicBaseUrl(): string {
+  // Use VITE env for published URL, fall back to current origin
+  const origin = window.location.origin;
+  // If we're on a lovableproject.com preview, try to use the published .lovable.app URL
+  if (origin.includes("lovableproject.com")) {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || "c5065d82-7754-4d16-b65d-7015c476f014";
+    return `https://${projectId}.lovable.app`;
+  }
+  return origin;
+}
 
 interface Table {
   id: string;
@@ -43,8 +54,9 @@ export default function Tables() {
       capacity: parseInt(form.capacity) || 4,
     }).select().single();
     if (error) { toast.error(error.message); return; }
-    // Update qr_code with the generated table ID
-    const qrUrl = `${window.location.origin}/order/${venue.id}/${data.id}`;
+    // Use published URL if available, otherwise preview URL
+    const baseUrl = getPublicBaseUrl();
+    const qrUrl = `${baseUrl}/order/${venue.id}/${data.id}`;
     await supabase.from("tables").update({ qr_code: qrUrl }).eq("id", data.id);
     toast.success("Table added");
     setDialogOpen(false);
@@ -58,6 +70,17 @@ export default function Tables() {
     fetchTables();
   };
 
+  const regenerateQrUrls = async () => {
+    if (!venue || tables.length === 0) return;
+    const baseUrl = getPublicBaseUrl();
+    for (const table of tables) {
+      const qrUrl = `${baseUrl}/order/${venue.id}/${table.id}`;
+      await supabase.from("tables").update({ qr_code: qrUrl }).eq("id", table.id);
+    }
+    toast.success("QR codes updated to published URL");
+    fetchTables();
+  };
+
   const zones = [...new Set(tables.map((t) => t.zone).filter(Boolean))];
 
   return (
@@ -67,10 +90,16 @@ export default function Tables() {
           <h2 className="text-2xl font-bold text-foreground">Tables & QR Codes</h2>
           <p className="text-muted-foreground">{tables.length} tables configured</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-1" />Add Table</Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          {tables.length > 0 && (
+            <Button variant="outline" size="sm" onClick={regenerateQrUrls}>
+              <RefreshCw className="h-4 w-4 mr-1" />Refresh QR URLs
+            </Button>
+          )}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 mr-1" />Add Table</Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Add Table</DialogTitle></DialogHeader>
             <div className="space-y-4">
@@ -81,6 +110,7 @@ export default function Tables() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {tables.length === 0 ? (
