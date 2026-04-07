@@ -143,14 +143,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       setGroups([]);
     }
 
-    // Check tabless_admin role
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("role", "tabless_admin" as any)
-      .maybeSingle();
-    setIsTablessAdmin(!!roleData);
+    // Already set above
 
     setLoading(false);
   };
