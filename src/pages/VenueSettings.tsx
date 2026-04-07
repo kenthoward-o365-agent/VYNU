@@ -39,7 +39,7 @@ interface StaffMember {
 
 export default function VenueSettings() {
   const { venue, venueRole, isTablessAdmin, refetch } = useVenue();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const navigate = useNavigate();
 
   const isOwner = venueRole === "owner" || isTablessAdmin;
@@ -77,9 +77,11 @@ export default function VenueSettings() {
     }
   }, [venue]);
 
+  
+
   useEffect(() => {
-    if (venue && isManager) fetchStaff();
-  }, [venue, isManager]);
+    if (venue && isManager && session) fetchStaff();
+  }, [venue, isManager, session]);
 
   const [staffEmails, setStaffEmails] = useState<Record<string, string>>({});
 
