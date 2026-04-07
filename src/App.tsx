@@ -25,6 +25,7 @@ import AdminVenueDetail from "@/pages/AdminVenueDetail";
 import AdminStaff from "@/pages/AdminStaff";
 import NotFound from "@/pages/NotFound";
 import ConsumerOrder from "@/pages/ConsumerOrder";
+import ResetPassword from "@/pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -91,8 +92,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Public consumer ordering route — no auth required */}
+            {/* Public routes — no auth required */}
             <Route path="/order/:venueId/:tableId" element={<ConsumerOrder />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             {/* All other routes go through auth */}
             <Route path="/*" element={
               <AuthProvider>
