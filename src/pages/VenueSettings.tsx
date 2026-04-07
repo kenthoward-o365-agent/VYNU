@@ -446,7 +446,7 @@ export default function VenueSettings() {
         )}
 
         {/* ── DINERS TAB ── */}
-        {isManager && (
+        {isManager && venue?.group_id && (
           <TabsContent value="diners" className="space-y-6">
             <VenueDinersTab venueId={venue?.id} groupId={venue?.group_id} />
           </TabsContent>
