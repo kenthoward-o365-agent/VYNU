@@ -137,6 +137,33 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               })}
             </>
           )}
+
+          {isTablessAdmin && (
+            <>
+              <div className="pt-3 pb-1 px-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-muted">Admin</span>
+              </div>
+              {adminNavItems.map((item) => {
+                const active = location.pathname.startsWith(item.path);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      active
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </>
+          )}
         </nav>
 
         <div className="p-3 border-t border-sidebar-border space-y-1">
