@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { formatItemTaxBreakdown, type TaxConfig } from "@/lib/tax-utils";
 
 interface MenuItem {
   id: string;
@@ -42,6 +43,7 @@ const dietaryOptions = ["Vegan", "Vegetarian", "Gluten Free", "Dairy Free", "Ket
 export default function MenuBuilder() {
   const { venue } = useVenue();
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
@@ -64,12 +66,14 @@ export default function MenuBuilder() {
 
   const fetchData = async () => {
     if (!venue) return;
-    const [itemsRes, catsRes] = await Promise.all([
+    const [itemsRes, catsRes, taxesRes] = await Promise.all([
       supabase.from("menu_items").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("menu_categories").select("*").eq("venue_id", venue.id).order("display_order"),
+      supabase.from("venue_taxes" as any).select("*").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
     ]);
     setItems((itemsRes.data as MenuItem[]) || []);
     setCategories((catsRes.data as Category[]) || []);
+    setVenueTaxes((taxesRes.data as any as TaxConfig[]) || []);
   };
 
   useEffect(() => { fetchData(); }, [venue]);
