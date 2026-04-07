@@ -136,8 +136,8 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     const found = venues.find((v) => v.id === venueId);
     if (found) {
       setVenue(found);
+      setVenueRole(staffRolesMap[venueId] || null);
       localStorage.setItem("tabless_active_venue", venueId);
-      // Update group context
       if (found.group_id) {
         const g = groups.find((gr) => gr.id === found.group_id);
         setGroup(g || null);
