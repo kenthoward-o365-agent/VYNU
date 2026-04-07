@@ -98,6 +98,15 @@ export default function AdminVenueDetail() {
         subscription_plan: (data as any).subscription_plan || "basic",
         subscription_notes: (data as any).subscription_notes || "",
       });
+      // If parent venue, fetch group settings and child venues
+      if (data.venue_type === "parent" && data.group_id) {
+        const { data: groupRow } = await supabase.from("venue_groups").select("settings").eq("id", data.group_id).single();
+        const s = (groupRow?.settings && typeof groupRow.settings === "object") ? groupRow.settings as any : {};
+        setGroupSettings({ global_diners: s.global_diners ?? false, global_loyalty: s.global_loyalty ?? false });
+
+        const { data: children } = await supabase.from("venues").select("id, name, city, state, venue_type").eq("group_id", data.group_id).neq("id", venueId);
+        setChildVenues(children || []);
+      }
     }
     // Fetch groups
     const { data: groupData } = await supabase.from("venue_groups").select("id, name");
