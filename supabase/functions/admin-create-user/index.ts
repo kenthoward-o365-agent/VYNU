@@ -6,6 +6,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const json = (data: any, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -13,14 +19,8 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!authHeader) return json({ error: "Not authenticated" }, 401);
 
-    // Verify the caller is a tabless_admin
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -32,98 +32,114 @@ Deno.serve(async (req) => {
     const {
       data: { user: caller },
     } = await callerClient.auth.getUser();
-    if (!caller) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!caller) return json({ error: "Not authenticated" }, 401);
 
-    // Check admin role using service role client
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // Check if caller is tabless_admin
     const { data: roleData } = await adminClient
       .from("user_roles")
       .select("id")
       .eq("user_id", caller.id)
       .eq("role", "tabless_admin")
       .maybeSingle();
+    const isTablessAdmin = !!roleData;
 
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: "Forbidden: not an admin" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Helper: check if caller is owner/manager at a venue
+    const isVenueManager = async (venueId: string): Promise<boolean> => {
+      if (isTablessAdmin) return true;
+      const { data } = await adminClient
+        .from("venue_staff")
+        .select("id")
+        .eq("user_id", caller.id)
+        .eq("venue_id", venueId)
+        .in("role", ["owner", "manager"])
+        .eq("is_active", true)
+        .maybeSingle();
+      return !!data;
+    };
 
-    // Handle DELETE — remove an auth user
-    if (req.method === "DELETE") {
-      const { user_id } = await req.json();
-      if (!user_id) {
-        return new Response(JSON.stringify({ error: "user_id is required" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const { error: delErr } = await adminClient.auth.admin.deleteUser(user_id);
-      if (delErr) {
-        return new Response(JSON.stringify({ error: delErr.message }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ success: true, deleted: user_id }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Parse request body
     const body = await req.json();
+    const { action } = body;
 
-    // Handle delete action via POST
-    if (body.action === "delete") {
-      if (!body.user_id) {
-        return new Response(JSON.stringify({ error: "user_id is required" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+    // ── DELETE USER (remove from venue + optionally delete auth) ──
+    if (action === "delete") {
+      const { staff_id, venue_id, delete_auth } = body;
+      if (!staff_id || !venue_id) return json({ error: "staff_id and venue_id are required" }, 400);
+      if (!(await isVenueManager(venue_id))) return json({ error: "Forbidden" }, 403);
+
+      // Get user_id before deleting staff record
+      const { data: staffRow } = await adminClient
+        .from("venue_staff")
+        .select("user_id")
+        .eq("id", staff_id)
+        .single();
+
+      // Remove staff record
+      const { error: delErr } = await adminClient
+        .from("venue_staff")
+        .delete()
+        .eq("id", staff_id);
+      if (delErr) return json({ error: delErr.message }, 400);
+
+      // Optionally delete the auth user entirely (only tabless_admin)
+      if (delete_auth && isTablessAdmin && staffRow?.user_id) {
+        await adminClient.auth.admin.deleteUser(staffRow.user_id);
       }
-      const { error: delErr } = await adminClient.auth.admin.deleteUser(body.user_id);
-      if (delErr) {
-        return new Response(JSON.stringify({ error: delErr.message }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ success: true, deleted: body.user_id }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+      return json({ success: true, deleted: staff_id });
     }
 
+    // ── UPDATE STAFF ──
+    if (action === "update") {
+      const { staff_id, venue_id, display_name, role } = body;
+      if (!staff_id || !venue_id) return json({ error: "staff_id and venue_id are required" }, 400);
+      if (!(await isVenueManager(venue_id))) return json({ error: "Forbidden" }, 403);
+
+      const updates: any = {};
+      if (display_name !== undefined) updates.display_name = display_name || null;
+      if (role) {
+        const validRoles = ["owner", "manager", "staff"];
+        if (validRoles.includes(role)) updates.role = role;
+      }
+
+      const { error } = await adminClient
+        .from("venue_staff")
+        .update(updates)
+        .eq("id", staff_id);
+      if (error) return json({ error: error.message }, 400);
+
+      return json({ success: true });
+    }
+
+    // ── TOGGLE ACTIVE ──
+    if (action === "toggle_active") {
+      const { staff_id, venue_id, is_active } = body;
+      if (!staff_id || !venue_id) return json({ error: "staff_id and venue_id are required" }, 400);
+      if (!(await isVenueManager(venue_id))) return json({ error: "Forbidden" }, 403);
+
+      const { error } = await adminClient
+        .from("venue_staff")
+        .update({ is_active })
+        .eq("id", staff_id);
+      if (error) return json({ error: error.message }, 400);
+
+      return json({ success: true });
+    }
+
+    // ── CREATE USER ──
     const { email, password, venue_id, role, display_name } = body;
 
     if (!email || !password || !venue_id) {
-      return new Response(
-        JSON.stringify({ error: "email, password, and venue_id are required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return json({ error: "email, password, and venue_id are required" }, 400);
     }
-
-    if (password.length < 8) {
-      return new Response(
-        JSON.stringify({ error: "Password must be at least 8 characters" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+    if (!(await isVenueManager(venue_id))) return json({ error: "Forbidden" }, 403);
+    if (password.length < 8) return json({ error: "Password must be at least 8 characters" }, 400);
 
     const validRoles = ["owner", "manager", "staff"];
     const userRole = validRoles.includes(role) ? role : "staff";
 
-    // Try to create auth user; if they already exist, look them up instead
+    // Create or find existing auth user
     let userId: string;
     const { data: newUser, error: createError } =
       await adminClient.auth.admin.createUser({
@@ -134,27 +150,29 @@ Deno.serve(async (req) => {
 
     if (createError) {
       if (createError.message.includes("already been registered")) {
-        // User exists — look up their ID and assign them as staff
         const { data: listData } = await adminClient.auth.admin.listUsers();
         const existing = listData?.users?.find((u: any) => u.email === email);
-        if (!existing) {
-          return new Response(JSON.stringify({ error: "User exists but could not be found" }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
+        if (!existing) return json({ error: "User exists but could not be found" }, 400);
         userId = existing.id;
       } else {
-        return new Response(JSON.stringify({ error: createError.message }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return json({ error: createError.message }, 400);
       }
     } else {
       userId = newUser.user.id;
     }
 
-    // Create venue_staff record
+    // Check if already staff at this venue
+    const { data: existingStaff } = await adminClient
+      .from("venue_staff")
+      .select("id")
+      .eq("venue_id", venue_id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (existingStaff) {
+      return json({ error: "This user is already assigned to this venue" }, 400);
+    }
+
     const { error: staffError } = await adminClient
       .from("venue_staff")
       .insert({
@@ -165,33 +183,11 @@ Deno.serve(async (req) => {
       });
 
     if (staffError) {
-      return new Response(
-        JSON.stringify({
-          error: `User created but staff assignment failed: ${staffError.message}`,
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return json({ error: `User created but staff assignment failed: ${staffError.message}` }, 500);
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        user_id: userId,
-        email,
-        role: userRole,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return json({ success: true, user_id: userId, email, role: userRole });
   } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: (err as Error).message }, 500);
   }
 });
