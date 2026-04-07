@@ -75,10 +75,22 @@ function RenderSection({ section, tableNumber }: { section: LandingSection; tabl
 
     case "social-links":
       return (
-        <div style={{ padding: "1.5rem", textAlign: "center", display: "flex", gap: "1.5rem", justifyContent: "center" }}>
-          {section.instagram && <a href={section.instagram} style={{ color: "rgba(255,255,255,0.6)", textDecoration: "none", fontSize: "0.85rem" }}>Instagram</a>}
-          {section.facebook && <a href={section.facebook} style={{ color: "rgba(255,255,255,0.6)", textDecoration: "none", fontSize: "0.85rem" }}>Facebook</a>}
-          {section.google && <a href={section.google} style={{ color: "rgba(255,255,255,0.6)", textDecoration: "none", fontSize: "0.85rem" }}>Google</a>}
+        <div style={{ padding: "1.5rem", textAlign: "center", display: "flex", gap: "1.5rem", justifyContent: "center", alignItems: "center" }}>
+          {section.instagram && (
+            <a href={section.instagram} style={{ color: "rgba(255,255,255,0.6)", textDecoration: "none" }} target="_blank" rel="noopener noreferrer">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+            </a>
+          )}
+          {section.facebook && (
+            <a href={section.facebook} style={{ color: "rgba(255,255,255,0.6)", textDecoration: "none" }} target="_blank" rel="noopener noreferrer">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+            </a>
+          )}
+          {section.google && (
+            <a href={section.google} style={{ color: "rgba(255,255,255,0.6)", textDecoration: "none" }} target="_blank" rel="noopener noreferrer">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+            </a>
+          )}
           {!section.instagram && !section.facebook && !section.google && (
             <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.8rem" }}>Add your social links</p>
           )}
