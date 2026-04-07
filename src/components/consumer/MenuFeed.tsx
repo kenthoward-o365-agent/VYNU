@@ -251,7 +251,7 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const isMobile = useIsMobile();
+  
 
   const filteredItems = items.filter((item) => {
     if (activeCategory && item.category_id !== activeCategory) return false;
