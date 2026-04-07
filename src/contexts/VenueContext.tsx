@@ -148,7 +148,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   useEffect(() => { fetchVenues(); }, [user]);
 
   return (
-    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, loading, setVenue, switchVenue, refetch: fetchVenues }}>
+    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, venueRole, loading, setVenue, switchVenue, refetch: fetchVenues }}>
       {children}
     </VenueContext.Provider>
   );
