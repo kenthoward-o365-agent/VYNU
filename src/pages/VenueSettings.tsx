@@ -77,7 +77,7 @@ export default function VenueSettings() {
     }
   }, [venue]);
 
-  const { session } = useAuth();
+  
 
   useEffect(() => {
     if (venue && isManager && session) fetchStaff();
