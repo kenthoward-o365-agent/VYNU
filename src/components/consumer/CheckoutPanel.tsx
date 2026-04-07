@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateTaxes, type TaxConfig } from "@/lib/tax-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,11 +60,23 @@ const CheckoutPanel = ({
   const [processing, setProcessing] = useState(false);
   const [loadingCards, setLoadingCards] = useState(false);
   const [paymentEnabled, setPaymentEnabled] = useState<boolean | null>(null);
+  const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
 
   useEffect(() => {
     checkPaymentEnabled();
+    fetchVenueTaxes();
     if (dinerId) fetchStoredCards();
   }, [venueId, dinerId]);
+
+  const fetchVenueTaxes = async () => {
+    const { data } = await supabase
+      .from("venue_taxes" as any)
+      .select("id, name, rate, tax_type, is_inclusive, display_order")
+      .eq("venue_id", venueId)
+      .eq("is_active", true)
+      .order("display_order");
+    setVenueTaxes((data as any as TaxConfig[]) || []);
+  };
 
   const checkPaymentEnabled = async () => {
     const { data } = await supabase
