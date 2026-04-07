@@ -149,6 +149,8 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
 
   const activeKey = config.environment === "test" ? config.api_key_test : config.api_key_live;
   const hasActiveKey = !!activeKey;
+  const isMockMode = config.environment === "test" && !config.api_key_test;
+  const canEnable = config.environment === "test" || (hasActiveKey && !!config.merchant_account);
 
   return (
     <div className="space-y-6 max-w-2xl">
