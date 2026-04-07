@@ -1,61 +1,113 @@
 
 
-# Tab-Less — Venue Operator Dashboard (Phase 1)
+# Multi-Venue Group Management for Tab-Less
 
-## Overview
-Build the venue operator dashboard — the foundation that powers everything. Venues need to set up their menus, tables, and settings before consumers can order. This phase creates the operator experience with AI-powered menu management and real-time analytics.
+## Context
+Large Australian hospitality groups like AVC (Australian Venue Co) and ALH Group operate 100+ venues. They need centralized management with per-venue drill-down. Currently Tab-Less is single-venue only — one user, one venue.
 
 ## What We're Building
 
-### 1. Authentication & Venue Onboarding
-- Venue owner/manager sign-up and login
-- Venue profile setup (name, type, location, operating hours, branding)
-- QR code generation for each table/zone
+### 1. Database: `venue_groups` Table + Relationships
+- New `venue_groups` table: id, name, logo_url, domain, settings (jsonb), created_at
+- Add `group_id` (nullable FK) to `venues` table — venues can optionally belong to a group
+- New `venue_group_staff` table: user_id, group_id, role (group_admin, group_viewer) — controls who can manage groups
+- RLS: group admins can see/manage all venues in their group; existing single-venue RLS unchanged
 
-### 2. AI-Powered Menu Builder
-- Conversational menu creation — "Add a wagyu burger, $28, takes 12 mins, contains gluten and dairy"
-- Menu items with: name, description, price, prep time, allergens, dietary tags, photo, category
-- AI-generated descriptions and upsell suggestions
-- Menu categories and item ordering
-- Item availability toggling (86'd items)
+### 2. Database: Diner CRM & Loyalty
+- New `diner_profiles` table: id, user_id (nullable for anonymous), email, phone, display_name, preferences (jsonb), allergens, created_at
+- New `diner_visits` table: id, diner_id, venue_id, order_id, visited_at — tracks visit history per venue
+- New `loyalty_programs` table: id, venue_id or group_id, name, type (points/stamps/tier), rules (jsonb), is_active
+- New `loyalty_balances` table: id, diner_id, program_id, balance, tier, updated_at
+- RLS: diners see own data; venue staff see their venue's diners; group admins see all group diners
 
-### 3. Dynamic Pricing Engine
-- Base prices with time-of-day modifiers (happy hour, late night)
-- AI suggestions on pricing based on food cost percentages
-- Special/promo pricing with date ranges
+### 3. VenueContext Enhancement
+- Update `VenueContext` to support multi-venue: user can belong to multiple venues via `venue_staff` and also to groups via `venue_group_staff`
+- Add venue switcher dropdown in sidebar — if user has access to multiple venues, they can switch between them
+- Add "Group View" mode for group admins that shows aggregate data across all group venues
 
-### 4. Dashboard & Analytics
-- **Live view**: Active tables, open orders, real-time revenue ticker
-- **Historical reporting**: Daily/weekly/monthly revenue, average check size, popular items
-- **Product mix analysis**: Best sellers, underperformers, margin leaders
-- **AI insights panel**: Suggestions for menu changes, loss leaders, pricing optimizations
+### 4. UI: Venue Switcher & Group Dashboard
+- **Sidebar**: Add venue switcher dropdown below the Tab-Less logo — shows current venue name, click to switch
+- **Group Dashboard** (`/group`): Aggregate stats across all venues in the group — total revenue, orders, top-performing venues, underperformers
+- **Group Menu Management** (`/group/menu`): Push menu templates to multiple venues, standardize items across the group
+- **Group Analytics** (`/group/analytics`): Cross-venue comparisons, heat maps of performance
 
-### 5. Table & QR Management
-- Define tables/zones with capacity
-- Generate unique QR codes per table
-- QR codes link to consumer ordering experience (built in Phase 2)
+### 5. UI: CRM & Loyalty Pages
+- **Diners** page (`/diners`): List of diners who have visited the venue, visit count, last visit, total spend, allergens/preferences
+- **Loyalty** page (`/loyalty`): Configure loyalty programs, view member balances, tier distribution
+- Group-level CRM view showing diners across all venues
 
-### 6. Order Management
-- Live order feed with status tracking (received → preparing → ready → served)
-- Order history and search
-- Basic kitchen display view
+### 6. Navigation Updates
+- Add "Diners" and "Loyalty" to sidebar nav
+- For group admins: add "Group" section in sidebar with Group Dashboard, Group Menu, Group Analytics
+- Venue switcher appears for users with access to 2+ venues
 
-## Database Schema (Key Tables)
-- `venues` — venue profiles and settings
-- `venue_staff` — staff accounts with roles (owner, manager, staff)
-- `menu_items` — items with pricing, allergens, prep time
-- `menu_categories` — item grouping
-- `tables` — table/zone definitions with QR codes
-- `orders` / `order_items` — order tracking
-- `pricing_rules` — dynamic pricing conditions
-- `analytics_events` — event tracking for dashboards
+## Technical Details
 
-## Design Direction
-- Clean, professional operator UI — dark sidebar navigation
-- Mobile-responsive but optimized for tablet/desktop (operators use iPads and laptops)
-- Real-time updates using Supabase realtime subscriptions
-- AI interactions via Lovable AI gateway
+### New Tables Summary
+```text
+venue_groups
+├── id (uuid PK)
+├── name (text)
+├── logo_url (text, nullable)
+├── settings (jsonb)
+└── created_at
 
-## Phase 2 Preview (Next)
-Consumer mobile ordering experience — QR scan → AI chat + TikTok-style visual feed → pay-per-order flow.
+venue_group_staff
+├── id (uuid PK)
+├── group_id (FK → venue_groups)
+├── user_id (FK → auth.users)
+├── role (enum: group_admin, group_viewer)
+└── created_at
+
+venues (ALTER)
+└── group_id (uuid, nullable FK → venue_groups)
+
+diner_profiles
+├── id (uuid PK)
+├── user_id (uuid, nullable)
+├── email, phone, display_name
+├── preferences (jsonb)
+├── allergens (text[])
+└── created_at
+
+diner_visits
+├── id (uuid PK)
+├── diner_id (FK → diner_profiles)
+├── venue_id (FK → venues)
+├── order_id (FK → orders, nullable)
+└── visited_at
+
+loyalty_programs
+├── id (uuid PK)
+├── venue_id (nullable) / group_id (nullable)
+├── name, type, rules (jsonb)
+└── is_active
+
+loyalty_balances
+├── id (uuid PK)
+├── diner_id (FK → diner_profiles)
+├── program_id (FK → loyalty_programs)
+├── balance (numeric), tier (text)
+└── updated_at
+```
+
+### RLS Strategy
+- `is_group_admin(user_id, group_id)` — new SECURITY DEFINER helper
+- Group admins inherit access to all venues in the group
+- Venue-level RLS unchanged for non-group venues
+
+### Migration Plan
+1. Migration 1: `venue_groups`, `venue_group_staff`, add `group_id` to `venues`, helper functions, RLS
+2. Migration 2: `diner_profiles`, `diner_visits`, `loyalty_programs`, `loyalty_balances`, RLS
+3. Frontend: VenueContext multi-venue support, venue switcher, group pages, CRM/loyalty pages
+
+## Implementation Order
+1. Database migrations (both)
+2. Update VenueContext for multi-venue + group awareness
+3. Venue switcher in sidebar
+4. Group Dashboard page
+5. Diners CRM page
+6. Loyalty page
+7. Group menu management
+8. Group analytics
 
