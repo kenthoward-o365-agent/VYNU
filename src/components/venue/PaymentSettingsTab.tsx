@@ -298,19 +298,32 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             </p>
           </div>
 
+          {/* Mock Mode Info */}
+          {config.environment === "test" && !config.api_key_test && (
+            <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4 space-y-1">
+              <p className="text-sm font-medium text-blue-600">Mock Mode Available</p>
+              <p className="text-xs text-muted-foreground">
+                Leave API keys blank to use <strong>mock mode</strong> — simulated payments that work end-to-end without an Adyen account. 
+                Just enable payments and save. Add real credentials later when you're ready to go live.
+              </p>
+            </div>
+          )}
+
           {/* Activate Payments */}
           <Separator />
           <div className="flex items-center justify-between">
             <div>
               <Label>Enable Payments</Label>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Turn on to accept payments from diners at this venue
+                {config.environment === "test" && !config.api_key_test
+                  ? "Enable mock payments — no credentials needed for testing"
+                  : "Turn on to accept payments from diners at this venue"}
               </p>
             </div>
             <Switch
               checked={config.is_active}
               onCheckedChange={(checked) => setConfig((c) => ({ ...c, is_active: checked }))}
-              disabled={!hasActiveKey || !config.merchant_account}
+              disabled={config.environment === "live" && (!hasActiveKey || !config.merchant_account)}
             />
           </div>
 
@@ -322,7 +335,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             <Button
               variant="outline"
               onClick={testConnection}
-              disabled={testing || !hasActiveKey || !config.merchant_account}
+              disabled={testing || (config.environment === "live" && (!hasActiveKey || !config.merchant_account))}
             >
               <ShieldCheck className="h-4 w-4 mr-2" />
               {testing ? "Testing..." : "Test Connection"}
