@@ -78,7 +78,27 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { email, password, venue_id, role, display_name } = await req.json();
+    const body = await req.json();
+
+    // Handle delete action via POST
+    if (body.action === "delete") {
+      if (!body.user_id) {
+        return new Response(JSON.stringify({ error: "user_id is required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { error: delErr } = await adminClient.auth.admin.deleteUser(body.user_id);
+      if (delErr) {
+        return new Response(JSON.stringify({ error: delErr.message }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ success: true, deleted: body.user_id }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { email, password, venue_id, role, display_name } = body;
 
     if (!email || !password || !venue_id) {
       return new Response(
