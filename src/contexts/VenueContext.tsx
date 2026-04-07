@@ -35,6 +35,7 @@ interface VenueContextType {
   groups: VenueGroup[];
   isGroupAdmin: boolean;
   isTablessAdmin: boolean;
+  venueRole: string | null;
   loading: boolean;
   setVenue: (v: Venue | null) => void;
   switchVenue: (venueId: string) => void;
@@ -51,19 +52,23 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   const [groups, setGroups] = useState<VenueGroup[]>([]);
   const [isGroupAdmin, setIsGroupAdmin] = useState(false);
   const [isTablessAdmin, setIsTablessAdmin] = useState(false);
+  const [venueRole, setVenueRole] = useState<string | null>(null);
+  const [staffRolesMap, setStaffRolesMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   const fetchVenues = async () => {
-    if (!user) { setVenue(null); setVenues([]); setGroup(null); setGroups([]); setIsGroupAdmin(false); setIsTablessAdmin(false); setLoading(false); return; }
+    if (!user) { setVenue(null); setVenues([]); setGroup(null); setGroups([]); setIsGroupAdmin(false); setIsTablessAdmin(false); setVenueRole(null); setLoading(false); return; }
     setLoading(true);
 
     // Fetch all venue_staff records for this user
     const { data: staffData } = await supabase
       .from("venue_staff")
-      .select("venue_id")
+      .select("venue_id, role")
       .eq("user_id", user.id)
       .eq("is_active", true);
 
+    const staffRoles = Object.fromEntries((staffData || []).map((s) => [s.venue_id, s.role]));
+    setStaffRolesMap(staffRoles);
     const venueIds = (staffData || []).map((s) => s.venue_id);
 
     if (venueIds.length > 0) {
@@ -80,6 +85,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       const saved = allVenues.find((v) => v.id === savedId);
       const active = saved || allVenues[0] || null;
       setVenue(active);
+      setVenueRole(active ? staffRoles[active.id] || null : null);
 
       // Fetch groups
       const { data: groupStaff } = await supabase
@@ -130,8 +136,8 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     const found = venues.find((v) => v.id === venueId);
     if (found) {
       setVenue(found);
+      setVenueRole(staffRolesMap[venueId] || null);
       localStorage.setItem("tabless_active_venue", venueId);
-      // Update group context
       if (found.group_id) {
         const g = groups.find((gr) => gr.id === found.group_id);
         setGroup(g || null);
@@ -144,7 +150,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   useEffect(() => { fetchVenues(); }, [user]);
 
   return (
-    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, loading, setVenue, switchVenue, refetch: fetchVenues }}>
+    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, venueRole, loading, setVenue, switchVenue, refetch: fetchVenues }}>
       {children}
     </VenueContext.Provider>
   );
