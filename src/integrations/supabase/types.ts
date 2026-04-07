@@ -617,6 +617,7 @@ export type Database = {
           group_id: string | null
           id: string
           is_active: boolean | null
+          landing_page_html: string | null
           logo_url: string | null
           name: string
           operating_hours: Json | null
@@ -637,6 +638,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           is_active?: boolean | null
+          landing_page_html?: string | null
           logo_url?: string | null
           name: string
           operating_hours?: Json | null
@@ -657,6 +659,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           is_active?: boolean | null
+          landing_page_html?: string | null
           logo_url?: string | null
           name?: string
           operating_hours?: Json | null

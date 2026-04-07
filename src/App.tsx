@@ -16,6 +16,7 @@ import Orders from "@/pages/Orders";
 import Pricing from "@/pages/Pricing";
 import Analytics from "@/pages/Analytics";
 import VenueSettings from "@/pages/VenueSettings";
+import LandingPageEditor from "@/pages/LandingPageEditor";
 import Diners from "@/pages/Diners";
 import Loyalty from "@/pages/Loyalty";
 import GroupDashboard from "@/pages/GroupDashboard";
@@ -69,6 +70,7 @@ function AppRoutes() {
         <Route path="/loyalty" element={<Loyalty />} />
         <Route path="/group" element={<GroupDashboard />} />
         <Route path="/settings" element={<VenueSettings />} />
+        <Route path="/settings/landing-page" element={<LandingPageEditor />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </DashboardLayout>

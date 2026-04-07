@@ -1,70 +1,37 @@
-# Phase 2: Consumer Mobile Diner Experience
+# Landing Page Builder for Venues
 
-## Overview
-Build the mobile-first consumer ordering app that diners access via QR code scan at a venue table. No app download needed — it's a web app optimized for mobile. This is the core product differentiator vs me&u.
-
-## Flow
-1. **QR Scan** → Opens `/order/{venue_id}/{table_id}` in mobile browser
-2. **Landing** → Venue branding, table info, option to sign in or continue as guest
-3. **Ordering** → Hybrid AI chat + TikTok-style visual menu feed
-4. **Cart & Checkout** → Review, pay per order (Stripe), or open a tab
-5. **Order Tracking** → Real-time status updates via realtime subscriptions
+## Approach
+Use **GrapesJS** — a mature, open-source drag-and-drop web page builder (MIT licensed). It provides a full visual editor with blocks, styling panel, layer manager, and responsive preview out of the box.
 
 ## What We're Building
 
-### 1. Public Routes (no auth required for browsing)
-- `/order/:venueId/:tableId` — Main consumer entry point
-- Separate from the operator dashboard (different layout, no sidebar)
+### 1. Database
+- Add a `landing_page_html` column (text) to the `venues` table to store the serialized page content
+- Create a `venue-assets` storage bucket for uploaded images (logos, hero photos, etc.)
 
-### 2. Venue Landing Screen
-- Venue logo, name, table number confirmation
-- "Start Ordering" CTA
-- Optional: sign in for loyalty/history, or continue as guest
+### 2. Landing Page Editor (`/settings/landing-page`)
+- Embed GrapesJS in a new tab/page within Venue Settings
+- Pre-built blocks tailored for hospitality:
+  - **Hero section** (venue name, tagline, background image)
+  - **Loyalty signup CTA** (incentive text + button)
+  - **Featured items** (image + name + price cards)
+  - **Hours & location** block
+  - **Social links** block
+- Operators drag blocks, customize text/colors/images, and save
+- Save serializes HTML + CSS to the `landing_page_html` column
 
-### 3. TikTok-Style Menu Feed
-- Full-screen swipeable cards showing menu items with images
-- Category filters (horizontal scrollable chips)
-- Quick "Add to order" button on each card
-- Dietary/allergen tags visible
-- AI-powered "Recommended for you" section
+### 3. Consumer Landing Page Update
+- When a diner scans QR → check if venue has custom `landing_page_html`
+- If yes → render the custom HTML landing page with injected "Start Ordering" and "Continue as Guest" buttons
+- If no → fall back to current default VenueLanding component
 
-### 4. AI Chat Ordering
-- Floating chat button → opens conversational AI overlay
-- "I'm in the mood for something spicy" → AI suggests items
-- "What did I have last time?" (if signed in)
-- "Something light under $20" → filtered suggestions
-- Uses Lovable AI Gateway (Gemini Flash)
-
-### 5. Cart & Order Management
-- Slide-up cart panel
-- Item quantities, modifiers, notes
-- Order total with any active pricing rules applied
-- "Place Order" → creates order + order_items in DB
-- Real-time order status tracking (received → preparing → ready → served)
-
-### 6. Guest vs Signed-In Experience
-- **Guest**: Can browse and order, no history
-- **Signed in**: Loyalty points, order history, "the usual", allergen memory
-
-## Technical Approach
-- New `/order` route tree with its own mobile-optimized layout (no DashboardLayout)
-- Public menu data already accessible via existing anon RLS policy on menu_items
-- Orders already insertable by anon users via existing RLS
-- AI chat via edge function calling Lovable AI Gateway
-- Stripe integration for payments (future iteration — start with "pay at counter" flow)
+### 4. Image Uploads
+- Storage bucket `venue-assets` for venue images
+- Upload within the GrapesJS asset manager
 
 ## Implementation Order
-1. Consumer layout + routing (`/order/:venueId/:tableId`)
-2. Venue landing screen
-3. Menu feed (TikTok-style card browsing)
-4. Cart + place order flow
-5. AI chat ordering overlay
-6. Real-time order status tracking
-7. Guest vs signed-in experience + diner profiles
-
-## Design Direction
-- Mobile-first (375px primary target)
-- Dark/moody aesthetic matching venue vibes, or venue-branded colors
-- Bottom navigation: Feed | Chat | Cart | Profile
-- Smooth animations, haptic-feeling interactions
-- Large touch targets, thumb-zone optimized
+1. Database migration (add column + storage bucket)
+2. Install GrapesJS + build editor page
+3. Add custom hospitality blocks
+4. Update ConsumerOrder to render custom landing pages
+5. Wire up image uploads via storage bucket
