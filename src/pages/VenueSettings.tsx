@@ -49,7 +49,7 @@ export default function VenueSettings() {
 
   const [form, setForm] = useState({
     name: "", venue_type: "restaurant", address: "", city: "", state: "NSW",
-    postcode: "", phone: "", email: "",
+    postcode: "", phone: "", email: "", tax_id: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -75,6 +75,7 @@ export default function VenueSettings() {
         name: venue.name, venue_type: venue.venue_type, address: venue.address || "",
         city: venue.city || "", state: venue.state || "NSW", postcode: venue.postcode || "",
         phone: venue.phone || "", email: venue.email || "",
+        tax_id: (venue as any).tax_id || "",
       });
     }
   }, [venue]);
@@ -277,6 +278,11 @@ export default function VenueSettings() {
               </div>
               <Input placeholder="Phone" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
               <Input type="email" placeholder="Email" value={form.email} onChange={(e) => update("email", e.target.value)} />
+              <div>
+                <Label className="text-xs text-muted-foreground">ABN / Tax ID</Label>
+                <Input placeholder="e.g. 51 824 753 556" value={form.tax_id} onChange={(e) => update("tax_id", e.target.value)} className="mt-1" />
+                <p className="text-xs text-muted-foreground mt-1">Displayed on receipts and invoices</p>
+              </div>
               <Button onClick={save} disabled={loading}>{loading ? "Saving..." : "Save Changes"}</Button>
             </CardContent>
           </Card>
