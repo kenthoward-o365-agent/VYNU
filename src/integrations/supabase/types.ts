@@ -14,6 +14,184 @@ export type Database = {
   }
   public: {
     Tables: {
+      diner_profiles: {
+        Row: {
+          allergens: string[] | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          phone: string | null
+          preferences: Json | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          allergens?: string[] | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          preferences?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          allergens?: string[] | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          phone?: string | null
+          preferences?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      diner_visits: {
+        Row: {
+          diner_id: string
+          id: string
+          order_id: string | null
+          venue_id: string
+          visited_at: string
+        }
+        Insert: {
+          diner_id: string
+          id?: string
+          order_id?: string | null
+          venue_id: string
+          visited_at?: string
+        }
+        Update: {
+          diner_id?: string
+          id?: string
+          order_id?: string | null
+          venue_id?: string
+          visited_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diner_visits_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diner_visits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diner_visits_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_balances: {
+        Row: {
+          balance: number
+          created_at: string
+          diner_id: string
+          id: string
+          program_id: string
+          tier: string | null
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          diner_id: string
+          id?: string
+          program_id: string
+          tier?: string | null
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          diner_id?: string
+          id?: string
+          program_id?: string
+          tier?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_balances_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_balances_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_programs: {
+        Row: {
+          created_at: string
+          group_id: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          program_type: Database["public"]["Enums"]["loyalty_program_type"]
+          rules: Json | null
+          updated_at: string
+          venue_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          program_type?: Database["public"]["Enums"]["loyalty_program_type"]
+          rules?: Json | null
+          updated_at?: string
+          venue_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          group_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          program_type?: Database["public"]["Enums"]["loyalty_program_type"]
+          rules?: Json | null
+          updated_at?: string
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_programs_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "venue_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_programs_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_categories: {
         Row: {
           created_at: string
@@ -538,6 +716,7 @@ export type Database = {
     }
     Enums: {
       group_staff_role: "group_admin" | "group_viewer"
+      loyalty_program_type: "points" | "stamps" | "tier"
       order_status:
         | "received"
         | "preparing"
@@ -680,6 +859,7 @@ export const Constants = {
   public: {
     Enums: {
       group_staff_role: ["group_admin", "group_viewer"],
+      loyalty_program_type: ["points", "stamps", "tier"],
       order_status: [
         "received",
         "preparing",
