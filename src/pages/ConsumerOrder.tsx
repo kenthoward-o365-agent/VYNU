@@ -56,6 +56,7 @@ const ConsumerOrder = () => {
   const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [resolvedTableId, setResolvedTableId] = useState<string | null>(null);
 
   // Fetch venue, table, and menu data
   useEffect(() => {
@@ -129,7 +130,7 @@ const ConsumerOrder = () => {
   };
 
   const placeOrder = async () => {
-    if (!venueId || !tableId || cart.length === 0) return;
+    if (!venueId || !resolvedTableId || cart.length === 0) return;
     setPlacingOrder(true);
 
     try {
@@ -139,9 +140,9 @@ const ConsumerOrder = () => {
         .from("orders")
         .insert({
           venue_id: venueId,
-          table_id: tableId,
+          table_id: resolvedTableId,
           total,
-          status: "received",
+          status: "received" as const,
         })
         .select()
         .single();
