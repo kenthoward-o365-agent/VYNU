@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, ChevronLeft, ChevronRight, Flame, Leaf, AlertTriangle } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Flame, Leaf, AlertTriangle, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -128,7 +128,7 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
         </div>
 
         {/* Image Area */}
-        <div className="h-[55%] bg-muted relative">
+        <div className={cn("h-[55%] bg-muted relative", !isAvailable && "grayscale opacity-50")}>
           {currentItem.image_url ? (
             <img
               src={currentItem.image_url}
@@ -138,6 +138,16 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/20">
               <Flame className="h-16 w-16 text-primary/30" />
+            </div>
+          )}
+
+          {/* 86'd overlay */}
+          {!isAvailable && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-background/80 backdrop-blur px-4 py-2 rounded-full flex items-center gap-2">
+                <Ban className="h-5 w-5 text-destructive" />
+                <span className="text-sm font-semibold text-destructive">Currently Unavailable</span>
+              </div>
             </div>
           )}
 
@@ -160,7 +170,7 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
         </div>
 
         {/* Item Details */}
-        <div className="h-[45%] flex flex-col px-5 pt-4 pb-20">
+        <div className={cn("h-[45%] flex flex-col px-5 pt-4 pb-20", !isAvailable && "opacity-60")}>
           <div className="flex items-start justify-between mb-2">
             <h2 className="text-xl font-bold leading-tight flex-1 mr-3">{currentItem.name}</h2>
             <span className="text-xl font-bold text-primary shrink-0">
@@ -176,6 +186,12 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
 
           {/* Tags */}
           <div className="flex flex-wrap gap-1.5 mb-4">
+            {!isAvailable && (
+              <Badge variant="destructive" className="text-[10px] gap-1">
+                <Ban className="h-2.5 w-2.5" />
+                86'd
+              </Badge>
+            )}
             {currentItem.dietary_tags?.map((tag) => (
               <Badge key={tag} variant="secondary" className="text-[10px] gap-1">
                 <Leaf className="h-2.5 w-2.5" />
@@ -194,9 +210,10 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
             <Button
               onClick={() => onAddToCart(currentItem)}
               className="w-full h-12 rounded-2xl text-base gap-2"
+              disabled={!isAvailable}
             >
               <Plus className="h-5 w-5" />
-              Add to Order
+              {isAvailable ? "Add to Order" : "Unavailable"}
             </Button>
           </div>
         </div>
