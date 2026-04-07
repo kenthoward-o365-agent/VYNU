@@ -71,13 +71,28 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     setStaffRolesMap(staffRoles);
     const venueIds = (staffData || []).map((s) => s.venue_id);
 
-    if (venueIds.length > 0) {
-      const { data: venueData } = await supabase
-        .from("venues")
-        .select("*")
-        .in("id", venueIds);
+    // Check tabless_admin role early so we can use it for venue fetching
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("role", "tabless_admin" as any)
+      .maybeSingle();
+    const adminFlag = !!roleData;
+    setIsTablessAdmin(adminFlag);
 
-      const allVenues = (venueData || []) as Venue[];
+    if (venueIds.length > 0 || adminFlag) {
+      let allVenues: Venue[] = [];
+
+      if (adminFlag) {
+        // Tabless admins can see all venues
+        const { data: venueData } = await supabase.from("venues").select("*");
+        allVenues = (venueData || []) as Venue[];
+      } else {
+        const { data: venueData } = await supabase.from("venues").select("*").in("id", venueIds);
+        allVenues = (venueData || []) as Venue[];
+      }
+
       setVenues(allVenues);
 
       // Restore last selected venue or pick first
@@ -85,7 +100,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       const saved = allVenues.find((v) => v.id === savedId);
       const active = saved || allVenues[0] || null;
       setVenue(active);
-      setVenueRole(active ? staffRoles[active.id] || null : null);
+      setVenueRole(active ? (staffRoles[active.id] || (adminFlag ? "owner" : null)) : null);
 
       // Fetch groups
       const { data: groupStaff } = await supabase
@@ -93,7 +108,16 @@ export function VenueProvider({ children }: { children: ReactNode }) {
         .select("group_id, role")
         .eq("user_id", user.id);
 
-      if (groupStaff && groupStaff.length > 0) {
+      // For admins, also fetch all groups
+      if (adminFlag) {
+        const { data: allGroups } = await supabase.from("venue_groups").select("*");
+        setGroups((allGroups || []) as VenueGroup[]);
+        setIsGroupAdmin(true);
+        if (active?.group_id) {
+          const activeGroup = (allGroups || []).find((g: any) => g.id === active.group_id);
+          setGroup(activeGroup as VenueGroup || null);
+        }
+      } else if (groupStaff && groupStaff.length > 0) {
         const groupIds = groupStaff.map((g) => g.group_id);
         const { data: groupData } = await supabase
           .from("venue_groups")
@@ -103,7 +127,6 @@ export function VenueProvider({ children }: { children: ReactNode }) {
         setGroups((groupData || []) as VenueGroup[]);
         setIsGroupAdmin(groupStaff.some((g) => g.role === "group_admin"));
 
-        // Set current group from active venue
         if (active?.group_id) {
           const activeGroup = (groupData || []).find((g: any) => g.id === active.group_id);
           setGroup(activeGroup as VenueGroup || null);
