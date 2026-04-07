@@ -77,6 +77,7 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
   const [countrySearch, setCountrySearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
   const strength = useMemo(() => getPasswordStrength(password), [password]);
   const strengthColor = strength.score <= 2 ? "bg-destructive" : strength.score <= 3 ? "bg-yellow-500" : "bg-green-500";
