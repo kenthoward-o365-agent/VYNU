@@ -44,6 +44,11 @@ export default function MenuBuilder() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importMode, setImportMode] = useState<"url" | "pdf" | null>(null);
+  const [importUrl, setImportUrl] = useState("");
+  const [importText, setImportText] = useState("");
+  const [importing, setImporting] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [newCatName, setNewCatName] = useState("");
   const [form, setForm] = useState({
