@@ -316,6 +316,62 @@ export default function MenuBuilder() {
               </SelectContent>
             </Select>
 
+            {/* Image Upload */}
+            <div>
+              <p className="text-sm font-medium mb-2">Item Image</p>
+              {form.image_url ? (
+                <div className="relative w-full h-40 rounded-lg overflow-hidden border border-border">
+                  <img src={form.image_url} alt="Menu item" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
+                    className="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label
+                  className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-border hover:border-primary cursor-pointer transition-colors"
+                >
+                  {uploadingImage ? (
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  ) : (
+                    <>
+                      <ImagePlus className="h-6 w-6 text-muted-foreground mb-1" />
+                      <span className="text-xs text-muted-foreground">Click to upload image</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingImage}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !venue) return;
+                      if (file.size > 5 * 1024 * 1024) {
+                        toast.error("Image must be under 5MB");
+                        return;
+                      }
+                      setUploadingImage(true);
+                      const ext = file.name.split(".").pop() || "jpg";
+                      const path = `menu-items/${venue.id}/${Date.now()}.${ext}`;
+                      const { error } = await supabase.storage.from("venue-assets").upload(path, file, { upsert: true });
+                      if (error) {
+                        toast.error("Upload failed: " + error.message);
+                      } else {
+                        const { data: urlData } = supabase.storage.from("venue-assets").getPublicUrl(path);
+                        setForm((f) => ({ ...f, image_url: urlData.publicUrl }));
+                        toast.success("Image uploaded");
+                      }
+                      setUploadingImage(false);
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+
             <div>
               <p className="text-sm font-medium mb-2">Allergens</p>
               <div className="flex flex-wrap gap-2">
