@@ -84,7 +84,11 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: Venue
         </p>
         <Button variant="outline" size="sm" className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10" onClick={onSignup}>
           <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-          Sign up & start ordering
+          Sign up & earn rewards
+        </Button>
+        <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-primary" onClick={onSignin}>
+          <LogIn className="h-3.5 w-3.5 mr-1.5" />
+          Already have an account? Sign in
         </Button>
       </div>
       <Button onClick={onStart} size="lg" className="w-full max-w-xs h-14 text-lg rounded-2xl">
@@ -97,7 +101,7 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: Venue
   );
 };
 
-function FloatingActions({ onStart, onSignup }: { onStart: () => void; onSignup: () => void }) {
+function FloatingActions({ onStart, onSignup, onSignin }: { onStart: () => void; onSignup: () => void; onSignin: () => void }) {
   return (
     <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
       <div className="max-w-xs mx-auto space-y-2">
@@ -111,7 +115,16 @@ function FloatingActions({ onStart, onSignup }: { onStart: () => void; onSignup:
           onClick={onSignup}
         >
           <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-          Sign up & start ordering
+          Sign up & earn rewards
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full text-xs text-muted-foreground hover:text-primary"
+          onClick={onSignin}
+        >
+          <LogIn className="h-3.5 w-3.5 mr-1.5" />
+          Already have an account? Sign in
         </Button>
       </div>
     </div>
