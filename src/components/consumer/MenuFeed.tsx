@@ -34,7 +34,6 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
   const touchStartY = useRef(0);
 
   const filteredItems = items.filter((item) => {
-    if (!item.is_available) return false;
     if (activeCategory && item.category_id !== activeCategory) return false;
     return true;
   });
