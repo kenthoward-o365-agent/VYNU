@@ -314,6 +314,17 @@ const CheckoutPanel = ({
               </>
             );
           })()}
+        </div>
+
+        {paymentEnabled === false && (
+          <div className="bg-muted rounded-xl p-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              Payments will be collected at the venue. Tap below to confirm your order.
+            </p>
+          </div>
+        )}
+
+        {paymentEnabled && (
           <>
             <Separator />
 
