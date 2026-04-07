@@ -30,9 +30,13 @@ const groupNavItems = [
   { path: "/group", label: "Parent Company", icon: Building2 },
 ];
 
+const adminNavItems = [
+  { path: "/admin/venues", label: "Manage Venues", icon: Shield },
+];
+
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
-  const { venue, venues, group, isGroupAdmin, switchVenue } = useVenue();
+  const { venue, venues, group, isGroupAdmin, isTablessAdmin, switchVenue } = useVenue();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -41,6 +45,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const allNavItems = [
     ...venueNavItems,
     ...(showGroupNav ? groupNavItems : []),
+    ...(isTablessAdmin ? adminNavItems : []),
   ];
 
   return (
