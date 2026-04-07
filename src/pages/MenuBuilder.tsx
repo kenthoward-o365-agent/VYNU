@@ -328,6 +328,89 @@ export default function MenuBuilder() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* AI Import Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={(open) => { setImportDialogOpen(open); if (!open) setImportMode(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Menu Import
+            </DialogTitle>
+          </DialogHeader>
+
+          {!importMode ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Import your entire menu automatically. Just provide a source and AI will extract all items, categories, prices, allergens, and dietary tags.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setImportMode("url")}
+                  className="flex flex-col items-center gap-3 p-6 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors"
+                >
+                  <Globe className="h-8 w-8 text-primary" />
+                  <div className="text-center">
+                    <p className="font-medium text-foreground">Website URL</p>
+                    <p className="text-xs text-muted-foreground">Paste your menu page link</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setImportMode("pdf")}
+                  className="flex flex-col items-center gap-3 p-6 rounded-lg border border-border hover:border-primary hover:bg-accent transition-colors"
+                >
+                  <FileText className="h-8 w-8 text-primary" />
+                  <div className="text-center">
+                    <p className="font-medium text-foreground">Paste Text / PDF</p>
+                    <p className="text-xs text-muted-foreground">Paste menu text content</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          ) : importMode === "url" ? (
+            <div className="space-y-4">
+              <div>
+                <Label>Menu Page URL</Label>
+                <Input
+                  placeholder="https://myrestaurant.com/menu"
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  We'll scrape the page and extract all menu items automatically
+                </p>
+              </div>
+              <Button onClick={handleImport} disabled={!importUrl.trim() || importing} className="w-full">
+                {importing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Importing...</> : <><Sparkles className="h-4 w-4 mr-2" />Import Menu</>}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setImportMode(null)} className="w-full">
+                ← Back
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <Label>Menu Text</Label>
+                <Textarea
+                  placeholder="Paste your full menu text here — item names, descriptions, prices..."
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  rows={10}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Paste the text from your PDF menu, or type/paste your menu items
+                </p>
+              </div>
+              <Button onClick={handleImport} disabled={!importText.trim() || importing} className="w-full">
+                {importing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Importing...</> : <><Sparkles className="h-4 w-4 mr-2" />Import Menu</>}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setImportMode(null)} className="w-full">
+                ← Back
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
