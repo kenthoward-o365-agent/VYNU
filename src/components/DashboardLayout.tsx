@@ -50,7 +50,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-200 lg:static lg:translate-x-0",
-        "bg-sidebar-background text-sidebar-foreground border-r border-sidebar-border",
+        "bg-sidebar text-sidebar-foreground border-r border-sidebar-border",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-4 border-b border-sidebar-border">
