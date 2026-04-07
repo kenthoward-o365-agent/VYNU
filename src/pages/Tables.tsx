@@ -10,6 +10,17 @@ import { Plus, QrCode, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
+function getPublicBaseUrl(): string {
+  // Use VITE env for published URL, fall back to current origin
+  const origin = window.location.origin;
+  // If we're on a lovableproject.com preview, try to use the published .lovable.app URL
+  if (origin.includes("lovableproject.com")) {
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID || "c5065d82-7754-4d16-b65d-7015c476f014";
+    return `https://${projectId}.lovable.app`;
+  }
+  return origin;
+}
+
 interface Table {
   id: string;
   table_number: string;
