@@ -56,21 +56,31 @@ const ConsumerOrder = () => {
   const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [resolvedTableId, setResolvedTableId] = useState<string | null>(null);
 
   // Fetch venue, table, and menu data
   useEffect(() => {
     const fetchData = async () => {
       if (!venueId || !tableId) return;
 
-      const [venueRes, tableRes, itemsRes, catsRes] = await Promise.all([
+      // Try to find table by ID first, then fall back to table_number
+      const [venueRes, itemsRes, catsRes] = await Promise.all([
         supabase.from("venues").select("id, name, venue_type, logo_url, address, city").eq("id", venueId).single(),
-        supabase.from("tables").select("table_number").eq("id", tableId).single(),
         supabase.from("menu_items").select("*").eq("venue_id", venueId).eq("is_available", true).order("display_order"),
         supabase.from("menu_categories").select("id, name").eq("venue_id", venueId).eq("is_active", true).order("display_order"),
       ]);
 
+      // Try lookup by UUID first, fallback to table_number
+      let tableRes = await supabase.from("tables").select("id, table_number").eq("id", tableId).eq("venue_id", venueId).maybeSingle();
+      if (!tableRes.data) {
+        tableRes = await supabase.from("tables").select("id, table_number").eq("table_number", tableId).eq("venue_id", venueId).maybeSingle();
+      }
+
       if (venueRes.data) setVenue(venueRes.data);
-      if (tableRes.data) setTableNumber(tableRes.data.table_number);
+      if (tableRes.data) {
+        setTableNumber(tableRes.data.table_number);
+        setResolvedTableId(tableRes.data.id);
+      }
       if (itemsRes.data) setMenuItems(itemsRes.data as MenuItem[]);
       if (catsRes.data) setCategories(catsRes.data);
       setLoading(false);
@@ -120,7 +130,7 @@ const ConsumerOrder = () => {
   };
 
   const placeOrder = async () => {
-    if (!venueId || !tableId || cart.length === 0) return;
+    if (!venueId || !resolvedTableId || cart.length === 0) return;
     setPlacingOrder(true);
 
     try {
@@ -130,9 +140,9 @@ const ConsumerOrder = () => {
         .from("orders")
         .insert({
           venue_id: venueId,
-          table_id: tableId,
+          table_id: resolvedTableId,
           total,
-          status: "received",
+          status: "received" as const,
         })
         .select()
         .single();
