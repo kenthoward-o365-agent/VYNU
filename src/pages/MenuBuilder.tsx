@@ -130,6 +130,7 @@ export default function MenuBuilder() {
 
   const toggleAvailable = async (id: string, current: boolean) => {
     await supabase.from("menu_items").update({ is_available: !current }).eq("id", id);
+    toast.success(!current ? "Item is back on the menu" : "Item 86'd");
     fetchData();
   };
 
