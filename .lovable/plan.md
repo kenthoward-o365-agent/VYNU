@@ -1,85 +1,38 @@
 
-# Tab-Less Admin Panel
+## Tax Configuration System
 
-## Database Changes (Migration)
+### Database: New `venue_taxes` table
+| Field | Type | Description |
+|-------|------|-------------|
+| venue_id | uuid | FK to venues |
+| name | text | e.g. "GST", "VAT", "State Sales Tax", "PST" |
+| rate | numeric | The rate value (e.g. 10 for 10%, or 1.50 for fixed) |
+| tax_type | enum | `percent`, `fixed`, `compound_percent` (tax-on-tax) |
+| is_inclusive | boolean | true = built into price (AU GST, UK VAT), false = added on top (US sales tax) |
+| display_order | integer | Order taxes are applied (matters for compound) |
+| is_active | boolean | Enable/disable without deleting |
 
-### 1. `user_roles` table (per security guidelines)
-```sql
-CREATE TYPE public.app_role AS ENUM ('tabless_admin');
+- RLS: venue managers can CRUD, staff can view, public can view active taxes (needed for checkout display)
+- A venue can have multiple active taxes (e.g. Canada: GST 5% + PST 7%)
 
-CREATE TABLE public.user_roles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  role app_role NOT NULL,
-  UNIQUE (user_id, role)
-);
-ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
+### UI: Tax Settings Tab in Venue Settings
+- New "Taxes" tab in the venue settings page
+- Preset templates for quick setup:
+  - 🇦🇺 **Australia**: GST 10% inclusive
+  - 🇬🇧 **UK**: VAT 20% inclusive
+  - 🇪🇺 **EU**: VAT (configurable rate) inclusive
+  - 🇨🇦 **Canada**: GST 5% exclusive + PST (varies) exclusive
+  - 🇺🇸 **US**: Sales Tax (varies) exclusive
+- Ability to add custom taxes, edit rates, toggle active/inactive
+- Clear explanation of inclusive vs exclusive and compound
 
--- Security definer function to check roles
-CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
-RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role = _role)
-$$;
+### Code Changes
+- **Menu Builder**: Replace hardcoded GST calculation with dynamic tax display based on venue config
+- **Checkout**: Calculate tax totals dynamically from venue_taxes, showing each line item
+- **New helper**: `calculateTaxes(subtotal, taxes[])` utility function for consistent calculation everywhere
 
--- Only admins can view/manage roles
-CREATE POLICY "Admins can view roles" ON public.user_roles FOR SELECT TO authenticated
-  USING (public.has_role(auth.uid(), 'tabless_admin'));
-CREATE POLICY "Admins can manage roles" ON public.user_roles FOR ALL TO authenticated
-  USING (public.has_role(auth.uid(), 'tabless_admin'));
-```
-
-### 2. Add subscription fields to `venues`
-```sql
-ALTER TABLE public.venues 
-  ADD COLUMN subscription_status TEXT DEFAULT 'trial',
-  ADD COLUMN subscription_plan TEXT DEFAULT 'basic',
-  ADD COLUMN subscription_notes TEXT;
-```
-
-### 3. RLS policies for admin access
-- Admins can SELECT, UPDATE all venues
-- Admins can SELECT all venue_staff, diner_profiles, etc.
-- Admins can INSERT into auth (via edge function for user creation)
-
-## New Files
-
-### `src/pages/AdminVenues.tsx` — Main admin page
-- **Venues list** with search, filter by status (trial/active/suspended)
-- **Create venue** dialog: name, type, city, state, parent/child toggle (assign to group)
-- **Venue detail** inline panel or click-to-expand with:
-  - Subscription status toggle (trial → active → suspended)
-  - Subscription plan selector
-  - Quick links to manage menu & users for that venue
-
-### `src/pages/AdminVenueDetail.tsx` — Single venue management
-- Tabs: **Details**, **Menu**, **Users**
-- **Details**: edit venue info, subscription status/plan
-- **Menu**: category + item creation (reuse existing Menu Builder logic but operating on any venue_id)
-- **Users**: list staff, create new admin user for the venue (calls an edge function to create auth user + venue_staff record)
-
-### `supabase/functions/admin-create-user/index.ts` — Edge function
-- Accepts: email, password, venue_id, role, display_name
-- Validates caller is tabless_admin
-- Creates auth user via admin API
-- Creates venue_staff record
-- Returns the new user info
-
-## Sidebar Changes (`DashboardLayout.tsx`)
-- Add admin nav section (below Group section), visible only when `has_role(uid, 'tabless_admin')` returns true
-- Items: "Manage Venues" → `/admin/venues`
-
-## Files to create:
-- `src/pages/AdminVenues.tsx`
-- `src/pages/AdminVenueDetail.tsx`  
-- `supabase/functions/admin-create-user/index.ts`
-
-## Files to edit:
-- `src/components/DashboardLayout.tsx` — add admin nav section
-- `src/App.tsx` — add admin routes
-- `src/contexts/VenueContext.tsx` — expose `isTablessAdmin` flag
-
-## Flow:
-1. Tab-Less admin logs in → sees "Admin" section in sidebar
-2. Clicks "Manage Venues" → sees all venues across the platform
-3. Can create new venues, assign to parent groups, set subscription status
-4. Can drill into a venue to create menu items and staff accounts
+### Tax Calculation Logic
+1. **Inclusive %**: Tax = price × rate / (100 + rate) — price stays the same, tax is extracted
+2. **Exclusive %**: Tax = subtotal × rate / 100 — added on top of price
+3. **Fixed**: Tax = fixed amount per order
+4. **Compound %**: Tax = (subtotal + previous taxes) × rate / 100 — applied after other taxes

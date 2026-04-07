@@ -744,6 +744,53 @@ export type Database = {
           },
         ]
       }
+      venue_taxes: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          is_inclusive: boolean
+          name: string
+          rate: number
+          tax_type: Database["public"]["Enums"]["tax_type"]
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_inclusive?: boolean
+          name: string
+          rate?: number
+          tax_type?: Database["public"]["Enums"]["tax_type"]
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_inclusive?: boolean
+          name?: string
+          rate?: number
+          tax_type?: Database["public"]["Enums"]["tax_type"]
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_taxes_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venues: {
         Row: {
           address: string | null
@@ -888,6 +935,7 @@ export type Database = {
         | "special"
         | "event"
         | "weather"
+      tax_type: "percent" | "fixed" | "compound_percent"
       venue_staff_role: "owner" | "manager" | "staff"
     }
     CompositeTypes: {
@@ -1034,6 +1082,7 @@ export const Constants = {
         "event",
         "weather",
       ],
+      tax_type: ["percent", "fixed", "compound_percent"],
       venue_staff_role: ["owner", "manager", "staff"],
     },
   },

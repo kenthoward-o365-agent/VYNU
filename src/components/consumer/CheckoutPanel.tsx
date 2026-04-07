@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateTaxes, type TaxConfig } from "@/lib/tax-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,11 +60,23 @@ const CheckoutPanel = ({
   const [processing, setProcessing] = useState(false);
   const [loadingCards, setLoadingCards] = useState(false);
   const [paymentEnabled, setPaymentEnabled] = useState<boolean | null>(null);
+  const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
 
   useEffect(() => {
     checkPaymentEnabled();
+    fetchVenueTaxes();
     if (dinerId) fetchStoredCards();
   }, [venueId, dinerId]);
+
+  const fetchVenueTaxes = async () => {
+    const { data } = await supabase
+      .from("venue_taxes" as any)
+      .select("id, name, rate, tax_type, is_inclusive, display_order")
+      .eq("venue_id", venueId)
+      .eq("is_active", true)
+      .order("display_order");
+    setVenueTaxes((data as any as TaxConfig[]) || []);
+  };
 
   const checkPaymentEnabled = async () => {
     const { data } = await supabase
@@ -276,19 +289,31 @@ const CheckoutPanel = ({
               <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
             </div>
           ))}
-          <Separator />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Subtotal (ex-GST)</span>
-            <span>${(total / 1.1).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>GST (10%)</span>
-            <span>${(total / 11).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between font-semibold">
-            <span>Total (incl. GST)</span>
-            <span>${total.toFixed(2)}</span>
-          </div>
+          {(() => {
+            const taxResult = calculateTaxes(total, venueTaxes);
+            const hasExclusive = venueTaxes.some((t) => !t.is_inclusive);
+            return (
+              <>
+                <Separator />
+                {taxResult.lines.map((line, i) => (
+                  <div key={i} className="flex justify-between text-xs text-muted-foreground">
+                    <span>{line.name} ({line.is_inclusive ? "incl." : "added"})</span>
+                    <span>${line.amount.toFixed(2)}</span>
+                  </div>
+                ))}
+                {venueTaxes.length > 0 && taxResult.lines.some((l) => l.is_inclusive) && (
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Subtotal (ex-tax)</span>
+                    <span>${taxResult.subtotalExTax.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-semibold">
+                  <span>Total{hasExclusive ? " (incl. tax)" : ""}</span>
+                  <span>${taxResult.grandTotal.toFixed(2)}</span>
+                </div>
+              </>
+            );
+          })()}
         </div>
 
         {paymentEnabled === false && (

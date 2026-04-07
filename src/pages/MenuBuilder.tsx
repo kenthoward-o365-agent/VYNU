@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { formatItemTaxBreakdown, type TaxConfig } from "@/lib/tax-utils";
 
 interface MenuItem {
   id: string;
@@ -42,6 +43,7 @@ const dietaryOptions = ["Vegan", "Vegetarian", "Gluten Free", "Dairy Free", "Ket
 export default function MenuBuilder() {
   const { venue } = useVenue();
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
@@ -64,12 +66,14 @@ export default function MenuBuilder() {
 
   const fetchData = async () => {
     if (!venue) return;
-    const [itemsRes, catsRes] = await Promise.all([
+    const [itemsRes, catsRes, taxesRes] = await Promise.all([
       supabase.from("menu_items").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("menu_categories").select("*").eq("venue_id", venue.id).order("display_order"),
+      supabase.from("venue_taxes" as any).select("*").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
     ]);
     setItems((itemsRes.data as MenuItem[]) || []);
     setCategories((catsRes.data as Category[]) || []);
+    setVenueTaxes((taxesRes.data as any as TaxConfig[]) || []);
   };
 
   useEffect(() => { fetchData(); }, [venue]);
@@ -264,7 +268,7 @@ export default function MenuBuilder() {
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
               <div className="grid gap-3">
                 {items.filter((i) => !i.category_id).map((item) => (
-                  <ItemCard key={item.id} item={item} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
+                  <ItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
                 ))}
               </div>
             </div>
@@ -279,7 +283,7 @@ export default function MenuBuilder() {
                 ) : (
                   <div className="grid gap-3">
                     {catItems.map((item) => (
-                      <ItemCard key={item.id} item={item} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
+                      <ItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
                     ))}
                   </div>
                 )}
@@ -300,10 +304,10 @@ export default function MenuBuilder() {
             <Textarea placeholder="Description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Input type="number" step="0.01" placeholder="Price incl. GST ($)" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
-                {form.price && parseFloat(form.price) > 0 && (
+                <Input type="number" step="0.01" placeholder="Price ($)" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
+                {form.price && parseFloat(form.price) > 0 && venueTaxes.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Ex-GST: ${(parseFloat(form.price) / 1.1).toFixed(2)} · GST: ${(parseFloat(form.price) / 11).toFixed(2)}
+                    {formatItemTaxBreakdown(parseFloat(form.price), venueTaxes)}
                   </p>
                 )}
               </div>
@@ -569,16 +573,17 @@ export default function MenuBuilder() {
   );
 }
 
-function ItemCard({ item, onEdit, onDelete, onToggle }: {
+function ItemCard({ item, taxes, onEdit, onDelete, onToggle }: {
   item: MenuItem;
+  taxes: TaxConfig[];
   onEdit: (i: MenuItem) => void;
   onDelete: (id: string) => void;
   onToggle: (id: string, current: boolean) => void;
 }) {
+  const taxBreakdown = taxes.length > 0 ? formatItemTaxBreakdown(Number(item.price), taxes) : "";
   return (
     <Card className={!item.is_available ? "opacity-60" : ""}>
       <CardContent className="flex items-center gap-4 py-3 px-4">
-        {/* Thumbnail */}
         {item.image_url ? (
           <div className="h-14 w-14 rounded-lg overflow-hidden shrink-0 border border-border">
             <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
@@ -601,7 +606,7 @@ function ItemCard({ item, onEdit, onDelete, onToggle }: {
         </div>
         <div className="text-right shrink-0">
           <p className="font-semibold text-foreground">${Number(item.price).toFixed(2)}</p>
-          <p className="text-[10px] text-muted-foreground">GST ${(Number(item.price) / 11).toFixed(2)}</p>
+          {taxBreakdown && <p className="text-[10px] text-muted-foreground">{taxBreakdown}</p>}
           {item.prep_time_minutes && <p className="text-xs text-muted-foreground">{item.prep_time_minutes} min</p>}
         </div>
         <div className="flex items-center gap-1 shrink-0">

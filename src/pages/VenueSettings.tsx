@@ -16,8 +16,9 @@ import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard } from "lucide-react";
+import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard, Receipt } from "lucide-react";
 import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
+import TaxSettingsTab from "@/components/venue/TaxSettingsTab";
 
 const venueTypes = [
   { value: "restaurant", label: "Restaurant" },
@@ -238,6 +239,7 @@ export default function VenueSettings() {
           {isManager && venue?.group_id && <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>}
           {isManager && venue?.group_id && <TabsTrigger value="diners"><Users className="h-3.5 w-3.5 mr-1" />Diners</TabsTrigger>}
           {isManager && <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>}
+          {isManager && <TabsTrigger value="taxes"><Receipt className="h-3.5 w-3.5 mr-1" />Taxes</TabsTrigger>}
         </TabsList>
 
         {/* ── DETAILS TAB ── */}
@@ -496,9 +498,14 @@ export default function VenueSettings() {
 
         {/* ── PAYMENTS TAB ── */}
         {isManager && venue && (
-          <TabsContent value="payments" className="space-y-6">
-            <PaymentSettingsTab venueId={venue.id} />
-          </TabsContent>
+          <>
+            <TabsContent value="payments" className="space-y-6">
+              <PaymentSettingsTab venueId={venue.id} />
+            </TabsContent>
+            <TabsContent value="taxes" className="space-y-6">
+              <TaxSettingsTab venueId={venue.id} />
+            </TabsContent>
+          </>
         )}
       </Tabs>
     </div>
