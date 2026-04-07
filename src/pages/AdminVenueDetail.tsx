@@ -11,7 +11,8 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Settings, UtensilsCrossed, Users, Plus, Trash2, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Settings, UtensilsCrossed, Users, Plus, Trash2, Eye, EyeOff, Gift, Building2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 
 interface StaffMember {
@@ -63,6 +64,11 @@ export default function AdminVenueDetail() {
   });
   const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
 
+  // Group settings (for parent venues)
+  const [groupSettings, setGroupSettings] = useState<{ global_diners: boolean; global_loyalty: boolean }>({ global_diners: false, global_loyalty: false });
+  const [childVenues, setChildVenues] = useState<any[]>([]);
+  const [savingGroupSettings, setSavingGroupSettings] = useState(false);
+
   // Staff
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [newUserDialog, setNewUserDialog] = useState(false);
@@ -92,6 +98,15 @@ export default function AdminVenueDetail() {
         subscription_plan: (data as any).subscription_plan || "basic",
         subscription_notes: (data as any).subscription_notes || "",
       });
+      // If parent venue, fetch group settings and child venues
+      if (data.venue_type === "parent" && data.group_id) {
+        const { data: groupRow } = await supabase.from("venue_groups").select("settings").eq("id", data.group_id).single();
+        const s = (groupRow?.settings && typeof groupRow.settings === "object") ? groupRow.settings as any : {};
+        setGroupSettings({ global_diners: s.global_diners ?? false, global_loyalty: s.global_loyalty ?? false });
+
+        const { data: children } = await supabase.from("venues").select("id, name, city, state, venue_type").eq("group_id", data.group_id).neq("id", venueId);
+        setChildVenues(children || []);
+      }
     }
     // Fetch groups
     const { data: groupData } = await supabase.from("venue_groups").select("id, name");
@@ -199,6 +214,17 @@ export default function AdminVenueDetail() {
     fetchMenu();
   };
 
+  const saveGroupSettings = async () => {
+    if (!venue?.group_id) return;
+    setSavingGroupSettings(true);
+    const { error } = await supabase.from("venue_groups").update({
+      settings: { global_diners: groupSettings.global_diners, global_loyalty: groupSettings.global_loyalty },
+    }).eq("id", venue.group_id);
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else toast({ title: "Group settings saved" });
+    setSavingGroupSettings(false);
+  };
+
   if (loading) return <p className="text-muted-foreground p-6">Loading...</p>;
   if (!venue) return <p className="text-muted-foreground p-6">Venue not found.</p>;
 
@@ -217,6 +243,9 @@ export default function AdminVenueDetail() {
       <Tabs defaultValue="details" className="space-y-6">
         <TabsList>
           <TabsTrigger value="details"><Settings className="h-3.5 w-3.5 mr-1" />Details</TabsTrigger>
+          {venue?.venue_type === "parent" && (
+            <TabsTrigger value="group-settings"><Building2 className="h-3.5 w-3.5 mr-1" />Group Settings</TabsTrigger>
+          )}
           <TabsTrigger value="menu"><UtensilsCrossed className="h-3.5 w-3.5 mr-1" />Menu</TabsTrigger>
           <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
         </TabsList>
@@ -293,6 +322,65 @@ export default function AdminVenueDetail() {
 
           <Button onClick={saveDetails} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
         </TabsContent>
+
+        {/* ── GROUP SETTINGS TAB (parent venues only) ── */}
+        {venue?.venue_type === "parent" && (
+          <TabsContent value="group-settings" className="space-y-6 max-w-2xl">
+            <Card>
+              <CardHeader>
+                <CardTitle>Diner & Loyalty Settings</CardTitle>
+                <CardDescription>Control how diners and loyalty programs apply across all child venues in this group.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-sm">Global Diner Recognition</p>
+                    <p className="text-xs text-muted-foreground">Diners are recognised and their visit history tracked across all child venues.</p>
+                  </div>
+                  <Switch checked={groupSettings.global_diners} onCheckedChange={(v) => setGroupSettings({ ...groupSettings, global_diners: v })} />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-sm">Global Loyalty Programs</p>
+                    <p className="text-xs text-muted-foreground">Group-level loyalty programs automatically apply to all child venues. Venues can still create their own programs.</p>
+                  </div>
+                  <Switch checked={groupSettings.global_loyalty} onCheckedChange={(v) => setGroupSettings({ ...groupSettings, global_loyalty: v })} />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Child Venues</CardTitle>
+                <CardDescription>{childVenues.length} venue{childVenues.length !== 1 ? "s" : ""} assigned to this parent company.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {childVenues.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No child venues assigned yet. Assign venues from their detail page or the Manage Venues list.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {childVenues.map((cv) => (
+                      <div key={cv.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                        <div>
+                          <p className="text-sm font-medium">{cv.name}</p>
+                          <p className="text-xs text-muted-foreground">{cv.city || "—"}, {cv.state || "—"} · {cv.venue_type}</p>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/admin/venues/${cv.id}`)}>
+                          View
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Button onClick={saveGroupSettings} disabled={savingGroupSettings}>
+              {savingGroupSettings ? "Saving..." : "Save Group Settings"}
+            </Button>
+          </TabsContent>
+        )}
 
         {/* ── MENU TAB ── */}
         <TabsContent value="menu" className="space-y-6">
