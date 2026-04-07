@@ -56,7 +56,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchVenues = async () => {
-    if (!user) { setVenue(null); setVenues([]); setGroup(null); setGroups([]); setIsGroupAdmin(false); setIsTablessAdmin(false); setLoading(false); return; }
+    if (!user) { setVenue(null); setVenues([]); setGroup(null); setGroups([]); setIsGroupAdmin(false); setIsTablessAdmin(false); setVenueRole(null); setLoading(false); return; }
     setLoading(true);
 
     // Fetch all venue_staff records for this user
