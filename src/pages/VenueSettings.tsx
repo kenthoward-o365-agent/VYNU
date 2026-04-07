@@ -97,10 +97,24 @@ export default function VenueSettings() {
     const userIds = staffList.map((s) => s.user_id);
     if (userIds.length > 0) {
       try {
-        const { data: emailData } = await supabase.functions.invoke("admin-create-user", {
-          body: { action: "list_emails", user_ids: userIds, venue_id: venue.id },
-        });
-        if (emailData?.emails) setStaffEmails(emailData.emails);
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+        if (accessToken) {
+          const resp = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+                apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              },
+              body: JSON.stringify({ action: "list_emails", user_ids: userIds, venue_id: venue.id }),
+            }
+          );
+          const emailData = await resp.json();
+          if (emailData?.emails) setStaffEmails(emailData.emails);
+        }
       } catch {}
     }
   };
