@@ -88,8 +88,38 @@ export default function Loyalty() {
 
   const typeLabel = (t: string) => t === "points" ? "Points" : t === "stamps" ? "Stamps" : "Tier";
 
+  // Fetch group programs for banner
+  const [groupPrograms, setGroupPrograms] = useState<{ id: string; name: string; program_type: string }[]>([]);
+  useEffect(() => {
+    if (!venue?.group_id) return;
+    supabase
+      .from("loyalty_programs")
+      .select("id, name, program_type")
+      .eq("group_id", venue.group_id)
+      .eq("is_active", true)
+      .then(({ data }) => setGroupPrograms(data || []));
+  }, [venue?.group_id]);
+
   return (
     <div className="space-y-6">
+      {/* Group programs banner */}
+      {groupPrograms.length > 0 && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Gift className="h-4 w-4 text-primary" />
+              <p className="text-sm font-medium text-foreground">Inherited Group Programs</p>
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">These programs are managed at the parent company level and apply to all venues.</p>
+            <div className="flex flex-wrap gap-2">
+              {groupPrograms.map((gp) => (
+                <Badge key={gp.id} variant="secondary">{gp.name} ({gp.program_type})</Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Loyalty</h2>

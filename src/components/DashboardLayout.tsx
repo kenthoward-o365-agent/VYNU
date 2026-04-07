@@ -27,7 +27,7 @@ const venueNavItems = [
 ];
 
 const groupNavItems = [
-  { path: "/group", label: "Group Dashboard", icon: Building2 },
+  { path: "/group", label: "Parent Company", icon: Building2 },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -37,9 +37,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const showGroupNav = isGroupAdmin || venues.length > 1;
   const allNavItems = [
     ...venueNavItems,
-    ...(isGroupAdmin && group ? groupNavItems : []),
+    ...(showGroupNav ? groupNavItems : []),
   ];
 
   return (
@@ -105,7 +106,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             );
           })}
 
-          {isGroupAdmin && group && (
+          {(isGroupAdmin || venues.length > 1) && (
             <>
               <div className="pt-3 pb-1 px-3">
                 <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-muted">Group</span>
