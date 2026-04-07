@@ -243,6 +243,9 @@ export default function AdminVenueDetail() {
       <Tabs defaultValue="details" className="space-y-6">
         <TabsList>
           <TabsTrigger value="details"><Settings className="h-3.5 w-3.5 mr-1" />Details</TabsTrigger>
+          {venue?.venue_type === "parent" && (
+            <TabsTrigger value="group-settings"><Building2 className="h-3.5 w-3.5 mr-1" />Group Settings</TabsTrigger>
+          )}
           <TabsTrigger value="menu"><UtensilsCrossed className="h-3.5 w-3.5 mr-1" />Menu</TabsTrigger>
           <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
         </TabsList>
