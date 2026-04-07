@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { Paintbrush } from "lucide-react";
 
 const venueTypes = [
   { value: "restaurant", label: "Restaurant" },
@@ -19,6 +21,7 @@ const venueTypes = [
 
 export default function VenueSettings() {
   const { venue, refetch } = useVenue();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "", venue_type: "restaurant", address: "", city: "", state: "NSW",
     postcode: "", phone: "", email: "",
@@ -86,6 +89,20 @@ export default function VenueSettings() {
           <Input placeholder="Phone" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
           <Input type="email" placeholder="Email" value={form.email} onChange={(e) => update("email", e.target.value)} />
           <Button onClick={save} disabled={loading}>{loading ? "Saving..." : "Save Changes"}</Button>
+        </CardContent>
+      </Card>
+
+      {/* Landing Page Builder */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Diner Landing Page</CardTitle>
+          <CardDescription>Customise the page diners see when they scan your QR code</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="outline" onClick={() => navigate("/settings/landing-page")}>
+            <Paintbrush className="h-4 w-4 mr-2" />
+            Open Landing Page Editor
+          </Button>
         </CardContent>
       </Card>
     </div>
