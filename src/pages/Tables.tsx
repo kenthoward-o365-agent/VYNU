@@ -110,6 +110,7 @@ export default function Tables() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {tables.length === 0 ? (
