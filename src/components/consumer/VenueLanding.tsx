@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { MapPin, Utensils, Gift, UserPlus } from "lucide-react";
+import { MapPin, Utensils, Gift, UserPlus, LogIn } from "lucide-react";
 import LandingSectionRenderer from "@/components/landing-editor/LandingSectionRenderer";
 import type { LandingSection } from "@/components/landing-editor/types";
 
@@ -16,6 +16,7 @@ interface VenueLandingProps {
   tableNumber: string;
   onStart: () => void;
   onSignup: () => void;
+  onSignin: () => void;
 }
 
 function tryParseJsonSections(raw: string): LandingSection[] | null {
