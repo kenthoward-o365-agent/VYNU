@@ -1,111 +1,70 @@
 
+# Sippa AI — Chat Agent Management
 
-# Dashboard Metrics Expansion
+## Phase 1: Settings & Configuration (Build Now)
 
-## Current State
-The venue dashboard has: Financial Performance (4 cards) + Order Performance (donut chart) + placeholder Quick Actions / AI Insights cards. The `orders` table only tracks `created_at` and `updated_at` — there is no status history log, so we cannot compute ticket stage times yet.
+### Database
+Add a `sippa_config` JSONB column to the `venues.settings` field (or a dedicated table) storing:
+- `chat_agent_name` (default: "Sippa")
+- `opening_message` (customizable greeting)
+- `tone` (enum: `aussie`, `british`, `north_american`)
+- `chat_mode` (enum: `chat_first`, `chat_optional`, `chat_only`)
+- `agent_icon_url` (uploaded to venue-assets bucket)
 
-## What We Will Build
+### Venue Settings UI
+New "Sippa AI" tab in Venue Settings with:
+1. **Agent Name** — text input (default "Sippa")
+2. **Agent Icon** — image upload (uses existing venue-assets bucket)
+3. **Opening Message** — textarea with placeholder suggestions per tone
+4. **Tone & Personality** — radio select: Full Aussie 🇦🇺 / British 🇬🇧 / North American 🇺🇸
+5. **Chat Mode** — radio select:
+   - *Chat First* — chat opens automatically, menu behind it
+   - *Chat Optional* — menu shows first, chat is a floating button
+   - *Chat Only* — no traditional menu, everything through chat
+6. **Preview** — live preview of how the greeting will look
 
-### 1. Top 10 Menu Items (by Count and Revenue)
-- Fetch `order_items` joined to `menu_items` for orders in the audit date range
-- Aggregate by menu item: sum quantity (count) and sum (quantity * unit_price) (revenue)
-- Display as two horizontal bar charts side-by-side: "Top 10 by Qty Sold" and "Top 10 by Revenue"
-- Uses recharts `BarChart` with horizontal layout
+### Edge Function Update
+Update `diner-chat` to:
+- Load venue's Sippa config
+- Inject tone-specific system prompt (slang, idioms, greeting style)
+- Use custom opening message
+- Pass agent name back to frontend
 
-### 2. Revenue by Hour (Bar Chart)
-- Group billable orders by hour of `created_at`
-- Show a vertical bar chart with hours on x-axis, revenue on y-axis
-- Helps identify peak trading periods
+### Consumer App Update
+- Use venue's Sippa config for agent name, icon, and opening message
+- Respect chat_mode setting for UX flow
 
-### 3. Ticket Time Tracking (requires new table)
-- **New table: `order_status_log`** — records every status transition with a timestamp
-  - `id`, `order_id`, `status` (order_status enum), `changed_at` (timestamptz default now()), `changed_by` (uuid nullable)
-  - RLS: staff can view/insert for their venue's orders
-- **Trigger**: a Postgres trigger on `orders` that inserts a row into `order_status_log` whenever `status` changes
-- **Dashboard widget**: "Avg Ticket Times" card showing average duration for each stage transition (Received→Preparing, Preparing→Ready, Ready→Served) as a simple table or stacked bar
-- Data will populate going forward once the trigger is active
-
-### 4. Table Utilization (Today only)
-- Query `tables` for the venue, cross-reference with active orders to show occupied vs available
-- Simple stat card: "X / Y Tables Occupied"
-
-### 5. Replace Placeholder Cards
-- Remove "Quick Actions" and "AI Insights" placeholder cards
-- Replace with the real widgets above
+## Phase 2: Advanced Capabilities (Future)
+These require significant backend work and will be planned separately:
+- **Venue knowledge base** — crawl venue website, ingest menus, train per-venue context
+- **Order another round** — repeat last order via chat command
+- **Get the manager** — escalation flow (notify staff via realtime)
+- **Check splitting** — split bill N ways via chat
+- **Learning/memory** — remember diner preferences across visits
 
 ## Technical Details
 
-### Database Migration
+### New Table: `venue_ai_config`
 ```sql
--- order_status_log table
-CREATE TABLE public.order_status_log (
+CREATE TABLE public.venue_ai_config (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id uuid NOT NULL,
-  status order_status NOT NULL,
-  changed_at timestamptz NOT NULL DEFAULT now(),
-  changed_by uuid
+  venue_id uuid NOT NULL UNIQUE REFERENCES venues(id) ON DELETE CASCADE,
+  agent_name text NOT NULL DEFAULT 'Sippa',
+  agent_icon_url text,
+  opening_message text DEFAULT 'Hey! 👋 I''m your AI server. Tell me what you''re in the mood for and I''ll find the perfect dish.',
+  tone text NOT NULL DEFAULT 'aussie',
+  chat_mode text NOT NULL DEFAULT 'chat_optional',
+  personality_extras jsonb DEFAULT '{}',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
-
-ALTER TABLE public.order_status_log ENABLE ROW LEVEL SECURITY;
-
--- RLS: staff can view logs for their venue's orders
-CREATE POLICY "Staff can view status logs"
-  ON public.order_status_log FOR SELECT TO authenticated
-  USING (EXISTS (
-    SELECT 1 FROM orders o
-    WHERE o.id = order_status_log.order_id
-    AND is_venue_staff(auth.uid(), o.venue_id)
-  ));
-
-CREATE POLICY "Staff can insert status logs"
-  ON public.order_status_log FOR INSERT TO authenticated
-  WITH CHECK (EXISTS (
-    SELECT 1 FROM orders o
-    WHERE o.id = order_status_log.order_id
-    AND is_venue_staff(auth.uid(), o.venue_id)
-  ));
-
--- Auto-log trigger
-CREATE OR REPLACE FUNCTION log_order_status_change()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  IF OLD.status IS DISTINCT FROM NEW.status THEN
-    INSERT INTO public.order_status_log (order_id, status, changed_by)
-    VALUES (NEW.id, NEW.status, auth.uid());
-  END IF;
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_order_status_log
-  AFTER UPDATE ON public.orders
-  FOR EACH ROW EXECUTE FUNCTION log_order_status_change();
-
--- Also log initial status on insert
-CREATE OR REPLACE FUNCTION log_order_initial_status()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  INSERT INTO public.order_status_log (order_id, status, changed_by)
-  VALUES (NEW.id, NEW.status, auth.uid());
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_order_initial_status_log
-  AFTER INSERT ON public.orders
-  FOR EACH ROW EXECUTE FUNCTION log_order_initial_status();
 ```
-
-### Dashboard Layout (top to bottom)
-1. Header + Audit Date picker (unchanged)
-2. Financial Performance — 4 stat cards (unchanged)
-3. Revenue by Hour — bar chart (new)
-4. Order Performance donut + Table Utilization side-by-side
-5. Top 10 Items by Qty + Top 10 Items by Revenue side-by-side
-6. Avg Ticket Times card (new, data populates going forward)
+- RLS: managers can CRUD for their venue, staff can view, public can view (needed for consumer app)
 
 ### Files Changed
-- **New migration** — `order_status_log` table, trigger, RLS
-- **`src/pages/Dashboard.tsx`** — add all new widgets, remove placeholder cards
-
+- **New migration** — `venue_ai_config` table + RLS
+- **New component** — `src/components/venue/SippaAISettings.tsx`
+- **Edit** — `src/pages/VenueSettings.tsx` — add Sippa AI tab
+- **Edit** — `supabase/functions/diner-chat/index.ts` — load config, apply tone
+- **Edit** — `src/components/consumer/AIChatOverlay.tsx` — use config for name/icon/greeting
+- **Edit** — `src/pages/ConsumerOrder.tsx` — respect chat_mode
