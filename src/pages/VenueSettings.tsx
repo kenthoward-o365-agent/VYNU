@@ -238,7 +238,7 @@ export default function VenueSettings() {
           <TabsTrigger value="details"><Settings className="h-3.5 w-3.5 mr-1" />Details</TabsTrigger>
           {isManager && <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>}
           {isManager && <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>}
-          {isManager && venue?.group_id && <TabsTrigger value="diners"><Users className="h-3.5 w-3.5 mr-1" />Diners</TabsTrigger>}
+          
           {isManager && <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>}
           {isManager && <TabsTrigger value="taxes"><Receipt className="h-3.5 w-3.5 mr-1" />Taxes</TabsTrigger>}
         </TabsList>
@@ -495,12 +495,6 @@ export default function VenueSettings() {
           </TabsContent>
         )}
 
-        {/* ── DINERS TAB ── */}
-        {isManager && venue?.group_id && (
-          <TabsContent value="diners" className="space-y-6">
-            <VenueDinersTab venueId={venue?.id} groupId={venue?.group_id} />
-          </TabsContent>
-        )}
 
         {/* ── PAYMENTS TAB ── */}
         {isManager && venue && (
@@ -894,117 +888,3 @@ function LoyaltyRulesEditor({ program, onSave }: { program: LoyaltyProgram; onSa
   );
 }
 
-/* ═══════════════════════════════════════════
-   DINERS TAB (venue or group-scoped)
-   ═══════════════════════════════════════════ */
-interface DinerRow {
-  id: string;
-  display_name: string | null;
-  email: string | null;
-  phone: string | null;
-  allergens: string[];
-  visit_count: number;
-  last_visit: string | null;
-}
-
-function VenueDinersTab({ venueId, groupId }: { venueId?: string; groupId?: string | null }) {
-  const { venues } = useVenue();
-  const [diners, setDiners] = useState<DinerRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-
-  const scopeVenueIds = groupId
-    ? venues.filter((v) => v.group_id === groupId).map((v) => v.id)
-    : venueId ? [venueId] : [];
-
-  useEffect(() => {
-    if (scopeVenueIds.length === 0) { setDiners([]); setLoading(false); return; }
-    const fetchDiners = async () => {
-      setLoading(true);
-      const { data: visits } = await supabase
-        .from("diner_visits")
-        .select("diner_id, visited_at")
-        .in("venue_id", scopeVenueIds)
-        .order("visited_at", { ascending: false });
-
-      if (!visits || visits.length === 0) { setDiners([]); setLoading(false); return; }
-
-      const dinerMap = new Map<string, { count: number; last: string }>();
-      visits.forEach((v) => {
-        const existing = dinerMap.get(v.diner_id);
-        if (!existing) dinerMap.set(v.diner_id, { count: 1, last: v.visited_at });
-        else existing.count++;
-      });
-
-      const dinerIds = Array.from(dinerMap.keys());
-      const { data: profiles } = await supabase.from("diner_profiles").select("*").in("id", dinerIds);
-
-      const result: DinerRow[] = (profiles || []).map((p: any) => ({
-        id: p.id,
-        display_name: p.display_name,
-        email: p.email,
-        phone: p.phone,
-        allergens: p.allergens || [],
-        visit_count: dinerMap.get(p.id)?.count || 0,
-        last_visit: dinerMap.get(p.id)?.last || null,
-      }));
-      result.sort((a, b) => b.visit_count - a.visit_count);
-      setDiners(result);
-      setLoading(false);
-    };
-    fetchDiners();
-  }, [scopeVenueIds.join(",")]);
-
-  const filtered = diners.filter((d) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (d.display_name || "").toLowerCase().includes(s) || (d.email || "").toLowerCase().includes(s) || (d.phone || "").toLowerCase().includes(s);
-  });
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold text-foreground">Diners</h3>
-        <p className="text-sm text-muted-foreground">
-          {groupId ? "All diners across all venues in the parent company." : "Diners who have visited this venue."}
-        </p>
-      </div>
-
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search diners..." className="pl-9" />
-      </div>
-
-      {loading ? (
-        <p className="text-muted-foreground">Loading...</p>
-      ) : filtered.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><Users className="mx-auto h-10 w-10 text-muted-foreground mb-3" /><p className="text-muted-foreground">No diners found.</p></CardContent></Card>
-      ) : (
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Visits</TableHead>
-                <TableHead>Last Visit</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((d) => (
-                <TableRow key={d.id}>
-                  <TableCell className="font-medium">{d.display_name || "Anonymous"}</TableCell>
-                  <TableCell className="text-muted-foreground">{d.email || "—"}</TableCell>
-                  <TableCell className="text-muted-foreground">{d.phone || "—"}</TableCell>
-                  <TableCell>{d.visit_count}</TableCell>
-                  <TableCell className="text-muted-foreground">{d.last_visit ? new Date(d.last_visit).toLocaleDateString() : "—"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-    </div>
-  );
-}
