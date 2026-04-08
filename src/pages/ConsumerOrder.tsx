@@ -236,6 +236,19 @@ const ConsumerOrder = () => {
 
   return (
     <ConsumerLayout>
+      {/* Receipt view when paid */}
+      {activeOrder && activeOrder.status === "paid" && venue && (
+        <ReceiptView
+          orderId={activeOrder.id}
+          total={activeOrder.total}
+          createdAt={activeOrder.created_at}
+          venueId={venue.id}
+          tableNumber={tableNumber || "?"}
+          venue={venue}
+          diner={dinerInfo}
+        />
+      )}
+
       {/* Active Order Status */}
       {activeOrder && activeOrder.status !== "paid" && activeOrder.status !== "cancelled" && (
         <OrderStatus
