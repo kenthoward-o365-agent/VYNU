@@ -567,6 +567,67 @@ export type Database = {
           },
         ]
       }
+      staff_alerts: {
+        Row: {
+          alert_type: Database["public"]["Enums"]["alert_type"]
+          created_at: string
+          diner_id: string | null
+          id: string
+          message: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["alert_status"]
+          table_id: string | null
+          venue_id: string
+        }
+        Insert: {
+          alert_type?: Database["public"]["Enums"]["alert_type"]
+          created_at?: string
+          diner_id?: string | null
+          id?: string
+          message?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["alert_status"]
+          table_id?: string | null
+          venue_id: string
+        }
+        Update: {
+          alert_type?: Database["public"]["Enums"]["alert_type"]
+          created_at?: string
+          diner_id?: string | null
+          id?: string
+          message?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["alert_status"]
+          table_id?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_alerts_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_alerts_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_alerts_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tables: {
         Row: {
           capacity: number | null
@@ -640,6 +701,7 @@ export type Database = {
           personality_extras: Json | null
           tone: string
           updated_at: string
+          venue_context: string | null
           venue_id: string
         }
         Insert: {
@@ -652,6 +714,7 @@ export type Database = {
           personality_extras?: Json | null
           tone?: string
           updated_at?: string
+          venue_context?: string | null
           venue_id: string
         }
         Update: {
@@ -664,6 +727,7 @@ export type Database = {
           personality_extras?: Json | null
           tone?: string
           updated_at?: string
+          venue_context?: string | null
           venue_id?: string
         }
         Relationships: [
@@ -1007,6 +1071,8 @@ export type Database = {
       }
     }
     Enums: {
+      alert_status: "pending" | "acknowledged" | "resolved"
+      alert_type: "manager_request" | "assistance" | "complaint"
       app_role: "tabless_admin"
       group_staff_role: "group_admin" | "group_viewer"
       loyalty_program_type: "points" | "stamps" | "tier"
@@ -1152,6 +1218,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      alert_status: ["pending", "acknowledged", "resolved"],
+      alert_type: ["manager_request", "assistance", "complaint"],
       app_role: ["tabless_admin"],
       group_staff_role: ["group_admin", "group_viewer"],
       loyalty_program_type: ["points", "stamps", "tier"],
