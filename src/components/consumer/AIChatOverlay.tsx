@@ -130,6 +130,12 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
 
+    // Stop speech recognition if active
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+
     const userMsg: Message = { role: "user", content: input.trim() };
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
@@ -200,7 +206,7 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
 
   if (!configLoaded) {
     return (
-      <div className="fixed inset-0 z-50 bg-background flex items-center justify-center max-w-md mx-auto">
+      <div className="fixed inset-0 z-[60] bg-background flex items-center justify-center max-w-md mx-auto">
         <div className="flex gap-1.5">
           <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
           <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -211,7 +217,7 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
+    <div className="fixed inset-0 z-[60] bg-background flex flex-col max-w-md mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
@@ -297,21 +303,21 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
       </div>
 
       {/* Input */}
-      <div className="border-t border-border px-4 py-3 pb-24 shrink-0">
-        <div className="flex gap-2">
+      <div className="border-t border-border px-3 py-3 pb-[env(safe-area-inset-bottom,8px)] shrink-0">
+        <div className="flex gap-1.5 w-full">
           <input
             ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
             placeholder="What are you in the mood for?"
-            className="flex-1 bg-secondary rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/50"
+            className="flex-1 min-w-0 bg-secondary rounded-xl px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/50"
           />
           <Button
             onClick={toggleSpeechRecognition}
             variant={isListening ? "destructive" : "outline"}
             size="icon"
-            className="h-11 w-11 rounded-xl shrink-0"
+            className="h-11 w-11 rounded-xl shrink-0 flex-none"
             type="button"
           >
             {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
@@ -320,7 +326,7 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
             onClick={sendMessage}
             disabled={!input.trim() || loading}
             size="icon"
-            className="h-11 w-11 rounded-xl shrink-0"
+            className="h-11 w-11 rounded-xl shrink-0 flex-none"
           >
             <Send className="h-4 w-4" />
           </Button>
