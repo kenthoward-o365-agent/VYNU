@@ -347,7 +347,7 @@ const ConsumerOrder = () => {
           menuItems={menuItems}
           dinerId={dinerId}
           tableId={resolvedTableId}
-          lastOrderItems={activeOrder ? [] : []}
+          lastOrderItems={lastOrderItems}
           cartTotal={cart.reduce((sum, c) => sum + c.price * c.quantity, 0)}
         />
       )}
