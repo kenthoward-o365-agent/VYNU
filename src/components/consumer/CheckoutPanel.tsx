@@ -225,9 +225,10 @@ const CheckoutPanel = ({
         if (result.resultCode === "Authorised") {
           // Update order status to paid
           await supabase.from("orders").update({ status: "paid" as any }).eq("id", orderId);
-          // Record diner visit
+          // Record diner visit with spend excl tax
           if (dinerId) {
-            await supabase.from("diner_visits").insert({ diner_id: dinerId, venue_id: venueId, order_id: orderId }).maybeSingle();
+            const taxResult = calculateTaxes(total, venueTaxes);
+            await supabase.from("diner_visits").insert({ diner_id: dinerId, venue_id: venueId, order_id: orderId, spend_excl_tax: taxResult.subtotalExTax } as any).maybeSingle();
           }
           toast.success("Payment successful! 🎉");
           onOrderPlaced(orderId);
@@ -246,7 +247,8 @@ const CheckoutPanel = ({
       } else {
         // No payment processing, just place the order
         if (dinerId) {
-          await supabase.from("diner_visits").insert({ diner_id: dinerId, venue_id: venueId, order_id: orderId }).maybeSingle();
+          const taxResult = calculateTaxes(total, venueTaxes);
+          await supabase.from("diner_visits").insert({ diner_id: dinerId, venue_id: venueId, order_id: orderId, spend_excl_tax: taxResult.subtotalExTax } as any).maybeSingle();
         }
         toast.success("Order placed! 🎉");
         onOrderPlaced(orderId);

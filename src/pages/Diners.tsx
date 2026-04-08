@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Users, Mail, Phone, AlertTriangle, Pencil, Plus, Gift, Search } from "lucide-react";
+import { Users, Mail, Phone, AlertTriangle, Pencil, Plus, Gift, Search, Receipt, DollarSign } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface DinerWithVisits {
@@ -22,6 +22,15 @@ interface DinerWithVisits {
   preferences: any;
   visit_count: number;
   last_visit: string | null;
+  total_spend: number;
+}
+
+interface DinerOrder {
+  id: string;
+  order_id: string | null;
+  visited_at: string;
+  spend_excl_tax: number;
+  points_awarded: number;
 }
 
 interface LoyaltyBalance {
@@ -53,23 +62,25 @@ export default function Diners() {
   const [adjustAmount, setAdjustAmount] = useState<Record<string, string>>({});
   const [adjustReason, setAdjustReason] = useState("");
   const [selectedProgramForNew, setSelectedProgramForNew] = useState("");
+  const [dinerOrders, setDinerOrders] = useState<DinerOrder[]>([]);
 
   const fetchDiners = async () => {
     if (!venue) return;
     setLoading(true);
     const { data: visits } = await supabase
       .from("diner_visits")
-      .select("diner_id, visited_at")
+      .select("diner_id, visited_at, spend_excl_tax, points_awarded" as any)
       .eq("venue_id", venue.id)
       .order("visited_at", { ascending: false });
 
     if (!visits || visits.length === 0) { setDiners([]); setLoading(false); return; }
 
-    const dinerMap = new Map<string, { count: number; last: string }>();
-    visits.forEach((v) => {
+    const dinerMap = new Map<string, { count: number; last: string; totalSpend: number }>();
+    visits.forEach((v: any) => {
       const existing = dinerMap.get(v.diner_id);
-      if (!existing) dinerMap.set(v.diner_id, { count: 1, last: v.visited_at });
-      else existing.count++;
+      const spend = parseFloat(v.spend_excl_tax) || 0;
+      if (!existing) dinerMap.set(v.diner_id, { count: 1, last: v.visited_at, totalSpend: spend });
+      else { existing.count++; existing.totalSpend += spend; }
     });
 
     const dinerIds = Array.from(dinerMap.keys());
@@ -87,6 +98,7 @@ export default function Diners() {
       preferences: p.preferences,
       visit_count: dinerMap.get(p.id)?.count || 0,
       last_visit: dinerMap.get(p.id)?.last || null,
+      total_spend: dinerMap.get(p.id)?.totalSpend || 0,
     }));
 
     result.sort((a, b) => b.visit_count - a.visit_count);
@@ -120,6 +132,7 @@ export default function Diners() {
     setAdjustAmount({});
     setAdjustReason("");
     setSelectedProgramForNew("");
+    setDinerOrders([]);
 
     // Fetch loyalty balances for this diner
     if (venue) {
@@ -133,6 +146,21 @@ export default function Diners() {
         return { ...b, program_name: prog?.name || "Unknown Program" };
       });
       setBalances(bals);
+
+      // Fetch order history for this diner at this venue
+      const { data: orderData } = await supabase
+        .from("diner_visits")
+        .select("id, order_id, visited_at, spend_excl_tax, points_awarded" as any)
+        .eq("diner_id", diner.id)
+        .eq("venue_id", venue.id)
+        .order("visited_at", { ascending: false });
+      setDinerOrders((orderData || []).map((o: any) => ({
+        id: o.id,
+        order_id: o.order_id,
+        visited_at: o.visited_at,
+        spend_excl_tax: parseFloat(o.spend_excl_tax) || 0,
+        points_awarded: parseFloat(o.points_awarded) || 0,
+      })));
     }
   };
 
@@ -293,12 +321,13 @@ export default function Diners() {
                 )}
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">{d.visit_count} visit{d.visit_count !== 1 ? "s" : ""}</span>
-                  {d.last_visit && (
-                    <span className="text-xs text-muted-foreground">
-                      Last: {new Date(d.last_visit).toLocaleDateString()}
-                    </span>
-                  )}
+                  <span className="text-sm font-medium text-primary">${d.total_spend.toFixed(2)}</span>
                 </div>
+                {d.last_visit && (
+                  <span className="text-xs text-muted-foreground">
+                    Last: {new Date(d.last_visit).toLocaleDateString()}
+                  </span>
+                )}
                 {d.allergens.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     <AlertTriangle className="h-3.5 w-3.5 text-warning" />
@@ -321,8 +350,9 @@ export default function Diners() {
           </DialogHeader>
 
           <Tabs defaultValue="profile" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="profile">Profile</TabsTrigger>
+              <TabsTrigger value="orders"><Receipt className="h-3.5 w-3.5 mr-1" />Orders</TabsTrigger>
               <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
             </TabsList>
 
@@ -360,6 +390,46 @@ export default function Diners() {
               <Button onClick={saveProfile} disabled={saving} className="w-full">
                 {saving ? "Saving..." : "Save Profile"}
               </Button>
+            </TabsContent>
+
+            {/* Orders Tab */}
+            <TabsContent value="orders" className="space-y-4">
+              {dinerOrders.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No order history yet.</p>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Total Spend (excl. tax)</p>
+                      <p className="text-xl font-bold text-primary">${dinerOrders.reduce((s, o) => s + o.spend_excl_tax, 0).toFixed(2)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Total Points</p>
+                      <p className="text-xl font-bold text-primary">{dinerOrders.reduce((s, o) => s + o.points_awarded, 0)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Orders</p>
+                      <p className="text-xl font-bold">{dinerOrders.length}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {dinerOrders.map((o) => (
+                      <div key={o.id} className="flex items-center justify-between p-3 rounded-lg border border-border text-sm">
+                        <div>
+                          <p className="font-medium">{new Date(o.visited_at).toLocaleDateString()}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(o.visited_at).toLocaleTimeString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">${o.spend_excl_tax.toFixed(2)}</p>
+                          {o.points_awarded > 0 && (
+                            <p className="text-xs text-primary">+{o.points_awarded} pts</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </TabsContent>
 
             {/* Loyalty Tab */}
