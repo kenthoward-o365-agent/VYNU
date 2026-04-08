@@ -295,10 +295,10 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
 
   // List view for all screen sizes
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] relative">
+    <div className="flex flex-col h-[calc(100vh-4rem)] relative overflow-hidden">
       <CategoryChips categories={categories} activeCategory={activeCategory} onSelect={handleCategorySelect} />
-      <ScrollArea className="flex-1 px-4 pb-24">
-        <div className="space-y-2 py-2">
+      <ScrollArea className="flex-1 pb-24">
+        <div className="space-y-2 py-2 px-4">
           {filteredItems.map((item) => (
             <MenuItemRow
               key={item.id}
