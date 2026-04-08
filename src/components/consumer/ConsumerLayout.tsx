@@ -7,7 +7,7 @@ interface ConsumerLayoutProps {
 
 const ConsumerLayout = ({ children }: ConsumerLayoutProps) => {
   return (
-    <div className="min-h-screen bg-background text-foreground max-w-md mx-auto relative overflow-hidden w-full">
+    <div className="min-h-screen bg-background text-foreground max-w-md mx-auto relative">
       {children}
     </div>
   );
