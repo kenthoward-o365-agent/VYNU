@@ -328,6 +328,30 @@ export default function SippaAISettings({ venueId }: Props) {
         </CardContent>
       </Card>
 
+      {/* Venue Knowledge */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Venue Knowledge
+          </CardTitle>
+          <CardDescription>
+            Give your AI agent context about your venue so it can answer questions about your story, specialties, events, and more
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Textarea
+            value={config.venue_context}
+            onChange={(e) => setConfig((c) => ({ ...c, venue_context: e.target.value }))}
+            rows={8}
+            placeholder={`Paste information about your venue here. For example:\n\n• Our chef Marco trained in Italy for 10 years\n• We source all seafood from the Sydney Fish Market daily\n• Live jazz every Friday & Saturday from 7pm\n• Our signature dish is the 12-hour slow-cooked lamb shoulder\n• We have a private dining room for up to 20 guests\n• Happy hour runs 4-6pm weekdays with $8 house wines`}
+          />
+          <p className="text-xs text-muted-foreground">
+            This info is fed to your AI agent so it can answer diner questions like "Tell me about the chef" or "Do you have live music?"
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Save */}
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} size="lg">
