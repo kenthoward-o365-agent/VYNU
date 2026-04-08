@@ -105,7 +105,7 @@ const ConsumerOrder = () => {
       // Load Sippa AI chat mode
       const { data: aiConfig } = await supabase
         .from("venue_ai_config")
-        .select("chat_mode")
+        .select("chat_mode, agent_name, agent_icon_url")
         .eq("venue_id", venueId)
         .maybeSingle();
       if (aiConfig?.chat_mode) setChatMode(aiConfig.chat_mode);
