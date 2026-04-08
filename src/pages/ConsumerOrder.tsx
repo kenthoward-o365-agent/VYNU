@@ -317,6 +317,10 @@ const ConsumerOrder = () => {
           onClose={() => setShowChat(false)}
           onAddToCart={addToCart}
           menuItems={menuItems}
+          dinerId={dinerId}
+          tableId={resolvedTableId}
+          lastOrderItems={activeOrder ? [] : []}
+          cartTotal={cart.reduce((sum, c) => sum + c.price * c.quantity, 0)}
         />
       )}
 
