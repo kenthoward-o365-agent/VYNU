@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, X, Sparkles } from "lucide-react";
+import { Send, X, Sparkles, Users, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -8,6 +8,15 @@ import { supabase } from "@/integrations/supabase/client";
 interface Message {
   role: "user" | "assistant";
   content: string;
+  splitCheck?: number;
+  cartTotal?: number;
+  managerCalled?: boolean;
+}
+
+interface LastOrderItem {
+  id: string;
+  name: string;
+  quantity: number;
 }
 
 interface AIChatOverlayProps {
@@ -15,9 +24,13 @@ interface AIChatOverlayProps {
   onClose: () => void;
   onAddToCart: (item: { id: string; name: string; price: number }) => void;
   menuItems: { id: string; name: string; price: number; description: string | null; dietary_tags: string[] | null; allergens: string[] | null }[];
+  dinerId?: string | null;
+  tableId?: string | null;
+  lastOrderItems?: LastOrderItem[];
+  cartTotal?: number;
 }
 
-const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems }: AIChatOverlayProps) => {
+const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tableId, lastOrderItems, cartTotal = 0 }: AIChatOverlayProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,7 +40,6 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems }: AIChatOverl
   const inputRef = useRef<HTMLInputElement>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
 
-  // Load venue AI config
   useEffect(() => {
     const loadConfig = async () => {
       const { data } = await supabase
@@ -39,7 +51,7 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems }: AIChatOverl
       const name = data?.agent_name || "Sippa";
       const icon = data?.agent_icon_url || null;
       const greeting = data?.opening_message ||
-        `Hey! 👋 I'm ${name}, your AI server. Tell me what you're in the mood for and I'll find the perfect dish. Try saying:\n\n- "Something spicy under $25"\n- "I'm vegetarian, what do you recommend?"\n- "What's the most popular dish?"`;
+        `Hey! 👋 I'm ${name}, your AI server. Tell me what you're in the mood for and I'll find the perfect dish. Try saying:\n\n- "Something spicy under $25"\n- "I'm vegetarian, what do you recommend?"\n- "Another round please"`;
 
       setAgentName(name);
       setAgentIcon(icon);
@@ -67,14 +79,13 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems }: AIChatOverl
           message: userMsg.content,
           venue_id: venueId,
           menu_items: menuItems.map((i) => ({
-            id: i.id,
-            name: i.name,
-            price: i.price,
-            description: i.description,
-            dietary_tags: i.dietary_tags,
-            allergens: i.allergens,
+            id: i.id, name: i.name, price: i.price,
+            description: i.description, dietary_tags: i.dietary_tags, allergens: i.allergens,
           })),
-          conversation: messages.map((m) => ({ role: m.role, content: m.content })),
+          conversation: messages.filter(m => !m.splitCheck && !m.managerCalled).map((m) => ({ role: m.role, content: m.content })),
+          diner_id: dinerId || null,
+          table_id: tableId || null,
+          last_order_items: lastOrderItems || [],
         },
       });
 
@@ -84,6 +95,18 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems }: AIChatOverl
         role: "assistant",
         content: data.reply || "Sorry, I couldn't process that. Try again!",
       };
+
+      // Attach split check info if present
+      if (data.split_check > 0) {
+        assistantMsg.splitCheck = data.split_check;
+        assistantMsg.cartTotal = cartTotal;
+      }
+
+      // Attach manager called flag
+      if (data.call_manager) {
+        assistantMsg.managerCalled = true;
+      }
+
       setMessages((prev) => [...prev, assistantMsg]);
 
       if (data.suggested_items?.length > 0) {
@@ -134,21 +157,58 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems }: AIChatOverl
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-auto px-4 py-4 space-y-4">
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={cn(
-              "max-w-[85%] rounded-2xl px-4 py-3 text-sm",
-              msg.role === "user"
-                ? "ml-auto bg-primary text-primary-foreground rounded-br-sm"
-                : "bg-card border border-border rounded-bl-sm"
-            )}
-          >
-            {msg.role === "assistant" ? (
-              <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:mb-1 [&_ul]:my-1">
-                <ReactMarkdown>{msg.content}</ReactMarkdown>
+          <div key={i}>
+            <div
+              className={cn(
+                "max-w-[85%] rounded-2xl px-4 py-3 text-sm",
+                msg.role === "user"
+                  ? "ml-auto bg-primary text-primary-foreground rounded-br-sm"
+                  : "bg-card border border-border rounded-bl-sm"
+              )}
+            >
+              {msg.role === "assistant" ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:mb-1 [&_ul]:my-1">
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                </div>
+              ) : (
+                msg.content
+              )}
+            </div>
+
+            {/* Split Check Card */}
+            {msg.splitCheck && msg.splitCheck > 0 && (
+              <div className="max-w-[85%] mt-2 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">Split {msg.splitCheck} Ways</p>
+                </div>
+                {(msg.cartTotal || cartTotal) > 0 ? (
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total</span>
+                      <span className="font-medium">${(msg.cartTotal || cartTotal).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-primary font-semibold">
+                      <span>Per person</span>
+                      <span>${((msg.cartTotal || cartTotal) / msg.splitCheck).toFixed(2)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Add items to your cart to see the split amount</p>
+                )}
               </div>
-            ) : (
-              msg.content
+            )}
+
+            {/* Manager Called Card */}
+            {msg.managerCalled && (
+              <div className="max-w-[85%] mt-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                    A team member has been notified
+                  </p>
+                </div>
+              </div>
             )}
           </div>
         ))}
