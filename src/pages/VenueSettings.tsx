@@ -237,7 +237,7 @@ export default function VenueSettings() {
         <TabsList>
           <TabsTrigger value="details"><Settings className="h-3.5 w-3.5 mr-1" />Details</TabsTrigger>
           {isManager && <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>}
-          {isManager && venue?.group_id && <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>}
+          {isManager && <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>}
           {isManager && venue?.group_id && <TabsTrigger value="diners"><Users className="h-3.5 w-3.5 mr-1" />Diners</TabsTrigger>}
           {isManager && <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>}
           {isManager && <TabsTrigger value="taxes"><Receipt className="h-3.5 w-3.5 mr-1" />Taxes</TabsTrigger>}
@@ -489,7 +489,7 @@ export default function VenueSettings() {
         )}
 
         {/* ── LOYALTY TAB ── */}
-        {isManager && venue?.group_id && (
+        {isManager && venue && (
           <TabsContent value="loyalty" className="space-y-6">
             <VenueLoyaltyTab venueId={venue?.id} groupId={venue?.group_id} />
           </TabsContent>
