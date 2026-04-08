@@ -111,12 +111,25 @@ export default function Diners() {
 
   const fetchPrograms = async () => {
     if (!venue) return;
-    const { data } = await supabase
+    // Fetch venue-level programs
+    const { data: venueProgs } = await supabase
       .from("loyalty_programs")
       .select("id, name, program_type")
       .eq("venue_id", venue.id)
       .eq("is_active", true);
-    setPrograms((data || []) as LoyaltyProgram[]);
+    // Fetch group-level programs if venue belongs to a group
+    let groupProgs: any[] = [];
+    if (venue.group_id) {
+      const { data: gp } = await supabase
+        .from("loyalty_programs")
+        .select("id, name, program_type")
+        .eq("group_id", venue.group_id)
+        .eq("is_active", true);
+      groupProgs = gp || [];
+    }
+    const all = [...(venueProgs || []), ...groupProgs];
+    const unique = [...new Map(all.map((p: any) => [p.id, p])).values()];
+    setPrograms(unique as LoyaltyProgram[]);
   };
 
   useEffect(() => {
