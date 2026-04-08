@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { Send, X, Sparkles, Users, AlertTriangle } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Send, X, Sparkles, Users, AlertTriangle, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -42,6 +42,41 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
   const sessionIdRef = useRef<string | null>(null);
   const messageCountRef = useRef(0);
   const itemsAddedRef = useRef(0);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const toggleSpeechRecognition = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setInput("(Speech recognition not supported on this browser)");
+      return;
+    }
+
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-AU";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognitionRef.current = recognition;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((r: any) => r[0].transcript)
+        .join("");
+      setInput(transcript);
+    };
+
+    recognition.start();
+  }, [isListening]);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -272,6 +307,15 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
             placeholder="What are you in the mood for?"
             className="flex-1 bg-secondary rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/50"
           />
+          <Button
+            onClick={toggleSpeechRecognition}
+            variant={isListening ? "destructive" : "outline"}
+            size="icon"
+            className="h-11 w-11 rounded-xl shrink-0"
+            type="button"
+          >
+            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
           <Button
             onClick={sendMessage}
             disabled={!input.trim() || loading}
