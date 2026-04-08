@@ -127,6 +127,8 @@ export type Database = {
           diner_id: string
           id: string
           order_id: string | null
+          points_awarded: number | null
+          spend_excl_tax: number | null
           venue_id: string
           visited_at: string
         }
@@ -134,6 +136,8 @@ export type Database = {
           diner_id: string
           id?: string
           order_id?: string | null
+          points_awarded?: number | null
+          spend_excl_tax?: number | null
           venue_id: string
           visited_at?: string
         }
@@ -141,6 +145,8 @@ export type Database = {
           diner_id?: string
           id?: string
           order_id?: string | null
+          points_awarded?: number | null
+          spend_excl_tax?: number | null
           venue_id?: string
           visited_at?: string
         }
