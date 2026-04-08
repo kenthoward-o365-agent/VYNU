@@ -64,6 +64,30 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
     loadConfig();
   }, [venueId]);
 
+  // Create chat session on mount
+  useEffect(() => {
+    const createSession = async () => {
+      const { data } = await supabase
+        .from("chat_sessions")
+        .insert({ venue_id: venueId, diner_id: dinerId || null, table_id: tableId || null })
+        .select("id")
+        .single();
+      if (data) sessionIdRef.current = data.id;
+    };
+    createSession();
+
+    // Update session on unmount
+    return () => {
+      if (sessionIdRef.current) {
+        supabase.from("chat_sessions").update({
+          message_count: messageCountRef.current,
+          items_added: itemsAddedRef.current,
+          ended_at: new Date().toISOString(),
+        }).eq("id", sessionIdRef.current).then(() => {});
+      }
+    };
+  }, [venueId, dinerId, tableId]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
