@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
   LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
-  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Gift, Building2, Check, Sun, Moon, Shield
+  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -22,7 +22,6 @@ const venueNavItems = [
   { path: "/orders", label: "Orders", icon: ClipboardList },
   { path: "/analytics", label: "Analytics", icon: TrendingUp },
   { path: "/diners", label: "Diners", icon: Users },
-  { path: "/loyalty", label: "Loyalty", icon: Gift },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 
