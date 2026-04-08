@@ -95,7 +95,7 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: Venue
         Continue as Guest
       </Button>
       <p className="text-muted-foreground text-xs mt-4">
-        No account needed · Powered by <span className="font-semibold text-primary">Tab-Less</span>
+        No account needed · Powered by <span className="font-semibold text-primary">Sippa</span>
       </p>
     </div>
   );
