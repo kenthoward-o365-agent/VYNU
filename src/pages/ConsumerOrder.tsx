@@ -68,6 +68,7 @@ const ConsumerOrder = () => {
   const [chatMode, setChatMode] = useState<string>("chat_optional");
   const [agentName, setAgentName] = useState<string>("Sippa");
   const [agentIconUrl, setAgentIconUrl] = useState<string | null>(null);
+  const [started, setStarted] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
   const [showCheckout, setShowCheckout] = useState(false);
