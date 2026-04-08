@@ -1,70 +1,74 @@
 
-# Sippa AI — Chat Agent Management
+# Sippa AI Phase 2
 
-## Phase 1: Settings & Configuration (Build Now)
+## 1. Venue Knowledge Base
+Instead of crawling websites (complex infra), we add a **venue context** text field to `venue_ai_config` where operators paste info about their venue — story, specialties, chef background, ambiance, events, wine list notes, etc. This gets injected into the system prompt so Sippa can answer questions like "Tell me about the chef" or "Do you have live music?".
 
 ### Database
-Add a `sippa_config` JSONB column to the `venues.settings` field (or a dedicated table) storing:
-- `chat_agent_name` (default: "Sippa")
-- `opening_message` (customizable greeting)
-- `tone` (enum: `aussie`, `british`, `north_american`)
-- `chat_mode` (enum: `chat_first`, `chat_optional`, `chat_only`)
-- `agent_icon_url` (uploaded to venue-assets bucket)
+- Add `venue_context` text column to `venue_ai_config`
 
-### Venue Settings UI
-New "Sippa AI" tab in Venue Settings with:
-1. **Agent Name** — text input (default "Sippa")
-2. **Agent Icon** — image upload (uses existing venue-assets bucket)
-3. **Opening Message** — textarea with placeholder suggestions per tone
-4. **Tone & Personality** — radio select: Full Aussie 🇦🇺 / British 🇬🇧 / North American 🇺🇸
-5. **Chat Mode** — radio select:
-   - *Chat First* — chat opens automatically, menu behind it
-   - *Chat Optional* — menu shows first, chat is a floating button
-   - *Chat Only* — no traditional menu, everything through chat
-6. **Preview** — live preview of how the greeting will look
+### UI
+- New "Venue Knowledge" textarea section in Sippa AI settings with guidance on what to include
 
-### Edge Function Update
-Update `diner-chat` to:
-- Load venue's Sippa config
-- Inject tone-specific system prompt (slang, idioms, greeting style)
-- Use custom opening message
-- Pass agent name back to frontend
+### Edge Function
+- Inject `venue_context` into system prompt
 
-### Consumer App Update
-- Use venue's Sippa config for agent name, icon, and opening message
-- Respect chat_mode setting for UX flow
+---
 
-## Phase 2: Advanced Capabilities (Future)
-These require significant backend work and will be planned separately:
-- **Venue knowledge base** — crawl venue website, ingest menus, train per-venue context
-- **Order another round** — repeat last order via chat command
-- **Get the manager** — escalation flow (notify staff via realtime)
-- **Check splitting** — split bill N ways via chat
-- **Learning/memory** — remember diner preferences across visits
+## 2. Order Another Round
+When a diner says "another round" or "same again", Sippa looks up their last order items and adds them to cart.
 
-## Technical Details
+### How it works
+- Pass `diner_id` and `last_order_items` (from client) to the edge function
+- Add instruction to system prompt about the "another round" capability
+- When AI detects reorder intent, it returns the previous items via `[ADD_ITEMS]`
+- Client already handles `ADD_ITEMS` → cart
 
-### New Table: `venue_ai_config`
-```sql
-CREATE TABLE public.venue_ai_config (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  venue_id uuid NOT NULL UNIQUE REFERENCES venues(id) ON DELETE CASCADE,
-  agent_name text NOT NULL DEFAULT 'Sippa',
-  agent_icon_url text,
-  opening_message text DEFAULT 'Hey! 👋 I''m your AI server. Tell me what you''re in the mood for and I''ll find the perfect dish.',
-  tone text NOT NULL DEFAULT 'aussie',
-  chat_mode text NOT NULL DEFAULT 'chat_optional',
-  personality_extras jsonb DEFAULT '{}',
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-```
-- RLS: managers can CRUD for their venue, staff can view, public can view (needed for consumer app)
+### Changes
+- `AIChatOverlay` passes `dinerId` + last order items
+- `ConsumerOrder` passes these props
+- Edge function prompt updated
 
-### Files Changed
-- **New migration** — `venue_ai_config` table + RLS
-- **New component** — `src/components/venue/SippaAISettings.tsx`
-- **Edit** — `src/pages/VenueSettings.tsx` — add Sippa AI tab
-- **Edit** — `supabase/functions/diner-chat/index.ts` — load config, apply tone
-- **Edit** — `src/components/consumer/AIChatOverlay.tsx` — use config for name/icon/greeting
-- **Edit** — `src/pages/ConsumerOrder.tsx` — respect chat_mode
+---
+
+## 3. Get the Manager
+When a diner says "get the manager" or "I need to speak to someone", Sippa creates a staff alert.
+
+### Database
+- New `staff_alerts` table: `id`, `venue_id`, `table_id`, `alert_type` (enum: manager_request, assistance, complaint), `message`, `status` (pending/acknowledged/resolved), `created_at`, `resolved_at`, `resolved_by`
+- Enable realtime on this table
+- RLS: staff can view/update for their venue, public can insert
+
+### How it works
+- Edge function detects manager request intent via a new `[CALL_MANAGER: reason]` tag
+- Returns `call_manager: true` + reason in response
+- Client creates a row in `staff_alerts`
+- Sippa responds warmly: "I've let the team know — someone will be right over"
+- **Operator side**: Orders page shows a notification badge when alerts are pending (future: dedicated alerts panel)
+
+---
+
+## 4. Check Splitting
+When a diner says "split the bill" or "split between 4", Sippa handles it conversationally.
+
+### How it works (simplified for Phase 2)
+- This is a **conversational flow only** — actual payment splitting requires Adyen integration (Phase 3)
+- Sippa asks how many ways to split, calculates per-person amount, and displays it
+- Returns `[SPLIT_CHECK: N]` tag which the client renders as a split summary card
+- No actual payment processing — just information display for now
+
+### Edge Function
+- Add split check instructions to system prompt
+- Parse `[SPLIT_CHECK: N]` tag
+
+### Client
+- Render a "Split Summary" card in chat showing per-person amounts
+
+---
+
+## Files Changed
+- **Migration**: Add `venue_context` to `venue_ai_config`, create `staff_alerts` table + realtime
+- **`SippaAISettings.tsx`**: Add venue knowledge textarea
+- **`diner-chat/index.ts`**: All prompt updates, new tags
+- **`AIChatOverlay.tsx`**: Handle manager alerts, split display, pass diner context
+- **`ConsumerOrder.tsx`**: Pass dinerId and last order to chat
