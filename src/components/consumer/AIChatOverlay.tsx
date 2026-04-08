@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { Send, X, Sparkles, Users, AlertTriangle } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Send, X, Sparkles, Users, AlertTriangle, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
