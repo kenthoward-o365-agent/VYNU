@@ -108,7 +108,7 @@ const MenuItemRow = ({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl border transition-colors",
+        "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl border transition-colors w-full overflow-hidden",
         !isAvailable && "opacity-50",
         quantity > 0 ? "border-primary bg-primary/5" : "border-border bg-card"
       )}
@@ -125,12 +125,12 @@ const MenuItemRow = ({
       </div>
 
       {/* Column B: Name, Description, Tags */}
-      <div className="flex-1 min-w-0">
-        <h3 className="text-xs sm:text-sm font-semibold leading-tight truncate">{item.name}</h3>
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <h3 className="text-xs sm:text-sm font-semibold leading-tight truncate max-w-full">{item.name}</h3>
         {item.description && (
-          <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1 mt-0.5">{item.description}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5">{item.description}</p>
         )}
-        <div className="flex flex-wrap gap-0.5 sm:gap-1 mt-0.5 sm:mt-1">
+        <div className="flex flex-wrap gap-0.5 sm:gap-1 mt-0.5 sm:mt-1 overflow-hidden">
           {!isAvailable && (
             <Badge variant="destructive" className="text-[8px] sm:text-[9px] gap-0.5 px-1 sm:px-1.5 py-0">
               <Ban className="h-2 w-2" /> 86'd
@@ -295,9 +295,9 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
 
   // List view for all screen sizes
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] relative">
+    <div className="flex flex-col h-[calc(100vh-4rem)] relative overflow-hidden">
       <CategoryChips categories={categories} activeCategory={activeCategory} onSelect={handleCategorySelect} />
-      <ScrollArea className="flex-1 px-4 pb-24">
+      <div className="flex-1 overflow-y-auto px-3 pb-24">
         <div className="space-y-2 py-2">
           {filteredItems.map((item) => (
             <MenuItemRow
@@ -308,7 +308,7 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
             />
           ))}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Floating Add to Order button */}
       {selectedCount > 0 && (
