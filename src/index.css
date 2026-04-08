@@ -108,3 +108,28 @@
   }
 }
 
+/* Print styles for receipt */
+@media print {
+  body {
+    background: white !important;
+  }
+
+  .no-print,
+  nav,
+  [data-bottom-nav],
+  header {
+    display: none !important;
+  }
+
+  .receipt-content {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+  }
+
+  #receipt-container {
+    padding: 0 !important;
+  }
+}
+

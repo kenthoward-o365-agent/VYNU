@@ -10,6 +10,7 @@ import CartPanel, { CartItem } from "@/components/consumer/CartPanel";
 import CheckoutPanel from "@/components/consumer/CheckoutPanel";
 import AIChatOverlay from "@/components/consumer/AIChatOverlay";
 import OrderStatus from "@/components/consumer/OrderStatus";
+import ReceiptView from "@/components/consumer/ReceiptView";
 import VenueDiscovery from "@/components/consumer/VenueDiscovery";
 import DinerSignup from "@/components/consumer/DinerSignup";
 
@@ -20,6 +21,11 @@ interface VenueInfo {
   logo_url: string | null;
   address: string | null;
   city: string | null;
+  state: string | null;
+  postcode: string | null;
+  phone: string | null;
+  email: string | null;
+  tax_id: string | null;
   landing_page_html: string | null;
   group_id: string | null;
 }
@@ -65,6 +71,7 @@ const ConsumerOrder = () => {
   const [loading, setLoading] = useState(true);
   const [resolvedTableId, setResolvedTableId] = useState<string | null>(null);
   const [dinerId, setDinerId] = useState<string | null>(null);
+  const [dinerInfo, setDinerInfo] = useState<{ first_name: string | null; last_name: string | null; email: string | null; phone: string | null } | null>(null);
 
   // Fetch venue, table, and menu data
   useEffect(() => {
@@ -72,7 +79,7 @@ const ConsumerOrder = () => {
       if (!venueId || !tableId) return;
 
       const [venueRes, itemsRes, catsRes] = await Promise.all([
-        supabase.from("venues").select("id, name, venue_type, logo_url, address, city, landing_page_html, group_id").eq("id", venueId).single(),
+        supabase.from("venues").select("id, name, venue_type, logo_url, address, city, state, postcode, phone, email, tax_id, landing_page_html, group_id").eq("id", venueId).single(),
         supabase.from("menu_items").select("*").eq("venue_id", venueId).eq("is_available", true).order("display_order"),
         supabase.from("menu_categories").select("id, name").eq("venue_id", venueId).eq("is_active", true).order("display_order"),
       ]);
@@ -102,10 +109,13 @@ const ConsumerOrder = () => {
       if (session?.user) {
         const { data } = await supabase
           .from("diner_profiles")
-          .select("id")
+          .select("id, first_name, last_name, email, phone")
           .eq("user_id", session.user.id)
           .maybeSingle();
-        if (data) setDinerId(data.id);
+        if (data) {
+          setDinerId(data.id);
+          setDinerInfo({ first_name: data.first_name, last_name: data.last_name, email: data.email, phone: data.phone });
+        }
       }
     };
     fetchDinerProfile();
@@ -226,6 +236,19 @@ const ConsumerOrder = () => {
 
   return (
     <ConsumerLayout>
+      {/* Receipt view when paid */}
+      {activeOrder && activeOrder.status === "paid" && venue && (
+        <ReceiptView
+          orderId={activeOrder.id}
+          total={activeOrder.total}
+          createdAt={activeOrder.created_at}
+          venueId={venue.id}
+          tableNumber={tableNumber || "?"}
+          venue={venue}
+          diner={dinerInfo}
+        />
+      )}
+
       {/* Active Order Status */}
       {activeOrder && activeOrder.status !== "paid" && activeOrder.status !== "cancelled" && (
         <OrderStatus
