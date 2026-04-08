@@ -19,6 +19,7 @@ interface SippaConfig {
   opening_message: string;
   tone: string;
   chat_mode: string;
+  venue_context: string;
 }
 
 const toneOptions = [
@@ -72,6 +73,7 @@ export default function SippaAISettings({ venueId }: Props) {
     opening_message: "Hey! 👋 I'm your AI server. Tell me what you're in the mood for and I'll find the perfect dish.",
     tone: "aussie",
     chat_mode: "chat_optional",
+    venue_context: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -96,6 +98,7 @@ export default function SippaAISettings({ venueId }: Props) {
           opening_message: data.opening_message || "",
           tone: data.tone,
           chat_mode: data.chat_mode,
+          venue_context: (data as any).venue_context || "",
         });
         setIsNew(false);
       }
@@ -113,6 +116,7 @@ export default function SippaAISettings({ venueId }: Props) {
       opening_message: config.opening_message,
       tone: config.tone,
       chat_mode: config.chat_mode,
+      venue_context: config.venue_context,
     };
 
     if (isNew) {
