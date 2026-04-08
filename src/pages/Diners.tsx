@@ -350,8 +350,9 @@ export default function Diners() {
           </DialogHeader>
 
           <Tabs defaultValue="profile" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="profile">Profile</TabsTrigger>
+              <TabsTrigger value="orders"><Receipt className="h-3.5 w-3.5 mr-1" />Orders</TabsTrigger>
               <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
             </TabsList>
 
