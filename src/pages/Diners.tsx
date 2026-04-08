@@ -321,12 +321,13 @@ export default function Diners() {
                 )}
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">{d.visit_count} visit{d.visit_count !== 1 ? "s" : ""}</span>
-                  {d.last_visit && (
-                    <span className="text-xs text-muted-foreground">
-                      Last: {new Date(d.last_visit).toLocaleDateString()}
-                    </span>
-                  )}
+                  <span className="text-sm font-medium text-primary">${d.total_spend.toFixed(2)}</span>
                 </div>
+                {d.last_visit && (
+                  <span className="text-xs text-muted-foreground">
+                    Last: {new Date(d.last_visit).toLocaleDateString()}
+                  </span>
+                )}
                 {d.allergens.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     <AlertTriangle className="h-3.5 w-3.5 text-warning" />
