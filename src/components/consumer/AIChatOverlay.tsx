@@ -39,6 +39,9 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
+  const sessionIdRef = useRef<string | null>(null);
+  const messageCountRef = useRef(0);
+  const itemsAddedRef = useRef(0);
 
   useEffect(() => {
     const loadConfig = async () => {
