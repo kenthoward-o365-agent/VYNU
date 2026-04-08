@@ -86,88 +86,99 @@ export default function Dashboard() {
   ].filter((d) => d.value > 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">
+          <h2 className="text-xl font-bold text-foreground">
             {isToday ? "Today's Performance" : "Performance"}
           </h2>
-          <p className="text-muted-foreground">{venue?.name}</p>
+          <p className="text-sm text-muted-foreground">{venue?.name}</p>
         </div>
         <AuditDatePicker value={auditDate} onChange={setAuditDate} />
       </div>
 
-      {/* Financial Performance */}
-      <div>
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Financial Performance</h3>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Gross Revenue {hasInclusiveTax ? "(incl. tax)" : ""}</CardTitle>
+      {/* Financial KPIs - compact row */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+        <Card className="shadow-sm">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
               <DollarSign className="h-4 w-4 text-emerald-500" />
-            </CardHeader>
-            <CardContent><div className="text-2xl font-bold text-foreground">${stats.grossRevenue.toFixed(2)}</div></CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Net Revenue</CardTitle>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground truncate">Gross Revenue {hasInclusiveTax ? "(incl.)" : ""}</p>
+              <p className="text-lg font-bold text-foreground">${stats.grossRevenue.toFixed(2)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
               <Receipt className="h-4 w-4 text-emerald-500" />
-            </CardHeader>
-            <CardContent><div className="text-2xl font-bold text-foreground">${stats.netRevenue.toFixed(2)}</div></CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Tax Collected</CardTitle>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground truncate">Net Revenue</p>
+              <p className="text-lg font-bold text-foreground">${stats.netRevenue.toFixed(2)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
               <Percent className="h-4 w-4 text-amber-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">${stats.totalTax.toFixed(2)}</div>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground truncate">Tax Collected</p>
+              <p className="text-lg font-bold text-foreground">${stats.totalTax.toFixed(2)}</p>
               {stats.taxLines.length > 0 && (
-                <div className="mt-1 space-y-0.5">
+                <div className="space-y-0">
                   {stats.taxLines.map((tl) => (
-                    <p key={tl.name} className="text-xs text-muted-foreground">
+                    <p key={tl.name} className="text-[10px] text-muted-foreground leading-tight">
                       {tl.name}{tl.is_inclusive ? " (incl.)" : ""}: ${tl.amount.toFixed(2)}
                     </p>
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Avg Order Value</CardTitle>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0">
               <TrendingUp className="h-4 w-4 text-indigo-500" />
-            </CardHeader>
-            <CardContent><div className="text-2xl font-bold text-foreground">${stats.avgOrderValue.toFixed(2)}</div></CardContent>
-          </Card>
-        </div>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground truncate">Avg Order Value</p>
+              <p className="text-lg font-bold text-foreground">${stats.avgOrderValue.toFixed(2)}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Revenue by Hour */}
       <RevenueByHourChart orders={orders} />
 
-      {/* Order Performance + Table Utilization */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Order Performance</CardTitle>
-            <p className="text-sm text-muted-foreground">{stats.orderCount} total orders</p>
+      {/* Order Performance + Table Utilization + Ticket Times */}
+      <div className="grid gap-3 lg:grid-cols-2">
+        <Card className="shadow-sm">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-base">Order Performance</CardTitle>
+            <p className="text-xs text-muted-foreground">{stats.orderCount} total orders</p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             {stats.orderCount === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No orders for this period</p>
+              <p className="text-sm text-muted-foreground text-center py-6">No orders for this period</p>
             ) : (
-              <div className="h-[280px]">
+              <div className="h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={orderChartData} cx="50%" cy="50%" innerRadius={70} outerRadius={110} paddingAngle={3} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                    <Pie data={orderChartData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
                       {orderChartData.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={ORDER_COLORS[index % ORDER_COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip />
-                    <Legend />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -175,14 +186,14 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {venue && <TableUtilization venueId={venue.id} show={isToday} />}
           {venue && <TicketTimesCard venueId={venue.id} auditDate={auditDate} />}
         </div>
       </div>
 
       {/* Top 10 Menu Items */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
         {venue && <TopItemsCharts venueId={venue.id} auditDate={auditDate} />}
       </div>
     </div>
