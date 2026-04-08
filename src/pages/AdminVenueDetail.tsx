@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2 } from "lucide-react";
+import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2 } from "lucide-react";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
@@ -24,21 +24,6 @@ interface StaffMember {
   is_active: boolean;
 }
 
-interface MenuCategory {
-  id: string;
-  name: string;
-  display_order: number | null;
-  is_active: boolean;
-}
-
-interface MenuItem {
-  id: string;
-  name: string;
-  price: number;
-  description: string | null;
-  category_id: string | null;
-  is_available: boolean;
-}
 
 const venueTypes = [
   { value: "restaurant", label: "Restaurant" },
