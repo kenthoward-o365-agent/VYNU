@@ -22,7 +22,6 @@ const venueNavItems = [
   { path: "/orders", label: "Orders", icon: ClipboardList },
   { path: "/analytics", label: "Analytics", icon: TrendingUp },
   { path: "/diners", label: "Diners", icon: Users },
-  { path: "/loyalty", label: "Loyalty", icon: Gift },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 
