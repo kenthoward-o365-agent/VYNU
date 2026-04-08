@@ -11,6 +11,14 @@ import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/componen
 
 type OrderStatus = "received" | "preparing" | "ready" | "served" | "paid" | "cancelled";
 
+interface OrderItem {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  notes: string | null;
+  menu_item: { name: string } | null;
+}
+
 interface Order {
   id: string;
   status: OrderStatus;
@@ -18,6 +26,8 @@ interface Order {
   customer_notes: string | null;
   created_at: string;
   table_id: string | null;
+  table: { table_number: string } | null;
+  order_items: OrderItem[];
 }
 
 const statusConfig: Record<OrderStatus, { label: string; color: string; icon: any }> = {
