@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Settings, UtensilsCrossed, Users, Plus, Trash2, Eye, EyeOff, Gift, Building2, CreditCard } from "lucide-react";
 import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
+import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 
@@ -250,6 +251,9 @@ export default function AdminVenueDetail() {
           <TabsTrigger value="menu"><UtensilsCrossed className="h-3.5 w-3.5 mr-1" />Menu</TabsTrigger>
           <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
           <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>
+          {venue?.venue_type === "parent" && venue?.group_id && (
+            <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
+          )}
         </TabsList>
 
         {/* ── DETAILS TAB ── */}
@@ -539,6 +543,12 @@ export default function AdminVenueDetail() {
         <TabsContent value="payments" className="space-y-6">
           {venue && <PaymentSettingsTab venueId={venue.id} />}
         </TabsContent>
+        {/* ── LOYALTY TAB (parent venues only) ── */}
+        {venue?.venue_type === "parent" && venue?.group_id && (
+          <TabsContent value="loyalty" className="space-y-6">
+            <GroupLoyaltyManager groupId={venue.group_id} groupName={venue.name} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
