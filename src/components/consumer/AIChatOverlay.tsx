@@ -206,7 +206,7 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
 
   if (!configLoaded) {
     return (
-      <div className="fixed inset-0 z-50 bg-background flex items-center justify-center max-w-md mx-auto">
+      <div className="fixed inset-0 z-[60] bg-background flex items-center justify-center max-w-md mx-auto">
         <div className="flex gap-1.5">
           <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
           <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
