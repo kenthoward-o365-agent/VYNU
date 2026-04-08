@@ -56,7 +56,7 @@ export default function Orders() {
     if (!venue) return;
     let query = supabase
       .from("orders")
-      .select("*")
+      .select("*, table:tables(table_number), order_items(id, quantity, unit_price, notes, menu_item:menu_items(name))")
       .eq("venue_id", venue.id)
       .gte("created_at", auditDate.from.toISOString())
       .lte("created_at", auditDate.to.toISOString())
@@ -65,7 +65,7 @@ export default function Orders() {
       query = query.in("status", ["received", "preparing", "ready"]);
     }
     const { data } = await query;
-    setOrders((data as Order[]) || []);
+    setOrders((data as unknown as Order[]) || []);
   };
 
   useEffect(() => { fetchOrders(); }, [venue, filter, auditDate]);
