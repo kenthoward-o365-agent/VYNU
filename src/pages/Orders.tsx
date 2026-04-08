@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Clock, ChefHat, CheckCircle, DollarSign } from "lucide-react";
+import { ClipboardList, Clock, ChefHat, CheckCircle, DollarSign, ShoppingCart, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
 
 type OrderStatus = "received" | "preparing" | "ready" | "served" | "paid" | "cancelled";
 
@@ -39,10 +40,17 @@ export default function Orders() {
   const { venue } = useVenue();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<string>("active");
+  const [auditDate, setAuditDate] = useState<DateRange>(getDefaultAuditDate);
 
   const fetchOrders = async () => {
     if (!venue) return;
-    let query = supabase.from("orders").select("*").eq("venue_id", venue.id).order("created_at", { ascending: false });
+    let query = supabase
+      .from("orders")
+      .select("*")
+      .eq("venue_id", venue.id)
+      .gte("created_at", auditDate.from.toISOString())
+      .lte("created_at", auditDate.to.toISOString())
+      .order("created_at", { ascending: false });
     if (filter === "active") {
       query = query.in("status", ["received", "preparing", "ready"]);
     }
@@ -50,7 +58,7 @@ export default function Orders() {
     setOrders((data as Order[]) || []);
   };
 
-  useEffect(() => { fetchOrders(); }, [venue, filter]);
+  useEffect(() => { fetchOrders(); }, [venue, filter, auditDate]);
 
   // Realtime subscription
   useEffect(() => {
@@ -62,7 +70,7 @@ export default function Orders() {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [venue, filter]);
+  }, [venue, filter, auditDate]);
 
   const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
     const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId);
@@ -71,28 +79,77 @@ export default function Orders() {
     fetchOrders();
   };
 
+  const isToday = auditDate.label === "Today";
+
+  // Summary stats
+  const allOrders = orders;
+  const activeCount = allOrders.filter((o) => ["received", "preparing", "ready"].includes(o.status)).length;
+  const completedCount = allOrders.filter((o) => ["served", "paid"].includes(o.status)).length;
+  const cancelledCount = allOrders.filter((o) => o.status === "cancelled").length;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Orders</h2>
-          <p className="text-muted-foreground">{orders.length} orders</p>
+          <p className="text-muted-foreground">{venue?.name}</p>
         </div>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="all">All</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <AuditDatePicker value={auditDate} onChange={setAuditDate} />
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="all">All</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Order summary cards */}
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent><div className="text-2xl font-bold text-foreground">{allOrders.length}</div></CardContent>
+        </Card>
+        {isToday && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
+              <Clock className="h-4 w-4 text-amber-500" />
+            </CardHeader>
+            <CardContent><div className="text-2xl font-bold text-foreground">{activeCount}</div></CardContent>
+          </Card>
+        )}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
+            <CheckCircle className="h-4 w-4 text-emerald-500" />
+          </CardHeader>
+          <CardContent><div className="text-2xl font-bold text-foreground">{completedCount}</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Cancelled</CardTitle>
+            <XCircle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent><div className="text-2xl font-bold text-foreground">{cancelledCount}</div></CardContent>
+        </Card>
       </div>
 
       {orders.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No orders yet</h3>
-            <p className="text-muted-foreground">Orders will appear here when customers scan QR codes and place orders</p>
+            <h3 className="text-lg font-semibold text-foreground mb-2">No orders</h3>
+            <p className="text-muted-foreground">
+              {filter === "active"
+                ? "No active orders for this period. Try switching to 'All' to see completed orders."
+                : "No orders found for the selected date range."}
+            </p>
           </CardContent>
         </Card>
       ) : (
