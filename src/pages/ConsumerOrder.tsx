@@ -71,6 +71,7 @@ const ConsumerOrder = () => {
   const [loading, setLoading] = useState(true);
   const [resolvedTableId, setResolvedTableId] = useState<string | null>(null);
   const [dinerId, setDinerId] = useState<string | null>(null);
+  const [dinerInfo, setDinerInfo] = useState<{ first_name: string | null; last_name: string | null; email: string | null; phone: string | null } | null>(null);
 
   // Fetch venue, table, and menu data
   useEffect(() => {
