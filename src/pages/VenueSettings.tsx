@@ -549,33 +549,37 @@ const defaultRules: LoyaltyRules = {
 
 function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: string | null }) {
   const [programs, setPrograms] = useState<LoyaltyProgram[]>([]);
+  const [groupPrograms, setGroupPrograms] = useState<LoyaltyProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ name: "", program_type: "points" });
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
-
-  const scope = groupId ? "group" : "venue";
-  const scopeId = groupId || venueId;
+  const [expandedGroupProgram, setExpandedGroupProgram] = useState<string | null>(null);
 
   const fetchPrograms = async () => {
-    if (!scopeId) return;
+    if (!venueId) return;
     setLoading(true);
-    let q = supabase.from("loyalty_programs").select("*").order("created_at");
-    if (scope === "group") q = q.eq("group_id", scopeId);
-    else q = q.eq("venue_id", scopeId);
-    const { data } = await q;
+    const { data } = await supabase.from("loyalty_programs").select("*").eq("venue_id", venueId).order("created_at");
     setPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
     setLoading(false);
   };
 
-  useEffect(() => { fetchPrograms(); }, [scopeId]);
+  const fetchGroupPrograms = async () => {
+    if (!groupId) return;
+    const { data } = await supabase.from("loyalty_programs").select("*").eq("group_id", groupId).eq("is_active", true).order("created_at");
+    setGroupPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
+  };
+
+  useEffect(() => { fetchPrograms(); fetchGroupPrograms(); }, [venueId, groupId]);
 
   const createProgram = async () => {
-    if (!form.name.trim() || !scopeId) return;
-    const insert: any = { name: form.name.trim(), program_type: form.program_type as any, rules: defaultRules as any };
-    if (scope === "group") insert.group_id = scopeId;
-    else insert.venue_id = scopeId;
-    const { error } = await supabase.from("loyalty_programs").insert(insert);
+    if (!form.name.trim() || !venueId) return;
+    const { error } = await supabase.from("loyalty_programs").insert({
+      venue_id: venueId,
+      name: form.name.trim(),
+      program_type: form.program_type as any,
+      rules: defaultRules as any,
+    });
     if (error) { toast.error(error.message); return; }
     toast.success("Loyalty program created");
     setForm({ name: "", program_type: "points" });
@@ -594,16 +598,98 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
     fetchPrograms();
   };
 
+  const typeLabel = (t: string) => (t === "points" ? "Points" : t === "stamps" ? "Stamps" : "Tier");
+
+  const expandedGp = groupPrograms.find((p) => p.id === expandedGroupProgram) ?? null;
+
   return (
     <div className="space-y-6">
+      {/* ── Inherited Group Programs (read-only) ── */}
+      {groupPrograms.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Gift className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold text-foreground">Inherited Group Programs</h3>
+            <Badge variant="outline" className="text-xs">Read-only</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">These programs are managed at the parent company level and apply to all venues in the group.</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {groupPrograms.map((gp) => (
+              <Card
+                key={gp.id}
+                className={`cursor-pointer transition-all border-primary/20 bg-primary/5 ${expandedGroupProgram === gp.id ? "ring-2 ring-primary" : "hover:border-primary/40"}`}
+                onClick={() => setExpandedGroupProgram(expandedGroupProgram === gp.id ? null : gp.id)}
+              >
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-base">{gp.name}</CardTitle>
+                  <Badge variant="default">Active</Badge>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Type: {typeLabel(gp.program_type)}</p>
+                  <p className="text-xs text-muted-foreground italic">Managed by parent group</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {expandedGp && (() => {
+            const rules: LoyaltyRules = { ...defaultRules, ...expandedGp.rules };
+            return (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <Settings2 className="h-5 w-5 text-primary" />
+                  <div>
+                    <CardTitle className="text-lg">{expandedGp.name} — Rules</CardTitle>
+                    <p className="text-sm text-muted-foreground">Read-only view of group-level settings</p>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1 p-3 rounded-lg border border-border bg-background">
+                      <div className="flex items-center gap-1.5 text-sm font-medium"><DollarSign className="h-3.5 w-3.5 text-primary" />Earning Rate</div>
+                      <p className="text-sm text-muted-foreground">{rules.points_per_dollar ?? 1} point(s) per $1 spent</p>
+                    </div>
+                    <div className="space-y-1 p-3 rounded-lg border border-border bg-background">
+                      <div className="flex items-center gap-1.5 text-sm font-medium"><Sparkles className="h-3.5 w-3.5 text-primary" />Sign-up Bonus</div>
+                      <p className="text-sm text-muted-foreground">{rules.signup_bonus ?? 0} points</p>
+                    </div>
+                    {rules.birthday_reward?.enabled && (
+                      <div className="space-y-1 p-3 rounded-lg border border-border bg-background">
+                        <div className="flex items-center gap-1.5 text-sm font-medium"><Cake className="h-3.5 w-3.5 text-primary" />Birthday Reward</div>
+                        <p className="text-sm text-muted-foreground">{rules.birthday_reward.points} pts, {rules.birthday_reward.discount_percent}% off</p>
+                      </div>
+                    )}
+                    {rules.anniversary_reward?.enabled && (
+                      <div className="space-y-1 p-3 rounded-lg border border-border bg-background">
+                        <div className="flex items-center gap-1.5 text-sm font-medium"><Star className="h-3.5 w-3.5 text-primary" />Anniversary Reward</div>
+                        <p className="text-sm text-muted-foreground">{rules.anniversary_reward.points} pts, {rules.anniversary_reward.discount_percent}% off</p>
+                      </div>
+                    )}
+                  </div>
+                  {(rules.milestones || []).length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center gap-1.5 text-sm font-medium"><Award className="h-3.5 w-3.5 text-primary" />Milestones</div>
+                      {rules.milestones!.map((m, idx) => (
+                        <div key={idx} className="text-sm text-muted-foreground p-2 rounded border border-border bg-background">
+                          At {m.threshold} → {m.reward_type === "points" ? `${m.value} bonus pts` : m.reward_type === "discount" ? `${m.value}% off` : "Free item"} — {m.description}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          <Separator />
+        </div>
+      )}
+
+      {/* ── Venue-level Programs (editable) ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Loyalty Programs</h3>
-          <p className="text-sm text-muted-foreground">
-            {scope === "group"
-              ? "These programs apply across all venues in the parent company."
-              : "Loyalty programs for this venue."}
-          </p>
+          <h3 className="text-lg font-semibold text-foreground">Venue Programs</h3>
+          <p className="text-sm text-muted-foreground">Loyalty programs specific to this venue.</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -636,7 +722,7 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
       {loading ? (
         <p className="text-muted-foreground">Loading...</p>
       ) : programs.length === 0 ? (
-        <Card><CardContent className="py-12 text-center"><Gift className="mx-auto h-10 w-10 text-muted-foreground mb-3" /><p className="text-muted-foreground">No loyalty programs yet.</p></CardContent></Card>
+        <Card><CardContent className="py-12 text-center"><Gift className="mx-auto h-10 w-10 text-muted-foreground mb-3" /><p className="text-muted-foreground">No venue-specific loyalty programs yet.</p></CardContent></Card>
       ) : (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -647,7 +733,7 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
                   <Badge variant={p.is_active ? "default" : "secondary"}>{p.is_active ? "Active" : "Inactive"}</Badge>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">Type: {p.program_type}</p>
+                  <p className="text-sm text-muted-foreground">Type: {typeLabel(p.program_type)}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Switch checked={p.is_active} onCheckedChange={() => toggleActive(p.id, p.is_active)} onClick={(e) => e.stopPropagation()} />
