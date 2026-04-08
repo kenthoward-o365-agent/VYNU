@@ -95,7 +95,7 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
       const { data: orderData } = await supabase
         .from("orders")
         .select("id, total, status, created_at, venue_id")
-        .eq("customer_id", prof.id)
+        .or(`customer_id.eq.${prof.id},customer_id.eq.${session.user.id}`)
         .order("created_at", { ascending: false })
         .limit(20);
 

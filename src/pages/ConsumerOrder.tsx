@@ -171,10 +171,14 @@ const ConsumerOrder = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user || !venueId) return;
 
+      const customerFilters = [session.user.id, dinerId].filter(Boolean);
+      if (customerFilters.length === 0) return;
+
       const { data: openOrder } = await supabase
         .from("orders")
         .select("id, status, total, created_at")
         .eq("venue_id", venueId)
+        .or(customerFilters.map((id) => `customer_id.eq.${id}`).join(","))
         .in("status", OPEN_ORDER_STATUSES)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -191,7 +195,7 @@ const ConsumerOrder = () => {
     };
 
     fetchOpenOrder();
-  }, [venueId, showSignup]);
+  }, [venueId, showSignup, dinerId]);
 
   // Subscribe to order status changes
   useEffect(() => {
