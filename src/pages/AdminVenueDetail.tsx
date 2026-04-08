@@ -11,8 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Settings, UtensilsCrossed, Users, Plus, Trash2, Eye, EyeOff, Gift, Building2, CreditCard } from "lucide-react";
-import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
+import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2 } from "lucide-react";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
@@ -25,21 +24,6 @@ interface StaffMember {
   is_active: boolean;
 }
 
-interface MenuCategory {
-  id: string;
-  name: string;
-  display_order: number | null;
-  is_active: boolean;
-}
-
-interface MenuItem {
-  id: string;
-  name: string;
-  price: number;
-  description: string | null;
-  category_id: string | null;
-  is_available: boolean;
-}
 
 const venueTypes = [
   { value: "restaurant", label: "Restaurant" },
@@ -78,12 +62,6 @@ export default function AdminVenueDetail() {
   const [creatingUser, setCreatingUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Menu
-  const [categories, setCategories] = useState<MenuCategory[]>([]);
-  const [items, setItems] = useState<MenuItem[]>([]);
-  const [newCatName, setNewCatName] = useState("");
-  const [newItemDialog, setNewItemDialog] = useState(false);
-  const [newItem, setNewItem] = useState({ name: "", price: "", description: "", category_id: "" });
 
   const fetchVenue = async () => {
     if (!venueId) return;
@@ -122,17 +100,8 @@ export default function AdminVenueDetail() {
     setStaff((data || []) as StaffMember[]);
   };
 
-  const fetchMenu = async () => {
-    if (!venueId) return;
-    const [{ data: cats }, { data: itms }] = await Promise.all([
-      supabase.from("menu_categories").select("*").eq("venue_id", venueId).order("display_order"),
-      supabase.from("menu_items").select("*").eq("venue_id", venueId).order("display_order"),
-    ]);
-    setCategories((cats || []) as MenuCategory[]);
-    setItems((itms || []) as MenuItem[]);
-  };
 
-  useEffect(() => { fetchVenue(); fetchStaff(); fetchMenu(); }, [venueId]);
+  useEffect(() => { fetchVenue(); fetchStaff(); }, [venueId]);
 
   const saveDetails = async () => {
     if (!venueId) return;
@@ -182,39 +151,6 @@ export default function AdminVenueDetail() {
     setCreatingUser(false);
   };
 
-  const addCategory = async () => {
-    if (!venueId || !newCatName.trim()) return;
-    const { error } = await supabase.from("menu_categories").insert({
-      venue_id: venueId,
-      name: newCatName.trim(),
-      display_order: categories.length,
-    });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else { toast({ title: "Category added" }); setNewCatName(""); fetchMenu(); }
-  };
-
-  const addItem = async () => {
-    if (!venueId || !newItem.name.trim() || !newItem.price) return;
-    const { error } = await supabase.from("menu_items").insert({
-      venue_id: venueId,
-      name: newItem.name.trim(),
-      price: parseFloat(newItem.price),
-      description: newItem.description || null,
-      category_id: newItem.category_id || null,
-    });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else { toast({ title: "Item added" }); setNewItem({ name: "", price: "", description: "", category_id: "" }); setNewItemDialog(false); fetchMenu(); }
-  };
-
-  const deleteCategory = async (id: string) => {
-    await supabase.from("menu_categories").delete().eq("id", id);
-    fetchMenu();
-  };
-
-  const deleteItem = async (id: string) => {
-    await supabase.from("menu_items").delete().eq("id", id);
-    fetchMenu();
-  };
 
   const saveGroupSettings = async () => {
     if (!venue?.group_id) return;
@@ -248,9 +184,7 @@ export default function AdminVenueDetail() {
           {venue?.venue_type === "parent" && (
             <TabsTrigger value="group-settings"><Building2 className="h-3.5 w-3.5 mr-1" />Group Settings</TabsTrigger>
           )}
-          <TabsTrigger value="menu"><UtensilsCrossed className="h-3.5 w-3.5 mr-1" />Menu</TabsTrigger>
           <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
-          <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>
           {venue?.venue_type === "parent" && venue?.group_id && (
             <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
           )}
@@ -388,98 +322,6 @@ export default function AdminVenueDetail() {
           </TabsContent>
         )}
 
-        {/* ── MENU TAB ── */}
-        <TabsContent value="menu" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-foreground">Menu Categories & Items</h3>
-            <Dialog open={newItemDialog} onOpenChange={setNewItemDialog}>
-              <DialogTrigger asChild><Button size="sm"><Plus className="h-3.5 w-3.5 mr-1" /> Add Item</Button></DialogTrigger>
-              <DialogContent>
-                <DialogHeader><DialogTitle>Add Menu Item</DialogTitle></DialogHeader>
-                <div className="space-y-3">
-                  <div><Label>Name</Label><Input value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} className="mt-1" /></div>
-                  <div><Label>Price ($)</Label><Input type="number" step="0.01" value={newItem.price} onChange={(e) => setNewItem({ ...newItem, price: e.target.value })} className="mt-1" /></div>
-                  <div><Label>Description</Label><Textarea value={newItem.description} onChange={(e) => setNewItem({ ...newItem, description: e.target.value })} className="mt-1" /></div>
-                  <div>
-                    <Label>Category</Label>
-                    <Select value={newItem.category_id || "__none__"} onValueChange={(v) => setNewItem({ ...newItem, category_id: v === "__none__" ? "" : v })}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">Uncategorised</SelectItem>
-                        {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button onClick={addItem} disabled={!newItem.name.trim() || !newItem.price} className="w-full">Add Item</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {/* Add category */}
-          <div className="flex items-end gap-2 max-w-sm">
-            <div className="flex-1">
-              <Label className="text-xs">New Category</Label>
-              <Input value={newCatName} onChange={(e) => setNewCatName(e.target.value)} placeholder="e.g. Mains" className="mt-1" />
-            </div>
-            <Button size="sm" onClick={addCategory} disabled={!newCatName.trim()}>Add</Button>
-          </div>
-
-          {/* Categories and items */}
-          {categories.length === 0 && items.length === 0 ? (
-            <Card><CardContent className="py-8 text-center text-muted-foreground">No menu items yet. Add categories and items above.</CardContent></Card>
-          ) : (
-            <div className="space-y-4">
-              {categories.map((cat) => (
-                <Card key={cat.id}>
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-base">{cat.name}</CardTitle>
-                    <Button variant="ghost" size="icon" onClick={() => deleteCategory(cat.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </CardHeader>
-                  <CardContent>
-                    {items.filter((i) => i.category_id === cat.id).length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No items in this category.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {items.filter((i) => i.category_id === cat.id).map((item) => (
-                          <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
-                            <div>
-                              <p className="text-sm font-medium">{item.name}</p>
-                              {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">${item.price.toFixed(2)}</span>
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteItem(item.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-              {/* Uncategorised items */}
-              {items.filter((i) => !i.category_id).length > 0 && (
-                <Card>
-                  <CardHeader className="pb-2"><CardTitle className="text-base text-muted-foreground">Uncategorised</CardTitle></CardHeader>
-                  <CardContent className="space-y-2">
-                    {items.filter((i) => !i.category_id).map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
-                        <div><p className="text-sm font-medium">{item.name}</p></div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">${item.price.toFixed(2)}</span>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteItem(item.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* ── USERS TAB ── */}
         <TabsContent value="users" className="space-y-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-foreground">Staff & Admin Users</h3>
@@ -539,10 +381,6 @@ export default function AdminVenueDetail() {
           )}
         </TabsContent>
 
-        {/* ── PAYMENTS TAB ── */}
-        <TabsContent value="payments" className="space-y-6">
-          {venue && <PaymentSettingsTab venueId={venue.id} />}
-        </TabsContent>
         {/* ── LOYALTY TAB (parent venues only) ── */}
         {venue?.venue_type === "parent" && venue?.group_id && (
           <TabsContent value="loyalty" className="space-y-6">
