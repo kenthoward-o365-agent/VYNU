@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Users, Mail, Phone, AlertTriangle, Pencil, Plus, Gift, Search } from "lucide-react";
+import { Users, Mail, Phone, AlertTriangle, Pencil, Plus, Gift, Search, Receipt, DollarSign } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface DinerWithVisits {
@@ -22,6 +22,15 @@ interface DinerWithVisits {
   preferences: any;
   visit_count: number;
   last_visit: string | null;
+  total_spend: number;
+}
+
+interface DinerOrder {
+  id: string;
+  order_id: string | null;
+  visited_at: string;
+  spend_excl_tax: number;
+  points_awarded: number;
 }
 
 interface LoyaltyBalance {
@@ -53,23 +62,25 @@ export default function Diners() {
   const [adjustAmount, setAdjustAmount] = useState<Record<string, string>>({});
   const [adjustReason, setAdjustReason] = useState("");
   const [selectedProgramForNew, setSelectedProgramForNew] = useState("");
+  const [dinerOrders, setDinerOrders] = useState<DinerOrder[]>([]);
 
   const fetchDiners = async () => {
     if (!venue) return;
     setLoading(true);
     const { data: visits } = await supabase
       .from("diner_visits")
-      .select("diner_id, visited_at")
+      .select("diner_id, visited_at, spend_excl_tax, points_awarded" as any)
       .eq("venue_id", venue.id)
       .order("visited_at", { ascending: false });
 
     if (!visits || visits.length === 0) { setDiners([]); setLoading(false); return; }
 
-    const dinerMap = new Map<string, { count: number; last: string }>();
-    visits.forEach((v) => {
+    const dinerMap = new Map<string, { count: number; last: string; totalSpend: number }>();
+    visits.forEach((v: any) => {
       const existing = dinerMap.get(v.diner_id);
-      if (!existing) dinerMap.set(v.diner_id, { count: 1, last: v.visited_at });
-      else existing.count++;
+      const spend = parseFloat(v.spend_excl_tax) || 0;
+      if (!existing) dinerMap.set(v.diner_id, { count: 1, last: v.visited_at, totalSpend: spend });
+      else { existing.count++; existing.totalSpend += spend; }
     });
 
     const dinerIds = Array.from(dinerMap.keys());
@@ -87,6 +98,7 @@ export default function Diners() {
       preferences: p.preferences,
       visit_count: dinerMap.get(p.id)?.count || 0,
       last_visit: dinerMap.get(p.id)?.last || null,
+      total_spend: dinerMap.get(p.id)?.totalSpend || 0,
     }));
 
     result.sort((a, b) => b.visit_count - a.visit_count);
