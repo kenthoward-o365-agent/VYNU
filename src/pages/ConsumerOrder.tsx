@@ -65,6 +65,7 @@ const ConsumerOrder = () => {
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
   const [tab, setTab] = useState<"feed" | "chat" | "cart" | "profile">("feed");
   const [showChat, setShowChat] = useState(false);
+  const [chatMode, setChatMode] = useState<string>("chat_optional");
   const [started, setStarted] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
@@ -97,6 +98,15 @@ const ConsumerOrder = () => {
       }
       if (itemsRes.data) setMenuItems(itemsRes.data as MenuItem[]);
       if (catsRes.data) setCategories(catsRes.data);
+
+      // Load Sippa AI chat mode
+      const { data: aiConfig } = await supabase
+        .from("venue_ai_config")
+        .select("chat_mode")
+        .eq("venue_id", venueId)
+        .maybeSingle();
+      if (aiConfig?.chat_mode) setChatMode(aiConfig.chat_mode);
+
       setLoading(false);
     };
 
@@ -227,7 +237,12 @@ const ConsumerOrder = () => {
         <VenueLanding
           venue={venue}
           tableNumber={tableNumber || "?"}
-          onStart={() => setStarted(true)}
+          onStart={() => {
+            setStarted(true);
+            if (chatMode === "chat_first" || chatMode === "chat_only") {
+              setShowChat(true);
+            }
+          }}
           onSignup={() => { setAuthMode("signup"); setShowSignup(true); }}
           onSignin={() => { setAuthMode("signin"); setShowSignup(true); }}
         />
@@ -261,8 +276,16 @@ const ConsumerOrder = () => {
       )}
 
       {/* Main Content */}
-      {tab === "feed" && (
+      {tab === "feed" && chatMode !== "chat_only" && (
         <MenuFeed items={menuItems} categories={categories} onAddToCart={addToCart} />
+      )}
+      {tab === "feed" && chatMode === "chat_only" && !showChat && (
+        <div className="flex-1 flex items-center justify-center px-6 text-center pb-20">
+          <div>
+            <p className="text-lg font-semibold mb-2">Chat with {venue?.name}'s AI server</p>
+            <p className="text-sm text-muted-foreground mb-4">Tap the chat icon below to start ordering</p>
+          </div>
+        </div>
       )}
       {tab === "cart" && !showCheckout && (
         <CartPanel

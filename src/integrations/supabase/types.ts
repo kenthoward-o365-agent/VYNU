@@ -629,6 +629,53 @@ export type Database = {
         }
         Relationships: []
       }
+      venue_ai_config: {
+        Row: {
+          agent_icon_url: string | null
+          agent_name: string
+          chat_mode: string
+          created_at: string
+          id: string
+          opening_message: string | null
+          personality_extras: Json | null
+          tone: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          agent_icon_url?: string | null
+          agent_name?: string
+          chat_mode?: string
+          created_at?: string
+          id?: string
+          opening_message?: string | null
+          personality_extras?: Json | null
+          tone?: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          agent_icon_url?: string | null
+          agent_name?: string
+          chat_mode?: string
+          created_at?: string
+          id?: string
+          opening_message?: string | null
+          personality_extras?: Json | null
+          tone?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_ai_config_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: true
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_group_staff: {
         Row: {
           created_at: string

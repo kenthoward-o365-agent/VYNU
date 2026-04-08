@@ -3,6 +3,7 @@ import { Send, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   role: "user" | "assistant";
@@ -17,16 +18,36 @@ interface AIChatOverlayProps {
 }
 
 const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems }: AIChatOverlayProps) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content: "Hey! 👋 I'm your AI server. Tell me what you're in the mood for and I'll find the perfect dish. Try saying:\n\n- \"Something spicy under $25\"\n- \"I'm vegetarian, what do you recommend?\"\n- \"What's the most popular dish?\"",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [agentName, setAgentName] = useState("Sippa");
+  const [agentIcon, setAgentIcon] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [configLoaded, setConfigLoaded] = useState(false);
+
+  // Load venue AI config
+  useEffect(() => {
+    const loadConfig = async () => {
+      const { data } = await supabase
+        .from("venue_ai_config")
+        .select("agent_name, agent_icon_url, opening_message, tone")
+        .eq("venue_id", venueId)
+        .maybeSingle();
+
+      const name = data?.agent_name || "Sippa";
+      const icon = data?.agent_icon_url || null;
+      const greeting = data?.opening_message ||
+        `Hey! 👋 I'm ${name}, your AI server. Tell me what you're in the mood for and I'll find the perfect dish. Try saying:\n\n- "Something spicy under $25"\n- "I'm vegetarian, what do you recommend?"\n- "What's the most popular dish?"`;
+
+      setAgentName(name);
+      setAgentIcon(icon);
+      setMessages([{ role: "assistant", content: greeting }]);
+      setConfigLoaded(true);
+    };
+    loadConfig();
+  }, [venueId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -41,7 +62,6 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems }: AIChatOverl
     setLoading(true);
 
     try {
-      const { supabase } = await import("@/integrations/supabase/client");
       const { data, error } = await supabase.functions.invoke("diner-chat", {
         body: {
           message: userMsg.content,
@@ -66,7 +86,6 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems }: AIChatOverl
       };
       setMessages((prev) => [...prev, assistantMsg]);
 
-      // If AI suggested items to add
       if (data.suggested_items?.length > 0) {
         data.suggested_items.forEach((item: { id: string; name: string; price: number }) => {
           onAddToCart(item);
@@ -83,13 +102,29 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems }: AIChatOverl
     }
   };
 
+  if (!configLoaded) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex items-center justify-center max-w-md mx-auto">
+        <div className="flex gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
+          <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
+          <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col max-w-md mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <h2 className="font-semibold">AI Server</h2>
+          {agentIcon ? (
+            <img src={agentIcon} alt={agentName} className="h-7 w-7 rounded-full object-cover" />
+          ) : (
+            <Sparkles className="h-5 w-5 text-primary" />
+          )}
+          <h2 className="font-semibold">{agentName}</h2>
         </div>
         <button onClick={onClose} className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-secondary transition-colors">
           <X className="h-5 w-5" />

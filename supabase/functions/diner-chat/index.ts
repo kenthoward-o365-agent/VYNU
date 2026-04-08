@@ -1,10 +1,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const tonePrompts: Record<string, string> = {
+  aussie: `You speak like a friendly Australian. Use casual Aussie slang naturally — "arvo", "reckon", "no worries", "ripper", "keen", "mate". Keep it laid-back and warm, like chatting with a mate at the pub.`,
+  british: `You speak with warm British charm. Use expressions like "brilliant", "lovely", "cheers", "fancy", "rather", "quite". Be polished but approachable, like a friendly server at a gastropub.`,
+  north_american: `You speak with casual North American friendliness. Use expressions like "awesome", "you bet", "for sure", "sounds great", "super". Be upbeat and enthusiastic, like a great server at a popular restaurant.`,
 };
 
 Deno.serve(async (req) => {
@@ -15,11 +22,29 @@ Deno.serve(async (req) => {
   try {
     const { message, venue_id, menu_items, conversation } = await req.json();
 
+    // Load venue AI config
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    const { data: aiConfig } = await sb
+      .from("venue_ai_config")
+      .select("agent_name, tone, chat_mode, opening_message")
+      .eq("venue_id", venue_id)
+      .maybeSingle();
+
+    const agentName = aiConfig?.agent_name || "Sippa";
+    const tone = aiConfig?.tone || "aussie";
+    const toneInstruction = tonePrompts[tone] || tonePrompts.aussie;
+
     const menuContext = menu_items
       .map((i: any) => `- ${i.name} ($${i.price}) — ${i.description || "No description"}${i.dietary_tags?.length ? ` [${i.dietary_tags.join(", ")}]` : ""}${i.allergens?.length ? ` ⚠️ ${i.allergens.join(", ")}` : ""}`)
       .join("\n");
 
-    const systemPrompt = `You are a friendly, knowledgeable AI server at a restaurant. You help diners choose dishes from the menu.
+    const systemPrompt = `You are ${agentName}, a friendly AI server at a restaurant. You help diners choose dishes from the menu.
+
+PERSONALITY & TONE:
+${toneInstruction}
 
 MENU:
 ${menuContext}
@@ -59,6 +84,18 @@ Only include item IDs that match the menu. Only do this when the diner clearly w
 
     if (!response.ok) {
       const errText = await response.text();
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limited, please try again shortly." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       throw new Error(`AI API error: ${response.status} ${errText}`);
     }
 
@@ -76,11 +113,10 @@ Only include item IDs that match the menu. Only do this when the diner clearly w
           suggested_items.push({ id: item.id, name: item.name, price: item.price });
         }
       });
-      // Remove the tag from the visible reply
       reply = reply.replace(/\[ADD_ITEMS:.*?\]/, "").trim();
     }
 
-    return new Response(JSON.stringify({ reply, suggested_items }), {
+    return new Response(JSON.stringify({ reply, suggested_items, agent_name: agentName }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
