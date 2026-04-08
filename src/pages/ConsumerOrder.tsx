@@ -65,6 +65,7 @@ const ConsumerOrder = () => {
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
   const [tab, setTab] = useState<"feed" | "chat" | "cart" | "profile">("feed");
   const [showChat, setShowChat] = useState(false);
+  const [chatMode, setChatMode] = useState<string>("chat_optional");
   const [started, setStarted] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
@@ -97,6 +98,15 @@ const ConsumerOrder = () => {
       }
       if (itemsRes.data) setMenuItems(itemsRes.data as MenuItem[]);
       if (catsRes.data) setCategories(catsRes.data);
+
+      // Load Sippa AI chat mode
+      const { data: aiConfig } = await supabase
+        .from("venue_ai_config")
+        .select("chat_mode")
+        .eq("venue_id", venueId)
+        .maybeSingle();
+      if (aiConfig?.chat_mode) setChatMode(aiConfig.chat_mode);
+
       setLoading(false);
     };
 
