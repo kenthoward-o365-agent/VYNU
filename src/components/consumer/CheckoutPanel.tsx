@@ -187,9 +187,8 @@ const CheckoutPanel = ({
         };
 
         // Add auth header if user is logged in
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session?.access_token) {
-          headers.Authorization = `Bearer ${sessionData.session.access_token}`;
+        if (session?.access_token) {
+          headers.Authorization = `Bearer ${session.access_token}`;
         }
 
         const paymentBody: any = {
