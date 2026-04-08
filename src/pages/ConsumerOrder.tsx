@@ -66,6 +66,8 @@ const ConsumerOrder = () => {
   const [tab, setTab] = useState<"feed" | "chat" | "cart" | "profile">("feed");
   const [showChat, setShowChat] = useState(false);
   const [chatMode, setChatMode] = useState<string>("chat_optional");
+  const [agentName, setAgentName] = useState<string>("Sippa");
+  const [agentIconUrl, setAgentIconUrl] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
@@ -103,10 +105,12 @@ const ConsumerOrder = () => {
       // Load Sippa AI chat mode
       const { data: aiConfig } = await supabase
         .from("venue_ai_config")
-        .select("chat_mode")
+        .select("chat_mode, agent_name, agent_icon_url")
         .eq("venue_id", venueId)
         .maybeSingle();
       if (aiConfig?.chat_mode) setChatMode(aiConfig.chat_mode);
+      if (aiConfig?.agent_name) setAgentName(aiConfig.agent_name);
+      if (aiConfig?.agent_icon_url) setAgentIconUrl(aiConfig.agent_icon_url);
 
       setLoading(false);
     };
@@ -365,6 +369,8 @@ const ConsumerOrder = () => {
         active={tab}
         onNavigate={handleTabChange}
         cartCount={cart.reduce((sum, c) => sum + c.quantity, 0)}
+        agentName={agentName}
+        agentIconUrl={agentIconUrl}
       />
     </ConsumerLayout>
   );
