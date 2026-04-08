@@ -99,21 +99,83 @@ export default function Dashboard() {
     { name: "Cancelled", value: stats.cancelledOrders },
   ].filter((d) => d.value > 0);
 
-  // Financial Performance section unchanged...
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">
+            {isToday ? "Today's Performance" : "Performance"}
+          </h2>
+          <p className="text-muted-foreground">{venue?.name}</p>
+        </div>
+        <AuditDatePicker value={auditDate} onChange={setAuditDate} />
+      </div>
 
-      {/* Order Performance */}
+      {/* Financial Performance */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Financial Performance
+        </h3>
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Gross Revenue {hasInclusiveTax ? "(incl. tax)" : ""}
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-emerald-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">${stats.grossRevenue.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Net Revenue</CardTitle>
+              <Receipt className="h-4 w-4 text-emerald-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">${stats.netRevenue.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Tax Collected</CardTitle>
+              <Percent className="h-4 w-4 text-amber-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">${stats.totalTax.toFixed(2)}</div>
+              {stats.taxLines.length > 0 && (
+                <div className="mt-1 space-y-0.5">
+                  {stats.taxLines.map((tl) => (
+                    <p key={tl.name} className="text-xs text-muted-foreground">
+                      {tl.name}{tl.is_inclusive ? " (incl.)" : ""}: ${tl.amount.toFixed(2)}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Avg Order Value</CardTitle>
+              <TrendingUp className="h-4 w-4 text-indigo-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">${stats.avgOrderValue.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Order Performance - Donut Chart */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Order Performance</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {stats.orderCount} total orders
-          </p>
+          <p className="text-sm text-muted-foreground">{stats.orderCount} total orders</p>
         </CardHeader>
         <CardContent>
           {stats.orderCount === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No orders for this period
-            </p>
+            <p className="text-sm text-muted-foreground text-center py-8">No orders for this period</p>
           ) : (
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
