@@ -13,7 +13,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2 } from "lucide-react";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
-import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 
