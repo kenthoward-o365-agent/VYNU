@@ -308,6 +308,15 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
             className="flex-1 bg-secondary rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/50"
           />
           <Button
+            onClick={toggleSpeechRecognition}
+            variant={isListening ? "destructive" : "outline"}
+            size="icon"
+            className="h-11 w-11 rounded-xl shrink-0"
+            type="button"
+          >
+            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
+          <Button
             onClick={sendMessage}
             disabled={!input.trim() || loading}
             size="icon"
