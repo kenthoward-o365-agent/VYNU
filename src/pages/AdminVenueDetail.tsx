@@ -248,9 +248,7 @@ export default function AdminVenueDetail() {
           {venue?.venue_type === "parent" && (
             <TabsTrigger value="group-settings"><Building2 className="h-3.5 w-3.5 mr-1" />Group Settings</TabsTrigger>
           )}
-          <TabsTrigger value="menu"><UtensilsCrossed className="h-3.5 w-3.5 mr-1" />Menu</TabsTrigger>
           <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
-          <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>
           {venue?.venue_type === "parent" && venue?.group_id && (
             <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
           )}
