@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, ShoppingCart, TrendingUp, Clock, CheckCircle, XCircle, Receipt, Percent } from "lucide-react";
+import { DollarSign, TrendingUp, Receipt, Percent } from "lucide-react";
 import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { calculateTaxes, type TaxConfig } from "@/lib/tax-utils";
 
 export default function Dashboard() {
