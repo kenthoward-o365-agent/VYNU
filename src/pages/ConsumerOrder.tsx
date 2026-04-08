@@ -66,7 +66,8 @@ const ConsumerOrder = () => {
   const [tab, setTab] = useState<"feed" | "chat" | "cart" | "profile">("feed");
   const [showChat, setShowChat] = useState(false);
   const [chatMode, setChatMode] = useState<string>("chat_optional");
-  const [started, setStarted] = useState(false);
+  const [agentName, setAgentName] = useState<string>("Sippa");
+  const [agentIconUrl, setAgentIconUrl] = useState<string | null>(null);
   const [showSignup, setShowSignup] = useState(false);
   const [authMode, setAuthMode] = useState<"signup" | "signin">("signup");
   const [showCheckout, setShowCheckout] = useState(false);
@@ -107,6 +108,8 @@ const ConsumerOrder = () => {
         .eq("venue_id", venueId)
         .maybeSingle();
       if (aiConfig?.chat_mode) setChatMode(aiConfig.chat_mode);
+      if (aiConfig?.agent_name) setAgentName(aiConfig.agent_name);
+      if (aiConfig?.agent_icon_url) setAgentIconUrl(aiConfig.agent_icon_url);
 
       setLoading(false);
     };
