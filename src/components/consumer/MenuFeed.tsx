@@ -297,8 +297,8 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] relative overflow-hidden">
       <CategoryChips categories={categories} activeCategory={activeCategory} onSelect={handleCategorySelect} />
-      <ScrollArea className="flex-1 pb-24">
-        <div className="space-y-2 py-2 px-4">
+      <div className="flex-1 overflow-y-auto px-3 pb-24">
+        <div className="space-y-2 py-2">
           {filteredItems.map((item) => (
             <MenuItemRow
               key={item.id}
@@ -308,7 +308,7 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
             />
           ))}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Floating Add to Order button */}
       {selectedCount > 0 && (
