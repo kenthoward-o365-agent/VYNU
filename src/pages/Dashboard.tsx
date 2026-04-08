@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, ShoppingCart, TrendingUp, Clock, CheckCircle, XCircle, Receipt, Percent } from "lucide-react";
+import { DollarSign, TrendingUp, Receipt, Percent } from "lucide-react";
 import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { calculateTaxes, type TaxConfig } from "@/lib/tax-utils";
 
 export default function Dashboard() {
@@ -90,14 +91,13 @@ export default function Dashboard() {
   const isToday = auditDate.label === "Today";
   const hasInclusiveTax = taxes.some((t) => t.is_inclusive);
 
-  const orderCards = [
-    { label: "Total Orders", value: stats.orderCount, icon: ShoppingCart, color: "text-blue-500" },
-    ...(isToday
-      ? [{ label: "Active Orders", value: stats.activeOrders, icon: Clock, color: "text-amber-500" }]
-      : []),
-    { label: "Completed", value: stats.completedOrders, icon: CheckCircle, color: "text-emerald-500" },
-    { label: "Cancelled", value: stats.cancelledOrders, icon: XCircle, color: "text-red-500" },
-  ];
+  const ORDER_COLORS = ["hsl(217, 91%, 60%)", "hsl(45, 93%, 47%)", "hsl(142, 71%, 45%)", "hsl(0, 84%, 60%)"];
+
+  const orderChartData = [
+    ...(isToday ? [{ name: "Active", value: stats.activeOrders }] : []),
+    { name: "Completed", value: stats.completedOrders },
+    { name: "Cancelled", value: stats.cancelledOrders },
+  ].filter((d) => d.value > 0);
 
   return (
     <div className="space-y-6">
@@ -117,7 +117,6 @@ export default function Dashboard() {
           Financial Performance
         </h3>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Gross Revenue */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -129,8 +128,6 @@ export default function Dashboard() {
               <div className="text-2xl font-bold text-foreground">${stats.grossRevenue.toFixed(2)}</div>
             </CardContent>
           </Card>
-
-          {/* Net Revenue */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Net Revenue</CardTitle>
@@ -140,13 +137,9 @@ export default function Dashboard() {
               <div className="text-2xl font-bold text-foreground">${stats.netRevenue.toFixed(2)}</div>
             </CardContent>
           </Card>
-
-          {/* Tax breakdown */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Tax Collected
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Tax Collected</CardTitle>
               <Percent className="h-4 w-4 text-amber-500" />
             </CardHeader>
             <CardContent>
@@ -162,8 +155,6 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
-
-          {/* Avg Order Value */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Avg Order Value</CardTitle>
@@ -176,25 +167,41 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Order Performance */}
-      <div>
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Order Performance
-        </h3>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-          {orderCards.map((s) => (
-            <Card key={s.label}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{s.label}</CardTitle>
-                <s.icon className={`h-4 w-4 ${s.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-foreground">{s.value}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      {/* Order Performance - Donut Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Order Performance</CardTitle>
+          <p className="text-sm text-muted-foreground">{stats.orderCount} total orders</p>
+        </CardHeader>
+        <CardContent>
+          {stats.orderCount === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No orders for this period</p>
+          ) : (
+            <div className="h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={orderChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={70}
+                    outerRadius={110}
+                    paddingAngle={3}
+                    dataKey="value"
+                    label={({ name, value }) => `${name}: ${value}`}
+                  >
+                    {orderChartData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={ORDER_COLORS[index % ORDER_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Quick Actions & AI */}
       <div className="grid gap-4 lg:grid-cols-2">
