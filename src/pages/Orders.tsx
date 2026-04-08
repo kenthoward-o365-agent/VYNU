@@ -11,6 +11,14 @@ import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/componen
 
 type OrderStatus = "received" | "preparing" | "ready" | "served" | "paid" | "cancelled";
 
+interface OrderItem {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  notes: string | null;
+  menu_item: { name: string } | null;
+}
+
 interface Order {
   id: string;
   status: OrderStatus;
@@ -18,6 +26,8 @@ interface Order {
   customer_notes: string | null;
   created_at: string;
   table_id: string | null;
+  table: { table_number: string } | null;
+  order_items: OrderItem[];
 }
 
 const statusConfig: Record<OrderStatus, { label: string; color: string; icon: any }> = {
@@ -46,7 +56,7 @@ export default function Orders() {
     if (!venue) return;
     let query = supabase
       .from("orders")
-      .select("*")
+      .select("*, table:tables(table_number), order_items(id, quantity, unit_price, notes, menu_item:menu_items(name))")
       .eq("venue_id", venue.id)
       .gte("created_at", auditDate.from.toISOString())
       .lte("created_at", auditDate.to.toISOString())
@@ -55,7 +65,7 @@ export default function Orders() {
       query = query.in("status", ["received", "preparing", "ready"]);
     }
     const { data } = await query;
-    setOrders((data as Order[]) || []);
+    setOrders((data as unknown as Order[]) || []);
   };
 
   useEffect(() => { fetchOrders(); }, [venue, filter, auditDate]);
@@ -158,24 +168,49 @@ export default function Orders() {
             const config = statusConfig[order.status];
             const next = nextStatus[order.status];
             return (
-              <Card key={order.id}>
-                <CardHeader className="pb-3">
+              <Card key={order.id} className="flex flex-col">
+                <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Order #{order.id.slice(0, 8)}</CardTitle>
+                    <div>
+                      <CardTitle className="text-base">#{order.id.slice(0, 8)}</CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(order.created_at).toLocaleTimeString()}
+                        {order.table?.table_number && ` · Table ${order.table.table_number}`}
+                      </p>
+                    </div>
                     <Badge className={config.color}>{config.label}</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(order.created_at).toLocaleTimeString()}
-                  </p>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total</span>
-                    <span className="font-semibold text-foreground">${Number(order.total).toFixed(2)}</span>
+                <CardContent className="space-y-3 flex-1">
+                  {/* Order items list */}
+                  <div className="divide-y divide-border">
+                    {order.order_items?.map((item) => (
+                      <div key={item.id} className="flex justify-between py-1.5 text-sm">
+                        <div className="flex-1">
+                          <span className="font-medium text-foreground">
+                            {item.quantity}× {item.menu_item?.name ?? "Unknown item"}
+                          </span>
+                          {item.notes && (
+                            <p className="text-xs text-muted-foreground mt-0.5">⤷ {item.notes}</p>
+                          )}
+                        </div>
+                        <span className="text-muted-foreground ml-2">${(item.quantity * Number(item.unit_price)).toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {(!order.order_items || order.order_items.length === 0) && (
+                      <p className="text-xs text-muted-foreground py-1">No items</p>
+                    )}
                   </div>
+
                   {order.customer_notes && (
-                    <p className="text-sm text-muted-foreground italic">"{order.customer_notes}"</p>
+                    <p className="text-sm text-muted-foreground italic border-l-2 border-primary pl-2">"{order.customer_notes}"</p>
                   )}
+
+                  <div className="flex items-center justify-between pt-1 border-t border-border">
+                    <span className="text-sm font-medium text-muted-foreground">Total</span>
+                    <span className="font-bold text-foreground">${Number(order.total).toFixed(2)}</span>
+                  </div>
+
                   {next && (
                     <Button className="w-full" size="sm" onClick={() => updateStatus(order.id, next)}>
                       Move to {statusConfig[next].label}
