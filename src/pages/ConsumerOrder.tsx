@@ -74,6 +74,7 @@ const ConsumerOrder = () => {
   const [resolvedTableId, setResolvedTableId] = useState<string | null>(null);
   const [dinerId, setDinerId] = useState<string | null>(null);
   const [dinerInfo, setDinerInfo] = useState<{ first_name: string | null; last_name: string | null; email: string | null; phone: string | null } | null>(null);
+  const [lastOrderItems, setLastOrderItems] = useState<{ id: string; name: string; quantity: number }[]>([]);
 
   // Fetch venue, table, and menu data
   useEffect(() => {
@@ -126,6 +127,33 @@ const ConsumerOrder = () => {
         if (data) {
           setDinerId(data.id);
           setDinerInfo({ first_name: data.first_name, last_name: data.last_name, email: data.email, phone: data.phone });
+
+          // Fetch last order items for "another round"
+          if (venueId) {
+            const { data: lastOrder } = await supabase
+              .from("orders")
+              .select("id")
+              .eq("venue_id", venueId)
+              .eq("customer_id", data.id)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (lastOrder) {
+              const { data: items } = await supabase
+                .from("order_items")
+                .select("menu_item_id, quantity, menu_items(name)")
+                .eq("order_id", lastOrder.id);
+
+              if (items) {
+                setLastOrderItems(items.map((oi: any) => ({
+                  id: oi.menu_item_id,
+                  name: oi.menu_items?.name || "Unknown",
+                  quantity: oi.quantity,
+                })));
+              }
+            }
+          }
         }
       }
     };
@@ -317,6 +345,10 @@ const ConsumerOrder = () => {
           onClose={() => setShowChat(false)}
           onAddToCart={addToCart}
           menuItems={menuItems}
+          dinerId={dinerId}
+          tableId={resolvedTableId}
+          lastOrderItems={lastOrderItems}
+          cartTotal={cart.reduce((sum, c) => sum + c.price * c.quantity, 0)}
         />
       )}
 

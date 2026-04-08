@@ -19,6 +19,7 @@ interface SippaConfig {
   opening_message: string;
   tone: string;
   chat_mode: string;
+  venue_context: string;
 }
 
 const toneOptions = [
@@ -72,6 +73,7 @@ export default function SippaAISettings({ venueId }: Props) {
     opening_message: "Hey! 👋 I'm your AI server. Tell me what you're in the mood for and I'll find the perfect dish.",
     tone: "aussie",
     chat_mode: "chat_optional",
+    venue_context: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -96,6 +98,7 @@ export default function SippaAISettings({ venueId }: Props) {
           opening_message: data.opening_message || "",
           tone: data.tone,
           chat_mode: data.chat_mode,
+          venue_context: (data as any).venue_context || "",
         });
         setIsNew(false);
       }
@@ -113,6 +116,7 @@ export default function SippaAISettings({ venueId }: Props) {
       opening_message: config.opening_message,
       tone: config.tone,
       chat_mode: config.chat_mode,
+      venue_context: config.venue_context,
     };
 
     if (isNew) {
@@ -321,6 +325,30 @@ export default function SippaAISettings({ venueId }: Props) {
               </label>
             ))}
           </RadioGroup>
+        </CardContent>
+      </Card>
+
+      {/* Venue Knowledge */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Venue Knowledge
+          </CardTitle>
+          <CardDescription>
+            Give your AI agent context about your venue so it can answer questions about your story, specialties, events, and more
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Textarea
+            value={config.venue_context}
+            onChange={(e) => setConfig((c) => ({ ...c, venue_context: e.target.value }))}
+            rows={8}
+            placeholder={`Paste information about your venue here. For example:\n\n• Our chef Marco trained in Italy for 10 years\n• We source all seafood from the Sydney Fish Market daily\n• Live jazz every Friday & Saturday from 7pm\n• Our signature dish is the 12-hour slow-cooked lamb shoulder\n• We have a private dining room for up to 20 guests\n• Happy hour runs 4-6pm weekdays with $8 house wines`}
+          />
+          <p className="text-xs text-muted-foreground">
+            This info is fed to your AI agent so it can answer diner questions like "Tell me about the chef" or "Do you have live music?"
+          </p>
         </CardContent>
       </Card>
 

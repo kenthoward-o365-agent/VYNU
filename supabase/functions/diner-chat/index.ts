@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { message, venue_id, menu_items, conversation } = await req.json();
+    const { message, venue_id, menu_items, conversation, diner_id, last_order_items, table_id } = await req.json();
 
     // Load venue AI config
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -29,25 +29,36 @@ Deno.serve(async (req) => {
 
     const { data: aiConfig } = await sb
       .from("venue_ai_config")
-      .select("agent_name, tone, chat_mode, opening_message")
+      .select("agent_name, tone, chat_mode, opening_message, venue_context")
       .eq("venue_id", venue_id)
       .maybeSingle();
 
     const agentName = aiConfig?.agent_name || "Sippa";
     const tone = aiConfig?.tone || "aussie";
     const toneInstruction = tonePrompts[tone] || tonePrompts.aussie;
+    const venueContext = aiConfig?.venue_context || "";
 
     const menuContext = menu_items
-      .map((i: any) => `- ${i.name} ($${i.price}) — ${i.description || "No description"}${i.dietary_tags?.length ? ` [${i.dietary_tags.join(", ")}]` : ""}${i.allergens?.length ? ` ⚠️ ${i.allergens.join(", ")}` : ""}`)
+      .map((i: any) => `- ${i.name} (id: ${i.id}) — $${i.price}${i.description ? ` — ${i.description}` : ""}${i.dietary_tags?.length ? ` [${i.dietary_tags.join(", ")}]` : ""}${i.allergens?.length ? ` ⚠️ ${i.allergens.join(", ")}` : ""}`)
       .join("\n");
 
-    const systemPrompt = `You are ${agentName}, a friendly AI server at a restaurant. You help diners choose dishes from the menu.
+    const lastOrderContext = last_order_items?.length
+      ? `\nDINER'S LAST ORDER:\n${last_order_items.map((i: any) => `- ${i.name} (id: ${i.id}) x${i.quantity}`).join("\n")}\nIf the diner says "another round", "same again", or similar reorder phrases, add all these items again using [ADD_ITEMS].`
+      : "";
+
+    const venueKnowledge = venueContext
+      ? `\nVENUE INFORMATION:\n${venueContext}\nUse this information to answer questions about the venue, its story, specialties, events, etc.`
+      : "";
+
+    const systemPrompt = `You are ${agentName}, a friendly AI server at a restaurant. You help diners choose dishes, handle requests, and make their experience great.
 
 PERSONALITY & TONE:
 ${toneInstruction}
 
 MENU:
 ${menuContext}
+${venueKnowledge}
+${lastOrderContext}
 
 RULES:
 - Be warm, casual, and helpful — like a great waiter
@@ -56,11 +67,25 @@ RULES:
 - If they ask for something not on the menu, suggest the closest alternative
 - Keep responses concise (2-3 sentences max) with item names in **bold**
 - When recommending items, mention the price
-- If the diner clearly wants to order specific items, include them in your response as a JSON array in a special format
 
+ORDERING:
 When the diner explicitly says they want to order/add items, end your message with:
 [ADD_ITEMS: item_id1, item_id2]
-Only include item IDs that match the menu. Only do this when the diner clearly wants to order, not when you're just suggesting.`;
+Only include item IDs that match the menu. Only do this when the diner clearly wants to order.
+
+MANAGER ESCALATION:
+If the diner asks to speak to a manager, asks for the manager, complains seriously, or needs staff assistance, respond warmly and end your message with:
+[CALL_MANAGER: brief reason]
+Example: [CALL_MANAGER: Diner would like to discuss a dietary concern with the chef]
+Be empathetic and reassure them that someone will be right over.
+
+CHECK SPLITTING:
+If the diner asks to split the bill, split the check, or divide between people:
+- Ask how many ways they'd like to split if they haven't specified
+- Once you know the number, end your message with:
+[SPLIT_CHECK: N]
+where N is the number of ways to split.
+- Mention the per-person amount in your response.`;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -86,14 +111,12 @@ Only include item IDs that match the menu. Only do this when the diner clearly w
       const errText = await response.text();
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited, please try again shortly." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       throw new Error(`AI API error: ${response.status} ${errText}`);
@@ -102,7 +125,7 @@ Only include item IDs that match the menu. Only do this when the diner clearly w
     const data = await response.json();
     let reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that.";
 
-    // Parse ADD_ITEMS if present
+    // Parse ADD_ITEMS
     const suggested_items: any[] = [];
     const addMatch = reply.match(/\[ADD_ITEMS:\s*(.+?)\]/);
     if (addMatch) {
@@ -116,7 +139,42 @@ Only include item IDs that match the menu. Only do this when the diner clearly w
       reply = reply.replace(/\[ADD_ITEMS:.*?\]/, "").trim();
     }
 
-    return new Response(JSON.stringify({ reply, suggested_items, agent_name: agentName }), {
+    // Parse CALL_MANAGER
+    let call_manager = false;
+    let manager_reason = "";
+    const managerMatch = reply.match(/\[CALL_MANAGER:\s*(.+?)\]/);
+    if (managerMatch) {
+      call_manager = true;
+      manager_reason = managerMatch[1].trim();
+      reply = reply.replace(/\[CALL_MANAGER:.*?\]/, "").trim();
+
+      // Create staff alert
+      await sb.from("staff_alerts").insert({
+        venue_id,
+        table_id: table_id || null,
+        diner_id: diner_id || null,
+        alert_type: "manager_request",
+        message: manager_reason,
+        status: "pending",
+      });
+    }
+
+    // Parse SPLIT_CHECK
+    let split_check = 0;
+    const splitMatch = reply.match(/\[SPLIT_CHECK:\s*(\d+)\]/);
+    if (splitMatch) {
+      split_check = parseInt(splitMatch[1]);
+      reply = reply.replace(/\[SPLIT_CHECK:.*?\]/, "").trim();
+    }
+
+    return new Response(JSON.stringify({
+      reply,
+      suggested_items,
+      agent_name: agentName,
+      call_manager,
+      manager_reason,
+      split_check,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
