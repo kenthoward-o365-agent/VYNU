@@ -262,7 +262,7 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
       </div>
 
       {/* Input */}
-      <div className="border-t border-border px-4 py-3 pb-6 shrink-0">
+      <div className="border-t border-border px-4 py-3 pb-24 shrink-0">
         <div className="flex gap-2">
           <input
             ref={inputRef}
