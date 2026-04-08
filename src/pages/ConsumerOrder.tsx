@@ -369,6 +369,8 @@ const ConsumerOrder = () => {
         active={tab}
         onNavigate={handleTabChange}
         cartCount={cart.reduce((sum, c) => sum + c.quantity, 0)}
+        agentName={agentName}
+        agentIconUrl={agentIconUrl}
       />
     </ConsumerLayout>
   );
