@@ -10,6 +10,7 @@ import CartPanel, { CartItem } from "@/components/consumer/CartPanel";
 import CheckoutPanel from "@/components/consumer/CheckoutPanel";
 import AIChatOverlay from "@/components/consumer/AIChatOverlay";
 import OrderStatus from "@/components/consumer/OrderStatus";
+import ReceiptView from "@/components/consumer/ReceiptView";
 import VenueDiscovery from "@/components/consumer/VenueDiscovery";
 import DinerSignup from "@/components/consumer/DinerSignup";
 
@@ -20,6 +21,11 @@ interface VenueInfo {
   logo_url: string | null;
   address: string | null;
   city: string | null;
+  state: string | null;
+  postcode: string | null;
+  phone: string | null;
+  email: string | null;
+  tax_id: string | null;
   landing_page_html: string | null;
   group_id: string | null;
 }
