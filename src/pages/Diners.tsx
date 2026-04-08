@@ -392,6 +392,46 @@ export default function Diners() {
               </Button>
             </TabsContent>
 
+            {/* Orders Tab */}
+            <TabsContent value="orders" className="space-y-4">
+              {dinerOrders.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No order history yet.</p>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Total Spend (excl. tax)</p>
+                      <p className="text-xl font-bold text-primary">${dinerOrders.reduce((s, o) => s + o.spend_excl_tax, 0).toFixed(2)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Total Points</p>
+                      <p className="text-xl font-bold text-primary">{dinerOrders.reduce((s, o) => s + o.points_awarded, 0)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Orders</p>
+                      <p className="text-xl font-bold">{dinerOrders.length}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    {dinerOrders.map((o) => (
+                      <div key={o.id} className="flex items-center justify-between p-3 rounded-lg border border-border text-sm">
+                        <div>
+                          <p className="font-medium">{new Date(o.visited_at).toLocaleDateString()}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(o.visited_at).toLocaleTimeString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">${o.spend_excl_tax.toFixed(2)}</p>
+                          {o.points_awarded > 0 && (
+                            <p className="text-xs text-primary">+{o.points_awarded} pts</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
             {/* Loyalty Tab */}
             <TabsContent value="loyalty" className="space-y-4">
               {balances.length === 0 && unenrolledPrograms.length === 0 ? (
