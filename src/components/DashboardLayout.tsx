@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import sippaLogo from "@/assets/sippa-lockup.svg";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
@@ -61,7 +62,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       )}>
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-bold text-sidebar-primary-foreground">Tab-Less</h2>
+            <img src={sippaLogo} alt="Sippa" className="h-8" />
             <button className="lg:hidden text-sidebar-foreground" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </button>
@@ -197,7 +198,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Menu className="h-5 w-5 text-foreground" />
           </button>
           <h1 className="text-lg font-semibold text-foreground">
-            {allNavItems.find((i) => i.path === location.pathname)?.label || "Tab-Less"}
+            {allNavItems.find((i) => i.path === location.pathname)?.label || "Sippa"}
           </h1>
         </header>
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
