@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2 } from "lucide-react";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
+import ChildVenueLoyaltyViewer from "@/components/venue/ChildVenueLoyaltyViewer";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 
@@ -185,7 +186,7 @@ export default function AdminVenueDetail() {
             <TabsTrigger value="group-settings"><Building2 className="h-3.5 w-3.5 mr-1" />Group Settings</TabsTrigger>
           )}
           <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
-          {venue?.venue_type === "parent" && venue?.group_id && (
+          {venue?.group_id && (
             <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
           )}
         </TabsList>
@@ -381,10 +382,13 @@ export default function AdminVenueDetail() {
           )}
         </TabsContent>
 
-        {/* ── LOYALTY TAB (parent venues only) ── */}
-        {venue?.venue_type === "parent" && venue?.group_id && (
+        {venue?.group_id && (
           <TabsContent value="loyalty" className="space-y-6">
-            <GroupLoyaltyManager groupId={venue.group_id} groupName={venue.name} />
+            {venue.venue_type === "parent" ? (
+              <GroupLoyaltyManager groupId={venue.group_id} groupName={venue.name} />
+            ) : (
+              <ChildVenueLoyaltyViewer groupId={venue.group_id} venueName={venue.name} />
+            )}
           </TabsContent>
         )}
       </Tabs>
