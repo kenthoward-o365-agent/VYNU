@@ -237,7 +237,12 @@ const ConsumerOrder = () => {
         <VenueLanding
           venue={venue}
           tableNumber={tableNumber || "?"}
-          onStart={() => setStarted(true)}
+          onStart={() => {
+            setStarted(true);
+            if (chatMode === "chat_first" || chatMode === "chat_only") {
+              setShowChat(true);
+            }
+          }}
           onSignup={() => { setAuthMode("signup"); setShowSignup(true); }}
           onSignin={() => { setAuthMode("signin"); setShowSignup(true); }}
         />
@@ -271,8 +276,16 @@ const ConsumerOrder = () => {
       )}
 
       {/* Main Content */}
-      {tab === "feed" && (
+      {tab === "feed" && chatMode !== "chat_only" && (
         <MenuFeed items={menuItems} categories={categories} onAddToCart={addToCart} />
+      )}
+      {tab === "feed" && chatMode === "chat_only" && !showChat && (
+        <div className="flex-1 flex items-center justify-center px-6 text-center pb-20">
+          <div>
+            <p className="text-lg font-semibold mb-2">Chat with {venue?.name}'s AI server</p>
+            <p className="text-sm text-muted-foreground mb-4">Tap the chat icon below to start ordering</p>
+          </div>
+        </div>
       )}
       {tab === "cart" && !showCheckout && (
         <CartPanel
