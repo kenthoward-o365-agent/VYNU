@@ -543,6 +543,12 @@ export default function AdminVenueDetail() {
         <TabsContent value="payments" className="space-y-6">
           {venue && <PaymentSettingsTab venueId={venue.id} />}
         </TabsContent>
+        {/* ── LOYALTY TAB (parent venues only) ── */}
+        {venue?.venue_type === "parent" && venue?.group_id && (
+          <TabsContent value="loyalty" className="space-y-6">
+            <GroupLoyaltyManager groupId={venue.group_id} groupName={venue.name} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
