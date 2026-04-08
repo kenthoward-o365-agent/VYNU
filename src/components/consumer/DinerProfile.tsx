@@ -111,56 +111,66 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
         })));
       }
 
-      // Fetch loyalty balances
+      // Fetch loyalty — auto-enroll into any active programs the diner isn't in yet
       const { data: balances } = await supabase
         .from("loyalty_balances")
         .select("id, balance, tier, program_id")
         .eq("diner_id", prof.id);
 
-      if (balances?.length) {
-        const progIds = balances.map((b) => b.program_id);
-        const { data: programs } = await supabase
-          .from("loyalty_programs")
-          .select("id, name, program_type, venue_id, group_id")
-          .in("id", progIds);
-        const progMap = new Map((programs || []).map((p) => [p.id, p]));
-        setLoyalty(balances.map((b) => {
+      const enrolledProgramIds = new Set((balances || []).map((b) => b.program_id));
+
+      // Find all active programs this venue/group offers
+      const { data: venuePrograms } = await supabase
+        .from("loyalty_programs").select("id, name, program_type, venue_id, group_id, rules").eq("venue_id", venueId).eq("is_active", true);
+      let groupPrograms: any[] = [];
+      if (groupId) {
+        const { data: gp } = await supabase
+          .from("loyalty_programs").select("id, name, program_type, venue_id, group_id, rules").eq("group_id", groupId).eq("is_active", true);
+        groupPrograms = gp || [];
+      }
+      const allPrograms = [...(venuePrograms || []), ...groupPrograms];
+      const uniquePrograms = [...new Map(allPrograms.map((p: any) => [p.id, p])).values()];
+
+      // Auto-enroll into missing programs
+      const missing = uniquePrograms.filter((p: any) => !enrolledProgramIds.has(p.id));
+      if (missing.length > 0) {
+        const newEnrollments = missing.map((p: any) => {
+          const rules = p.rules && typeof p.rules === "object" ? p.rules : {};
+          return { diner_id: prof.id, program_id: p.id, balance: (rules as any).signup_bonus || 0 };
+        });
+        await supabase.from("loyalty_balances").insert(newEnrollments);
+        // Re-fetch balances after enrollment
+        const { data: updatedBalances } = await supabase
+          .from("loyalty_balances")
+          .select("id, balance, tier, program_id")
+          .eq("diner_id", prof.id);
+        const progMap = new Map(uniquePrograms.map((p: any) => [p.id, p]));
+        setLoyalty((updatedBalances || []).map((b) => {
           const prog = progMap.get(b.program_id);
-          return {
-            id: b.id,
-            balance: Number(b.balance),
-            tier: b.tier,
-            program_name: prog?.name || "Loyalty Program",
-            program_type: prog?.program_type || "points",
-          };
+          return { id: b.id, balance: Number(b.balance), tier: b.tier, program_name: prog?.name || "Loyalty Program", program_type: prog?.program_type || "points" };
         }));
+      } else {
+        const progMap = new Map(uniquePrograms.map((p: any) => [p.id, p]));
+        setLoyalty((balances || []).map((b) => {
+          const prog = progMap.get(b.program_id);
+          return { id: b.id, balance: Number(b.balance), tier: b.tier, program_name: prog?.name || "Loyalty Program", program_type: prog?.program_type || "points" };
+        }));
+      }
 
-        // Fetch venues attached to loyalty programs
-        if (programs?.length) {
-          const loyaltyGroupIds = programs.filter((p) => p.group_id).map((p) => p.group_id!);
-          const loyaltyVenueIds = programs.filter((p) => p.venue_id).map((p) => p.venue_id!);
-
-          let allVenueIds = [...loyaltyVenueIds];
-          if (loyaltyGroupIds.length) {
-            const { data: groupVenues } = await supabase
-              .from("venues")
-              .select("id")
-              .in("group_id", loyaltyGroupIds)
-              .neq("venue_type", "parent")
-              .eq("is_active", true);
-            if (groupVenues) allVenueIds.push(...groupVenues.map((v) => v.id));
-          }
-
-          if (allVenueIds.length) {
-            const uniqueIds = [...new Set(allVenueIds)];
-            const { data: venueList } = await supabase
-              .from("venues")
-              .select("id, name, city, state")
-              .in("id", uniqueIds)
-              .eq("is_active", true);
-            setVenues(venueList || []);
-          }
-        }
+      // Fetch venues attached to loyalty programs
+      const loyaltyGroupIds = uniquePrograms.filter((p: any) => p.group_id).map((p: any) => p.group_id!);
+      const loyaltyVenueIds = uniquePrograms.filter((p: any) => p.venue_id).map((p: any) => p.venue_id!);
+      let allVenueIds = [...loyaltyVenueIds];
+      if (loyaltyGroupIds.length) {
+        const { data: groupVenues } = await supabase
+          .from("venues").select("id").in("group_id", loyaltyGroupIds).neq("venue_type", "parent").eq("is_active", true);
+        if (groupVenues) allVenueIds.push(...groupVenues.map((v) => v.id));
+      }
+      if (allVenueIds.length) {
+        const uniqueIds = [...new Set(allVenueIds)];
+        const { data: venueList } = await supabase
+          .from("venues").select("id, name, city, state").in("id", uniqueIds).eq("is_active", true);
+        setVenues(venueList || []);
       }
     }
     setLoading(false);
