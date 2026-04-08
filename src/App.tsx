@@ -37,7 +37,7 @@ function AppRoutes() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center space-y-2">
-          <h2 className="text-xl font-semibold text-foreground">Tab-Less</h2>
+          <h2 className="text-xl font-semibold text-foreground">Sippa</h2>
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
