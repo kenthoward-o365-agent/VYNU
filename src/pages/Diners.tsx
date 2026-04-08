@@ -132,6 +132,7 @@ export default function Diners() {
     setAdjustAmount({});
     setAdjustReason("");
     setSelectedProgramForNew("");
+    setDinerOrders([]);
 
     // Fetch loyalty balances for this diner
     if (venue) {
@@ -145,6 +146,21 @@ export default function Diners() {
         return { ...b, program_name: prog?.name || "Unknown Program" };
       });
       setBalances(bals);
+
+      // Fetch order history for this diner at this venue
+      const { data: orderData } = await supabase
+        .from("diner_visits")
+        .select("id, order_id, visited_at, spend_excl_tax, points_awarded" as any)
+        .eq("diner_id", diner.id)
+        .eq("venue_id", venue.id)
+        .order("visited_at", { ascending: false });
+      setDinerOrders((orderData || []).map((o: any) => ({
+        id: o.id,
+        order_id: o.order_id,
+        visited_at: o.visited_at,
+        spend_excl_tax: parseFloat(o.spend_excl_tax) || 0,
+        points_awarded: parseFloat(o.points_awarded) || 0,
+      })));
     }
   };
 
