@@ -11,7 +11,7 @@ import { Plus, QrCode, Trash2, Download, Printer } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
-const PUBLISHED_BASE_URL = "https://tab-less.lovable.app";
+const PUBLISHED_BASE_URL = "https://tab-less.lovable.app"; // Published domain
 
 interface Table {
   id: string;
