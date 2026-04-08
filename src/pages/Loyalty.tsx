@@ -86,7 +86,6 @@ export default function Loyalty() {
     fetchPrograms();
   };
 
-  const typeLabel = (t: string) => t === "points" ? "Points" : t === "stamps" ? "Stamps" : "Tier";
 
   // Fetch group programs for banner
   const [groupPrograms, setGroupPrograms] = useState<LoyaltyProgram[]>([]);
