@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 64" width="260" height="64">
+  <circle cx="32" cy="32" r="32" fill="#1A6B3A"/>
+  <circle cx="32" cy="4"  r="4.8" fill="#FFD100"/>
+  <circle cx="55" cy="11" r="4.8" fill="#FFD100"/>
+  <circle cx="60" cy="32" r="4.8" fill="#FFD100"/>
+  <circle cx="55" cy="53" r="4.8" fill="#FFD100"/>
+  <circle cx="32" cy="60" r="4.8" fill="#FFD100"/>
+  <circle cx="9"  cy="53" r="4.8" fill="#FFD100"/>
+  <circle cx="4"  cy="32" r="4.8" fill="#FFD100"/>
+  <circle cx="9"  cy="11" r="4.8" fill="#FFD100"/>
+  <circle cx="32" cy="14" r="3.4" fill="#FFD100" opacity="0.85"/>
+  <circle cx="46" cy="18" r="3.4" fill="#FFD100" opacity="0.85"/>
+  <circle cx="50" cy="32" r="3.4" fill="#FFD100" opacity="0.85"/>
+  <circle cx="46" cy="46" r="3.4" fill="#FFD100" opacity="0.85"/>
+  <circle cx="32" cy="50" r="3.4" fill="#FFD100" opacity="0.85"/>
+  <circle cx="18" cy="46" r="3.4" fill="#FFD100" opacity="0.85"/>
+  <circle cx="14" cy="32" r="3.4" fill="#FFD100" opacity="0.85"/>
+  <circle cx="18" cy="18" r="3.4" fill="#FFD100" opacity="0.85"/>
+  <circle cx="32" cy="23" r="3"   fill="#FFD100"/>
+  <circle cx="41" cy="32" r="3"   fill="#FFD100"/>
+  <circle cx="32" cy="41" r="3"   fill="#FFD100"/>
+  <circle cx="23" cy="32" r="3"   fill="#FFD100"/>
+  <circle cx="32" cy="32" r="4"   fill="#FFD100"/>
+  <text x="80" y="38" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="30" font-weight="500" fill="#FFFFFF">Sippa</text>
+  <rect x="80" y="46" width="38" height="2.5" rx="1.25" fill="#FFD100"/>
+</svg>

@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (existingRole) {
-        return json({ error: "This user is already a Tab-Less admin" }, 400);
+        return json({ error: "This user is already a Sippa admin" }, 400);
       }
 
       const { error: roleErr } = await adminClient

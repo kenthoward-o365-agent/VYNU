@@ -40,15 +40,15 @@
 
     --radius: 0.75rem;
 
-    --sidebar-background: 150 30% 7%;
-    --sidebar-foreground: 140 10% 85%;
-    --sidebar-primary: 49 100% 50%;
-    --sidebar-primary-foreground: 150 30% 7%;
-    --sidebar-accent: 150 20% 13%;
-    --sidebar-accent-foreground: 140 10% 85%;
-    --sidebar-border: 150 20% 15%;
+    --sidebar-background: 140 10% 97%;
+    --sidebar-foreground: 150 20% 20%;
+    --sidebar-primary: 148 62% 26%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 140 15% 92%;
+    --sidebar-accent-foreground: 150 20% 15%;
+    --sidebar-border: 140 10% 88%;
     --sidebar-ring: 148 62% 26%;
-    --sidebar-muted: 140 8% 46%;
+    --sidebar-muted: 150 8% 46%;
   }
 
   .dark {
