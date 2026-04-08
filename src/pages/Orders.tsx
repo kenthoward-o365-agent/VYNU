@@ -168,24 +168,49 @@ export default function Orders() {
             const config = statusConfig[order.status];
             const next = nextStatus[order.status];
             return (
-              <Card key={order.id}>
-                <CardHeader className="pb-3">
+              <Card key={order.id} className="flex flex-col">
+                <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Order #{order.id.slice(0, 8)}</CardTitle>
+                    <div>
+                      <CardTitle className="text-base">#{order.id.slice(0, 8)}</CardTitle>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(order.created_at).toLocaleTimeString()}
+                        {order.table?.table_number && ` · Table ${order.table.table_number}`}
+                      </p>
+                    </div>
                     <Badge className={config.color}>{config.label}</Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(order.created_at).toLocaleTimeString()}
-                  </p>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total</span>
-                    <span className="font-semibold text-foreground">${Number(order.total).toFixed(2)}</span>
+                <CardContent className="space-y-3 flex-1">
+                  {/* Order items list */}
+                  <div className="divide-y divide-border">
+                    {order.order_items?.map((item) => (
+                      <div key={item.id} className="flex justify-between py-1.5 text-sm">
+                        <div className="flex-1">
+                          <span className="font-medium text-foreground">
+                            {item.quantity}× {item.menu_item?.name ?? "Unknown item"}
+                          </span>
+                          {item.notes && (
+                            <p className="text-xs text-muted-foreground mt-0.5">⤷ {item.notes}</p>
+                          )}
+                        </div>
+                        <span className="text-muted-foreground ml-2">${(item.quantity * Number(item.unit_price)).toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {(!order.order_items || order.order_items.length === 0) && (
+                      <p className="text-xs text-muted-foreground py-1">No items</p>
+                    )}
                   </div>
+
                   {order.customer_notes && (
-                    <p className="text-sm text-muted-foreground italic">"{order.customer_notes}"</p>
+                    <p className="text-sm text-muted-foreground italic border-l-2 border-primary pl-2">"{order.customer_notes}"</p>
                   )}
+
+                  <div className="flex items-center justify-between pt-1 border-t border-border">
+                    <span className="text-sm font-medium text-muted-foreground">Total</span>
+                    <span className="font-bold text-foreground">${Number(order.total).toFixed(2)}</span>
+                  </div>
+
                   {next && (
                     <Button className="w-full" size="sm" onClick={() => updateStatus(order.id, next)}>
                       Move to {statusConfig[next].label}
