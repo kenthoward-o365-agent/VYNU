@@ -1134,6 +1134,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_loyalty_program_balance: {
+        Args: { _program_id: string; _user_id: string }
+        Returns: boolean
+      }
       create_venue_with_owner: {
         Args: {
           _address?: string
