@@ -89,35 +89,109 @@ export default function Loyalty() {
   const typeLabel = (t: string) => t === "points" ? "Points" : t === "stamps" ? "Stamps" : "Tier";
 
   // Fetch group programs for banner
-  const [groupPrograms, setGroupPrograms] = useState<{ id: string; name: string; program_type: string }[]>([]);
+  const [groupPrograms, setGroupPrograms] = useState<LoyaltyProgram[]>([]);
   useEffect(() => {
     if (!venue?.group_id) return;
     supabase
       .from("loyalty_programs")
-      .select("id, name, program_type")
+      .select("*")
       .eq("group_id", venue.group_id)
       .eq("is_active", true)
-      .then(({ data }) => setGroupPrograms(data || []));
+      .then(({ data }) => setGroupPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }))));
   }, [venue?.group_id]);
+
+  const [expandedGroupProgram, setExpandedGroupProgram] = useState<string | null>(null);
+
+  const typeLabel = (t: string) => t === "points" ? "Points" : t === "stamps" ? "Stamps" : "Tier";
 
   return (
     <div className="space-y-6">
-      {/* Group programs banner */}
       {groupPrograms.length > 0 && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="py-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Gift className="h-4 w-4 text-primary" />
-              <p className="text-sm font-medium text-foreground">Inherited Group Programs</p>
-            </div>
-            <p className="text-xs text-muted-foreground mb-2">These programs are managed at the parent company level and apply to all venues.</p>
-            <div className="flex flex-wrap gap-2">
-              {groupPrograms.map((gp) => (
-                <Badge key={gp.id} variant="secondary">{gp.name} ({gp.program_type})</Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Gift className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold text-foreground">Inherited Group Programs</h3>
+            <Badge variant="outline" className="text-xs">Read-only</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">These programs are managed at the parent company level and apply to all venues in the group.</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {groupPrograms.map((gp) => {
+              const rules: LoyaltyRules = { ...defaultRules, ...gp.rules };
+              const isExpanded = expandedGroupProgram === gp.id;
+              return (
+                <Card
+                  key={gp.id}
+                  className={`cursor-pointer transition-all border-primary/20 bg-primary/5 ${isExpanded ? "ring-2 ring-primary" : "hover:border-primary/40"}`}
+                  onClick={() => setExpandedGroupProgram(isExpanded ? null : gp.id)}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-base">{gp.name}</CardTitle>
+                    <Badge variant="default">Active</Badge>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Type: {typeLabel(gp.program_type)}</p>
+                    <p className="text-xs text-muted-foreground italic">Managed by parent group</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {expandedGroupProgram && (() => {
+            const gp = groupPrograms.find(p => p.id === expandedGroupProgram);
+            if (!gp) return null;
+            const rules: LoyaltyRules = { ...defaultRules, ...gp.rules };
+            return (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader className="flex flex-row items-center gap-2">
+                  <Settings2 className="h-5 w-5 text-primary" />
+                  <div>
+                    <CardTitle className="text-lg">{gp.name} — Rules</CardTitle>
+                    <p className="text-sm text-muted-foreground">Read-only view of group-level settings</p>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1 p-3 rounded-lg border border-border bg-background">
+                      <div className="flex items-center gap-1.5 text-sm font-medium"><DollarSign className="h-3.5 w-3.5 text-primary" />Earning Rate</div>
+                      <p className="text-sm text-muted-foreground">{rules.points_per_dollar ?? 1} point(s) per $1 spent</p>
+                    </div>
+                    <div className="space-y-1 p-3 rounded-lg border border-border bg-background">
+                      <div className="flex items-center gap-1.5 text-sm font-medium"><Sparkles className="h-3.5 w-3.5 text-primary" />Sign-up Bonus</div>
+                      <p className="text-sm text-muted-foreground">{rules.signup_bonus ?? 0} points</p>
+                    </div>
+                    {rules.birthday_reward?.enabled && (
+                      <div className="space-y-1 p-3 rounded-lg border border-border bg-background">
+                        <div className="flex items-center gap-1.5 text-sm font-medium"><Cake className="h-3.5 w-3.5 text-primary" />Birthday Reward</div>
+                        <p className="text-sm text-muted-foreground">{rules.birthday_reward.points} pts, {rules.birthday_reward.discount_percent}% off</p>
+                        {rules.birthday_reward.description && <p className="text-xs text-muted-foreground italic">{rules.birthday_reward.description}</p>}
+                      </div>
+                    )}
+                    {rules.anniversary_reward?.enabled && (
+                      <div className="space-y-1 p-3 rounded-lg border border-border bg-background">
+                        <div className="flex items-center gap-1.5 text-sm font-medium"><Star className="h-3.5 w-3.5 text-primary" />Anniversary Reward</div>
+                        <p className="text-sm text-muted-foreground">{rules.anniversary_reward.points} pts, {rules.anniversary_reward.discount_percent}% off</p>
+                        {rules.anniversary_reward.description && <p className="text-xs text-muted-foreground italic">{rules.anniversary_reward.description}</p>}
+                      </div>
+                    )}
+                  </div>
+                  {(rules.milestones || []).length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center gap-1.5 text-sm font-medium"><Award className="h-3.5 w-3.5 text-primary" />Milestones</div>
+                      {rules.milestones!.map((m, idx) => (
+                        <div key={idx} className="text-sm text-muted-foreground p-2 rounded border border-border bg-background">
+                          At {m.threshold} → {m.reward_type === "points" ? `${m.value} bonus pts` : m.reward_type === "discount" ? `${m.value}% off` : "Free item"} — {m.description}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          <Separator />
+        </div>
       )}
 
       <div className="flex items-center justify-between">
