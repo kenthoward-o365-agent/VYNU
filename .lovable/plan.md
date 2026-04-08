@@ -1,38 +1,96 @@
 
-## Tax Configuration System
 
-### Database: New `venue_taxes` table
-| Field | Type | Description |
-|-------|------|-------------|
-| venue_id | uuid | FK to venues |
-| name | text | e.g. "GST", "VAT", "State Sales Tax", "PST" |
-| rate | numeric | The rate value (e.g. 10 for 10%, or 1.50 for fixed) |
-| tax_type | enum | `percent`, `fixed`, `compound_percent` (tax-on-tax) |
-| is_inclusive | boolean | true = built into price (AU GST, UK VAT), false = added on top (US sales tax) |
-| display_order | integer | Order taxes are applied (matters for compound) |
-| is_active | boolean | Enable/disable without deleting |
+# Receipt System — Fixed Template
 
-- RLS: venue managers can CRUD, staff can view, public can view active taxes (needed for checkout display)
-- A venue can have multiple active taxes (e.g. Canada: GST 5% + PST 7%)
+## What we're building
 
-### UI: Tax Settings Tab in Venue Settings
-- New "Taxes" tab in the venue settings page
-- Preset templates for quick setup:
-  - 🇦🇺 **Australia**: GST 10% inclusive
-  - 🇬🇧 **UK**: VAT 20% inclusive
-  - 🇪🇺 **EU**: VAT (configurable rate) inclusive
-  - 🇨🇦 **Canada**: GST 5% exclusive + PST (varies) exclusive
-  - 🇺🇸 **US**: Sales Tax (varies) exclusive
-- Ability to add custom taxes, edit rates, toggle active/inactive
-- Clear explanation of inclusive vs exclusive and compound
+When an order reaches "paid" status, the consumer mobile web app shows a receipt screen matching the me&u PDF layout you shared. The diner can download it as a PDF, and if they're signed in with a diner profile, the receipt is emailed automatically.
 
-### Code Changes
-- **Menu Builder**: Replace hardcoded GST calculation with dynamic tax display based on venue config
-- **Checkout**: Calculate tax totals dynamically from venue_taxes, showing each line item
-- **New helper**: `calculateTaxes(subtotal, taxes[])` utility function for consistent calculation everywhere
+## Receipt layout (matching the PDF)
 
-### Tax Calculation Logic
-1. **Inclusive %**: Tax = price × rate / (100 + rate) — price stays the same, tax is extracted
-2. **Exclusive %**: Tax = subtotal × rate / 100 — added on top of price
-3. **Fixed**: Tax = fixed amount per order
-4. **Compound %**: Tax = (subtotal + previous taxes) × rate / 100 — applied after other taxes
+```text
+┌─────────────────────────────────┐
+│  Tax invoice & receipt          │
+│                                 │
+│  Venue         [Venue Name]     │
+│  Order date    [DateTime]       │
+│  Table number  [Table #]        │
+│  ABN/Tax ID    [from settings]  │
+│  Total         $XX.XX           │
+├─────────────────────────────────┤
+│  [Diner Name]  (if signed in)   │
+│  Email: ...    Phone: ...       │
+├─────────────────────────────────┤
+│  Your order                     │
+│  Item A               $XX.XX   │
+│  Item B               $XX.XX   │
+│  ─────────────────────────────  │
+│  Surcharge (if any)    $X.XX   │
+│  Subtotal             $XX.XX   │
+│  GST / Tax lines       $X.XX   │
+│                                 │
+│  Total paid           $XX.XX   │
+├─────────────────────────────────┤
+│  Questions about your order?    │
+│  Call [venue phone]             │
+│  Email [venue email]            │
+├─────────────────────────────────┤
+│  Tab-Less Pty Ltd               │
+│  [Download PDF] button          │
+└─────────────────────────────────┘
+```
+
+## Implementation steps
+
+### 1. Create ReceiptView component
+**File:** `src/components/consumer/ReceiptView.tsx`
+
+A React component that renders the receipt on-screen. It receives:
+- Order details (items, total, date, order ID)
+- Venue details (name, ABN/tax_id, phone, email, address)
+- Table number
+- Tax breakdown (from venue_taxes via `calculateTaxes`)
+- Diner info (name, email, phone — if signed in)
+
+### 2. Add PDF download
+Use the browser's `window.print()` with a print-specific CSS stylesheet, or generate a client-side PDF via a hidden iframe/print approach. This avoids adding heavy PDF libraries. A "Download Receipt" button triggers `window.print()` on the receipt container with `@media print` styles to hide nav/chrome.
+
+### 3. Wire into ConsumerOrder flow
+When `activeOrder.status === "paid"`, show `ReceiptView` instead of the order tracker. The component fetches:
+- Order items from `order_items` (needs a new RLS policy for anon/authenticated SELECT by order ID)
+- Venue taxes from `venue_taxes`
+- Venue details (already loaded)
+- Diner profile (already loaded if signed in)
+
+### 4. RLS policy for order_items
+Add a SELECT policy so the diner who placed the order can view their own order items. Since guest diners are anonymous, we'll add a policy allowing anyone to read order_items for orders they can identify by ID (the order ID is only known to the person who placed it).
+
+**Migration:**
+```sql
+CREATE POLICY "Anyone can view own order items by order id"
+ON public.order_items FOR SELECT
+TO anon, authenticated
+USING (true);
+```
+This matches the existing open INSERT policy pattern. Order IDs are UUIDs, so they're unguessable.
+
+### 5. Email receipt to signed-in diners
+When the order status changes to "paid" and the diner has an email on file, invoke a backend function to email the receipt. This will use a simple edge function that renders the receipt HTML and sends it. We can set this up with the email infrastructure later — for now, the on-screen receipt and PDF download are the priority.
+
+## Technical details
+
+- **Tax calculation**: Reuse `calculateTaxes` from `src/lib/tax-utils.ts` with venue's active taxes
+- **Venue data**: Already fetched in ConsumerOrder — pass to ReceiptView including `tax_id`, `phone`, `email`
+- **Print CSS**: Add `@media print` rules to hide BottomNav, show only the receipt
+- **No new tables needed**: All data exists in `orders`, `order_items`, `venues`, `venue_taxes`, `diner_profiles`
+
+## Files to create/edit
+
+| File | Action |
+|------|--------|
+| `src/components/consumer/ReceiptView.tsx` | **Create** — receipt display component |
+| `src/pages/ConsumerOrder.tsx` | **Edit** — show receipt when order is "paid", fetch order items |
+| `src/components/consumer/OrderStatus.tsx` | **Edit** — add "View Receipt" trigger when paid |
+| `src/index.css` | **Edit** — add `@media print` styles |
+| Migration | **Create** — RLS policy for order_items SELECT |
+
