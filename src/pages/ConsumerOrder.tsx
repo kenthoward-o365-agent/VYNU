@@ -283,14 +283,8 @@ const ConsumerOrder = () => {
           onOrderPlaced={handleOrderPlaced}
         />
       )}
-      {tab === "profile" && (
-        <div className="px-6 pt-8 pb-24 space-y-6">
-          <div className="text-center">
-            <h2 className="text-lg font-semibold mb-2">Profile</h2>
-            <p className="text-muted-foreground text-sm">Sign in to save your preferences, track loyalty points, and reorder your favourites.</p>
-          </div>
-          {venue && <VenueDiscovery currentVenueId={venue.id} groupId={venue.group_id} />}
-        </div>
+      {tab === "profile" && venue && (
+        <DinerProfile venueId={venue.id} groupId={venue.group_id} />
       )}
 
       {/* AI Chat Overlay */}
