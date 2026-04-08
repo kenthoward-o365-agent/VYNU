@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,8 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Users, Mail, Phone, AlertTriangle, Pencil, Plus, Gift, Search, Receipt, DollarSign } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Users, Mail, Phone, AlertTriangle, Pencil, Plus, Gift, Search, Receipt, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+
+const PAGE_SIZE = 25;
 
 interface DinerWithVisits {
   id: string;
@@ -52,6 +55,7 @@ export default function Diners() {
   const [diners, setDiners] = useState<DinerWithVisits[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [editingDiner, setEditingDiner] = useState<DinerWithVisits | null>(null);
   const [editForm, setEditForm] = useState({ display_name: "", email: "", phone: "", allergens: "" });
   const [saving, setSaving] = useState(false);
@@ -60,7 +64,6 @@ export default function Diners() {
   const [balances, setBalances] = useState<LoyaltyBalance[]>([]);
   const [programs, setPrograms] = useState<LoyaltyProgram[]>([]);
   const [adjustAmount, setAdjustAmount] = useState<Record<string, string>>({});
-  const [adjustReason, setAdjustReason] = useState("");
   const [selectedProgramForNew, setSelectedProgramForNew] = useState("");
   const [dinerOrders, setDinerOrders] = useState<DinerOrder[]>([]);
 
@@ -121,6 +124,22 @@ export default function Diners() {
     fetchPrograms();
   }, [venue]);
 
+  // Reset page when search changes
+  useEffect(() => { setPage(1); }, [search]);
+
+  const filtered = useMemo(() => {
+    if (!search) return diners;
+    const s = search.toLowerCase();
+    return diners.filter((d) =>
+      (d.display_name || "").toLowerCase().includes(s)
+      || (d.email || "").toLowerCase().includes(s)
+      || (d.phone || "").toLowerCase().includes(s)
+    );
+  }, [diners, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   const openEdit = async (diner: DinerWithVisits) => {
     setEditingDiner(diner);
     setEditForm({
@@ -130,11 +149,9 @@ export default function Diners() {
       allergens: (diner.allergens || []).join(", "),
     });
     setAdjustAmount({});
-    setAdjustReason("");
     setSelectedProgramForNew("");
     setDinerOrders([]);
 
-    // Fetch loyalty balances for this diner
     if (venue) {
       const { data } = await supabase
         .from("loyalty_balances")
@@ -147,7 +164,6 @@ export default function Diners() {
       });
       setBalances(bals);
 
-      // Fetch order history for this diner at this venue
       const { data: orderData } = await supabase
         .from("diner_visits")
         .select("id, order_id, visited_at, spend_excl_tax, points_awarded" as any)
@@ -167,10 +183,7 @@ export default function Diners() {
   const saveProfile = async () => {
     if (!editingDiner) return;
     setSaving(true);
-    const allergens = editForm.allergens
-      .split(",")
-      .map((a) => a.trim())
-      .filter(Boolean);
+    const allergens = editForm.allergens.split(",").map((a) => a.trim()).filter(Boolean);
 
     const { error } = await supabase
       .from("diner_profiles")
@@ -221,7 +234,6 @@ export default function Diners() {
       return;
     }
 
-    // Check for signup bonus
     const { data: progData } = await supabase
       .from("loyalty_programs")
       .select("rules, name")
@@ -257,14 +269,6 @@ export default function Diners() {
     }
   };
 
-  const filtered = diners.filter((d) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (d.display_name || "").toLowerCase().includes(s)
-      || (d.email || "").toLowerCase().includes(s)
-      || (d.phone || "").toLowerCase().includes(s);
-  });
-
   const unenrolledPrograms = programs.filter((p) => !balances.some((b) => b.program_id === p.id));
 
   return (
@@ -274,6 +278,7 @@ export default function Diners() {
           <h2 className="text-2xl font-bold text-foreground">Diners</h2>
           <p className="text-muted-foreground">CRM — track guests who've dined at {venue?.name}</p>
         </div>
+        <Badge variant="secondary" className="text-sm">{filtered.length} diner{filtered.length !== 1 ? "s" : ""}</Badge>
       </div>
 
       {/* Search */}
@@ -299,47 +304,72 @@ export default function Diners() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((d) => (
-            <Card key={d.id} className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => openEdit(d)}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-base">{d.display_name || "Anonymous Diner"}</CardTitle>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
-                  <Pencil className="h-3.5 w-3.5" />
+        <>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead className="text-center">Visits</TableHead>
+                  <TableHead className="text-right">Total Spend</TableHead>
+                  <TableHead>Last Visit</TableHead>
+                  <TableHead>Allergens</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginated.map((d) => (
+                  <TableRow key={d.id} className="cursor-pointer" onClick={() => openEdit(d)}>
+                    <TableCell className="font-medium">{d.display_name || "Anonymous Diner"}</TableCell>
+                    <TableCell className="text-muted-foreground">{d.email || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{d.phone || "—"}</TableCell>
+                    <TableCell className="text-center">{d.visit_count}</TableCell>
+                    <TableCell className="text-right font-medium">${d.total_spend.toFixed(2)}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {d.last_visit ? new Date(d.last_visit).toLocaleDateString() : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {d.allergens.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {d.allergens.map((a) => (
+                            <Badge key={a} variant="outline" className="text-xs">{a}</Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openEdit(d); }}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                  <ChevronLeft className="h-4 w-4 mr-1" /> Previous
                 </Button>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                {d.email && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-3.5 w-3.5" /> {d.email}
-                  </div>
-                )}
-                {d.phone && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Phone className="h-3.5 w-3.5" /> {d.phone}
-                  </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">{d.visit_count} visit{d.visit_count !== 1 ? "s" : ""}</span>
-                  <span className="text-sm font-medium text-primary">${d.total_spend.toFixed(2)}</span>
-                </div>
-                {d.last_visit && (
-                  <span className="text-xs text-muted-foreground">
-                    Last: {new Date(d.last_visit).toLocaleDateString()}
-                  </span>
-                )}
-                {d.allergens.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    <AlertTriangle className="h-3.5 w-3.5 text-warning" />
-                    {d.allergens.map((a) => (
-                      <Badge key={a} variant="outline" className="text-xs">{a}</Badge>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+                <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+                  Next <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Edit Dialog */}
@@ -472,7 +502,6 @@ export default function Diners() {
                     </div>
                   ))}
 
-                  {/* Enrol in a new program */}
                   {unenrolledPrograms.length > 0 && (
                     <>
                       <Separator />
