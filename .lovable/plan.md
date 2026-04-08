@@ -1,74 +1,42 @@
 
-# Sippa AI Phase 2
 
-## 1. Venue Knowledge Base
-Instead of crawling websites (complex infra), we add a **venue context** text field to `venue_ai_config` where operators paste info about their venue — story, specialties, chef background, ambiance, events, wine list notes, etc. This gets injected into the system prompt so Sippa can answer questions like "Tell me about the chef" or "Do you have live music?".
+## Plan: Email paid receipts to diners
 
-### Database
-- Add `venue_context` text column to `venue_ai_config`
+### Summary
+When an order is moved to "paid" status, automatically email the receipt to the diner (if they have an email on file). This requires setting up Lovable's email infrastructure, creating a receipt email template, and triggering the send when payment is confirmed.
 
-### UI
-- New "Venue Knowledge" textarea section in Sippa AI settings with guidance on what to include
+### Prerequisites
+1. **Set up email domain** — The project has no email infrastructure yet. We need to configure an email domain via the setup dialog, then run email infrastructure setup, then scaffold transactional email support.
 
-### Edge Function
-- Inject `venue_context` into system prompt
+### Steps
 
----
+**1. Email infrastructure setup**
+- Check email domain status; if none configured, present the domain setup dialog
+- Run `setup_email_infra` to create queues, tables, cron jobs
+- Run `scaffold_transactional_email` to create the send Edge Function and unsubscribe handling
 
-## 2. Order Another Round
-When a diner says "another round" or "same again", Sippa looks up their last order items and adds them to cart.
+**2. Create receipt email template**
+- Create `supabase/functions/_shared/transactional-email-templates/order-receipt.tsx`
+- React Email component matching the existing `ReceiptView` layout: venue name, order date, table number, ABN, itemized order, tax breakdown, total paid, venue contact info
+- Register in `registry.ts`
+- Deploy edge functions
 
-### How it works
-- Pass `diner_id` and `last_order_items` (from client) to the edge function
-- Add instruction to system prompt about the "another round" capability
-- When AI detects reorder intent, it returns the previous items via `[ADD_ITEMS]`
-- Client already handles `ADD_ITEMS` → cart
+**3. Create unsubscribe page**
+- Add a route in the app for the unsubscribe path (determined by scaffold tool)
+- Branded page that validates token and processes unsubscribe
 
-### Changes
-- `AIChatOverlay` passes `dinerId` + last order items
-- `ConsumerOrder` passes these props
-- Edge function prompt updated
+**4. Trigger email on order status change to "paid"**
+- In `src/pages/Orders.tsx`, when staff moves an order to "paid" status, invoke `send-transactional-email` with:
+  - `templateName: 'order-receipt'`
+  - `recipientEmail` from the diner's profile or order customer info
+  - `templateData` with order items, venue info, taxes, total
+  - `idempotencyKey: 'receipt-{orderId}'`
+- Also trigger from `CheckoutPanel.tsx` if payment happens on the consumer side
+- Gracefully skip if no diner email is available
 
----
+### Technical details
+- The receipt template will use inline styles matching the app's purple primary brand
+- Tax calculation will be done before sending (pass pre-computed values as template data)
+- The Edge Function fetches nothing from the DB — all data is passed in `templateData`
+- Uses the existing `diner_profiles` email field and `order_items` join data already available at the trigger points
 
-## 3. Get the Manager
-When a diner says "get the manager" or "I need to speak to someone", Sippa creates a staff alert.
-
-### Database
-- New `staff_alerts` table: `id`, `venue_id`, `table_id`, `alert_type` (enum: manager_request, assistance, complaint), `message`, `status` (pending/acknowledged/resolved), `created_at`, `resolved_at`, `resolved_by`
-- Enable realtime on this table
-- RLS: staff can view/update for their venue, public can insert
-
-### How it works
-- Edge function detects manager request intent via a new `[CALL_MANAGER: reason]` tag
-- Returns `call_manager: true` + reason in response
-- Client creates a row in `staff_alerts`
-- Sippa responds warmly: "I've let the team know — someone will be right over"
-- **Operator side**: Orders page shows a notification badge when alerts are pending (future: dedicated alerts panel)
-
----
-
-## 4. Check Splitting
-When a diner says "split the bill" or "split between 4", Sippa handles it conversationally.
-
-### How it works (simplified for Phase 2)
-- This is a **conversational flow only** — actual payment splitting requires Adyen integration (Phase 3)
-- Sippa asks how many ways to split, calculates per-person amount, and displays it
-- Returns `[SPLIT_CHECK: N]` tag which the client renders as a split summary card
-- No actual payment processing — just information display for now
-
-### Edge Function
-- Add split check instructions to system prompt
-- Parse `[SPLIT_CHECK: N]` tag
-
-### Client
-- Render a "Split Summary" card in chat showing per-person amounts
-
----
-
-## Files Changed
-- **Migration**: Add `venue_context` to `venue_ai_config`, create `staff_alerts` table + realtime
-- **`SippaAISettings.tsx`**: Add venue knowledge textarea
-- **`diner-chat/index.ts`**: All prompt updates, new tags
-- **`AIChatOverlay.tsx`**: Handle manager alerts, split display, pass diner context
-- **`ConsumerOrder.tsx`**: Pass dinerId and last order to chat
