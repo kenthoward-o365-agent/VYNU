@@ -2,7 +2,7 @@
 
 ## Core
 Sippa: agentic dining platform. Australia-first. Replaces menus with AI intent.
-Dark sidebar operator UI. Primary purple hsl(252, 85%, 60%). Mobile-first consumer (Phase 2).
+Primary green hsl(148,62%,26%) #1A6B3A. Accent gold hsl(49,100%,50%) #FFD100. Dark sidebar with gold highlights.
 Lovable Cloud backend. Pay-per-order model. Chat + TikTok feed for consumer AI.
 QR codes are permanent, printed as stickers — never regenerate URLs.
 App name is "Sippa" — not "Tab-Less". Favicon is sippa-icon.svg.
