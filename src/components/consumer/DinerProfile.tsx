@@ -30,6 +30,7 @@ interface OrderHistory {
   status: string;
   created_at: string;
   venue_name?: string;
+  isOpen?: boolean;
 }
 
 interface LoyaltyInfo {
@@ -57,6 +58,9 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
   const [saving, setSaving] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const openOrders = orders.filter((order) => order.isOpen);
+  const pastOrders = orders.filter((order) => !order.isOpen);
 
   useEffect(() => {
     fetchAll();
@@ -108,7 +112,10 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
           status: o.status,
           created_at: o.created_at,
           venue_name: nameMap.get(o.venue_id) || "Unknown",
+          isOpen: ["received", "preparing", "ready"].includes(o.status),
         })));
+      } else {
+        setOrders([]);
       }
 
       // Fetch loyalty — auto-enroll into any active programs the diner isn't in yet
@@ -366,30 +373,63 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
           <Receipt className="h-4 w-4 text-muted-foreground" /> Order History
         </h3>
-        {orders.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No orders yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {orders.map((o) => (
-              <Card key={o.id}>
-                <CardContent className="py-3 px-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{o.venue_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(o.created_at).toLocaleDateString()} · {new Date(o.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-foreground">${o.total.toFixed(2)}</p>
-                      <Badge variant="outline" className="text-xs">{statusLabel(o.status)}</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Open orders</p>
+            {openOrders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No open orders.</p>
+            ) : (
+              <div className="space-y-2">
+                {openOrders.map((o) => (
+                  <Card key={o.id}>
+                    <CardContent className="py-3 px-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{o.venue_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(o.created_at).toLocaleDateString()} · {new Date(o.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-foreground">${o.total.toFixed(2)}</p>
+                          <Badge className="text-xs">{statusLabel(o.status)}</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">Past orders</p>
+            {pastOrders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No past orders yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {pastOrders.map((o) => (
+                  <Card key={o.id}>
+                    <CardContent className="py-3 px-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{o.venue_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(o.created_at).toLocaleDateString()} · {new Date(o.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-foreground">${o.total.toFixed(2)}</p>
+                          <Badge variant="outline" className="text-xs">{statusLabel(o.status)}</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

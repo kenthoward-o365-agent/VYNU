@@ -55,6 +55,8 @@ interface ActiveOrder {
   created_at: string;
 }
 
+const OPEN_ORDER_STATUSES: ActiveOrder["status"][] = ["received", "preparing", "ready"];
+
 const ConsumerOrder = () => {
   const { venueId, tableId } = useParams<{ venueId: string; tableId: string }>();
   const [venue, setVenue] = useState<VenueInfo | null>(null);
@@ -163,6 +165,33 @@ const ConsumerOrder = () => {
     };
     fetchDinerProfile();
   }, [started, showSignup]);
+
+  useEffect(() => {
+    const fetchOpenOrder = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user || !venueId) return;
+
+      const { data: openOrder } = await supabase
+        .from("orders")
+        .select("id, status, total, created_at")
+        .eq("venue_id", venueId)
+        .in("status", OPEN_ORDER_STATUSES)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (openOrder) {
+        setActiveOrder({
+          id: openOrder.id,
+          status: openOrder.status,
+          total: Number(openOrder.total) || 0,
+          created_at: openOrder.created_at,
+        });
+      }
+    };
+
+    fetchOpenOrder();
+  }, [venueId, showSignup]);
 
   // Subscribe to order status changes
   useEffect(() => {
@@ -307,7 +336,7 @@ const ConsumerOrder = () => {
       )}
 
       {/* Active Order Status */}
-      {activeOrder && activeOrder.status !== "paid" && activeOrder.status !== "cancelled" && (
+      {activeOrder && OPEN_ORDER_STATUSES.includes(activeOrder.status) && (
         <OrderStatus
           orderId={activeOrder.id}
           status={activeOrder.status}
