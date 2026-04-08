@@ -303,8 +303,8 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
       </div>
 
       {/* Input */}
-      <div className="border-t border-border px-3 py-3 pb-[env(safe-area-inset-bottom,8px)] shrink-0">
-        <div className="flex gap-1.5 w-full">
+      <div className="border-t border-border px-3 py-3 pb-[env(safe-area-inset-bottom,8px)] shrink-0 overflow-hidden">
+        <div className="flex items-center gap-1.5 w-full max-w-full overflow-hidden">
           <input
             ref={inputRef}
             value={input}
@@ -313,23 +313,23 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
             placeholder="What are you in the mood for?"
             className="flex-1 min-w-0 bg-secondary rounded-xl px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/50"
           />
-          <Button
+          <button
             onClick={toggleSpeechRecognition}
-            variant={isListening ? "destructive" : "outline"}
-            size="icon"
-            className="h-11 w-11 rounded-xl shrink-0 flex-none"
             type="button"
+            className={cn(
+              "h-10 w-10 shrink-0 rounded-xl flex items-center justify-center transition-colors",
+              isListening ? "bg-destructive text-destructive-foreground" : "border border-input bg-background hover:bg-accent"
+            )}
           >
             {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-          </Button>
-          <Button
+          </button>
+          <button
             onClick={sendMessage}
             disabled={!input.trim() || loading}
-            size="icon"
-            className="h-11 w-11 rounded-xl shrink-0 flex-none"
+            className="h-10 w-10 shrink-0 rounded-xl flex items-center justify-center bg-primary text-primary-foreground disabled:opacity-50 transition-colors"
           >
             <Send className="h-4 w-4" />
-          </Button>
+          </button>
         </div>
       </div>
     </div>
