@@ -1,96 +1,111 @@
 
 
-# Receipt System — Fixed Template
+# Dashboard Metrics Expansion
 
-## What we're building
+## Current State
+The venue dashboard has: Financial Performance (4 cards) + Order Performance (donut chart) + placeholder Quick Actions / AI Insights cards. The `orders` table only tracks `created_at` and `updated_at` — there is no status history log, so we cannot compute ticket stage times yet.
 
-When an order reaches "paid" status, the consumer mobile web app shows a receipt screen matching the me&u PDF layout you shared. The diner can download it as a PDF, and if they're signed in with a diner profile, the receipt is emailed automatically.
+## What We Will Build
 
-## Receipt layout (matching the PDF)
+### 1. Top 10 Menu Items (by Count and Revenue)
+- Fetch `order_items` joined to `menu_items` for orders in the audit date range
+- Aggregate by menu item: sum quantity (count) and sum (quantity * unit_price) (revenue)
+- Display as two horizontal bar charts side-by-side: "Top 10 by Qty Sold" and "Top 10 by Revenue"
+- Uses recharts `BarChart` with horizontal layout
 
-```text
-┌─────────────────────────────────┐
-│  Tax invoice & receipt          │
-│                                 │
-│  Venue         [Venue Name]     │
-│  Order date    [DateTime]       │
-│  Table number  [Table #]        │
-│  ABN/Tax ID    [from settings]  │
-│  Total         $XX.XX           │
-├─────────────────────────────────┤
-│  [Diner Name]  (if signed in)   │
-│  Email: ...    Phone: ...       │
-├─────────────────────────────────┤
-│  Your order                     │
-│  Item A               $XX.XX   │
-│  Item B               $XX.XX   │
-│  ─────────────────────────────  │
-│  Surcharge (if any)    $X.XX   │
-│  Subtotal             $XX.XX   │
-│  GST / Tax lines       $X.XX   │
-│                                 │
-│  Total paid           $XX.XX   │
-├─────────────────────────────────┤
-│  Questions about your order?    │
-│  Call [venue phone]             │
-│  Email [venue email]            │
-├─────────────────────────────────┤
-│  Tab-Less Pty Ltd               │
-│  [Download PDF] button          │
-└─────────────────────────────────┘
-```
+### 2. Revenue by Hour (Bar Chart)
+- Group billable orders by hour of `created_at`
+- Show a vertical bar chart with hours on x-axis, revenue on y-axis
+- Helps identify peak trading periods
 
-## Implementation steps
+### 3. Ticket Time Tracking (requires new table)
+- **New table: `order_status_log`** — records every status transition with a timestamp
+  - `id`, `order_id`, `status` (order_status enum), `changed_at` (timestamptz default now()), `changed_by` (uuid nullable)
+  - RLS: staff can view/insert for their venue's orders
+- **Trigger**: a Postgres trigger on `orders` that inserts a row into `order_status_log` whenever `status` changes
+- **Dashboard widget**: "Avg Ticket Times" card showing average duration for each stage transition (Received→Preparing, Preparing→Ready, Ready→Served) as a simple table or stacked bar
+- Data will populate going forward once the trigger is active
 
-### 1. Create ReceiptView component
-**File:** `src/components/consumer/ReceiptView.tsx`
+### 4. Table Utilization (Today only)
+- Query `tables` for the venue, cross-reference with active orders to show occupied vs available
+- Simple stat card: "X / Y Tables Occupied"
 
-A React component that renders the receipt on-screen. It receives:
-- Order details (items, total, date, order ID)
-- Venue details (name, ABN/tax_id, phone, email, address)
-- Table number
-- Tax breakdown (from venue_taxes via `calculateTaxes`)
-- Diner info (name, email, phone — if signed in)
+### 5. Replace Placeholder Cards
+- Remove "Quick Actions" and "AI Insights" placeholder cards
+- Replace with the real widgets above
 
-### 2. Add PDF download
-Use the browser's `window.print()` with a print-specific CSS stylesheet, or generate a client-side PDF via a hidden iframe/print approach. This avoids adding heavy PDF libraries. A "Download Receipt" button triggers `window.print()` on the receipt container with `@media print` styles to hide nav/chrome.
+## Technical Details
 
-### 3. Wire into ConsumerOrder flow
-When `activeOrder.status === "paid"`, show `ReceiptView` instead of the order tracker. The component fetches:
-- Order items from `order_items` (needs a new RLS policy for anon/authenticated SELECT by order ID)
-- Venue taxes from `venue_taxes`
-- Venue details (already loaded)
-- Diner profile (already loaded if signed in)
-
-### 4. RLS policy for order_items
-Add a SELECT policy so the diner who placed the order can view their own order items. Since guest diners are anonymous, we'll add a policy allowing anyone to read order_items for orders they can identify by ID (the order ID is only known to the person who placed it).
-
-**Migration:**
+### Database Migration
 ```sql
-CREATE POLICY "Anyone can view own order items by order id"
-ON public.order_items FOR SELECT
-TO anon, authenticated
-USING (true);
+-- order_status_log table
+CREATE TABLE public.order_status_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id uuid NOT NULL,
+  status order_status NOT NULL,
+  changed_at timestamptz NOT NULL DEFAULT now(),
+  changed_by uuid
+);
+
+ALTER TABLE public.order_status_log ENABLE ROW LEVEL SECURITY;
+
+-- RLS: staff can view logs for their venue's orders
+CREATE POLICY "Staff can view status logs"
+  ON public.order_status_log FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT 1 FROM orders o
+    WHERE o.id = order_status_log.order_id
+    AND is_venue_staff(auth.uid(), o.venue_id)
+  ));
+
+CREATE POLICY "Staff can insert status logs"
+  ON public.order_status_log FOR INSERT TO authenticated
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM orders o
+    WHERE o.id = order_status_log.order_id
+    AND is_venue_staff(auth.uid(), o.venue_id)
+  ));
+
+-- Auto-log trigger
+CREATE OR REPLACE FUNCTION log_order_status_change()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  IF OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO public.order_status_log (order_id, status, changed_by)
+    VALUES (NEW.id, NEW.status, auth.uid());
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_order_status_log
+  AFTER UPDATE ON public.orders
+  FOR EACH ROW EXECUTE FUNCTION log_order_status_change();
+
+-- Also log initial status on insert
+CREATE OR REPLACE FUNCTION log_order_initial_status()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  INSERT INTO public.order_status_log (order_id, status, changed_by)
+  VALUES (NEW.id, NEW.status, auth.uid());
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_order_initial_status_log
+  AFTER INSERT ON public.orders
+  FOR EACH ROW EXECUTE FUNCTION log_order_initial_status();
 ```
-This matches the existing open INSERT policy pattern. Order IDs are UUIDs, so they're unguessable.
 
-### 5. Email receipt to signed-in diners
-When the order status changes to "paid" and the diner has an email on file, invoke a backend function to email the receipt. This will use a simple edge function that renders the receipt HTML and sends it. We can set this up with the email infrastructure later — for now, the on-screen receipt and PDF download are the priority.
+### Dashboard Layout (top to bottom)
+1. Header + Audit Date picker (unchanged)
+2. Financial Performance — 4 stat cards (unchanged)
+3. Revenue by Hour — bar chart (new)
+4. Order Performance donut + Table Utilization side-by-side
+5. Top 10 Items by Qty + Top 10 Items by Revenue side-by-side
+6. Avg Ticket Times card (new, data populates going forward)
 
-## Technical details
-
-- **Tax calculation**: Reuse `calculateTaxes` from `src/lib/tax-utils.ts` with venue's active taxes
-- **Venue data**: Already fetched in ConsumerOrder — pass to ReceiptView including `tax_id`, `phone`, `email`
-- **Print CSS**: Add `@media print` rules to hide BottomNav, show only the receipt
-- **No new tables needed**: All data exists in `orders`, `order_items`, `venues`, `venue_taxes`, `diner_profiles`
-
-## Files to create/edit
-
-| File | Action |
-|------|--------|
-| `src/components/consumer/ReceiptView.tsx` | **Create** — receipt display component |
-| `src/pages/ConsumerOrder.tsx` | **Edit** — show receipt when order is "paid", fetch order items |
-| `src/components/consumer/OrderStatus.tsx` | **Edit** — add "View Receipt" trigger when paid |
-| `src/index.css` | **Edit** — add `@media print` styles |
-| Migration | **Create** — RLS policy for order_items SELECT |
+### Files Changed
+- **New migration** — `order_status_log` table, trigger, RLS
+- **`src/pages/Dashboard.tsx`** — add all new widgets, remove placeholder cards
 
