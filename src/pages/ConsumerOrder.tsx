@@ -108,10 +108,13 @@ const ConsumerOrder = () => {
       if (session?.user) {
         const { data } = await supabase
           .from("diner_profiles")
-          .select("id")
+          .select("id, first_name, last_name, email, phone")
           .eq("user_id", session.user.id)
           .maybeSingle();
-        if (data) setDinerId(data.id);
+        if (data) {
+          setDinerId(data.id);
+          setDinerInfo({ first_name: data.first_name, last_name: data.last_name, email: data.email, phone: data.phone });
+        }
       }
     };
     fetchDinerProfile();
