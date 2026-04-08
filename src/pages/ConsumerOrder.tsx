@@ -13,6 +13,7 @@ import OrderStatus from "@/components/consumer/OrderStatus";
 import ReceiptView from "@/components/consumer/ReceiptView";
 import VenueDiscovery from "@/components/consumer/VenueDiscovery";
 import DinerSignup from "@/components/consumer/DinerSignup";
+import DinerProfile from "@/components/consumer/DinerProfile";
 
 interface VenueInfo {
   id: string;
