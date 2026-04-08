@@ -149,6 +149,10 @@ const CheckoutPanel = ({
   const processPayment = async () => {
     setProcessing(true);
     try {
+      // Get auth user id for customer_id (FK references auth.users, not diner_profiles)
+      const { data: { session } } = await supabase.auth.getSession();
+      const authUserId = session?.user?.id || null;
+
       // Create the order first — generate ID client-side to avoid needing SELECT permission
       const orderId = crypto.randomUUID();
       const { error: orderError } = await supabase
@@ -159,7 +163,7 @@ const CheckoutPanel = ({
           table_id: tableId,
           total,
           status: "received" as const,
-          customer_id: dinerId,
+          customer_id: authUserId,
         });
 
       if (orderError) throw orderError;
@@ -183,9 +187,8 @@ const CheckoutPanel = ({
         };
 
         // Add auth header if user is logged in
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session?.access_token) {
-          headers.Authorization = `Bearer ${sessionData.session.access_token}`;
+        if (session?.access_token) {
+          headers.Authorization = `Bearer ${session.access_token}`;
         }
 
         const paymentBody: any = {
