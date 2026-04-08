@@ -77,12 +77,6 @@ export default function AdminVenueDetail() {
   const [creatingUser, setCreatingUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Menu
-  const [categories, setCategories] = useState<MenuCategory[]>([]);
-  const [items, setItems] = useState<MenuItem[]>([]);
-  const [newCatName, setNewCatName] = useState("");
-  const [newItemDialog, setNewItemDialog] = useState(false);
-  const [newItem, setNewItem] = useState({ name: "", price: "", description: "", category_id: "" });
 
   const fetchVenue = async () => {
     if (!venueId) return;
@@ -121,17 +115,8 @@ export default function AdminVenueDetail() {
     setStaff((data || []) as StaffMember[]);
   };
 
-  const fetchMenu = async () => {
-    if (!venueId) return;
-    const [{ data: cats }, { data: itms }] = await Promise.all([
-      supabase.from("menu_categories").select("*").eq("venue_id", venueId).order("display_order"),
-      supabase.from("menu_items").select("*").eq("venue_id", venueId).order("display_order"),
-    ]);
-    setCategories((cats || []) as MenuCategory[]);
-    setItems((itms || []) as MenuItem[]);
-  };
 
-  useEffect(() => { fetchVenue(); fetchStaff(); fetchMenu(); }, [venueId]);
+  useEffect(() => { fetchVenue(); fetchStaff(); }, [venueId]);
 
   const saveDetails = async () => {
     if (!venueId) return;
@@ -181,39 +166,6 @@ export default function AdminVenueDetail() {
     setCreatingUser(false);
   };
 
-  const addCategory = async () => {
-    if (!venueId || !newCatName.trim()) return;
-    const { error } = await supabase.from("menu_categories").insert({
-      venue_id: venueId,
-      name: newCatName.trim(),
-      display_order: categories.length,
-    });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else { toast({ title: "Category added" }); setNewCatName(""); fetchMenu(); }
-  };
-
-  const addItem = async () => {
-    if (!venueId || !newItem.name.trim() || !newItem.price) return;
-    const { error } = await supabase.from("menu_items").insert({
-      venue_id: venueId,
-      name: newItem.name.trim(),
-      price: parseFloat(newItem.price),
-      description: newItem.description || null,
-      category_id: newItem.category_id || null,
-    });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else { toast({ title: "Item added" }); setNewItem({ name: "", price: "", description: "", category_id: "" }); setNewItemDialog(false); fetchMenu(); }
-  };
-
-  const deleteCategory = async (id: string) => {
-    await supabase.from("menu_categories").delete().eq("id", id);
-    fetchMenu();
-  };
-
-  const deleteItem = async (id: string) => {
-    await supabase.from("menu_items").delete().eq("id", id);
-    fetchMenu();
-  };
 
   const saveGroupSettings = async () => {
     if (!venue?.group_id) return;
