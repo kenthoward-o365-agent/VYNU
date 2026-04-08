@@ -16,8 +16,9 @@ import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard, Receipt, Bot } from "lucide-react";
+import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard, Receipt, Bot, BarChart3 } from "lucide-react";
 import SippaAISettings from "@/components/venue/SippaAISettings";
+import SippaAnalytics from "@/components/venue/SippaAnalytics";
 import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
 import TaxSettingsTab from "@/components/venue/TaxSettingsTab";
 
@@ -241,6 +242,7 @@ export default function VenueSettings() {
           {isManager && <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>}
           
           {isManager && <TabsTrigger value="sippa"><Bot className="h-3.5 w-3.5 mr-1" />Sippa AI</TabsTrigger>}
+          {isManager && <TabsTrigger value="sippa-analytics"><BarChart3 className="h-3.5 w-3.5 mr-1" />AI Analytics</TabsTrigger>}
           {isManager && <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>}
           {isManager && <TabsTrigger value="taxes"><Receipt className="h-3.5 w-3.5 mr-1" />Taxes</TabsTrigger>}
         </TabsList>
@@ -503,6 +505,9 @@ export default function VenueSettings() {
           <>
             <TabsContent value="sippa" className="space-y-6">
               <SippaAISettings venueId={venue.id} />
+            </TabsContent>
+            <TabsContent value="sippa-analytics" className="space-y-6">
+              <SippaAnalytics venueId={venue.id} />
             </TabsContent>
             <TabsContent value="payments" className="space-y-6">
               <PaymentSettingsTab venueId={venue.id} />

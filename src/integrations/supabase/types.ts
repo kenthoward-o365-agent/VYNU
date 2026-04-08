@@ -14,6 +14,109 @@ export type Database = {
   }
   public: {
     Tables: {
+      chat_messages_log: {
+        Row: {
+          content: string
+          created_at: string
+          had_items_added: boolean
+          id: string
+          role: string
+          session_id: string
+          venue_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          had_items_added?: boolean
+          id?: string
+          role?: string
+          session_id: string
+          venue_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          had_items_added?: boolean
+          id?: string
+          role?: string
+          session_id?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_log_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_sessions: {
+        Row: {
+          converted_to_order: boolean
+          diner_id: string | null
+          ended_at: string | null
+          id: string
+          items_added: number
+          message_count: number
+          started_at: string
+          table_id: string | null
+          venue_id: string
+        }
+        Insert: {
+          converted_to_order?: boolean
+          diner_id?: string | null
+          ended_at?: string | null
+          id?: string
+          items_added?: number
+          message_count?: number
+          started_at?: string
+          table_id?: string | null
+          venue_id: string
+        }
+        Update: {
+          converted_to_order?: boolean
+          diner_id?: string | null
+          ended_at?: string | null
+          id?: string
+          items_added?: number
+          message_count?: number
+          started_at?: string
+          table_id?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_sessions_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_sessions_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_sessions_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       diner_profiles: {
         Row: {
           allergens: string[] | null

@@ -210,6 +210,15 @@ const ConsumerOrder = () => {
     setCart([]);
     setShowCheckout(false);
     setTab("feed");
+
+    // Mark any active chat session as converted
+    supabase
+      .from("chat_sessions")
+      .update({ converted_to_order: true })
+      .eq("venue_id", venueId!)
+      .eq("converted_to_order", false)
+      .is("ended_at", null)
+      .then(() => {});
   };
 
   const handleTabChange = (newTab: "feed" | "chat" | "cart" | "profile") => {

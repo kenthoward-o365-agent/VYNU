@@ -39,6 +39,9 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
+  const sessionIdRef = useRef<string | null>(null);
+  const messageCountRef = useRef(0);
+  const itemsAddedRef = useRef(0);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -60,6 +63,30 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
     };
     loadConfig();
   }, [venueId]);
+
+  // Create chat session on mount
+  useEffect(() => {
+    const createSession = async () => {
+      const { data } = await supabase
+        .from("chat_sessions")
+        .insert({ venue_id: venueId, diner_id: dinerId || null, table_id: tableId || null })
+        .select("id")
+        .single();
+      if (data) sessionIdRef.current = data.id;
+    };
+    createSession();
+
+    // Update session on unmount
+    return () => {
+      if (sessionIdRef.current) {
+        supabase.from("chat_sessions").update({
+          message_count: messageCountRef.current,
+          items_added: itemsAddedRef.current,
+          ended_at: new Date().toISOString(),
+        }).eq("id", sessionIdRef.current).then(() => {});
+      }
+    };
+  }, [venueId, dinerId, tableId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -109,10 +136,21 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
 
       setMessages((prev) => [...prev, assistantMsg]);
 
+      const hadItems = data.suggested_items?.length > 0;
       if (data.suggested_items?.length > 0) {
         data.suggested_items.forEach((item: { id: string; name: string; price: number }) => {
           onAddToCart(item);
         });
+        itemsAddedRef.current += data.suggested_items.length;
+      }
+
+      // Log messages for analytics
+      messageCountRef.current += 2; // user + assistant
+      if (sessionIdRef.current) {
+        supabase.from("chat_messages_log").insert([
+          { session_id: sessionIdRef.current, venue_id: venueId, role: "user", content: userMsg.content, had_items_added: false },
+          { session_id: sessionIdRef.current, venue_id: venueId, role: "assistant", content: assistantMsg.content, had_items_added: hadItems },
+        ]).then(() => {});
       }
     } catch (err) {
       console.error("Chat error:", err);
