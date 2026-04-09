@@ -655,17 +655,37 @@ export default function MenuBuilder() {
   );
 }
 
-function ItemCard({ item, taxes, onEdit, onDelete, onToggle }: {
+type ItemCardProps = {
   item: MenuItem;
   taxes: TaxConfig[];
   onEdit: (i: MenuItem) => void;
   onDelete: (id: string) => void;
   onToggle: (id: string, current: boolean) => void;
-}) {
+};
+
+function SortableItemCard(props: ItemCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.item.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+    opacity: isDragging ? 0.8 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <ItemCard {...props} dragHandleProps={{ ...attributes, ...listeners }} />
+    </div>
+  );
+}
+
+function ItemCard({ item, taxes, onEdit, onDelete, onToggle, dragHandleProps }: ItemCardProps & { dragHandleProps?: Record<string, any> }) {
   const taxBreakdown = taxes.length > 0 ? formatItemTaxBreakdown(Number(item.price), taxes) : "";
   return (
     <Card className={!item.is_available ? "opacity-60" : ""}>
       <CardContent className="flex items-center gap-4 py-3 px-4">
+        <button type="button" className="cursor-grab active:cursor-grabbing touch-none shrink-0 text-muted-foreground hover:text-foreground" {...dragHandleProps}>
+          <GripVertical className="h-5 w-5" />
+        </button>
         {item.image_url ? (
           <div className="h-14 w-14 rounded-lg overflow-hidden shrink-0 border border-border">
             <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
