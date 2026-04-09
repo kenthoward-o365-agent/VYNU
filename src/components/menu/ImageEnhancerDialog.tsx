@@ -461,8 +461,8 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
                     <Checkbox checked={genResults.length > 0 && genResults.every((r) => r.selected)} onCheckedChange={toggleGenAll} />
                     <span className="text-sm text-muted-foreground">{genSelectedCount} of {genResults.length} selected</span>
                   </div>
-                  <Button onClick={acceptGenSelected} disabled={genSelectedCount === 0 || genAccepting}>
-                    {genAccepting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</> : <><Check className="h-4 w-4 mr-2" />Accept Selected ({genSelectedCount})</>}
+                  <Button onClick={acceptGenSelected} disabled={genSelectedCount === 0}>
+                    <Check className="h-4 w-4 mr-2" />Done
                   </Button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
