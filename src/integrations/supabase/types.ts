@@ -424,6 +424,7 @@ export type Database = {
           display_order: number | null
           food_cost: number | null
           id: string
+          image_ai_status: string | null
           image_url: string | null
           is_available: boolean | null
           name: string
@@ -441,6 +442,7 @@ export type Database = {
           display_order?: number | null
           food_cost?: number | null
           id?: string
+          image_ai_status?: string | null
           image_url?: string | null
           is_available?: boolean | null
           name: string
@@ -458,6 +460,7 @@ export type Database = {
           display_order?: number | null
           food_cost?: number | null
           id?: string
+          image_ai_status?: string | null
           image_url?: string | null
           is_available?: boolean | null
           name?: string
