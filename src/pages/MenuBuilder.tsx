@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban } from "lucide-react";
+import ImageEnhancerDialog from "@/components/menu/ImageEnhancerDialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatItemTaxBreakdown, type TaxConfig } from "@/lib/tax-utils";
@@ -50,6 +51,7 @@ export default function MenuBuilder() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [enhanceDialogOpen, setEnhanceDialogOpen] = useState(false);
   const [importMode, setImportMode] = useState<"url" | "pdf" | null>(null);
   const [importUrl, setImportUrl] = useState("");
   const [importText, setImportText] = useState("");
@@ -72,6 +74,11 @@ export default function MenuBuilder() {
       setImportMode(null);
       setImportDialogOpen(true);
       searchParams.delete("import");
+      setSearchParams(searchParams, { replace: true });
+    }
+    if (searchParams.get("enhance") === "true") {
+      setEnhanceDialogOpen(true);
+      searchParams.delete("enhance");
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams]);
@@ -578,6 +585,16 @@ export default function MenuBuilder() {
           )}
         </DialogContent>
       </Dialog>
+      {/* AI Enhance Dialog */}
+      {venue && (
+        <ImageEnhancerDialog
+          open={enhanceDialogOpen}
+          onOpenChange={setEnhanceDialogOpen}
+          venueId={venue.id}
+          items={items as any}
+          onComplete={fetchData}
+        />
+      )}
     </div>
   );
 }
