@@ -284,6 +284,13 @@ export default function MenuBuilder() {
   const getCategoryName = (catId: string | null) =>
     categories.find((c) => c.id === catId)?.name || "Uncategorized";
 
+  const filterByDietary = (itemList: MenuItem[]) => {
+    if (activeDietaryFilters.length === 0) return itemList;
+    return itemList.filter((item) =>
+      activeDietaryFilters.every((tag) => item.dietary_tags?.includes(tag))
+    );
+  };
+
   const margin = (price: string, cost: string) => {
     const p = parseFloat(price), c = parseFloat(cost);
     if (!p || !c) return null;
