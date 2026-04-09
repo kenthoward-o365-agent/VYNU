@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useVenue } from "@/contexts/VenueContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +45,8 @@ export default function VenueSettings() {
   const { venue, venueRole, isTablessAdmin, refetch } = useVenue();
   const { user, session } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "details";
 
   const isOwner = venueRole === "owner" || isTablessAdmin;
   const isManager = isOwner || venueRole === "manager";
@@ -235,17 +237,7 @@ export default function VenueSettings() {
         <p className="text-muted-foreground">Manage your venue details and team</p>
       </div>
 
-      <Tabs defaultValue="details" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="details"><Settings className="h-3.5 w-3.5 mr-1" />Details</TabsTrigger>
-          {isManager && <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>}
-          {isManager && <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>}
-          
-          {isManager && <TabsTrigger value="sippa"><Bot className="h-3.5 w-3.5 mr-1" />Sippa AI</TabsTrigger>}
-          {isManager && <TabsTrigger value="sippa-analytics"><BarChart3 className="h-3.5 w-3.5 mr-1" />AI Analytics</TabsTrigger>}
-          {isManager && <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>}
-          {isManager && <TabsTrigger value="taxes"><Receipt className="h-3.5 w-3.5 mr-1" />Taxes</TabsTrigger>}
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="space-y-6">
 
         {/* ── DETAILS TAB ── */}
         <TabsContent value="details" className="space-y-6 max-w-2xl">
