@@ -62,6 +62,7 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
   const [genResults, setGenResults] = useState<GeneratedResult[]>([]);
   const [genAccepting, setGenAccepting] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pendingQueueRef = useRef<MissingImageItem[]>([]);
 
   // Filter items
   const unreviewedItems: EnhanceableItem[] = items.filter(
