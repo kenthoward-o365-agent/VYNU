@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban, ChevronDown, Settings } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatItemTaxBreakdown, type TaxConfig } from "@/lib/tax-utils";
