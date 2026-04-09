@@ -7,6 +7,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MAX_ITEMS_PER_BATCH = 10;
+
 interface ItemToGenerate {
   id: string;
   name: string;
@@ -19,7 +21,6 @@ async function generateAndSaveImage(
   supabaseAdmin: ReturnType<typeof createClient>,
   lovableApiKey: string
 ) {
-  // Mark as processing
   await supabaseAdmin
     .from("menu_items")
     .update({ image_ai_status: "processing" })
@@ -42,8 +43,7 @@ async function generateAndSaveImage(
   });
 
   if (!response.ok) {
-    const status = response.status;
-    console.error(`AI error for ${item.name}: ${status}`);
+    console.error(`AI error for ${item.name}: ${response.status}`);
     await supabaseAdmin
       .from("menu_items")
       .update({ image_ai_status: "failed" })
@@ -63,7 +63,6 @@ async function generateAndSaveImage(
     return;
   }
 
-  // Upload to storage
   const base64Data = base64Url.replace(/^data:image\/\w+;base64,/, "");
   const binaryStr = atob(base64Data);
   const bytes = new Uint8Array(binaryStr.length);
@@ -102,8 +101,7 @@ async function processInBackground(
   for (const item of items) {
     try {
       await generateAndSaveImage(item, venueId, supabaseAdmin, lovableApiKey);
-      // Small delay between items to avoid rate limiting
-      await new Promise((r) => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 1000));
     } catch (err) {
       console.error(`Unexpected error for ${item.name}:`, err);
       await supabaseAdmin
@@ -112,7 +110,7 @@ async function processInBackground(
         .eq("id", item.id);
     }
   }
-  console.log(`Batch generation complete. Processed ${items.length} items.`);
+  console.log(`Batch complete. Processed ${items.length} items.`);
 }
 
 serve(async (req) => {
@@ -130,6 +128,10 @@ serve(async (req) => {
       });
     }
 
+    // Enforce max batch size to avoid timeout
+    const batch = items.slice(0, MAX_ITEMS_PER_BATCH);
+    const remaining = items.length - batch.length;
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
@@ -142,18 +144,17 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Mark all items as queued
-    const ids = items.map((i) => i.id);
+    // Mark batch items as queued
+    const ids = batch.map((i) => i.id);
     await supabaseAdmin
       .from("menu_items")
       .update({ image_ai_status: "queued" })
       .in("id", ids);
 
-    // Process in background — response returns immediately
-    EdgeRuntime.waitUntil(processInBackground(items, venueId, supabaseAdmin, LOVABLE_API_KEY));
+    EdgeRuntime.waitUntil(processInBackground(batch, venueId, supabaseAdmin, LOVABLE_API_KEY));
 
     return new Response(
-      JSON.stringify({ message: "Generation started", count: items.length }),
+      JSON.stringify({ message: "Generation started", count: batch.length, remaining }),
       { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
