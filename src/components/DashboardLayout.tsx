@@ -19,6 +19,7 @@ import {
 
 const venueNavItems = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/sippa-analytics", label: "Sippa AI Analytics", icon: BarChart3 },
   { path: "/menu", label: "Menu Builder", icon: UtensilsCrossed },
   { path: "/pricing", label: "Pricing", icon: Tag },
   { path: "/tables", label: "Tables & QR", icon: QrCode },
@@ -163,7 +164,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         { to: "/settings?tab=users", label: "Users", icon: Users },
                         { to: "/settings?tab=loyalty", label: "Loyalty", icon: Gift },
                         { to: "/settings?tab=sippa", label: "Sippa AI", icon: Bot },
-                        { to: "/settings?tab=sippa-analytics", label: "AI Analytics", icon: BarChart3 },
+                        { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
                         { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
                         { to: "/settings?tab=taxes", label: "Taxes", icon: Receipt },
                       ].map((sub) => {

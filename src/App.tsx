@@ -15,6 +15,7 @@ import Tables from "@/pages/Tables";
 import Orders from "@/pages/Orders";
 import Pricing from "@/pages/Pricing";
 import Analytics from "@/pages/Analytics";
+import SippaAnalyticsPage from "@/pages/SippaAnalytics";
 import VenueSettings from "@/pages/VenueSettings";
 import LandingPageEditor from "@/pages/LandingPageEditor";
 import Diners from "@/pages/Diners";
@@ -72,6 +73,7 @@ function AppRoutes() {
         <Route path="/orders" element={<Orders />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/analytics" element={<Analytics />} />
+        <Route path="/sippa-analytics" element={<SippaAnalyticsPage />} />
         <Route path="/diners" element={<Diners />} />
         <Route path="/loyalty" element={<Navigate to="/settings" replace />} />
         <Route path="/group" element={<GroupDashboard />} />
