@@ -308,6 +308,44 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] relative overflow-hidden">
       <CategoryChips categories={categories} activeCategory={activeCategory} onSelect={handleCategorySelect} />
+
+      {/* Dietary filter row */}
+      {allDietaryTags.length > 0 && (
+        <ScrollArea className="w-full px-4 pb-2 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <Filter className="h-3 w-3 text-muted-foreground shrink-0" />
+            {allDietaryTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() =>
+                  setActiveDietaryFilters((prev) =>
+                    prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+                  )
+                }
+                className={cn(
+                  "px-3 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-colors border",
+                  activeDietaryFilters.includes(tag)
+                    ? "bg-secondary text-secondary-foreground border-secondary"
+                    : "bg-card text-muted-foreground border-border hover:text-foreground"
+                )}
+              >
+                <Leaf className="h-2.5 w-2.5 inline mr-0.5" />
+                {tag}
+              </button>
+            ))}
+            {activeDietaryFilters.length > 0 && (
+              <button
+                onClick={() => setActiveDietaryFilters([])}
+                className="px-2 py-1 rounded-full text-[10px] text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      )}
+
       <div className="flex-1 overflow-y-auto px-3 pb-24">
         <div className="space-y-2 py-2">
           {filteredItems.map((item) => (
@@ -316,6 +354,7 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
               item={item}
               quantity={quantities[item.id] || 0}
               onQuantityChange={(qty) => handleQuantityChange(item.id, qty)}
+              dimmed={activeDietaryFilters.length > 0 && !itemMatchesFilters(item)}
             />
           ))}
         </div>
