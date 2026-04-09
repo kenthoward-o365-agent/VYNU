@@ -8,11 +8,103 @@ const corsHeaders = {
 };
 
 const MAX_ITEMS_PER_BATCH = 10;
+const STALE_BATCH_MINUTES = 10;
+const FUNCTION_NAME = "batch-generate-images";
 
 interface ItemToGenerate {
   id: string;
   name: string;
   description: string | null;
+}
+
+function normalizeItems(input: unknown): ItemToGenerate[] {
+  if (!Array.isArray(input)) return [];
+
+  return input
+    .filter((item): item is Record<string, unknown> => !!item && typeof item === "object")
+    .map((item) => ({
+      id: typeof item.id === "string" ? item.id : "",
+      name: typeof item.name === "string" ? item.name : "",
+      description: typeof item.description === "string" ? item.description : null,
+    }))
+    .filter((item) => item.id.length > 0 && item.name.length > 0);
+}
+
+async function resetStaleItems(
+  venueId: string,
+  supabaseAdmin: ReturnType<typeof createClient>
+) {
+  const cutoff = new Date(Date.now() - STALE_BATCH_MINUTES * 60 * 1000).toISOString();
+
+  const { data: staleItems, error } = await supabaseAdmin
+    .from("menu_items")
+    .select("id")
+    .eq("venue_id", venueId)
+    .is("image_url", null)
+    .in("image_ai_status", ["queued", "processing"])
+    .lt("updated_at", cutoff);
+
+  if (error) {
+    console.error("Failed to inspect stale image jobs:", error.message);
+    return;
+  }
+
+  if (!staleItems?.length) return;
+
+  const { error: resetError } = await supabaseAdmin
+    .from("menu_items")
+    .update({ image_ai_status: null })
+    .in("id", staleItems.map((item) => item.id));
+
+  if (resetError) {
+    console.error("Failed to reset stale image jobs:", resetError.message);
+    return;
+  }
+
+  console.log(`Reset ${staleItems.length} stale image job(s).`);
+}
+
+async function loadNextBatch(
+  venueId: string,
+  supabaseAdmin: ReturnType<typeof createClient>
+) {
+  const { data, error } = await supabaseAdmin
+    .from("menu_items")
+    .select("id, name, description")
+    .eq("venue_id", venueId)
+    .is("image_url", null)
+    .is("image_ai_status", null)
+    .order("updated_at", { ascending: true })
+    .limit(MAX_ITEMS_PER_BATCH);
+
+  if (error) {
+    throw new Error(`Failed to load next image batch: ${error.message}`);
+  }
+
+  return (data ?? []) as ItemToGenerate[];
+}
+
+async function triggerNextBatch(
+  venueId: string,
+  supabaseUrl: string,
+  supabaseServiceKey: string
+) {
+  const response = await fetch(`${supabaseUrl}/functions/v1/${FUNCTION_NAME}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${supabaseServiceKey}`,
+      apikey: supabaseServiceKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ venueId }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to queue next batch: ${response.status} ${errorText}`);
+  }
+
+  await response.text();
 }
 
 async function generateAndSaveImage(
@@ -96,7 +188,9 @@ async function processInBackground(
   items: ItemToGenerate[],
   venueId: string,
   supabaseAdmin: ReturnType<typeof createClient>,
-  lovableApiKey: string
+  lovableApiKey: string,
+  supabaseUrl: string,
+  supabaseServiceKey: string
 ) {
   for (const item of items) {
     try {
@@ -110,6 +204,13 @@ async function processInBackground(
         .eq("id", item.id);
     }
   }
+
+  try {
+    await triggerNextBatch(venueId, supabaseUrl, supabaseServiceKey);
+  } catch (err) {
+    console.error("Failed to trigger next batch:", err);
+  }
+
   console.log(`Batch complete. Processed ${items.length} items.`);
 }
 
@@ -119,18 +220,16 @@ serve(async (req) => {
   }
 
   try {
-    const { venueId, items } = await req.json() as { venueId: string; items: ItemToGenerate[] };
+    const body = await req.json().catch(() => ({}));
+    const venueId = typeof body?.venueId === "string" ? body.venueId : "";
+    const requestedItems = normalizeItems(body?.items);
 
-    if (!venueId || !items || items.length === 0) {
-      return new Response(JSON.stringify({ error: "venueId and items[] required" }), {
+    if (!venueId) {
+      return new Response(JSON.stringify({ error: "venueId is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // Enforce max batch size to avoid timeout
-    const batch = items.slice(0, MAX_ITEMS_PER_BATCH);
-    const remaining = items.length - batch.length;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -144,17 +243,67 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Mark batch items as queued
+    await resetStaleItems(venueId, supabaseAdmin);
+
+    const { count: activeCount, error: activeError } = await supabaseAdmin
+      .from("menu_items")
+      .select("id", { count: "exact", head: true })
+      .eq("venue_id", venueId)
+      .is("image_url", null)
+      .in("image_ai_status", ["queued", "processing"]);
+
+    if (activeError) {
+      throw new Error(`Failed to inspect active image jobs: ${activeError.message}`);
+    }
+
+    if (!requestedItems.length && (activeCount ?? 0) > 0) {
+      return new Response(
+        JSON.stringify({ message: "Generation already in progress", count: 0, remaining: activeCount ?? 0 }),
+        { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const batch = requestedItems.length > 0
+      ? requestedItems.slice(0, MAX_ITEMS_PER_BATCH)
+      : await loadNextBatch(venueId, supabaseAdmin);
+
+    if (batch.length === 0) {
+      return new Response(
+        JSON.stringify({ message: "No eligible items to generate", count: 0, remaining: 0 }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const ids = batch.map((i) => i.id);
     await supabaseAdmin
       .from("menu_items")
       .update({ image_ai_status: "queued" })
       .in("id", ids);
 
-    EdgeRuntime.waitUntil(processInBackground(batch, venueId, supabaseAdmin, LOVABLE_API_KEY));
+    const { count: remaining, error: remainingError } = await supabaseAdmin
+      .from("menu_items")
+      .select("id", { count: "exact", head: true })
+      .eq("venue_id", venueId)
+      .is("image_url", null)
+      .is("image_ai_status", null);
+
+    if (remainingError) {
+      throw new Error(`Failed to count remaining image jobs: ${remainingError.message}`);
+    }
+
+    EdgeRuntime.waitUntil(
+      processInBackground(
+        batch,
+        venueId,
+        supabaseAdmin,
+        LOVABLE_API_KEY,
+        supabaseUrl,
+        supabaseServiceKey
+      )
+    );
 
     return new Response(
-      JSON.stringify({ message: "Generation started", count: batch.length, remaining }),
+      JSON.stringify({ message: "Generation started", count: batch.length, remaining: remaining ?? 0 }),
       { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
