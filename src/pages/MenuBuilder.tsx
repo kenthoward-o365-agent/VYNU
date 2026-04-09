@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban, ChevronDown, Settings } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatItemTaxBreakdown, type TaxConfig } from "@/lib/tax-utils";
@@ -42,6 +42,7 @@ const allergenOptions = ["Gluten", "Dairy", "Nuts", "Shellfish", "Eggs", "Soy", 
 const dietaryOptions = ["Vegan", "Vegetarian", "Gluten Free", "Dairy Free", "Keto", "Halal"];
 
 export default function MenuBuilder() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { venue } = useVenue();
   const [items, setItems] = useState<MenuItem[]>([]);
   const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
@@ -65,7 +66,16 @@ export default function MenuBuilder() {
   });
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  const fetchData = async () => {
+  // Auto-open import dialog from sidebar link
+  useEffect(() => {
+    if (searchParams.get("import") === "true") {
+      setImportMode(null);
+      setImportDialogOpen(true);
+      searchParams.delete("import");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
+
     if (!venue) return;
     const [itemsRes, catsRes, taxesRes] = await Promise.all([
       supabase.from("menu_items").select("*").eq("venue_id", venue.id).order("display_order"),
@@ -247,30 +257,6 @@ export default function MenuBuilder() {
           <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Item</Button>
         </div>
       </div>
-
-      {/* Settings collapsible */}
-      <Collapsible>
-        <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full group">
-          <Settings className="h-4 w-4" />
-          <span>Settings</span>
-          <ChevronDown className="h-4 w-4 ml-auto transition-transform group-data-[state=open]:rotate-180" />
-        </CollapsibleTrigger>
-        <CollapsibleContent className="mt-3 space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                AI Features
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" size="sm" onClick={() => { setImportMode(null); setImportDialogOpen(true); }}>
-                <Upload className="h-4 w-4 mr-1" />Import
-              </Button>
-            </CardContent>
-          </Card>
-        </CollapsibleContent>
-      </Collapsible>
 
       {/* Item list grouped by category */}
       {categories.length === 0 && items.length === 0 ? (
