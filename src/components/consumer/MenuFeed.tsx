@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, Minus, ChevronLeft, ChevronRight, Flame, Leaf, AlertTriangle, Ban } from "lucide-react";
+import { Plus, Minus, ChevronLeft, ChevronRight, Flame, Leaf, AlertTriangle, Ban, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
