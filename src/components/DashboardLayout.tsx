@@ -34,6 +34,7 @@ const groupNavItems = [
 ];
 
 const adminNavItems = [
+  { path: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/admin/venues", label: "Manage Venues", icon: Shield },
   { path: "/admin/staff", label: "Platform Staff", icon: Shield },
 ];

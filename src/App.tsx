@@ -24,6 +24,7 @@ import GroupDashboard from "@/pages/GroupDashboard";
 import AdminVenues from "@/pages/AdminVenues";
 import AdminVenueDetail from "@/pages/AdminVenueDetail";
 import AdminStaff from "@/pages/AdminStaff";
+import AdminDashboard from "@/pages/AdminDashboard";
 import NotFound from "@/pages/NotFound";
 import ConsumerOrder from "@/pages/ConsumerOrder";
 import ResetPassword from "@/pages/ResetPassword";
@@ -62,13 +63,14 @@ function AppRoutes() {
     );
   }
 
-  const defaultRoute = isTablessAdmin ? "/admin/venues" : "/dashboard";
+  const defaultRoute = isTablessAdmin ? "/admin/dashboard" : "/dashboard";
 
   return (
     <DashboardLayout>
       <Routes>
         <Route path="/" element={<Navigate to={defaultRoute} replace />} />
-        <Route path="/dashboard" element={isTablessAdmin ? <Navigate to="/admin/venues" replace /> : <Dashboard />} />
+        <Route path="/dashboard" element={isTablessAdmin ? <Navigate to="/admin/dashboard" replace /> : <Dashboard />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/menu" element={<MenuBuilder />} />
         <Route path="/modifiers" element={<Modifiers />} />
         <Route path="/tables" element={<Tables />} />
