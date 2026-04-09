@@ -26,6 +26,7 @@ import AdminStaff from "@/pages/AdminStaff";
 import NotFound from "@/pages/NotFound";
 import ConsumerOrder from "@/pages/ConsumerOrder";
 import ResetPassword from "@/pages/ResetPassword";
+import Modifiers from "@/pages/Modifiers";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ function AppRoutes() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/menu" element={<MenuBuilder />} />
+        <Route path="/modifiers" element={<Modifiers />} />
         <Route path="/tables" element={<Tables />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/pricing" element={<Pricing />} />

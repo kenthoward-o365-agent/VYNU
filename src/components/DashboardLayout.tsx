@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
   LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
-  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield, Sparkles, Upload, ImagePlus
+  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield, Sparkles, Upload, ImagePlus, SlidersHorizontal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -138,6 +138,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       >
                         <ImagePlus className="h-3 w-3" />
                         Enhance Images
+                      </Link>
+                      <Link
+                        to="/modifiers"
+                        onClick={() => setSidebarOpen(false)}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                      >
+                        <SlidersHorizontal className="h-3 w-3" />
+                        Modifiers
                       </Link>
                     </CollapsibleContent>
                   </Collapsible>
