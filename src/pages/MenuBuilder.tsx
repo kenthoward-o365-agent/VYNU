@@ -51,6 +51,7 @@ export default function MenuBuilder() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [enhanceDialogOpen, setEnhanceDialogOpen] = useState(false);
   const [importMode, setImportMode] = useState<"url" | "pdf" | null>(null);
   const [importUrl, setImportUrl] = useState("");
   const [importText, setImportText] = useState("");
