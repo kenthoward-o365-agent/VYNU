@@ -53,6 +53,7 @@ export default function MenuBuilder() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { venue } = useVenue();
   const [items, setItems] = useState<MenuItem[]>([]);
+  const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
   const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -283,6 +284,13 @@ export default function MenuBuilder() {
   const getCategoryName = (catId: string | null) =>
     categories.find((c) => c.id === catId)?.name || "Uncategorized";
 
+  const filterByDietary = (itemList: MenuItem[]) => {
+    if (activeDietaryFilters.length === 0) return itemList;
+    return itemList.filter((item) =>
+      activeDietaryFilters.every((tag) => item.dietary_tags?.includes(tag))
+    );
+  };
+
   const margin = (price: string, cost: string) => {
     const p = parseFloat(price), c = parseFloat(cost);
     if (!p || !c) return null;
@@ -313,6 +321,35 @@ export default function MenuBuilder() {
         </div>
       </div>
 
+      {/* Dietary tag filter row */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm font-medium text-muted-foreground mr-1">Filter:</span>
+        {dietaryOptions.map((tag) => (
+          <Badge
+            key={tag}
+            variant={activeDietaryFilters.includes(tag) ? "default" : "outline"}
+            className={cn(
+              "cursor-pointer select-none transition-colors",
+              activeDietaryFilters.includes(tag)
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                : "hover:bg-accent"
+            )}
+            onClick={() =>
+              setActiveDietaryFilters((prev) =>
+                prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+              )
+            }
+          >
+            {tag}
+          </Badge>
+        ))}
+        {activeDietaryFilters.length > 0 && (
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setActiveDietaryFilters([])}>
+            Clear
+          </Button>
+        )}
+      </div>
+
       {/* Item list grouped by category */}
       {categories.length === 0 && items.length === 0 ? (
         <Card>
@@ -328,7 +365,7 @@ export default function MenuBuilder() {
           <div className="space-y-6">
             {/* Uncategorized items */}
             {(() => {
-              const uncatItems = items.filter((i) => !i.category_id).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              const uncatItems = filterByDietary(items.filter((i) => !i.category_id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
               return uncatItems.length > 0 ? (
                 <div>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
@@ -343,7 +380,7 @@ export default function MenuBuilder() {
               ) : null;
             })()}
             {categories.map((cat) => {
-              const catItems = items.filter((i) => i.category_id === cat.id).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              const catItems = filterByDietary(items.filter((i) => i.category_id === cat.id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
               return (
                 <div key={cat.id}>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{cat.name}</h3>
