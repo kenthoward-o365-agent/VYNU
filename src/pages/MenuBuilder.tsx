@@ -66,7 +66,16 @@ export default function MenuBuilder() {
   });
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  const fetchData = async () => {
+  // Auto-open import dialog from sidebar link
+  useEffect(() => {
+    if (searchParams.get("import") === "true") {
+      setImportMode(null);
+      setImportDialogOpen(true);
+      searchParams.delete("import");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
+
     if (!venue) return;
     const [itemsRes, catsRes, taxesRes] = await Promise.all([
       supabase.from("menu_items").select("*").eq("venue_id", venue.id).order("display_order"),
