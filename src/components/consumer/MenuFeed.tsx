@@ -253,12 +253,21 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  
+  const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
+
+  const allDietaryTags = Array.from(
+    new Set(items.flatMap((item) => item.dietary_tags || []))
+  ).sort();
 
   const filteredItems = items.filter((item) => {
     if (activeCategory && item.category_id !== activeCategory) return false;
     return true;
   });
+
+  const itemMatchesFilters = (item: MenuItem) => {
+    if (activeDietaryFilters.length === 0) return true;
+    return activeDietaryFilters.every((tag) => item.dietary_tags?.includes(tag));
+  };
 
   const handleCategorySelect = (id: string | null) => {
     setActiveCategory(id);
