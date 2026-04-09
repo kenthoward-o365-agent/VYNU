@@ -1284,6 +1284,29 @@ export type Database = {
         Returns: string
       }
       get_user_diner_profile_id: { Args: never; Returns: string }
+      get_venue_payment_active: {
+        Args: { _venue_id: string }
+        Returns: {
+          is_active: boolean
+          provider: string
+        }[]
+      }
+      get_venue_public_info: {
+        Args: { _venue_id: string }
+        Returns: {
+          city: string
+          country: string
+          id: string
+          is_active: boolean
+          landing_page_html: string
+          logo_url: string
+          name: string
+          operating_hours: Json
+          settings: Json
+          state: string
+          venue_type: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
