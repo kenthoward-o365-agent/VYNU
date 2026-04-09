@@ -42,6 +42,7 @@ const allergenOptions = ["Gluten", "Dairy", "Nuts", "Shellfish", "Eggs", "Soy", 
 const dietaryOptions = ["Vegan", "Vegetarian", "Gluten Free", "Dairy Free", "Keto", "Halal"];
 
 export default function MenuBuilder() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { venue } = useVenue();
   const [items, setItems] = useState<MenuItem[]>([]);
   const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
