@@ -62,11 +62,13 @@ function AppRoutes() {
     );
   }
 
+  const defaultRoute = isTablessAdmin ? "/admin/venues" : "/dashboard";
+
   return (
     <DashboardLayout>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/" element={<Navigate to={defaultRoute} replace />} />
+        <Route path="/dashboard" element={isTablessAdmin ? <Navigate to="/admin/venues" replace /> : <Dashboard />} />
         <Route path="/menu" element={<MenuBuilder />} />
         <Route path="/modifiers" element={<Modifiers />} />
         <Route path="/tables" element={<Tables />} />
