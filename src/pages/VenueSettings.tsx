@@ -498,9 +498,6 @@ export default function VenueSettings() {
             <TabsContent value="sippa" className="space-y-6">
               <SippaAISettings venueId={venue.id} />
             </TabsContent>
-            <TabsContent value="sippa-analytics" className="space-y-6">
-              <SippaAnalytics venueId={venue.id} />
-            </TabsContent>
             <TabsContent value="payments" className="space-y-6">
               <PaymentSettingsTab venueId={venue.id} />
             </TabsContent>
