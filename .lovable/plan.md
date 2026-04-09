@@ -1,57 +1,89 @@
 
 
-## Plan: AI Image Enhancer for Menu Items
+## Plan: Database Integrity & Security Hardening
 
 ### Summary
-Add an "Enhance Images" feature under AI Features in the Menu Builder sidebar. When run, it fetches all menu item images that haven't been reviewed yet, sends each through Lovable AI's image editing capability (Gemini flash image model), shows before/after comparisons, and lets the operator accept enhancements individually, in bulk, or all at once.
+A comprehensive migration to fix 6 security vulnerabilities (privilege escalation, data exposure), add 18 missing indexes on foreign key columns, and add missing foreign keys — all critical for scaling to thousands of customers.
 
-### Database change
-Add a column to `menu_items` to track enhancement status:
+---
 
-```sql
-ALTER TABLE public.menu_items
-  ADD COLUMN image_ai_status text DEFAULT NULL;
--- NULL = not reviewed, 'enhanced' = accepted, 'skipped' = manually skipped
+### A. Security Fixes (Critical)
+
+**1. Privilege escalation — `venue_staff` self-insert**
+Remove the policy "Staff can insert themselves" which lets any authenticated user make themselves owner/manager of any venue.
+
+**2. Privilege escalation — `venue_group_staff` self-insert**
+Remove the policy "Users can add themselves as group staff" — same escalation risk for groups.
+
+**3. Exposed payment API keys — `venue_payment_config`**
+Replace the "Anyone can check venue payment status" policy with one that only exposes `is_active` and `provider` via a security-definer function, hiding `api_key_test`, `api_key_live`, and `merchant_account`.
+
+**4. Order items publicly readable**
+Replace the "Anyone can view order items by order id" `USING: true` policy with one that restricts reads to venue staff or the order's customer.
+
+**5. Chat sessions update too permissive**
+The "Anyone can update own chat sessions" policy uses `venue_id IS NOT NULL` which is always true. Replace with a session-ownership check (match on `id` passed by client, scoped by anon insert).
+
+**6. Venue sensitive fields publicly readable**
+Create a security-definer function for public venue lookups that returns only display-safe fields (name, logo, operating_hours, venue_type). Keep full SELECT for staff/managers only.
+
+---
+
+### B. Missing Indexes (Performance)
+
+Add B-tree indexes on 18 unindexed foreign key columns. These are critical for RLS policy evaluation at scale — every `is_venue_staff()` join and every FK lookup in policies will degrade without them.
+
+```text
+Table                  Column          
+─────────────────────  ────────────────
+chat_sessions          diner_id, table_id
+diner_profiles         user_id
+diner_visits           diner_id, order_id, venue_id
+loyalty_programs       group_id, venue_id
+menu_categories        venue_id
+modifier_categories    venue_id
+modifiers              category_id, venue_id
+order_items            menu_item_id
+orders                 customer_id
+staff_alerts           diner_id, table_id, venue_id
+venue_taxes            venue_id
+venues                 group_id
 ```
 
-This lets future runs skip already-reviewed images.
+---
 
-### Edge Function: `enhance-menu-image`
-- Accepts: `{ imageUrl: string }` (the public URL of the original image)
-- Uses Lovable AI (model `google/gemini-3.1-flash-image-preview`) with the prompt: "Enhance this food/drink photo for a mobile menu. Improve lighting, color vibrancy, sharpness, and composition. Keep the subject identical."
-- Returns the enhanced image as base64
-- The client uploads the result to `venue-assets` storage bucket under `menu-items/{venue_id}/enhanced/`
+### C. Schema Integrity
 
-### Frontend: New page/dialog at `/menu?enhance=true`
+**Foreign keys** — All `_id` columns already have proper FK constraints with appropriate CASCADE behavior. No orphaned foreign keys found.
 
-1. **Sidebar link** — Add "Enhance Images" under "AI Features" in `DashboardLayout.tsx` (next to Import), linking to `/menu?enhance=true`
+**No orphaned tables** — Every table is referenced by at least one relationship or serves a distinct purpose.
 
-2. **Enhancement dialog in `MenuBuilder.tsx`** — Opens when `?enhance=true` is detected (same pattern as import). Contains:
-   - A grid of before/after image cards for each menu item that has an `image_url` and `image_ai_status IS NULL`
-   - Each card shows: item name, original image (left), enhanced image (right), and a checkbox
-   - A "Run Enhancement" button that processes all unreviewed images sequentially (with a progress bar)
-   - Toolbar with "Select All" checkbox and "Accept Selected" button
-   - Accepting updates `menu_items.image_url` to the enhanced version and sets `image_ai_status = 'enhanced'`
-   - A "Skip" option per item sets `image_ai_status = 'skipped'`
+**`diner_profiles.user_id` is nullable** — This is used in RLS policies (`auth.uid() = user_id`). A null `user_id` means the RLS check silently fails. We should consider whether guest diner profiles (no user_id) are intentional. If not, make it NOT NULL.
 
-3. **Flow:**
-   - User clicks "Enhance Images" in sidebar
-   - Dialog opens showing count of unreviewed images
-   - User clicks "Run" — images are processed one by one via the edge function, progress bar updates
-   - After processing, before/after grid appears
-   - User checks items to accept, clicks "Accept Selected"
-   - Accepted items get their `image_url` replaced and `image_ai_status` set
+**`order_status_log.changed_by` nullable** — Status change triggers set `changed_by = auth.uid()` which can be NULL for anon inserts. This is acceptable for the initial status log on anon order creation but worth noting.
 
-### Files to create/modify
-- **New**: `supabase/functions/enhance-menu-image/index.ts` — Edge function calling Lovable AI image edit
-- **Migration**: Add `image_ai_status` column to `menu_items`
-- **Modified**: `src/components/DashboardLayout.tsx` — Add "Enhance Images" link under AI Features
-- **Modified**: `src/pages/MenuBuilder.tsx` — Add enhancement dialog with before/after grid, checkboxes, and accept flow
+---
 
-### Technical details
-- Uses `google/gemini-3.1-flash-image-preview` (fast image generation with pro-level quality) via `--edit-image` pattern
-- Enhanced images stored at `venue-assets/menu-items/{venue_id}/enhanced/{timestamp}.png`
-- Original images are preserved (only the `image_url` reference changes on acceptance)
-- Items with no image are skipped automatically
-- Rate limiting: sequential processing with 1-2s delay between items to avoid 429s
+### D. Implementation
+
+**Single migration** containing:
+1. Drop 2 dangerous self-insert policies
+2. Drop and replace 3 overly permissive SELECT policies  
+3. Create 1 security-definer function for safe public venue data
+4. Create 1 security-definer function for safe payment status checks
+5. Add 18 indexes (all `CREATE INDEX CONCURRENTLY` compatible, using `IF NOT EXISTS`)
+6. Fix the chat_sessions update policy
+
+**Files modified:**
+- New migration SQL file only — no application code changes needed since the app already queries through the Supabase client and the stricter policies are transparent to authorized users.
+
+---
+
+### Technical Details
+
+The venue public SELECT fix uses a view or security-definer function approach so that the consumer-facing pages (VenueLanding, VenueDiscovery) still work for anonymous users but only see name, logo, venue_type, operating_hours, and is_active. The existing anon SELECT policy on venues gets dropped and replaced.
+
+For `venue_payment_config`, we create a function `public.get_venue_payment_active(venue_id uuid)` that returns just `(is_active, provider)` and replace the open SELECT with a staff-only policy plus the function for public checks.
+
+The `order_items` fix joins through `orders` to check `customer_id` or `is_venue_staff`, matching the existing `orders` SELECT pattern.
 
