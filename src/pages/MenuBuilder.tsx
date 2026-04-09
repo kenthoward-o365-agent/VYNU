@@ -585,6 +585,16 @@ export default function MenuBuilder() {
           )}
         </DialogContent>
       </Dialog>
+      {/* AI Enhance Dialog */}
+      {venue && (
+        <ImageEnhancerDialog
+          open={enhanceDialogOpen}
+          onOpenChange={setEnhanceDialogOpen}
+          venueId={venue.id}
+          items={items as any}
+          onComplete={fetchData}
+        />
+      )}
     </div>
   );
 }
