@@ -24,6 +24,7 @@ import GroupDashboard from "@/pages/GroupDashboard";
 import AdminVenues from "@/pages/AdminVenues";
 import AdminVenueDetail from "@/pages/AdminVenueDetail";
 import AdminStaff from "@/pages/AdminStaff";
+import AdminDashboard from "@/pages/AdminDashboard";
 import NotFound from "@/pages/NotFound";
 import ConsumerOrder from "@/pages/ConsumerOrder";
 import ResetPassword from "@/pages/ResetPassword";
