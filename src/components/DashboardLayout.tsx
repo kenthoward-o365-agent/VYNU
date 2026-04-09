@@ -139,6 +139,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         <ImagePlus className="h-3 w-3" />
                         Enhance Images
                       </Link>
+                      <Link
+                        to="/modifiers"
+                        onClick={() => setSidebarOpen(false)}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                      >
+                        <SlidersHorizontal className="h-3 w-3" />
+                        Modifiers
+                      </Link>
                     </CollapsibleContent>
                   </Collapsible>
                 )}
