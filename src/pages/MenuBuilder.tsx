@@ -164,6 +164,46 @@ export default function MenuBuilder() {
     fetchData();
   };
 
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeItem = items.find((i) => i.id === active.id);
+    const overItem = items.find((i) => i.id === over.id);
+    if (!activeItem || !overItem) return;
+
+    // Only reorder within same category
+    if (activeItem.category_id !== overItem.category_id) return;
+
+    const categoryId = activeItem.category_id;
+    const groupItems = items
+      .filter((i) => i.category_id === categoryId)
+      .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+
+    const oldIndex = groupItems.findIndex((i) => i.id === active.id);
+    const newIndex = groupItems.findIndex((i) => i.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Reorder array
+    const reordered = [...groupItems];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+
+    // Optimistic update
+    const updatedItems = items.map((item) => {
+      const idx = reordered.findIndex((r) => r.id === item.id);
+      if (idx !== -1) return { ...item, display_order: idx };
+      return item;
+    });
+    setItems(updatedItems);
+
+    // Persist to DB
+    const updates = reordered.map((item, idx) =>
+      supabase.from("menu_items").update({ display_order: idx }).eq("id", item.id)
+    );
+    await Promise.all(updates);
+  }, [items]);
+
   const addCategory = async () => {
     if (!venue || !newCatName.trim()) return;
     const { error } = await supabase.from("menu_categories").insert({ venue_id: venue.id, name: newCatName.trim() });
