@@ -133,6 +133,7 @@ const ConsumerOrder = () => {
         if (data) {
           setDinerId(data.id);
           setDinerInfo({ first_name: data.first_name, last_name: data.last_name, email: data.email, phone: data.phone });
+          setStarted(true);
 
           // Fetch last order items for "another round"
           if (venueId) {
