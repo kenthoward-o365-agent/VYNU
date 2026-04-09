@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,9 @@ import ImageEnhancerDialog from "@/components/menu/ImageEnhancerDialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatItemTaxBreakdown, type TaxConfig } from "@/lib/tax-utils";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface MenuItem {
   id: string;
@@ -43,6 +46,10 @@ const allergenOptions = ["Gluten", "Dairy", "Nuts", "Shellfish", "Eggs", "Soy", 
 const dietaryOptions = ["Vegan", "Vegetarian", "Gluten Free", "Dairy Free", "Keto", "Halal"];
 
 export default function MenuBuilder() {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   const { venue } = useVenue();
   const [items, setItems] = useState<MenuItem[]>([]);
@@ -156,6 +163,46 @@ export default function MenuBuilder() {
     toast.success(!current ? "Item is back on the menu" : "Item 86'd");
     fetchData();
   };
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeItem = items.find((i) => i.id === active.id);
+    const overItem = items.find((i) => i.id === over.id);
+    if (!activeItem || !overItem) return;
+
+    // Only reorder within same category
+    if (activeItem.category_id !== overItem.category_id) return;
+
+    const categoryId = activeItem.category_id;
+    const groupItems = items
+      .filter((i) => i.category_id === categoryId)
+      .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+
+    const oldIndex = groupItems.findIndex((i) => i.id === active.id);
+    const newIndex = groupItems.findIndex((i) => i.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Reorder array
+    const reordered = [...groupItems];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+
+    // Optimistic update
+    const updatedItems = items.map((item) => {
+      const idx = reordered.findIndex((r) => r.id === item.id);
+      if (idx !== -1) return { ...item, display_order: idx };
+      return item;
+    });
+    setItems(updatedItems);
+
+    // Persist to DB
+    const updates = reordered.map((item, idx) =>
+      supabase.from("menu_items").update({ display_order: idx }).eq("id", item.id)
+    );
+    await Promise.all(updates);
+  }, [items]);
 
   const addCategory = async () => {
     if (!venue || !newCatName.trim()) return;
@@ -277,36 +324,45 @@ export default function MenuBuilder() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {/* Uncategorized items */}
-          {items.filter((i) => !i.category_id).length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
-              <div className="grid gap-3">
-                {items.filter((i) => !i.category_id).map((item) => (
-                  <ItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
-                ))}
-              </div>
-            </div>
-          )}
-          {categories.map((cat) => {
-            const catItems = items.filter((i) => i.category_id === cat.id);
-            return (
-              <div key={cat.id}>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{cat.name}</h3>
-                {catItems.length === 0 ? (
-                  <p className="text-sm text-muted-foreground italic">No items in this category</p>
-                ) : (
-                  <div className="grid gap-3">
-                    {catItems.map((item) => (
-                      <ItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <div className="space-y-6">
+            {/* Uncategorized items */}
+            {(() => {
+              const uncatItems = items.filter((i) => !i.category_id).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              return uncatItems.length > 0 ? (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
+                  <SortableContext items={uncatItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                    <div className="grid gap-3">
+                      {uncatItems.map((item) => (
+                        <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </div>
+              ) : null;
+            })()}
+            {categories.map((cat) => {
+              const catItems = items.filter((i) => i.category_id === cat.id).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              return (
+                <div key={cat.id}>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{cat.name}</h3>
+                  {catItems.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">No items in this category</p>
+                  ) : (
+                    <SortableContext items={catItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                      <div className="grid gap-3">
+                        {catItems.map((item) => (
+                          <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </DndContext>
       )}
 
       {/* Add/Edit dialog */}
@@ -599,17 +655,37 @@ export default function MenuBuilder() {
   );
 }
 
-function ItemCard({ item, taxes, onEdit, onDelete, onToggle }: {
+type ItemCardProps = {
   item: MenuItem;
   taxes: TaxConfig[];
   onEdit: (i: MenuItem) => void;
   onDelete: (id: string) => void;
   onToggle: (id: string, current: boolean) => void;
-}) {
+};
+
+function SortableItemCard(props: ItemCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.item.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+    opacity: isDragging ? 0.8 : undefined,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <ItemCard {...props} dragHandleProps={{ ...attributes, ...listeners }} />
+    </div>
+  );
+}
+
+function ItemCard({ item, taxes, onEdit, onDelete, onToggle, dragHandleProps }: ItemCardProps & { dragHandleProps?: Record<string, any> }) {
   const taxBreakdown = taxes.length > 0 ? formatItemTaxBreakdown(Number(item.price), taxes) : "";
   return (
     <Card className={!item.is_available ? "opacity-60" : ""}>
       <CardContent className="flex items-center gap-4 py-3 px-4">
+        <button type="button" className="cursor-grab active:cursor-grabbing touch-none shrink-0 text-muted-foreground hover:text-foreground" {...dragHandleProps}>
+          <GripVertical className="h-5 w-5" />
+        </button>
         {item.image_url ? (
           <div className="h-14 w-14 rounded-lg overflow-hidden shrink-0 border border-border">
             <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
