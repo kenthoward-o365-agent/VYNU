@@ -433,16 +433,16 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Generating: <span className="text-foreground font-medium">{genCurrentItem}</span>
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                      Generating images in the background...
                     </span>
                     <span className="text-muted-foreground">{genProgress}/{genTotal}</span>
                   </div>
-                  <Progress value={(genProgress / genTotal) * 100} className="h-2" />
+                  <Progress value={genTotal > 0 ? (genProgress / genTotal) * 100 : 0} className="h-2" />
                 </div>
                 <p className="text-xs text-muted-foreground text-center">
-                  <Loader2 className="h-3 w-3 inline animate-spin mr-1" />
-                  Generating images one at a time...
+                  You can close this dialog — generation will continue in the background.
                 </p>
                 {genResults.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
