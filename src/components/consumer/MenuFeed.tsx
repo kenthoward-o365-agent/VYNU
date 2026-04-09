@@ -98,12 +98,14 @@ const MenuItemRow = ({
   item,
   quantity,
   onQuantityChange,
+  dimmed,
 }: {
   item: MenuItem;
   quantity: number;
   onQuantityChange: (qty: number) => void;
+  dimmed?: boolean;
 }) => {
-  const isAvailable = item.is_available ?? true;
+  const isAvailable = (item.is_available ?? true) && !dimmed;
 
   return (
     <div
