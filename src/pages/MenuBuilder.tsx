@@ -76,6 +76,7 @@ export default function MenuBuilder() {
     }
   }, [searchParams]);
 
+  const fetchData = async () => {
     if (!venue) return;
     const [itemsRes, catsRes, taxesRes] = await Promise.all([
       supabase.from("menu_items").select("*").eq("venue_id", venue.id).order("display_order"),
