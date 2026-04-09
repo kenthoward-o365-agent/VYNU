@@ -6,33 +6,27 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-/**
- * Fetch an image URL and convert it to a data URL in a supported format (PNG).
- * This handles AVIF and other unsupported formats by re-encoding via canvas-less
- * approach: we just fetch the raw bytes and send as a generic data URL.
- * The AI gateway accepts data URLs with proper MIME types.
- */
-async function fetchImageAsDataUrl(imageUrl: string): Promise<string> {
-  const res = await fetch(imageUrl);
-  if (!res.ok) throw new Error(`Failed to fetch image: ${res.status}`);
+const AI_REQUEST_TIMEOUT_MS = 90_000;
 
-  const contentType = res.headers.get("content-type") || "image/png";
-  const buffer = await res.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
+async function fetchWithTimeout(
+  input: string | URL | Request,
+  init: RequestInit,
+  timeoutMs: number,
+  timeoutMessage: string
+) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  // Convert to base64
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(timeoutMessage);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  const base64 = btoa(binary);
-
-  // Map unsupported formats to a supported MIME type
-  // The AI will still process the raw bytes correctly when wrapped as data URL
-  const supportedTypes = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-  const mime = supportedTypes.includes(contentType) ? contentType : "image/webp";
-
-  return `data:${mime};base64,${base64}`;
 }
 
 serve(async (req) => {
@@ -41,9 +35,18 @@ serve(async (req) => {
   }
 
   try {
-    const { imageUrl } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const imageUrl = typeof body?.imageUrl === "string" ? body.imageUrl.trim() : "";
+
     if (!imageUrl) {
       return new Response(JSON.stringify({ error: "imageUrl is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://") && !imageUrl.startsWith("data:image/")) {
+      return new Response(JSON.stringify({ error: "imageUrl must be a valid image URL" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -57,37 +60,37 @@ serve(async (req) => {
       });
     }
 
-    // Fetch and convert image to data URL to handle AVIF and other unsupported formats
-    console.log("Fetching image:", imageUrl);
-    const dataUrl = await fetchImageAsDataUrl(imageUrl);
-    console.log("Converted to data URL, length:", dataUrl.length);
-
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+    const response = await fetchWithTimeout(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-image",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: "Enhance this food or drink photo for a mobile menu display. Improve lighting, color vibrancy, sharpness, and white balance. Make the food look appetizing and professional while keeping the subject and composition the same. Do not add text, props, or new elements.",
+                },
+                {
+                  type: "image_url",
+                  image_url: { url: imageUrl },
+                },
+              ],
+            },
+          ],
+          modalities: ["image", "text"],
+        }),
       },
-      body: JSON.stringify({
-        model: "google/gemini-3.1-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "Enhance this food/drink photo for a mobile menu display. Improve lighting, color vibrancy, sharpness, and white balance. Make the food look appetizing and professional. Keep the subject and composition identical — do not add or remove any elements.",
-              },
-              {
-                type: "image_url",
-                image_url: { url: dataUrl },
-              },
-            ],
-          },
-        ],
-        modalities: ["image", "text"],
-      }),
-    });
+      AI_REQUEST_TIMEOUT_MS,
+      "AI enhancement timed out"
+    );
 
     if (!response.ok) {
       const status = response.status;
