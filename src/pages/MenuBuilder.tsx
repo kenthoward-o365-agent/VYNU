@@ -380,7 +380,7 @@ export default function MenuBuilder() {
               ) : null;
             })()}
             {categories.map((cat) => {
-              const catItems = items.filter((i) => i.category_id === cat.id).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              const catItems = filterByDietary(items.filter((i) => i.category_id === cat.id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
               return (
                 <div key={cat.id}>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{cat.name}</h3>
