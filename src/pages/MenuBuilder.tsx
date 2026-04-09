@@ -365,7 +365,7 @@ export default function MenuBuilder() {
           <div className="space-y-6">
             {/* Uncategorized items */}
             {(() => {
-              const uncatItems = items.filter((i) => !i.category_id).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              const uncatItems = filterByDietary(items.filter((i) => !i.category_id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
               return uncatItems.length > 0 ? (
                 <div>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
