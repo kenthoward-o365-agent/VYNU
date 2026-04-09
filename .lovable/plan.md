@@ -1,42 +1,57 @@
 
 
-## Plan: Email paid receipts to diners
+## Plan: AI Image Enhancer for Menu Items
 
 ### Summary
-When an order is moved to "paid" status, automatically email the receipt to the diner (if they have an email on file). This requires setting up Lovable's email infrastructure, creating a receipt email template, and triggering the send when payment is confirmed.
+Add an "Enhance Images" feature under AI Features in the Menu Builder sidebar. When run, it fetches all menu item images that haven't been reviewed yet, sends each through Lovable AI's image editing capability (Gemini flash image model), shows before/after comparisons, and lets the operator accept enhancements individually, in bulk, or all at once.
 
-### Prerequisites
-1. **Set up email domain** — The project has no email infrastructure yet. We need to configure an email domain via the setup dialog, then run email infrastructure setup, then scaffold transactional email support.
+### Database change
+Add a column to `menu_items` to track enhancement status:
 
-### Steps
+```sql
+ALTER TABLE public.menu_items
+  ADD COLUMN image_ai_status text DEFAULT NULL;
+-- NULL = not reviewed, 'enhanced' = accepted, 'skipped' = manually skipped
+```
 
-**1. Email infrastructure setup**
-- Check email domain status; if none configured, present the domain setup dialog
-- Run `setup_email_infra` to create queues, tables, cron jobs
-- Run `scaffold_transactional_email` to create the send Edge Function and unsubscribe handling
+This lets future runs skip already-reviewed images.
 
-**2. Create receipt email template**
-- Create `supabase/functions/_shared/transactional-email-templates/order-receipt.tsx`
-- React Email component matching the existing `ReceiptView` layout: venue name, order date, table number, ABN, itemized order, tax breakdown, total paid, venue contact info
-- Register in `registry.ts`
-- Deploy edge functions
+### Edge Function: `enhance-menu-image`
+- Accepts: `{ imageUrl: string }` (the public URL of the original image)
+- Uses Lovable AI (model `google/gemini-3.1-flash-image-preview`) with the prompt: "Enhance this food/drink photo for a mobile menu. Improve lighting, color vibrancy, sharpness, and composition. Keep the subject identical."
+- Returns the enhanced image as base64
+- The client uploads the result to `venue-assets` storage bucket under `menu-items/{venue_id}/enhanced/`
 
-**3. Create unsubscribe page**
-- Add a route in the app for the unsubscribe path (determined by scaffold tool)
-- Branded page that validates token and processes unsubscribe
+### Frontend: New page/dialog at `/menu?enhance=true`
 
-**4. Trigger email on order status change to "paid"**
-- In `src/pages/Orders.tsx`, when staff moves an order to "paid" status, invoke `send-transactional-email` with:
-  - `templateName: 'order-receipt'`
-  - `recipientEmail` from the diner's profile or order customer info
-  - `templateData` with order items, venue info, taxes, total
-  - `idempotencyKey: 'receipt-{orderId}'`
-- Also trigger from `CheckoutPanel.tsx` if payment happens on the consumer side
-- Gracefully skip if no diner email is available
+1. **Sidebar link** — Add "Enhance Images" under "AI Features" in `DashboardLayout.tsx` (next to Import), linking to `/menu?enhance=true`
+
+2. **Enhancement dialog in `MenuBuilder.tsx`** — Opens when `?enhance=true` is detected (same pattern as import). Contains:
+   - A grid of before/after image cards for each menu item that has an `image_url` and `image_ai_status IS NULL`
+   - Each card shows: item name, original image (left), enhanced image (right), and a checkbox
+   - A "Run Enhancement" button that processes all unreviewed images sequentially (with a progress bar)
+   - Toolbar with "Select All" checkbox and "Accept Selected" button
+   - Accepting updates `menu_items.image_url` to the enhanced version and sets `image_ai_status = 'enhanced'`
+   - A "Skip" option per item sets `image_ai_status = 'skipped'`
+
+3. **Flow:**
+   - User clicks "Enhance Images" in sidebar
+   - Dialog opens showing count of unreviewed images
+   - User clicks "Run" — images are processed one by one via the edge function, progress bar updates
+   - After processing, before/after grid appears
+   - User checks items to accept, clicks "Accept Selected"
+   - Accepted items get their `image_url` replaced and `image_ai_status` set
+
+### Files to create/modify
+- **New**: `supabase/functions/enhance-menu-image/index.ts` — Edge function calling Lovable AI image edit
+- **Migration**: Add `image_ai_status` column to `menu_items`
+- **Modified**: `src/components/DashboardLayout.tsx` — Add "Enhance Images" link under AI Features
+- **Modified**: `src/pages/MenuBuilder.tsx` — Add enhancement dialog with before/after grid, checkboxes, and accept flow
 
 ### Technical details
-- The receipt template will use inline styles matching the app's purple primary brand
-- Tax calculation will be done before sending (pass pre-computed values as template data)
-- The Edge Function fetches nothing from the DB — all data is passed in `templateData`
-- Uses the existing `diner_profiles` email field and `order_items` join data already available at the trigger points
+- Uses `google/gemini-3.1-flash-image-preview` (fast image generation with pro-level quality) via `--edit-image` pattern
+- Enhanced images stored at `venue-assets/menu-items/{venue_id}/enhanced/{timestamp}.png`
+- Original images are preserved (only the `image_url` reference changes on acceptance)
+- Items with no image are skipped automatically
+- Rate limiting: sequential processing with 1-2s delay between items to avoid 429s
 
