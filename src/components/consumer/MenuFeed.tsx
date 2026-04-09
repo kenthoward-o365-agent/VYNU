@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, Minus, ChevronLeft, ChevronRight, Flame, Leaf, AlertTriangle, Ban } from "lucide-react";
+import { Plus, Minus, ChevronLeft, ChevronRight, Flame, Leaf, AlertTriangle, Ban, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -98,12 +98,14 @@ const MenuItemRow = ({
   item,
   quantity,
   onQuantityChange,
+  dimmed,
 }: {
   item: MenuItem;
   quantity: number;
   onQuantityChange: (qty: number) => void;
+  dimmed?: boolean;
 }) => {
-  const isAvailable = item.is_available ?? true;
+  const isAvailable = (item.is_available ?? true) && !dimmed;
 
   return (
     <div
@@ -251,12 +253,21 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  
+  const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
+
+  const allDietaryTags = Array.from(
+    new Set(items.flatMap((item) => item.dietary_tags || []))
+  ).sort();
 
   const filteredItems = items.filter((item) => {
     if (activeCategory && item.category_id !== activeCategory) return false;
     return true;
   });
+
+  const itemMatchesFilters = (item: MenuItem) => {
+    if (activeDietaryFilters.length === 0) return true;
+    return activeDietaryFilters.every((tag) => item.dietary_tags?.includes(tag));
+  };
 
   const handleCategorySelect = (id: string | null) => {
     setActiveCategory(id);
@@ -297,6 +308,44 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] relative overflow-hidden">
       <CategoryChips categories={categories} activeCategory={activeCategory} onSelect={handleCategorySelect} />
+
+      {/* Dietary filter row */}
+      {allDietaryTags.length > 0 && (
+        <ScrollArea className="w-full px-4 pb-2 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <Filter className="h-3 w-3 text-muted-foreground shrink-0" />
+            {allDietaryTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() =>
+                  setActiveDietaryFilters((prev) =>
+                    prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+                  )
+                }
+                className={cn(
+                  "px-3 py-1 rounded-full text-[10px] font-medium whitespace-nowrap transition-colors border",
+                  activeDietaryFilters.includes(tag)
+                    ? "bg-secondary text-secondary-foreground border-secondary"
+                    : "bg-card text-muted-foreground border-border hover:text-foreground"
+                )}
+              >
+                <Leaf className="h-2.5 w-2.5 inline mr-0.5" />
+                {tag}
+              </button>
+            ))}
+            {activeDietaryFilters.length > 0 && (
+              <button
+                onClick={() => setActiveDietaryFilters([])}
+                className="px-2 py-1 rounded-full text-[10px] text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      )}
+
       <div className="flex-1 overflow-y-auto px-3 pb-24">
         <div className="space-y-2 py-2">
           {filteredItems.map((item) => (
@@ -305,6 +354,7 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
               item={item}
               quantity={quantities[item.id] || 0}
               onQuantityChange={(qty) => handleQuantityChange(item.id, qty)}
+              dimmed={activeDietaryFilters.length > 0 && !itemMatchesFilters(item)}
             />
           ))}
         </div>
