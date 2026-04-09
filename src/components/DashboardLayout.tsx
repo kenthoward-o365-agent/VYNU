@@ -6,10 +6,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
   LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
-  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield
+  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield, Sparkles, Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
@@ -95,21 +96,45 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {!isTablessAdmin && venueNavItems.map((item) => {
             const active = location.pathname === item.path;
+            const isMenuBuilder = item.path === "/menu";
             return (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  active
-                    ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              <div key={item.path}>
+                <Link
+                  to={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    active
+                      ? "bg-sidebar-accent text-sidebar-primary"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  {item.label}
+                </Link>
+                {isMenuBuilder && (
+                  <Collapsible>
+                    <CollapsibleTrigger className="flex items-center gap-2 w-full px-3 py-1.5 pl-10 text-xs font-medium text-sidebar-muted hover:text-sidebar-foreground transition-colors group">
+                      <span>Settings</span>
+                      <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pl-10 space-y-0.5">
+                      <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted flex items-center gap-1.5">
+                        <Sparkles className="h-3 w-3" />
+                        AI Features
+                      </div>
+                      <Link
+                        to="/menu?import=true"
+                        onClick={() => setSidebarOpen(false)}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                      >
+                        <Upload className="h-3 w-3" />
+                        Import
+                      </Link>
+                    </CollapsibleContent>
+                  </Collapsible>
                 )}
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                {item.label}
-              </Link>
+              </div>
             );
           })}
 
