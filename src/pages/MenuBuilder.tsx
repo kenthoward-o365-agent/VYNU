@@ -46,6 +46,10 @@ const allergenOptions = ["Gluten", "Dairy", "Nuts", "Shellfish", "Eggs", "Soy", 
 const dietaryOptions = ["Vegan", "Vegetarian", "Gluten Free", "Dairy Free", "Keto", "Halal"];
 
 export default function MenuBuilder() {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   const { venue } = useVenue();
   const [items, setItems] = useState<MenuItem[]>([]);
