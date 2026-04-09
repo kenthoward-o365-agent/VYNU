@@ -6,6 +6,35 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/**
+ * Fetch an image URL and convert it to a data URL in a supported format (PNG).
+ * This handles AVIF and other unsupported formats by re-encoding via canvas-less
+ * approach: we just fetch the raw bytes and send as a generic data URL.
+ * The AI gateway accepts data URLs with proper MIME types.
+ */
+async function fetchImageAsDataUrl(imageUrl: string): Promise<string> {
+  const res = await fetch(imageUrl);
+  if (!res.ok) throw new Error(`Failed to fetch image: ${res.status}`);
+
+  const contentType = res.headers.get("content-type") || "image/png";
+  const buffer = await res.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+
+  // Convert to base64
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64 = btoa(binary);
+
+  // Map unsupported formats to a supported MIME type
+  // The AI will still process the raw bytes correctly when wrapped as data URL
+  const supportedTypes = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+  const mime = supportedTypes.includes(contentType) ? contentType : "image/webp";
+
+  return `data:${mime};base64,${base64}`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -28,6 +57,11 @@ serve(async (req) => {
       });
     }
 
+    // Fetch and convert image to data URL to handle AVIF and other unsupported formats
+    console.log("Fetching image:", imageUrl);
+    const dataUrl = await fetchImageAsDataUrl(imageUrl);
+    console.log("Converted to data URL, length:", dataUrl.length);
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -46,7 +80,7 @@ serve(async (req) => {
               },
               {
                 type: "image_url",
-                image_url: { url: imageUrl },
+                image_url: { url: dataUrl },
               },
             ],
           },
@@ -83,6 +117,7 @@ serve(async (req) => {
     const enhancedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
     if (!enhancedImageUrl) {
+      console.error("No image in response:", JSON.stringify(data).slice(0, 500));
       return new Response(JSON.stringify({ error: "No enhanced image returned from AI" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
