@@ -45,6 +45,8 @@ interface Props {
 }
 
 export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items, onComplete }: Props) {
+  const ENHANCE_REQUEST_TIMEOUT_MS = 90_000;
+  const ENHANCE_DELAY_MS = 1_500;
   const [tab, setTab] = useState("enhance");
 
   // --- Enhance state ---
@@ -75,6 +77,16 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
 
   // ========== ENHANCE LOGIC ==========
   const runEnhancement = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    };
+
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`;
+    }
+
     setProcessing(true);
     setResults([]);
     setProgress(0);
@@ -85,40 +97,59 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
     for (let i = 0; i < unreviewedItems.length; i++) {
       const item = unreviewedItems[i];
       setCurrentItem(item.name);
-      setProgress(i);
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), ENHANCE_REQUEST_TIMEOUT_MS);
 
       try {
-        const { data, error } = await supabase.functions.invoke("enhance-menu-image", {
-          body: { imageUrl: item.image_url },
-        });
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enhance-menu-image`,
+          {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ imageUrl: item.image_url }),
+            signal: controller.signal,
+          }
+        );
 
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
+        const data = await response.json().catch(() => ({}));
 
-        if (data?.enhancedImageBase64) {
-          newResults.push({
-            itemId: item.id,
-            itemName: item.name,
-            originalUrl: item.image_url,
-            enhancedBase64: data.enhancedImageBase64,
-            selected: true,
-          });
-          setResults([...newResults]);
+        if (!response.ok) {
+          throw new Error(typeof data?.error === "string" ? data.error : "AI enhancement failed");
         }
+
+        if (data?.error) throw new Error(data.error);
+        if (!data?.enhancedImageBase64) throw new Error("No enhanced image returned");
+
+        newResults.push({
+          itemId: item.id,
+          itemName: item.name,
+          originalUrl: item.image_url,
+          enhancedBase64: data.enhancedImageBase64,
+          selected: true,
+        });
+        setResults([...newResults]);
       } catch (err: any) {
         console.error(`Failed to enhance ${item.name}:`, err);
-        toast.error(`Failed to enhance "${item.name}": ${err.message || "Unknown error"}`);
+        const timedOut = err instanceof DOMException && err.name === "AbortError";
+        toast.error(
+          timedOut
+            ? `Enhancement timed out for "${item.name}" — skipped and continuing.`
+            : `Failed to enhance "${item.name}": ${err.message || "Unknown error"}`
+        );
+      } finally {
+        window.clearTimeout(timeoutId);
+        setProgress(i + 1);
       }
 
       if (i < unreviewedItems.length - 1) {
-        await new Promise((r) => setTimeout(r, 1500));
+        await new Promise((r) => window.setTimeout(r, ENHANCE_DELAY_MS));
       }
     }
 
     setProgress(unreviewedItems.length);
     setCurrentItem("");
     setProcessing(false);
-  }, [unreviewedItems]);
+  }, [ENHANCE_DELAY_MS, ENHANCE_REQUEST_TIMEOUT_MS, unreviewedItems]);
 
   const toggleSelect = (itemId: string) => {
     setResults((prev) =>
