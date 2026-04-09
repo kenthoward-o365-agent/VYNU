@@ -181,11 +181,24 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
     toast.info("Image skipped");
   };
 
-  // ========== GENERATE LOGIC (Background) ==========
-  // Check if there's already a batch running (items with queued/processing status)
+  // ========== GENERATE LOGIC (Background with chunking) ==========
+  const CHUNK_SIZE = 10;
+
   const itemsInProgress = items.filter(
     (i) => i.image_ai_status === "queued" || i.image_ai_status === "processing"
   );
+
+  // Dispatch a single chunk to the edge function
+  const dispatchChunk = useCallback(async (chunk: MissingImageItem[]) => {
+    const { data, error } = await supabase.functions.invoke("batch-generate-images", {
+      body: {
+        venueId,
+        items: chunk.map((i) => ({ id: i.id, name: i.name, description: i.description })),
+      },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+  }, [venueId]);
 
   // Clean up polling on unmount
   useEffect(() => {
@@ -198,7 +211,6 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
   useEffect(() => {
     if (genProcessing && !pollingRef.current) {
       pollingRef.current = setInterval(async () => {
-        // Check how many are still queued/processing
         const { data: pending } = await supabase
           .from("menu_items")
           .select("id, name, image_url, image_ai_status")
@@ -218,7 +230,6 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
 
         setGenProgress(generated.length + failed.length);
 
-        // Build results from completed items
         const newResults: GeneratedResult[] = generated.map((g) => ({
           itemId: g.id,
           itemName: g.name,
@@ -227,25 +238,36 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
         }));
         setGenResults(newResults);
 
+        // Current batch done — dispatch next chunk if any
         if (!pending || pending.length === 0) {
-          // All done
-          setGenProcessing(false);
-          if (pollingRef.current) {
-            clearInterval(pollingRef.current);
-            pollingRef.current = null;
+          const nextChunk = pendingQueueRef.current.splice(0, CHUNK_SIZE);
+          if (nextChunk.length > 0) {
+            try {
+              await dispatchChunk(nextChunk);
+            } catch (err: any) {
+              console.error("Failed to dispatch next chunk:", err);
+              toast.error(`Batch error: ${err.message}`);
+            }
+          } else {
+            // All chunks done
+            setGenProcessing(false);
+            if (pollingRef.current) {
+              clearInterval(pollingRef.current);
+              pollingRef.current = null;
+            }
+            if (failed.length > 0) {
+              toast.error(`${failed.length} image(s) failed to generate`);
+            }
+            if (generated.length > 0) {
+              toast.success(`${generated.length} image(s) generated successfully`);
+            }
+            onComplete();
           }
-          if (failed.length > 0) {
-            toast.error(`${failed.length} image(s) failed to generate`);
-          }
-          if (generated.length > 0) {
-            toast.success(`${generated.length} image(s) generated successfully`);
-          }
-          onComplete();
         }
       }, 3000);
     }
     return () => {};
-  }, [genProcessing, venueId, onComplete]);
+  }, [genProcessing, venueId, onComplete, dispatchChunk]);
 
   const runGeneration = useCallback(async () => {
     if (missingImageItems.length === 0) return;
@@ -255,28 +277,19 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
     setGenProgress(0);
     setGenTotal(missingImageItems.length);
 
+    // Split into first chunk + remaining
+    const firstChunk = missingImageItems.slice(0, CHUNK_SIZE);
+    pendingQueueRef.current = missingImageItems.slice(CHUNK_SIZE);
+
     try {
-      const { data, error } = await supabase.functions.invoke("batch-generate-images", {
-        body: {
-          venueId,
-          items: missingImageItems.map((i) => ({
-            id: i.id,
-            name: i.name,
-            description: i.description,
-          })),
-        },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      toast.info(`Generation started for ${missingImageItems.length} items. You can close this dialog — it will continue in the background.`);
+      await dispatchChunk(firstChunk);
+      toast.info(`Generation started for ${missingImageItems.length} items (processing ${CHUNK_SIZE} at a time). You can close this dialog.`);
     } catch (err: any) {
       console.error("Failed to start batch generation:", err);
       toast.error(`Failed to start generation: ${err.message || "Unknown error"}`);
       setGenProcessing(false);
     }
-  }, [missingImageItems, venueId]);
+  }, [missingImageItems, dispatchChunk]);
 
   // On dialog open, check if there's an active batch
   useEffect(() => {
