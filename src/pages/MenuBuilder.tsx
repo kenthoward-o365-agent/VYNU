@@ -76,6 +76,11 @@ export default function MenuBuilder() {
       searchParams.delete("import");
       setSearchParams(searchParams, { replace: true });
     }
+    if (searchParams.get("enhance") === "true") {
+      setEnhanceDialogOpen(true);
+      searchParams.delete("enhance");
+      setSearchParams(searchParams, { replace: true });
+    }
   }, [searchParams]);
 
   const fetchData = async () => {
