@@ -131,6 +131,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         <Upload className="h-3 w-3" />
                         Import
                       </Link>
+                      <Link
+                        to="/menu?enhance=true"
+                        onClick={() => setSidebarOpen(false)}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                      >
+                        <ImagePlus className="h-3 w-3" />
+                        Enhance Images
+                      </Link>
                     </CollapsibleContent>
                   </Collapsible>
                 )}
