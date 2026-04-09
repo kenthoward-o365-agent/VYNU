@@ -180,51 +180,111 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
     toast.info("Image skipped");
   };
 
-  // ========== GENERATE LOGIC ==========
+  // ========== GENERATE LOGIC (Background) ==========
+  // Check if there's already a batch running (items with queued/processing status)
+  const itemsInProgress = items.filter(
+    (i) => i.image_ai_status === "queued" || i.image_ai_status === "processing"
+  );
+
+  // Clean up polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
+
+  // Start polling when generation is in progress
+  useEffect(() => {
+    if (genProcessing && !pollingRef.current) {
+      pollingRef.current = setInterval(async () => {
+        // Check how many are still queued/processing
+        const { data: pending } = await supabase
+          .from("menu_items")
+          .select("id, name, image_url, image_ai_status")
+          .eq("venue_id", venueId)
+          .in("image_ai_status", ["queued", "processing"] as any[]);
+
+        const { data: completed } = await supabase
+          .from("menu_items")
+          .select("id, name, image_url, image_ai_status")
+          .eq("venue_id", venueId)
+          .in("image_ai_status", ["generated", "failed"] as any[]);
+
+        const generated = (completed || []).filter(
+          (c) => c.image_ai_status === "generated" && c.image_url
+        );
+        const failed = (completed || []).filter((c) => c.image_ai_status === "failed");
+
+        setGenProgress(generated.length + failed.length);
+
+        // Build results from completed items
+        const newResults: GeneratedResult[] = generated.map((g) => ({
+          itemId: g.id,
+          itemName: g.name,
+          generatedBase64: g.image_url!,
+          selected: true,
+        }));
+        setGenResults(newResults);
+
+        if (!pending || pending.length === 0) {
+          // All done
+          setGenProcessing(false);
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          if (failed.length > 0) {
+            toast.error(`${failed.length} image(s) failed to generate`);
+          }
+          if (generated.length > 0) {
+            toast.success(`${generated.length} image(s) generated successfully`);
+          }
+          onComplete();
+        }
+      }, 3000);
+    }
+    return () => {};
+  }, [genProcessing, venueId, onComplete]);
+
   const runGeneration = useCallback(async () => {
+    if (missingImageItems.length === 0) return;
+
     setGenProcessing(true);
     setGenResults([]);
     setGenProgress(0);
     setGenTotal(missingImageItems.length);
 
-    const newResults: GeneratedResult[] = [];
+    try {
+      const { data, error } = await supabase.functions.invoke("batch-generate-images", {
+        body: {
+          venueId,
+          items: missingImageItems.map((i) => ({
+            id: i.id,
+            name: i.name,
+            description: i.description,
+          })),
+        },
+      });
 
-    for (let i = 0; i < missingImageItems.length; i++) {
-      const item = missingImageItems[i];
-      setGenCurrentItem(item.name);
-      setGenProgress(i);
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      try {
-        const { data, error } = await supabase.functions.invoke("generate-menu-image", {
-          body: { itemName: item.name, itemDescription: item.description },
-        });
-
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-
-        if (data?.generatedImageBase64) {
-          newResults.push({
-            itemId: item.id,
-            itemName: item.name,
-            generatedBase64: data.generatedImageBase64,
-            selected: true,
-          });
-          setGenResults([...newResults]);
-        }
-      } catch (err: any) {
-        console.error(`Failed to generate image for ${item.name}:`, err);
-        toast.error(`Failed to generate "${item.name}": ${err.message || "Unknown error"}`);
-      }
-
-      if (i < missingImageItems.length - 1) {
-        await new Promise((r) => setTimeout(r, 1500));
-      }
+      toast.info(`Generation started for ${missingImageItems.length} items. You can close this dialog — it will continue in the background.`);
+    } catch (err: any) {
+      console.error("Failed to start batch generation:", err);
+      toast.error(`Failed to start generation: ${err.message || "Unknown error"}`);
+      setGenProcessing(false);
     }
+  }, [missingImageItems, venueId]);
 
-    setGenProgress(missingImageItems.length);
-    setGenCurrentItem("");
-    setGenProcessing(false);
-  }, [missingImageItems]);
+  // On dialog open, check if there's an active batch
+  useEffect(() => {
+    if (open && itemsInProgress.length > 0 && !genProcessing) {
+      setGenProcessing(true);
+      setGenTotal(itemsInProgress.length + missingImageItems.length);
+      setTab("generate");
+    }
+  }, [open]);
 
   const toggleGenSelect = (itemId: string) => {
     setGenResults((prev) =>
@@ -238,47 +298,17 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
   };
 
   const acceptGenSelected = async () => {
-    const selected = genResults.filter((r) => r.selected);
-    if (selected.length === 0) { toast.error("No images selected"); return; }
-
-    setGenAccepting(true);
-    for (const result of selected) {
-      try {
-        const base64Data = result.generatedBase64.replace(/^data:image\/\w+;base64,/, "");
-        const binaryString = atob(base64Data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-        const blob = new Blob([bytes], { type: "image/png" });
-
-        const path = `menu-items/${venueId}/generated/${result.itemId}-${Date.now()}.png`;
-        const { error: uploadError } = await supabase.storage
-          .from("venue-assets")
-          .upload(path, blob, { contentType: "image/png", upsert: true });
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage.from("venue-assets").getPublicUrl(path);
-
-        const { error: updateError } = await supabase
-          .from("menu_items")
-          .update({ image_url: urlData.publicUrl, image_ai_status: "generated" as any })
-          .eq("id", result.itemId);
-        if (updateError) throw updateError;
-      } catch (err: any) {
-        console.error(`Failed to save generated image for ${result.itemName}:`, err);
-        toast.error(`Failed to save "${result.itemName}": ${err.message}`);
-      }
-    }
-
-    setGenAccepting(false);
-    toast.success(`${selected.length} image(s) generated and saved`);
+    // Images are already saved by the edge function — just close
+    toast.success("Images have been saved to your menu");
     onComplete();
     onOpenChange(false);
     setGenResults([]);
   };
 
-  const skipGenItem = (itemId: string) => {
+  const skipGenItem = async (itemId: string) => {
+    await supabase.from("menu_items").update({ image_ai_status: "skipped" as any, image_url: null }).eq("id", itemId);
     setGenResults((prev) => prev.filter((r) => r.itemId !== itemId));
-    toast.info("Image skipped");
+    toast.info("Image skipped — original removed");
   };
 
   const selectedCount = results.filter((r) => r.selected).length;
