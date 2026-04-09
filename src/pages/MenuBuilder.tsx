@@ -324,36 +324,45 @@ export default function MenuBuilder() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {/* Uncategorized items */}
-          {items.filter((i) => !i.category_id).length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
-              <div className="grid gap-3">
-                {items.filter((i) => !i.category_id).map((item) => (
-                  <ItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
-                ))}
-              </div>
-            </div>
-          )}
-          {categories.map((cat) => {
-            const catItems = items.filter((i) => i.category_id === cat.id);
-            return (
-              <div key={cat.id}>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{cat.name}</h3>
-                {catItems.length === 0 ? (
-                  <p className="text-sm text-muted-foreground italic">No items in this category</p>
-                ) : (
-                  <div className="grid gap-3">
-                    {catItems.map((item) => (
-                      <ItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <div className="space-y-6">
+            {/* Uncategorized items */}
+            {(() => {
+              const uncatItems = items.filter((i) => !i.category_id).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              return uncatItems.length > 0 ? (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
+                  <SortableContext items={uncatItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                    <div className="grid gap-3">
+                      {uncatItems.map((item) => (
+                        <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </div>
+              ) : null;
+            })()}
+            {categories.map((cat) => {
+              const catItems = items.filter((i) => i.category_id === cat.id).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              return (
+                <div key={cat.id}>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{cat.name}</h3>
+                  {catItems.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">No items in this category</p>
+                  ) : (
+                    <SortableContext items={catItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+                      <div className="grid gap-3">
+                        {catItems.map((item) => (
+                          <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </DndContext>
       )}
 
       {/* Add/Edit dialog */}
