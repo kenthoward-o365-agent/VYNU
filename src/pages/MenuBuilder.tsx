@@ -344,6 +344,7 @@ export default function MenuBuilder() {
       </div>
 
       {/* Item list grouped by category */}
+      {categories.length === 0 && items.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <UtensilsCrossed className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
