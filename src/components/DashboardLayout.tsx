@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
   LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
-  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield, Sparkles, Upload
+  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield, Sparkles, Upload, ImagePlus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
