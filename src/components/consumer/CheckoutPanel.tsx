@@ -61,12 +61,28 @@ const CheckoutPanel = ({
   const [loadingCards, setLoadingCards] = useState(false);
   const [paymentEnabled, setPaymentEnabled] = useState<boolean | null>(null);
   const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
+  const [gratuityOptions, setGratuityOptions] = useState<{ label: string; percent: number }[]>([]);
+  const [gratuityEnabled, setGratuityEnabled] = useState(false);
+  const [selectedTip, setSelectedTip] = useState<number | null>(null);
 
   useEffect(() => {
     checkPaymentEnabled();
     fetchVenueTaxes();
+    fetchGratuityConfig();
     if (dinerId) fetchStoredCards();
   }, [venueId, dinerId]);
+
+  const fetchGratuityConfig = async () => {
+    const { data } = await supabase.rpc("get_venue_public_info", { _venue_id: venueId });
+    const settings = (data as any)?.[0]?.settings;
+    const grat = settings?.gratuities;
+    if (grat?.enabled && grat?.options?.length) {
+      setGratuityEnabled(true);
+      setGratuityOptions(grat.options);
+    }
+  };
+
+  const tipAmount = selectedTip !== null ? selectedTip : 0;
 
   const fetchVenueTaxes = async () => {
     const { data } = await supabase
@@ -161,9 +177,10 @@ const CheckoutPanel = ({
           id: orderId,
           venue_id: venueId,
           table_id: tableId,
-          total,
+          total: total + tipAmount,
           status: "received" as const,
           customer_id: authUserId,
+          customer_notes: tipAmount > 0 ? `Tip: $${tipAmount.toFixed(2)}` : null,
         });
 
       if (orderError) throw orderError;
@@ -194,7 +211,7 @@ const CheckoutPanel = ({
         const paymentBody: any = {
           action: "create_payment",
           venue_id: venueId,
-          amount: total,
+          amount: total + tipAmount,
           currency: "AUD",
           reference: `order_${orderId}`,
           return_url: window.location.href,
@@ -327,6 +344,45 @@ const CheckoutPanel = ({
             );
           })()}
         </div>
+
+        {/* Gratuity Prompt */}
+        {gratuityEnabled && (
+          <div className="space-y-3">
+            <Separator />
+            <p className="text-sm font-semibold text-center">Add a tip?</p>
+            <div className="grid grid-cols-3 gap-2">
+              {gratuityOptions.map((opt, i) => {
+                const tipVal = parseFloat((total * opt.percent / 100).toFixed(2));
+                const isSelected = selectedTip === tipVal;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedTip(isSelected ? null : tipVal)}
+                    className={`rounded-xl border p-3 text-center transition-colors ${
+                      isSelected ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/50"
+                    }`}
+                  >
+                    <span className="block text-sm font-semibold">{opt.label}</span>
+                    <span className="block text-xs text-muted-foreground">{opt.percent}%</span>
+                    <span className="block text-sm font-medium mt-1">${tipVal.toFixed(2)}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => setSelectedTip(null)}
+              className="w-full text-center text-sm text-muted-foreground hover:text-foreground py-1 transition-colors"
+            >
+              No thanks
+            </button>
+            {selectedTip !== null && selectedTip > 0 && (
+              <div className="flex justify-between text-sm font-medium">
+                <span>Tip</span>
+                <span>${selectedTip.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {paymentEnabled === false && (
           <div className="bg-muted rounded-xl p-4 text-center">
@@ -497,8 +553,8 @@ const CheckoutPanel = ({
           {processing
             ? "Processing..."
             : paymentEnabled
-            ? `Pay $${total.toFixed(2)}`
-            : `Confirm Order — $${total.toFixed(2)}`}
+            ? `Pay $${(total + tipAmount).toFixed(2)}`
+            : `Confirm Order — $${(total + tipAmount).toFixed(2)}`}
         </Button>
       </div>
     </div>

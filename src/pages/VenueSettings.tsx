@@ -503,9 +503,157 @@ export default function VenueSettings() {
             <TabsContent value="taxes" className="space-y-6">
               <TaxSettingsTab venueId={venue.id} />
             </TabsContent>
+            <TabsContent value="gratuities" className="space-y-6">
+              <GratuitiesSettingsTab venueId={venue.id} />
+            </TabsContent>
           </>
         )}
       </Tabs>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   GRATUITIES TAB
+   ═══════════════════════════════════════════ */
+interface GratuityOption {
+  label: string;
+  percent: number;
+}
+
+interface GratuitiesConfig {
+  enabled: boolean;
+  options: GratuityOption[];
+}
+
+const defaultGratuities: GratuitiesConfig = {
+  enabled: false,
+  options: [
+    { label: "Good", percent: 10 },
+    { label: "Great", percent: 15 },
+    { label: "Amazing", percent: 20 },
+  ],
+};
+
+function GratuitiesSettingsTab({ venueId }: { venueId: string }) {
+  const [config, setConfig] = useState<GratuitiesConfig>(defaultGratuities);
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const sampleTotal = 30.0;
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("venues").select("settings").eq("id", venueId).single();
+      const existing = (data?.settings as any)?.gratuities as GratuitiesConfig | undefined;
+      if (existing) setConfig(existing);
+      setLoaded(true);
+    })();
+  }, [venueId]);
+
+  const save = async () => {
+    setSaving(true);
+    const { data: current } = await supabase.from("venues").select("settings").eq("id", venueId).single();
+    const merged = { ...((current?.settings as any) || {}), gratuities: config };
+    const { error } = await supabase.from("venues").update({ settings: merged }).eq("id", venueId);
+    if (error) toast.error(error.message);
+    else toast.success("Gratuity settings saved");
+    setSaving(false);
+  };
+
+  const updateOption = (index: number, field: keyof GratuityOption, value: string | number) => {
+    setConfig((prev) => {
+      const opts = [...prev.options];
+      opts[index] = { ...opts[index], [field]: value };
+      return { ...prev, options: opts };
+    });
+  };
+
+  if (!loaded) return <p className="text-muted-foreground">Loading...</p>;
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Gratuities
+              </CardTitle>
+              <CardDescription>Allow diners to add a tip during checkout. Configure three suggestion buttons with custom labels and percentages.</CardDescription>
+            </div>
+            <Switch checked={config.enabled} onCheckedChange={(v) => setConfig((c) => ({ ...c, enabled: v }))} />
+          </div>
+        </CardHeader>
+        {config.enabled && (
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <Label className="text-sm font-semibold">Suggestion Buttons</Label>
+              <p className="text-xs text-muted-foreground">
+                Configure the three tip options shown to diners. Each button displays your label and the calculated tip amount based on the order total.
+              </p>
+              {config.options.map((opt, i) => (
+                <div key={i} className="flex items-end gap-3">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs text-muted-foreground">Button Label</Label>
+                    <Input
+                      value={opt.label}
+                      onChange={(e) => updateOption(i, "label", e.target.value)}
+                      placeholder="e.g. Great"
+                    />
+                  </div>
+                  <div className="w-24 space-y-1">
+                    <Label className="text-xs text-muted-foreground">Percentage</Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={opt.percent}
+                        onChange={(e) => updateOption(i, "percent", Number(e.target.value))}
+                        className="pr-7"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Separator />
+
+            {/* Live Preview */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">Preview</Label>
+              <p className="text-xs text-muted-foreground">
+                How the gratuity prompt will appear to diners at checkout (based on a ${sampleTotal.toFixed(2)} order).
+              </p>
+              <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
+                <p className="text-sm font-medium text-center">Add a tip?</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {config.options.map((opt, i) => (
+                    <button
+                      key={i}
+                      className="rounded-xl border border-border bg-card p-3 text-center hover:border-primary transition-colors"
+                    >
+                      <span className="block text-sm font-semibold">{opt.label}</span>
+                      <span className="block text-xs text-muted-foreground">{opt.percent}%</span>
+                      <span className="block text-sm font-medium mt-1">${(sampleTotal * opt.percent / 100).toFixed(2)}</span>
+                    </button>
+                  ))}
+                </div>
+                <button className="w-full text-center text-sm text-muted-foreground hover:text-foreground py-2 transition-colors">
+                  No thanks
+                </button>
+              </div>
+            </div>
+
+            <Button onClick={save} disabled={saving}>
+              {saving ? "Saving..." : "Save Gratuity Settings"}
+            </Button>
+          </CardContent>
+        )}
+      </Card>
     </div>
   );
 }
