@@ -108,88 +108,63 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             const isMenuBuilder = item.path === "/menu";
             const isDiners = item.path === "/diners";
             const isSettings = item.path === "/settings";
+            const hasSub = isMenuBuilder || isDiners || isSettings;
             return (
-              <div key={item.path}>
-                <Link
-                  to={item.path}
-                  onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    active
-                      ? "bg-sidebar-accent text-sidebar-primary"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  <item.icon className="h-4 w-4 shrink-0" />
-                  {item.label}
-                </Link>
-                {isMenuBuilder && (
-                  <Collapsible>
-                    <CollapsibleTrigger className="flex items-center gap-2 w-full px-3 py-1.5 pl-10 text-xs font-medium text-sidebar-muted hover:text-sidebar-foreground transition-colors group">
-                      <span>Settings</span>
-                      <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]:rotate-180" />
+              <Collapsible key={item.path} defaultOpen={
+                (isDiners && location.pathname.startsWith("/diners/")) ||
+                (isSettings && location.pathname === "/settings") ||
+                false
+              }>
+                <div className="flex items-center">
+                  <Link
+                    to={item.path}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      active
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {item.label}
+                  </Link>
+                  {hasSub && (
+                    <CollapsibleTrigger className="p-2 rounded-md text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors group">
+                      <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-180" />
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="pl-10 space-y-0.5">
-                      <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted flex items-center gap-1.5">
-                        <Sparkles className="h-3 w-3" />
-                        AI Features
-                      </div>
-                      <Link
-                        to="/menu?import=true"
-                        onClick={() => setSidebarOpen(false)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                      >
-                        <Upload className="h-3 w-3" />
-                        Import
-                      </Link>
-                      <Link
-                        to="/menu?enhance=true"
-                        onClick={() => setSidebarOpen(false)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                      >
-                        <ImagePlus className="h-3 w-3" />
-                        Enhance Images
-                      </Link>
-                      <Link
-                        to="/modifiers"
-                        onClick={() => setSidebarOpen(false)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                      >
-                        <SlidersHorizontal className="h-3 w-3" />
-                        Modifiers
-                      </Link>
-                    </CollapsibleContent>
-                  </Collapsible>
+                  )}
+                </div>
+                {isMenuBuilder && (
+                  <CollapsibleContent className="pl-10 space-y-0.5">
+                    <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted flex items-center gap-1.5">
+                      <Sparkles className="h-3 w-3" />
+                      AI Features
+                    </div>
+                    <Link to="/menu?import=true" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
+                      <Upload className="h-3 w-3" />
+                      Import
+                    </Link>
+                    <Link to="/menu?enhance=true" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
+                      <ImagePlus className="h-3 w-3" />
+                      Enhance Images
+                    </Link>
+                    <Link to="/modifiers" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
+                      <SlidersHorizontal className="h-3 w-3" />
+                      Modifiers
+                    </Link>
+                  </CollapsibleContent>
                 )}
                 {isDiners && (
-                  <Collapsible defaultOpen={location.pathname.startsWith("/diners/")}>
-                    <CollapsibleTrigger className="flex items-center gap-2 w-full px-3 py-1.5 pl-10 text-xs font-medium text-sidebar-muted hover:text-sidebar-foreground transition-colors group">
-                      <span>Settings</span>
-                      <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]:rotate-180" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="pl-10 space-y-0.5">
-                      <Link
-                        to="/diners/preferences"
-                        onClick={() => setSidebarOpen(false)}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors",
-                          location.pathname === "/diners/preferences"
-                            ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                      >
-                        <Settings className="h-3 w-3" />
-                        Diner Preferences
-                      </Link>
-                    </CollapsibleContent>
-                  </Collapsible>
+                  <CollapsibleContent className="pl-10 space-y-0.5">
+                    <Link to="/diners/preferences" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/diners/preferences" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
+                      <Settings className="h-3 w-3" />
+                      Diner Preferences
+                    </Link>
+                  </CollapsibleContent>
                 )}
                 {isSettings && (
-                  <Collapsible defaultOpen={location.pathname === "/settings"}>
-                    <CollapsibleTrigger className="flex items-center gap-2 w-full px-3 py-1.5 pl-10 text-xs font-medium text-sidebar-muted hover:text-sidebar-foreground transition-colors group">
-                      <span>Sections</span>
-                      <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]:rotate-180" />
-                    </CollapsibleTrigger>
+                  <CollapsibleContent className="pl-10 space-y-0.5">
                     <CollapsibleContent className="pl-10 space-y-0.5">
                       {[
                         { to: "/settings?tab=details", label: "Details", icon: Settings },
