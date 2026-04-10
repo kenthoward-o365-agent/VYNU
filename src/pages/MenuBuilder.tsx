@@ -413,18 +413,25 @@ export default function MenuBuilder() {
             <Textarea placeholder="Description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Input type="number" step="0.01" placeholder="Price ($)" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
+                <Label className="text-sm font-medium mb-1.5 block">Price ($)</Label>
+                <Input type="number" step="0.01" min="0" placeholder="0.00" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
                 {form.price && parseFloat(form.price) > 0 && venueTaxes.length > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
                     {formatItemTaxBreakdown(parseFloat(form.price), venueTaxes)}
                   </p>
                 )}
               </div>
-              <Input type="number" placeholder="Prep time (min)" value={form.prep_time_minutes} onChange={(e) => setForm((f) => ({ ...f, prep_time_minutes: e.target.value }))} />
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">Prep time (min)</Label>
+                <Input type="number" placeholder="e.g. 15" value={form.prep_time_minutes} onChange={(e) => setForm((f) => ({ ...f, prep_time_minutes: e.target.value }))} />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Input type="number" step="0.01" placeholder="Food cost ($)" value={form.food_cost} onChange={(e) => setForm((f) => ({ ...f, food_cost: e.target.value }))} />
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">Food cost ($)</Label>
+                <Input type="number" step="0.01" min="0" placeholder="0.00" value={form.food_cost} onChange={(e) => setForm((f) => ({ ...f, food_cost: e.target.value }))} />
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground pt-7">
                 {margin(form.price, form.food_cost) && <span>Margin: {margin(form.price, form.food_cost)}%</span>}
               </div>
             </div>
