@@ -349,7 +349,7 @@ const CheckoutPanel = ({
         {gratuityEnabled && (
           <div className="space-y-3">
             <Separator />
-            <p className="text-sm font-semibold text-center">Add a tip?</p>
+            <p className="text-sm font-semibold text-center">{gratuityConfig?.prompt || "Add a tip?"}</p>
             <div className="grid grid-cols-3 gap-2">
               {gratuityOptions.map((opt, i) => {
                 const tipVal = parseFloat((total * opt.percent / 100).toFixed(2));
