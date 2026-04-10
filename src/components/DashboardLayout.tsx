@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
   LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
-  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield, Sparkles, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, BarChart3, CreditCard, Receipt, HelpCircle, DollarSign, Percent
+  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield, Sparkles, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, BarChart3, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -28,7 +28,7 @@ const venueNavItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/sippa-analytics", label: "Sippa AI Analytics", icon: BarChart3 },
   { path: "/menu", label: "Menu Builder", icon: UtensilsCrossed, hasSub: true },
-  { path: "/pricing", label: "Pricing", icon: Tag },
+  { path: "/pricing", label: "Pricing", icon: Tag, hasSub: true },
   { path: "/tables", label: "Tables & QR", icon: QrCode },
   { path: "/orders", label: "Orders", icon: ClipboardList },
   { path: "/analytics", label: "Analytics", icon: TrendingUp },
@@ -104,11 +104,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {!isTablessAdmin && venueNavItems.map((item) => {
-            const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners"));
+            const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners")) || (item.path === "/pricing" && location.pathname === "/menu-times");
             const isMenuBuilder = item.path === "/menu";
             const isDiners = item.path === "/diners";
             const isSettings = item.path === "/settings";
-            const hasSub = isMenuBuilder || isDiners || isSettings;
+            const isPricing = item.path === "/pricing";
+            const hasSub = isMenuBuilder || isDiners || isSettings || isPricing;
             return (
               <Collapsible key={item.path} defaultOpen={
                 (isDiners && location.pathname.startsWith("/diners/")) ||
@@ -137,10 +138,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </div>
                 {isMenuBuilder && (
                   <CollapsibleContent className="pl-10 space-y-0.5">
-                    <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-sidebar-muted flex items-center gap-1.5">
-                      <Sparkles className="h-3 w-3" />
-                      AI Features
-                    </div>
                     <Link to="/menu?import=true" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
                       <Upload className="h-3 w-3" />
                       Import
@@ -152,6 +149,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     <Link to="/modifiers" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
                       <SlidersHorizontal className="h-3 w-3" />
                       Modifiers
+                    </Link>
+                  </CollapsibleContent>
+                )}
+                {isPricing && (
+                  <CollapsibleContent className="pl-10 space-y-0.5">
+                    <Link to="/menu-times" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/menu-times" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
+                      <Clock className="h-3 w-3" />
+                      Menu Times
                     </Link>
                   </CollapsibleContent>
                 )}
