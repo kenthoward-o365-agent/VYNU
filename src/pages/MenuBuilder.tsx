@@ -96,14 +96,16 @@ export default function MenuBuilder() {
 
   const fetchData = async () => {
     if (!venue) return;
-    const [itemsRes, catsRes, taxesRes] = await Promise.all([
+    const [itemsRes, catsRes, taxesRes, tfRes] = await Promise.all([
       supabase.from("menu_items").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("menu_categories").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("venue_taxes" as any).select("*").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
+      supabase.from("menu_time_frames").select("id, name").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
     ]);
     setItems((itemsRes.data as MenuItem[]) || []);
     setCategories((catsRes.data as Category[]) || []);
     setVenueTaxes((taxesRes.data as any as TaxConfig[]) || []);
+    setTimeFrames((tfRes.data as any[]) || []);
   };
 
   useEffect(() => { fetchData(); }, [venue]);
