@@ -122,6 +122,14 @@ const ConsumerOrder = () => {
       if (aiConfig?.agent_name) setAgentName(aiConfig.agent_name);
       if (aiConfig?.agent_icon_url) setAgentIconUrl(aiConfig.agent_icon_url);
 
+      // Load upsell config from venue settings
+      if (venueRes.data) {
+        const settings = (venueRes.data as any).settings as Record<string, any> | null;
+        const upsell = settings?.upsell;
+        upsellConfigRef.current = upsell;
+        setUpsellEnabled(upsell?.enabled !== false);
+      }
+
       setLoading(false);
     };
 
@@ -225,6 +233,38 @@ const ConsumerOrder = () => {
     return () => { supabase.removeChannel(channel); };
   }, [activeOrder?.id]);
 
+  const fetchUpsell = useCallback(async (item: { id: string; name: string; price: number }) => {
+    if (!upsellEnabled || !venue || shownUpsells.has(item.id)) return;
+    const cfg = upsellConfigRef.current;
+    if (cfg && cfg.contextual_pairing === false) return;
+
+    shownUpsells.add(item.id);
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upsell-suggest`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            trigger: "contextual_pairing",
+            added_item: item,
+            menu_items: menuItems,
+            venue_name: venue.name,
+          }),
+        }
+      );
+      const data = await resp.json();
+      if (data.suggestions?.[0] && !dismissedSuggestions.has(data.suggestions[0].item_id)) {
+        setUpsellSuggestion(data.suggestions[0]);
+      }
+    } catch (e) {
+      console.error("Upsell fetch error:", e);
+    }
+  }, [upsellEnabled, venue, menuItems, shownUpsells, dismissedSuggestions]);
+
   const addToCart = useCallback((item: { id: string; name: string; price: number }) => {
     setCart((prev) => {
       const existing = prev.find((c) => c.id === item.id);
@@ -234,7 +274,8 @@ const ConsumerOrder = () => {
       return [...prev, { id: item.id, name: item.name, price: item.price, quantity: 1 }];
     });
     toast.success(`Added ${item.name}`, { duration: 1500 });
-  }, []);
+    fetchUpsell(item);
+  }, [fetchUpsell]);
 
   const updateQuantity = (id: string, delta: number) => {
     setCart((prev) =>
@@ -377,6 +418,12 @@ const ConsumerOrder = () => {
           onRemove={removeFromCart}
           onPlaceOrder={() => setShowCheckout(true)}
           loading={false}
+          venueId={venueId}
+          venueName={venue?.name}
+          menuItems={menuItems}
+          dismissedSuggestions={dismissedSuggestions}
+          onAddToCart={addToCart}
+          onDismissSuggestion={(id) => dismissedSuggestions.add(id)}
         />
       )}
       {tab === "cart" && showCheckout && resolvedTableId && (
