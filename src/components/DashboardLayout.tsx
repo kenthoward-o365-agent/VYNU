@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
   LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
-  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield, Sparkles, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, BarChart3, CreditCard, Receipt, HelpCircle
+  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield, Sparkles, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, BarChart3, CreditCard, Receipt, HelpCircle, DollarSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -197,6 +197,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         { to: "/settings?tab=loyalty", label: "Loyalty", icon: Gift },
                         { to: "/settings?tab=sippa", label: "Sippa AI", icon: Bot },
                         { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
+                        { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
                         { to: "/settings?tab=taxes", label: "Taxes", icon: Receipt },
                       ].map((sub) => {
                         const params = new URLSearchParams(location.search);
