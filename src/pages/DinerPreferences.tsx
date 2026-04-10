@@ -141,7 +141,7 @@ export default function DinerPreferences() {
               <div>
                 <CardTitle className="text-base">Personalised Welcome Message</CardTitle>
                 <CardDescription>
-                  Greet returning diners by name and loyalty tier when they log in.
+                  Greet returning diners with a personalised message based on their loyalty tier when they open the ordering experience. Messages can include their name, tier level, and visit count using merge fields. Each loyalty tier (Bronze, Silver, Gold) can have its own tailored greeting to make higher-tier guests feel recognised.
                 </CardDescription>
               </div>
             </div>
@@ -225,7 +225,7 @@ export default function DinerPreferences() {
               <div>
                 <CardTitle className="text-base">Predictive Dining</CardTitle>
                 <CardDescription>
-                  AI predicts what the diner wants based on context — not just past orders.
+                  Go beyond "previous orders" — Sippa AI predicts what the diner actually wants right now. It analyses time of day (lunch vs dinner habits), weather conditions (comfort food on rainy days, lighter dishes when it's hot), and party size behaviour to build a "likely basket" before the diner even browses. Returning diners see instant suggestions like "Want your usual Friday night order?" — increasing speed to order and average ticket value.
                 </CardDescription>
               </div>
             </div>
@@ -250,19 +250,19 @@ export default function DinerPreferences() {
                 {
                   key: "time_based" as const,
                   label: "Time-Based Suggestions",
-                  desc: "Adapt recommendations to lunch vs dinner habits",
+                  desc: "Learns each diner's ordering patterns by time of day — suggests lighter meals at lunch and heartier dishes at dinner. Adapts to weekday vs weekend habits automatically.",
                   icon: Clock,
                 },
                 {
                   key: "weather_aware" as const,
                   label: "Weather-Aware Suggestions",
-                  desc: "Rain → comfort food, hot day → lighter items",
+                  desc: "Integrates local weather data to adjust recommendations. Rainy days promote soups, warm drinks, and comfort food. Hot days surface salads, cold beverages, and lighter fare.",
                   icon: CloudRain,
                 },
                 {
                   key: "party_size" as const,
                   label: "Party Size Detection",
-                  desc: "Detect group size via order behaviour or device count",
+                  desc: "Detects group size via concurrent device count or order behaviour (e.g. multiple separate items). Suggests sharing plates, platters, or bottles for larger groups to increase per-table spend.",
                   icon: Users,
                 },
               ].map(({ key, label, desc, icon: Icon }) => (
@@ -300,7 +300,7 @@ export default function DinerPreferences() {
               <div>
                 <CardTitle className="text-base">Order Again</CardTitle>
                 <CardDescription>
-                  Show a quick-reorder button for the diner's previous orders.
+                  When a returning diner opens the ordering experience, they're presented with a "Order Again" button showing their most recent past orders in date order. One tap re-adds the entire order to their cart — reducing friction and speeding up repeat visits. Ideal for regulars who tend to order the same meals.
                 </CardDescription>
               </div>
             </div>
@@ -343,7 +343,7 @@ export default function DinerPreferences() {
               <div>
                 <CardTitle className="text-base">Gamification</CardTitle>
                 <CardDescription>
-                  Subtle, status-driven features that encourage exploration and repeat visits.
+                  Not cheesy — subtle and status-driven. Reward your most loyal diners with exclusive perks that encourage exploration and repeat visits. Features are designed for adults: think private club vibes, not arcade points. Diners unlock benefits based on visit frequency and spending behaviour.
                 </CardDescription>
               </div>
             </div>
@@ -362,25 +362,25 @@ export default function DinerPreferences() {
                 {
                   key: "status_badges" as const,
                   label: "Status Badges",
-                  desc: '"Top 10% guest" — subtle recognition for loyal diners',
+                  desc: "Recognise your top diners with subtle status indicators like \"Top 10% guest\" or \"Regular\". Badges appear in the diner's profile and welcome message — making them feel valued without being over the top. Drives emotional loyalty and word-of-mouth.",
                   icon: Star,
                 },
                 {
                   key: "secret_menu" as const,
                   label: "Secret Menu Items",
-                  desc: "Unlock hidden dishes at certain tiers or visit counts",
+                  desc: "Unlock hidden dishes that only appear for diners who reach a certain tier or visit count. Creates exclusivity and gives loyal guests something to talk about — \"Have you tried their secret burger?\" Perfect for building a cult following.",
                   icon: Lock,
                 },
                 {
                   key: "early_access" as const,
                   label: "Early Access Dishes",
-                  desc: "Preview new items before they're on the public menu",
+                  desc: "Let your top-tier diners preview and order new menu items before they go live for everyone else. Creates a VIP experience and gives you real feedback from your most engaged guests before a full rollout.",
                   icon: Zap,
                 },
                 {
                   key: "exploration_tracker" as const,
                   label: "Exploration Tracker",
-                  desc: '"You\'ve tried 8/12 chef specials" — drives menu exploration',
+                  desc: "Shows diners their progress through your menu — e.g. \"You've tried 8/12 chef specials\". Gamifies menu discovery and encourages diners to branch out from their usual order, increasing exposure to higher-margin items.",
                   icon: Compass,
                 },
               ].map(({ key, label, desc, icon: Icon }) => (
