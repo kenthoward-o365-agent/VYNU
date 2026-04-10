@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import ReceiptView from "@/components/consumer/ReceiptView";
 import VenueDiscovery from "@/components/consumer/VenueDiscovery";
 import DinerSignup from "@/components/consumer/DinerSignup";
 import DinerProfile from "@/components/consumer/DinerProfile";
+import UpsellPrompt, { UpsellSuggestion } from "@/components/consumer/UpsellPrompt";
 
 interface VenueInfo {
   id: string;
@@ -80,6 +81,13 @@ const ConsumerOrder = () => {
   const [dinerInfo, setDinerInfo] = useState<{ first_name: string | null; last_name: string | null; email: string | null; phone: string | null } | null>(null);
   const [lastOrderItems, setLastOrderItems] = useState<{ id: string; name: string; quantity: number }[]>([]);
 
+  // Upsell state
+  const [upsellSuggestion, setUpsellSuggestion] = useState<UpsellSuggestion | null>(null);
+  const [shownUpsells] = useState(() => new Set<string>());
+  const [dismissedSuggestions] = useState(() => new Set<string>());
+  const [upsellEnabled, setUpsellEnabled] = useState(true);
+  const upsellConfigRef = useRef<any>(null);
+
   // Fetch venue, table, and menu data
   useEffect(() => {
     const fetchData = async () => {
@@ -113,6 +121,14 @@ const ConsumerOrder = () => {
       if (aiConfig?.chat_mode) setChatMode(aiConfig.chat_mode);
       if (aiConfig?.agent_name) setAgentName(aiConfig.agent_name);
       if (aiConfig?.agent_icon_url) setAgentIconUrl(aiConfig.agent_icon_url);
+
+      // Load upsell config from venue settings
+      if (venueRes.data) {
+        const settings = (venueRes.data as any).settings as Record<string, any> | null;
+        const upsell = settings?.upsell;
+        upsellConfigRef.current = upsell;
+        setUpsellEnabled(upsell?.enabled !== false);
+      }
 
       setLoading(false);
     };
@@ -217,6 +233,38 @@ const ConsumerOrder = () => {
     return () => { supabase.removeChannel(channel); };
   }, [activeOrder?.id]);
 
+  const fetchUpsell = useCallback(async (item: { id: string; name: string; price: number }) => {
+    if (!upsellEnabled || !venue || shownUpsells.has(item.id)) return;
+    const cfg = upsellConfigRef.current;
+    if (cfg && cfg.contextual_pairing === false) return;
+
+    shownUpsells.add(item.id);
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upsell-suggest`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            trigger: "contextual_pairing",
+            added_item: item,
+            menu_items: menuItems,
+            venue_name: venue.name,
+          }),
+        }
+      );
+      const data = await resp.json();
+      if (data.suggestions?.[0] && !dismissedSuggestions.has(data.suggestions[0].item_id)) {
+        setUpsellSuggestion(data.suggestions[0]);
+      }
+    } catch (e) {
+      console.error("Upsell fetch error:", e);
+    }
+  }, [upsellEnabled, venue, menuItems, shownUpsells, dismissedSuggestions]);
+
   const addToCart = useCallback((item: { id: string; name: string; price: number }) => {
     setCart((prev) => {
       const existing = prev.find((c) => c.id === item.id);
@@ -226,7 +274,8 @@ const ConsumerOrder = () => {
       return [...prev, { id: item.id, name: item.name, price: item.price, quantity: 1 }];
     });
     toast.success(`Added ${item.name}`, { duration: 1500 });
-  }, []);
+    fetchUpsell(item);
+  }, [fetchUpsell]);
 
   const updateQuantity = (id: string, delta: number) => {
     setCart((prev) =>
@@ -369,6 +418,12 @@ const ConsumerOrder = () => {
           onRemove={removeFromCart}
           onPlaceOrder={() => setShowCheckout(true)}
           loading={false}
+          venueId={venueId}
+          venueName={venue?.name}
+          menuItems={menuItems}
+          dismissedSuggestions={dismissedSuggestions}
+          onAddToCart={addToCart}
+          onDismissSuggestion={(id) => dismissedSuggestions.add(id)}
         />
       )}
       {tab === "cart" && showCheckout && resolvedTableId && (
@@ -383,6 +438,22 @@ const ConsumerOrder = () => {
       )}
       {tab === "profile" && venue && (
         <DinerProfile venueId={venue.id} groupId={venue.group_id} />
+      )}
+
+      {/* Upsell Prompt Overlay */}
+      {upsellSuggestion && (
+        <UpsellPrompt
+          suggestion={upsellSuggestion}
+          onAdd={(item) => {
+            addToCart(item);
+            dismissedSuggestions.add(item.id);
+            setUpsellSuggestion(null);
+          }}
+          onDismiss={() => {
+            dismissedSuggestions.add(upsellSuggestion.item_id);
+            setUpsellSuggestion(null);
+          }}
+        />
       )}
 
       {/* AI Chat Overlay */}
