@@ -29,6 +29,7 @@ import NotFound from "@/pages/NotFound";
 import ConsumerOrder from "@/pages/ConsumerOrder";
 import ResetPassword from "@/pages/ResetPassword";
 import Modifiers from "@/pages/Modifiers";
+import DinerPreferences from "@/pages/DinerPreferences";
 
 const queryClient = new QueryClient();
 

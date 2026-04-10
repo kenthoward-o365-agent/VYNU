@@ -25,7 +25,7 @@ const venueNavItems = [
   { path: "/tables", label: "Tables & QR", icon: QrCode },
   { path: "/orders", label: "Orders", icon: ClipboardList },
   { path: "/analytics", label: "Analytics", icon: TrendingUp },
-  { path: "/diners", label: "Diners", icon: Users },
+  { path: "/diners", label: "Diners", icon: Users, hasSub: true },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 

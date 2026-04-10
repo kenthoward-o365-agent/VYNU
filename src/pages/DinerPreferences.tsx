@@ -100,7 +100,7 @@ export default function DinerPreferences() {
     const existingSettings = ((venue as any).settings as Record<string, any>) || {};
     const { error } = await supabase
       .from("venues")
-      .update({ settings: { ...existingSettings, diner_personalisation: config } })
+      .update({ settings: { ...existingSettings, diner_personalisation: config } as any })
       .eq("id", venue.id);
     setSaving(false);
     if (error) {
