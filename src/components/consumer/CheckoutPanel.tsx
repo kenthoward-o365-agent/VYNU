@@ -63,6 +63,7 @@ const CheckoutPanel = ({
   const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
   const [gratuityOptions, setGratuityOptions] = useState<{ label: string; percent: number }[]>([]);
   const [gratuityEnabled, setGratuityEnabled] = useState(false);
+  const [gratuityPrompt, setGratuityPrompt] = useState("Add a tip?");
   const [selectedTip, setSelectedTip] = useState<number | null>(null);
 
   useEffect(() => {
@@ -79,6 +80,7 @@ const CheckoutPanel = ({
     if (grat?.enabled && grat?.options?.length) {
       setGratuityEnabled(true);
       setGratuityOptions(grat.options);
+      if (grat.prompt) setGratuityPrompt(grat.prompt);
     }
   };
 
@@ -349,7 +351,7 @@ const CheckoutPanel = ({
         {gratuityEnabled && (
           <div className="space-y-3">
             <Separator />
-            <p className="text-sm font-semibold text-center">{gratuityConfig?.prompt || "Add a tip?"}</p>
+            <p className="text-sm font-semibold text-center">{gratuityPrompt}</p>
             <div className="grid grid-cols-3 gap-2">
               {gratuityOptions.map((opt, i) => {
                 const tipVal = parseFloat((total * opt.percent / 100).toFixed(2));
