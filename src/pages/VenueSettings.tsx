@@ -523,11 +523,13 @@ interface GratuityOption {
 
 interface GratuitiesConfig {
   enabled: boolean;
+  prompt: string;
   options: GratuityOption[];
 }
 
 const defaultGratuities: GratuitiesConfig = {
   enabled: false,
+  prompt: "Add a tip?",
   options: [
     { label: "Good", percent: 10 },
     { label: "Great", percent: 15 },
@@ -587,6 +589,18 @@ function GratuitiesSettingsTab({ venueId }: { venueId: string }) {
         </CardHeader>
         {config.enabled && (
           <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Prompt Message</Label>
+              <p className="text-xs text-muted-foreground">The heading shown to diners above the tip options during checkout.</p>
+              <Input
+                value={config.prompt}
+                onChange={(e) => setConfig((c) => ({ ...c, prompt: e.target.value }))}
+                placeholder="e.g. Add a tip?"
+              />
+            </div>
+
+            <Separator />
+
             <div className="space-y-4">
               <Label className="text-sm font-semibold">Suggestion Buttons</Label>
               <p className="text-xs text-muted-foreground">
