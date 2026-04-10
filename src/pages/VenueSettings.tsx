@@ -20,6 +20,7 @@ import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, S
 import SippaAISettings from "@/components/venue/SippaAISettings";
 import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
 import TaxSettingsTab from "@/components/venue/TaxSettingsTab";
+import SurchargeSettingsTab from "@/components/venue/SurchargeSettingsTab";
 
 const venueTypes = [
   { value: "restaurant", label: "Restaurant" },
@@ -505,6 +506,9 @@ export default function VenueSettings() {
             </TabsContent>
             <TabsContent value="gratuities" className="space-y-6">
               <GratuitiesSettingsTab venueId={venue.id} />
+            </TabsContent>
+            <TabsContent value="surcharges" className="space-y-6">
+              <SurchargeSettingsTab venueId={venue.id} />
             </TabsContent>
           </>
         )}

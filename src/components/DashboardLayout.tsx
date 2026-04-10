@@ -172,6 +172,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       { to: "/settings?tab=sippa", label: "Sippa AI", icon: Bot },
                       { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
                       { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
+                      { to: "/settings?tab=surcharges", label: "Surcharges", icon: Percent },
                       { to: "/settings?tab=taxes", label: "Taxes", icon: Receipt },
                     ].map((sub) => {
                       const params = new URLSearchParams(location.search);
