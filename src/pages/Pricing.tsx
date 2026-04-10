@@ -386,7 +386,11 @@ export default function Pricing() {
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {Number(rule.modifier_percent) > 0 ? "+" : ""}{rule.modifier_percent}%
+                      {rule.modifier_type === "fixed"
+                        ? `$${Number(rule.modifier_value).toFixed(2)} fixed`
+                        : rule.modifier_type === "dollar"
+                          ? `${Number(rule.modifier_value) > 0 ? "+" : ""}$${Number(rule.modifier_value).toFixed(2)}`
+                          : `${Number(rule.modifier_value || rule.modifier_percent) > 0 ? "+" : ""}${rule.modifier_value || rule.modifier_percent}%`}
                       {rule.start_time && rule.end_time && ` • ${rule.start_time}–${rule.end_time}`}
                       {rule.days_of_week && ` • ${rule.days_of_week.map((d) => dayNames[d]).join(", ")}`}
                     </p>
