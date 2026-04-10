@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import ReceiptView from "@/components/consumer/ReceiptView";
 import VenueDiscovery from "@/components/consumer/VenueDiscovery";
 import DinerSignup from "@/components/consumer/DinerSignup";
 import DinerProfile from "@/components/consumer/DinerProfile";
+import UpsellPrompt, { UpsellSuggestion } from "@/components/consumer/UpsellPrompt";
 
 interface VenueInfo {
   id: string;
@@ -79,6 +80,13 @@ const ConsumerOrder = () => {
   const [dinerId, setDinerId] = useState<string | null>(null);
   const [dinerInfo, setDinerInfo] = useState<{ first_name: string | null; last_name: string | null; email: string | null; phone: string | null } | null>(null);
   const [lastOrderItems, setLastOrderItems] = useState<{ id: string; name: string; quantity: number }[]>([]);
+
+  // Upsell state
+  const [upsellSuggestion, setUpsellSuggestion] = useState<UpsellSuggestion | null>(null);
+  const [shownUpsells] = useState(() => new Set<string>());
+  const [dismissedSuggestions] = useState(() => new Set<string>());
+  const [upsellEnabled, setUpsellEnabled] = useState(true);
+  const upsellConfigRef = useRef<any>(null);
 
   // Fetch venue, table, and menu data
   useEffect(() => {

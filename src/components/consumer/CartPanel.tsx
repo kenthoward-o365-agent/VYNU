@@ -1,5 +1,6 @@
 import { Minus, Plus, Trash2, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import CartSuggestions from "./CartSuggestions";
 
 export interface CartItem {
   id: string;
@@ -14,9 +15,15 @@ interface CartPanelProps {
   onRemove: (id: string) => void;
   onPlaceOrder: () => void;
   loading?: boolean;
+  venueId?: string;
+  venueName?: string;
+  menuItems?: { id: string; name: string; description: string | null; price: number; image_url: string | null; category_id: string | null; dietary_tags: string[] | null }[];
+  dismissedSuggestions?: Set<string>;
+  onAddToCart?: (item: { id: string; name: string; price: number }) => void;
+  onDismissSuggestion?: (itemId: string) => void;
 }
 
-const CartPanel = ({ items, onUpdateQuantity, onRemove, onPlaceOrder, loading }: CartPanelProps) => {
+const CartPanel = ({ items, onUpdateQuantity, onRemove, onPlaceOrder, loading, venueId, venueName, menuItems, dismissedSuggestions, onAddToCart, onDismissSuggestion }: CartPanelProps) => {
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   if (items.length === 0) {
@@ -67,6 +74,19 @@ const CartPanel = ({ items, onUpdateQuantity, onRemove, onPlaceOrder, loading }:
           </div>
         ))}
       </div>
+
+      {/* AI Cart Suggestions */}
+      {venueId && venueName && menuItems && onAddToCart && onDismissSuggestion && dismissedSuggestions && (
+        <CartSuggestions
+          venueId={venueId}
+          venueName={venueName}
+          cartItems={items.map((i) => ({ id: i.id, name: i.name, quantity: i.quantity }))}
+          menuItems={menuItems}
+          dismissedIds={dismissedSuggestions}
+          onAdd={onAddToCart}
+          onDismiss={onDismissSuggestion}
+        />
+      )}
 
       {/* Order Summary */}
       <div className="border-t border-border px-5 pt-4 pb-20 space-y-3">
