@@ -30,6 +30,7 @@ import ConsumerOrder from "@/pages/ConsumerOrder";
 import ResetPassword from "@/pages/ResetPassword";
 import Modifiers from "@/pages/Modifiers";
 import DinerPreferences from "@/pages/DinerPreferences";
+import KnowledgeBase from "@/pages/KnowledgeBase";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +89,7 @@ function AppRoutes() {
         <Route path="/admin/staff" element={<AdminStaff />} />
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />
+        <Route path="/knowledge-base" element={<KnowledgeBase />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </DashboardLayout>

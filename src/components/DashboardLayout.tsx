@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
   LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
-  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield, Sparkles, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, BarChart3, CreditCard, Receipt
+  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield, Sparkles, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, BarChart3, CreditCard, Receipt, HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -314,8 +314,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Menu className="h-5 w-5 text-foreground" />
           </button>
           <h1 className="text-lg font-semibold text-foreground">
-            {allNavItems.find((i) => i.path === location.pathname)?.label || "Sippa"}
+            {location.pathname === "/knowledge-base" ? "Knowledge Base" : allNavItems.find((i) => i.path === location.pathname)?.label || "Sippa"}
           </h1>
+          <div className="ml-auto">
+            <Link to="/knowledge-base" className="inline-flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors" title="Knowledge Base">
+              <HelpCircle className="h-5 w-5" />
+            </Link>
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           {children}
