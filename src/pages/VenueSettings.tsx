@@ -524,12 +524,14 @@ interface GratuityOption {
 interface GratuitiesConfig {
   enabled: boolean;
   prompt: string;
+  declineLabel: string;
   options: GratuityOption[];
 }
 
 const defaultGratuities: GratuitiesConfig = {
   enabled: false,
   prompt: "Add a tip?",
+  declineLabel: "No thanks",
   options: [
     { label: "Good", percent: 10 },
     { label: "Great", percent: 15 },
@@ -596,6 +598,16 @@ function GratuitiesSettingsTab({ venueId }: { venueId: string }) {
                 value={config.prompt}
                 onChange={(e) => setConfig((c) => ({ ...c, prompt: e.target.value }))}
                 placeholder="e.g. Add a tip?"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Decline Button Label</Label>
+              <p className="text-xs text-muted-foreground">The text shown on the button diners use to skip tipping.</p>
+              <Input
+                value={config.declineLabel}
+                onChange={(e) => setConfig((c) => ({ ...c, declineLabel: e.target.value }))}
+                placeholder="e.g. No thanks"
               />
             </div>
 
