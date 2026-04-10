@@ -864,6 +864,47 @@ export type Database = {
           },
         ]
       }
+      pricing_rule_types: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          label: string
+          name: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          label: string
+          name: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          label?: string
+          name?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_rule_types_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_rules: {
         Row: {
           created_at: string
@@ -876,7 +917,7 @@ export type Database = {
           modifier_type: string
           modifier_value: number
           name: string
-          rule_type: Database["public"]["Enums"]["pricing_rule_type"]
+          rule_type: string
           start_date: string | null
           start_time: string | null
           updated_at: string
@@ -893,7 +934,7 @@ export type Database = {
           modifier_type?: string
           modifier_value?: number
           name: string
-          rule_type: Database["public"]["Enums"]["pricing_rule_type"]
+          rule_type: string
           start_date?: string | null
           start_time?: string | null
           updated_at?: string
@@ -910,7 +951,7 @@ export type Database = {
           modifier_type?: string
           modifier_value?: number
           name?: string
-          rule_type?: Database["public"]["Enums"]["pricing_rule_type"]
+          rule_type?: string
           start_date?: string | null
           start_time?: string | null
           updated_at?: string
@@ -1469,12 +1510,6 @@ export type Database = {
         | "served"
         | "paid"
         | "cancelled"
-      pricing_rule_type:
-        | "happy_hour"
-        | "late_night"
-        | "special"
-        | "event"
-        | "weather"
       tax_type: "percent" | "fixed" | "compound_percent"
       venue_staff_role: "owner" | "manager" | "staff"
     }
@@ -1616,13 +1651,6 @@ export const Constants = {
         "served",
         "paid",
         "cancelled",
-      ],
-      pricing_rule_type: [
-        "happy_hour",
-        "late_night",
-        "special",
-        "event",
-        "weather",
       ],
       tax_type: ["percent", "fixed", "compound_percent"],
       venue_staff_role: ["owner", "manager", "staff"],
