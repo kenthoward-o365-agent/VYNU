@@ -44,13 +44,10 @@ interface RuleItemCount {
   [ruleId: string]: { count: number; names: string[] };
 }
 
-const ruleTypes = [
-  { value: "happy_hour", label: "Happy Hour" },
-  { value: "late_night", label: "Late Night" },
-  { value: "special", label: "Special/Promo" },
-  { value: "event", label: "Event" },
-  { value: "weather", label: "Weather-Based" },
-];
+interface RuleTypeOption {
+  value: string;
+  label: string;
+}
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 

@@ -154,9 +154,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 )}
                 {isPricing && (
                   <CollapsibleContent className="pl-10 space-y-0.5">
-                    <Link to="/menu-times" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/menu-times" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
-                      <Clock className="h-3 w-3" />
-                      Menu Times
+                    <Link to="/rule-types" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/rule-types" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
+                      <Tag className="h-3 w-3" />
+                      Rule Types
                     </Link>
                   </CollapsibleContent>
                 )}
