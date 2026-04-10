@@ -745,6 +745,42 @@ export type Database = {
           },
         ]
       }
+      pricing_rule_items: {
+        Row: {
+          created_at: string
+          id: string
+          menu_item_id: string
+          pricing_rule_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_item_id: string
+          pricing_rule_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string
+          pricing_rule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_rule_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_rule_items_pricing_rule_id_fkey"
+            columns: ["pricing_rule_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_rules: {
         Row: {
           created_at: string
