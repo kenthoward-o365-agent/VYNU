@@ -1,68 +1,43 @@
 
 
-# AI Upsell Engine — Contextual Suggestions & Revenue Optimisation
+# Pricing Rules — Menu Item Targeting
 
 ## Overview
-Build an AI-powered upsell system that surfaces helpful suggestions at four touchpoints in the consumer ordering flow: after adding an item, after tapping "Add to cart", when opening the cart, and as a reorder prompt for returning diners. All suggestions are non-intrusive, dismissible with one tap, and never repeat for the same item in a session.
+Add the ability to select which menu items a pricing rule applies to. Currently rules apply to the entire menu. This change lets venues target specific items (e.g. Happy Hour on drinks only, or a promo on a specific dish).
 
 ## What gets built
 
-### 1. Upsell edge function (`supabase/functions/upsell-suggest/index.ts`)
-A backend function that receives a venue ID + trigger context and returns suggestions using Lovable AI:
-- **Contextual pairing**: Given the item just added, analyse the venue's menu to suggest a complementary item (e.g. steak → red wine, coffee → pastry). Initially uses menu category logic and item descriptions; future iterations can incorporate order history data.
-- **Add-on prompt**: After modifier selection, suggest an upgrade or side (e.g. "Add chips for $5?").
-- **Cart suggestions**: Given the current cart contents, suggest 1–2 low-friction additions (sides, desserts, drinks).
-- Uses `google/gemini-3-flash-preview` via Lovable AI gateway with tool calling to return structured JSON (item IDs, suggestion text).
+### 1. Database: new `pricing_rule_items` junction table
+A many-to-many table linking pricing rules to menu items:
+- `id` (uuid, PK)
+- `pricing_rule_id` (uuid, FK → pricing_rules.id ON DELETE CASCADE)
+- `menu_item_id` (uuid, FK → menu_items.id ON DELETE CASCADE)
+- `created_at` (timestamptz)
+- Unique constraint on (pricing_rule_id, menu_item_id)
+- RLS: staff can view, managers can insert/delete (matching venue ownership)
 
-### 2. Upsell prompt component (`src/components/consumer/UpsellPrompt.tsx`)
-A reusable, animated slide-up card that displays a suggestion:
-- Shows item image, name, price, and a one-line reason ("Goes great with your steak")
-- "Add" button (single tap to add to cart) and "No thanks" dismiss button
-- Auto-dismisses after 5 seconds if not interacted with
-- Tracks shown suggestions in session state to prevent repeats
+If no rows exist for a rule, it applies to all items (backward compatible).
 
-### 3. Cart suggestions component (`src/components/consumer/CartSuggestions.tsx`)
-Displayed at the bottom of CartPanel when items are in the cart:
-- Shows max 2 AI-suggested items with image, name, price
-- Single-tap "+" button to add each
-- Fetches suggestions when cart tab is opened
+### 2. UI: item selector in the Add Rule dialog
+- Fetch the venue's menu items (grouped by category) when the dialog opens
+- Add an "Applies to" section with two modes: "All items" (default) and "Selected items"
+- When "Selected items" is chosen, show a scrollable checklist of items grouped by category with checkboxes
+- Selected items stored in form state and inserted into `pricing_rule_items` after the rule is created
 
-### 4. Session upsell tracker (in ConsumerOrder state)
-- `shownUpsells: Set<string>` — tracks item IDs that have already triggered an upsell prompt
-- `dismissedSuggestions: Set<string>` — tracks suggestion IDs the user dismissed
-- Enforces: max 1 upsell per item addition, max 2 cart suggestions, no repeats per session
+### 3. UI: show targeted items on rule cards
+- Fetch associated items when loading rules (join through `pricing_rule_items`)
+- Display item count on the rule card: "All items" or "3 items" with a tooltip/expandable list showing the names
 
-### 5. Integration points in ConsumerOrder.tsx
-- **After addToCart**: Call upsell edge function with the added item, show UpsellPrompt overlay if a suggestion is returned and hasn't been shown
-- **Cart tab**: Pass menu items to CartPanel; CartPanel calls edge function for cart-based suggestions
-- **Reorder prompt**: Already partially built (lastOrderItems). Enhance with a configurable time window check and a dismissible "Another round?" prompt using the same UpsellPrompt component
+### 4. Editing support
+- When deleting a rule, cascade handles cleanup automatically
+- Toggle and delete flows remain unchanged
 
-### 6. Venue configuration (DinerPreferences.tsx)
-Add an "AI Upsell" section to Diner Personalisation settings stored in `venues.settings.upsell`:
-```text
-{
-  enabled: true,
-  contextual_pairing: true,
-  addon_prompts: true,
-  cart_suggestions: true,
-  reorder_prompts: true,
-  reorder_window_minutes: 30
-}
-```
-
-## Files to create/edit
-- **Create** `supabase/functions/upsell-suggest/index.ts` — AI suggestion logic
-- **Create** `src/components/consumer/UpsellPrompt.tsx` — dismissible suggestion overlay
-- **Create** `src/components/consumer/CartSuggestions.tsx` — cart bottom suggestions
-- **Edit** `src/pages/ConsumerOrder.tsx` — session tracking, upsell trigger after addToCart, reorder prompt
-- **Edit** `src/components/consumer/CartPanel.tsx` — integrate CartSuggestions at bottom of item list
-- **Edit** `src/pages/DinerPreferences.tsx` — add AI Upsell configuration section
+## Files
+- **Migration** — create `pricing_rule_items` table with RLS
+- **Edit** `src/pages/Pricing.tsx` — add item selector UI in dialog, fetch menu items, display targeted items on cards
 
 ## Technical notes
-- No database migration needed — upsell config stored in existing `venues.settings` JSONB
-- Edge function uses Lovable AI with structured output (tool calling) to return valid menu item IDs
-- Menu items array is passed to the edge function so the AI only suggests items that actually exist on the menu
-- Session-level tracking prevents suggestion fatigue — all enforced client-side
-- UpsellPrompt uses CSS transitions for smooth slide-up/fade-out animation
-- Cart suggestions lazy-load when the cart tab is activated (not on every cart change)
+- Junction table approach keeps `pricing_rules` schema clean and supports many-to-many
+- Categories fetched via `menu_categories` + `menu_items` for grouped display
+- "All items" = no rows in junction table (null means everything, explicit rows mean targeted)
 
