@@ -162,7 +162,7 @@ export default function Pricing() {
     toast.success("Pricing rule added");
     setDialogOpen(false);
     setForm({
-      name: "", rule_type: "happy_hour",
+      name: "", rule_type: ruleTypes[0]?.value || "",
       modifier_type: "percent", modifier_value: "-10",
       start_time: "16:00", end_time: "18:00",
       days_of_week: [1, 2, 3, 4, 5],
@@ -395,7 +395,7 @@ export default function Pricing() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-foreground">{rule.name}</span>
-                      <Badge variant="secondary" className="text-xs capitalize">{rule.rule_type.replace("_", " ")}</Badge>
+                      <Badge variant="secondary" className="text-xs capitalize">{ruleTypes.find(t => t.value === rule.rule_type)?.label || rule.rule_type.replace(/_/g, " ")}</Badge>
                       <Badge variant="outline" className="text-xs">
                         {itemInfo ? `${itemInfo.count} item${itemInfo.count !== 1 ? "s" : ""}` : "All items"}
                       </Badge>
