@@ -148,15 +148,27 @@ export default function MenuBuilder() {
       image_url: form.image_url || null,
     };
 
+    let itemId: string;
     if (editingItem) {
       const { error } = await supabase.from("menu_items").update(payload).eq("id", editingItem.id);
       if (error) { toast.error(error.message); return; }
+      itemId = editingItem.id;
       toast.success("Item updated");
     } else {
-      const { error } = await supabase.from("menu_items").insert(payload);
+      const { data, error } = await supabase.from("menu_items").insert(payload).select("id").single();
       if (error) { toast.error(error.message); return; }
+      itemId = data.id;
       toast.success("Item added");
     }
+
+    // Sync time frame assignments
+    await supabase.from("menu_item_time_frames").delete().eq("menu_item_id", itemId);
+    if (selectedTimeFrames.length > 0) {
+      await supabase.from("menu_item_time_frames").insert(
+        selectedTimeFrames.map(tfId => ({ menu_item_id: itemId, time_frame_id: tfId }))
+      );
+    }
+
     setDialogOpen(false);
     fetchData();
   };
