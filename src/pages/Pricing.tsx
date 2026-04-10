@@ -18,6 +18,8 @@ interface PricingRule {
   name: string;
   rule_type: string;
   modifier_percent: number;
+  modifier_type: string;
+  modifier_value: number;
   start_time: string | null;
   end_time: string | null;
   start_date: string | null;
@@ -60,7 +62,8 @@ export default function Pricing() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [form, setForm] = useState({
-    name: "", rule_type: "happy_hour", modifier_percent: "-10",
+    name: "", rule_type: "happy_hour",
+    modifier_type: "percent", modifier_value: "-10",
     start_time: "16:00", end_time: "18:00",
     days_of_week: [1, 2, 3, 4, 5] as number[],
     appliesTo: "all" as "all" | "selected",
@@ -118,11 +121,14 @@ export default function Pricing() {
 
   const addRule = async () => {
     if (!venue) return;
+    const modValue = parseFloat(form.modifier_value);
     const { data, error } = await supabase.from("pricing_rules").insert({
       venue_id: venue.id,
       name: form.name,
       rule_type: form.rule_type as any,
-      modifier_percent: parseFloat(form.modifier_percent),
+      modifier_percent: form.modifier_type === "percent" ? modValue : 0,
+      modifier_type: form.modifier_type,
+      modifier_value: modValue,
       start_time: form.start_time || null,
       end_time: form.end_time || null,
       days_of_week: form.days_of_week,
@@ -141,7 +147,8 @@ export default function Pricing() {
     toast.success("Pricing rule added");
     setDialogOpen(false);
     setForm({
-      name: "", rule_type: "happy_hour", modifier_percent: "-10",
+      name: "", rule_type: "happy_hour",
+      modifier_type: "percent", modifier_value: "-10",
       start_time: "16:00", end_time: "18:00",
       days_of_week: [1, 2, 3, 4, 5],
       appliesTo: "all", selectedItems: [],
@@ -219,9 +226,31 @@ export default function Pricing() {
                 </SelectContent>
               </Select>
               <div>
-                <label className="text-sm font-medium">Price modifier (%)</label>
-                <Input type="number" value={form.modifier_percent} onChange={(e) => setForm((f) => ({ ...f, modifier_percent: e.target.value }))} />
-                <p className="text-xs text-muted-foreground mt-1">Use negative for discounts (e.g. -15 for 15% off)</p>
+                <label className="text-sm font-medium mb-2 block">Modifier type</label>
+                <Select value={form.modifier_type} onValueChange={(v) => setForm((f) => ({ ...f, modifier_type: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percent">Percentage (%)</SelectItem>
+                    <SelectItem value="dollar">Dollar Amount ($)</SelectItem>
+                    <SelectItem value="fixed">Fixed Price ($)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">
+                  {form.modifier_type === "percent" ? "Modifier (%)" : form.modifier_type === "dollar" ? "Amount ($)" : "Fixed price ($)"}
+                </label>
+                <Input
+                  type="number"
+                  step={form.modifier_type === "percent" ? "1" : "0.01"}
+                  value={form.modifier_value}
+                  onChange={(e) => setForm((f) => ({ ...f, modifier_value: e.target.value }))}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {form.modifier_type === "percent" && "Use negative for discounts (e.g. -15 for 15% off)"}
+                  {form.modifier_type === "dollar" && "Use negative to subtract (e.g. -3 for $3 off)"}
+                  {form.modifier_type === "fixed" && "This overrides the item's base price during the active window"}
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -357,7 +386,11 @@ export default function Pricing() {
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {Number(rule.modifier_percent) > 0 ? "+" : ""}{rule.modifier_percent}%
+                      {rule.modifier_type === "fixed"
+                        ? `$${Number(rule.modifier_value).toFixed(2)} fixed`
+                        : rule.modifier_type === "dollar"
+                          ? `${Number(rule.modifier_value) > 0 ? "+" : ""}$${Number(rule.modifier_value).toFixed(2)}`
+                          : `${Number(rule.modifier_value || rule.modifier_percent) > 0 ? "+" : ""}${rule.modifier_value || rule.modifier_percent}%`}
                       {rule.start_time && rule.end_time && ` • ${rule.start_time}–${rule.end_time}`}
                       {rule.days_of_week && ` • ${rule.days_of_week.map((d) => dayNames[d]).join(", ")}`}
                     </p>

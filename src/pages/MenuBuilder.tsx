@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban, Clock } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import ImageEnhancerDialog from "@/components/menu/ImageEnhancerDialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -75,6 +76,8 @@ export default function MenuBuilder() {
     category_id: "", food_cost: "", is_available: true, image_url: "" as string,
   });
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [timeFrames, setTimeFrames] = useState<{ id: string; name: string }[]>([]);
+  const [selectedTimeFrames, setSelectedTimeFrames] = useState<string[]>([]);
 
   // Auto-open import dialog from sidebar link
   useEffect(() => {
@@ -93,14 +96,16 @@ export default function MenuBuilder() {
 
   const fetchData = async () => {
     if (!venue) return;
-    const [itemsRes, catsRes, taxesRes] = await Promise.all([
+    const [itemsRes, catsRes, taxesRes, tfRes] = await Promise.all([
       supabase.from("menu_items").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("menu_categories").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("venue_taxes" as any).select("*").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
+      supabase.from("menu_time_frames").select("id, name").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
     ]);
     setItems((itemsRes.data as MenuItem[]) || []);
     setCategories((catsRes.data as Category[]) || []);
     setVenueTaxes((taxesRes.data as any as TaxConfig[]) || []);
+    setTimeFrames((tfRes.data as any[]) || []);
   };
 
   useEffect(() => { fetchData(); }, [venue]);
@@ -108,10 +113,11 @@ export default function MenuBuilder() {
   const openAdd = () => {
     setEditingItem(null);
     setForm({ name: "", description: "", price: "", prep_time_minutes: "", allergens: [], dietary_tags: [], category_id: "", food_cost: "", is_available: true, image_url: "" });
+    setSelectedTimeFrames([]);
     setDialogOpen(true);
   };
 
-  const openEdit = (item: MenuItem) => {
+  const openEdit = async (item: MenuItem) => {
     setEditingItem(item);
     setForm({
       name: item.name, description: item.description || "", price: String(item.price),
@@ -120,6 +126,9 @@ export default function MenuBuilder() {
       category_id: item.category_id || "", food_cost: item.food_cost ? String(item.food_cost) : "",
       is_available: item.is_available ?? true, image_url: item.image_url || "",
     });
+    // Load existing time frame assignments
+    const { data } = await supabase.from("menu_item_time_frames").select("time_frame_id").eq("menu_item_id", item.id);
+    setSelectedTimeFrames((data || []).map((r: any) => r.time_frame_id));
     setDialogOpen(true);
   };
 
@@ -139,15 +148,27 @@ export default function MenuBuilder() {
       image_url: form.image_url || null,
     };
 
+    let itemId: string;
     if (editingItem) {
       const { error } = await supabase.from("menu_items").update(payload).eq("id", editingItem.id);
       if (error) { toast.error(error.message); return; }
+      itemId = editingItem.id;
       toast.success("Item updated");
     } else {
-      const { error } = await supabase.from("menu_items").insert(payload);
+      const { data, error } = await supabase.from("menu_items").insert(payload).select("id").single();
       if (error) { toast.error(error.message); return; }
+      itemId = data.id;
       toast.success("Item added");
     }
+
+    // Sync time frame assignments
+    await supabase.from("menu_item_time_frames").delete().eq("menu_item_id", itemId);
+    if (selectedTimeFrames.length > 0) {
+      await supabase.from("menu_item_time_frames").insert(
+        selectedTimeFrames.map(tfId => ({ menu_item_id: itemId, time_frame_id: tfId }))
+      );
+    }
+
     setDialogOpen(false);
     fetchData();
   };
@@ -499,6 +520,32 @@ export default function MenuBuilder() {
                 </label>
               )}
             </div>
+
+            {timeFrames.length > 0 && (
+              <div>
+                <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  Menu Times
+                </p>
+                <p className="text-xs text-muted-foreground mb-2">Select when this item is available. Leave unchecked for all-day.</p>
+                <div className="flex flex-wrap gap-2">
+                  {timeFrames.map((tf) => (
+                    <Badge
+                      key={tf.id}
+                      variant={selectedTimeFrames.includes(tf.id) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() =>
+                        setSelectedTimeFrames((prev) =>
+                          prev.includes(tf.id) ? prev.filter((id) => id !== tf.id) : [...prev, tf.id]
+                        )
+                      }
+                    >
+                      {tf.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <p className="text-sm font-medium mb-2">Allergens</p>

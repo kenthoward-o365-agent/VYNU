@@ -453,6 +453,42 @@ export type Database = {
           },
         ]
       }
+      menu_item_time_frames: {
+        Row: {
+          created_at: string
+          id: string
+          menu_item_id: string
+          time_frame_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_item_id: string
+          time_frame_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string
+          time_frame_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_time_frames_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_time_frames_time_frame_id_fkey"
+            columns: ["time_frame_id"]
+            isOneToOne: false
+            referencedRelation: "menu_time_frames"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           allergens: string[] | null
@@ -518,6 +554,53 @@ export type Database = {
           },
           {
             foreignKeyName: "menu_items_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_time_frames: {
+        Row: {
+          created_at: string
+          days_of_week: number[]
+          display_order: number
+          end_time: string
+          id: string
+          is_active: boolean
+          name: string
+          start_time: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          days_of_week?: number[]
+          display_order?: number
+          end_time: string
+          id?: string
+          is_active?: boolean
+          name: string
+          start_time: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          days_of_week?: number[]
+          display_order?: number
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          start_time?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_time_frames_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
@@ -790,6 +873,8 @@ export type Database = {
           id: string
           is_active: boolean | null
           modifier_percent: number
+          modifier_type: string
+          modifier_value: number
           name: string
           rule_type: Database["public"]["Enums"]["pricing_rule_type"]
           start_date: string | null
@@ -805,6 +890,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           modifier_percent?: number
+          modifier_type?: string
+          modifier_value?: number
           name: string
           rule_type: Database["public"]["Enums"]["pricing_rule_type"]
           start_date?: string | null
@@ -820,6 +907,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           modifier_percent?: number
+          modifier_type?: string
+          modifier_value?: number
           name?: string
           rule_type?: Database["public"]["Enums"]["pricing_rule_type"]
           start_date?: string | null
