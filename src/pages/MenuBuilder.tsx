@@ -521,6 +521,32 @@ export default function MenuBuilder() {
               )}
             </div>
 
+            {timeFrames.length > 0 && (
+              <div>
+                <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  Menu Times
+                </p>
+                <p className="text-xs text-muted-foreground mb-2">Select when this item is available. Leave unchecked for all-day.</p>
+                <div className="flex flex-wrap gap-2">
+                  {timeFrames.map((tf) => (
+                    <Badge
+                      key={tf.id}
+                      variant={selectedTimeFrames.includes(tf.id) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() =>
+                        setSelectedTimeFrames((prev) =>
+                          prev.includes(tf.id) ? prev.filter((id) => id !== tf.id) : [...prev, tf.id]
+                        )
+                      }
+                    >
+                      {tf.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div>
               <p className="text-sm font-medium mb-2">Allergens</p>
               <div className="flex flex-wrap gap-2">
