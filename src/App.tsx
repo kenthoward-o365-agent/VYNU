@@ -18,7 +18,7 @@ import Analytics from "@/pages/Analytics";
 import SippaAnalyticsPage from "@/pages/SippaAnalytics";
 import VenueSettings from "@/pages/VenueSettings";
 import LandingPageEditor from "@/pages/LandingPageEditor";
-import MenuTimes from "@/pages/MenuTimes";
+import RuleTypes from "@/pages/RuleTypes";
 import Diners from "@/pages/Diners";
 
 import GroupDashboard from "@/pages/GroupDashboard";
@@ -79,7 +79,7 @@ function AppRoutes() {
         <Route path="/tables" element={<Tables />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/pricing" element={<Pricing />} />
-        <Route path="/menu-times" element={<MenuTimes />} />
+        <Route path="/rule-types" element={<RuleTypes />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/sippa-analytics" element={<SippaAnalyticsPage />} />
         <Route path="/diners" element={<Diners />} />
