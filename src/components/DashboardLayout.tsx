@@ -161,7 +161,29 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     </CollapsibleContent>
                   </Collapsible>
                 )}
-                {isSettings && (
+                {isDiners && (
+                  <Collapsible defaultOpen={location.pathname.startsWith("/diners/")}>
+                    <CollapsibleTrigger className="flex items-center gap-2 w-full px-3 py-1.5 pl-10 text-xs font-medium text-sidebar-muted hover:text-sidebar-foreground transition-colors group">
+                      <span>Settings</span>
+                      <ChevronDown className="h-3 w-3 ml-auto transition-transform group-data-[state=open]:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pl-10 space-y-0.5">
+                      <Link
+                        to="/diners/preferences"
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors",
+                          location.pathname === "/diners/preferences"
+                            ? "bg-sidebar-accent text-sidebar-primary font-medium"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        )}
+                      >
+                        <Settings className="h-3 w-3" />
+                        Diner Preferences
+                      </Link>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
                   <Collapsible defaultOpen={location.pathname === "/settings"}>
                     <CollapsibleTrigger className="flex items-center gap-2 w-full px-3 py-1.5 pl-10 text-xs font-medium text-sidebar-muted hover:text-sidebar-foreground transition-colors group">
                       <span>Sections</span>
