@@ -64,6 +64,7 @@ const CheckoutPanel = ({
   const [gratuityOptions, setGratuityOptions] = useState<{ label: string; percent: number }[]>([]);
   const [gratuityEnabled, setGratuityEnabled] = useState(false);
   const [gratuityPrompt, setGratuityPrompt] = useState("Add a tip?");
+  const [gratuityDecline, setGratuityDecline] = useState("No thanks");
   const [selectedTip, setSelectedTip] = useState<number | null>(null);
 
   useEffect(() => {
@@ -81,6 +82,7 @@ const CheckoutPanel = ({
       setGratuityEnabled(true);
       setGratuityOptions(grat.options);
       if (grat.prompt) setGratuityPrompt(grat.prompt);
+      if (grat.declineLabel) setGratuityDecline(grat.declineLabel);
     }
   };
 
@@ -375,7 +377,7 @@ const CheckoutPanel = ({
               onClick={() => setSelectedTip(null)}
               className="w-full text-center text-sm text-muted-foreground hover:text-foreground py-1 transition-colors"
             >
-              No thanks
+              {gratuityDecline}
             </button>
             {selectedTip !== null && selectedTip > 0 && (
               <div className="flex justify-between text-sm font-medium">
