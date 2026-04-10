@@ -76,6 +76,8 @@ export default function MenuBuilder() {
     category_id: "", food_cost: "", is_available: true, image_url: "" as string,
   });
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [timeFrames, setTimeFrames] = useState<{ id: string; name: string }[]>([]);
+  const [selectedTimeFrames, setSelectedTimeFrames] = useState<string[]>([]);
 
   // Auto-open import dialog from sidebar link
   useEffect(() => {
