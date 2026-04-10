@@ -55,17 +55,35 @@ export default function Pricing() {
   const { venue } = useVenue();
   const [rules, setRules] = useState<PricingRule[]>([]);
   const [ruleItems, setRuleItems] = useState<RuleItemCount>({});
+  const [ruleTypes, setRuleTypes] = useState<RuleTypeOption[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [form, setForm] = useState({
-    name: "", rule_type: "happy_hour",
+    name: "", rule_type: "",
     modifier_type: "percent", modifier_value: "-10",
     start_time: "16:00", end_time: "18:00",
     days_of_week: [1, 2, 3, 4, 5] as number[],
     appliesTo: "all" as "all" | "selected",
     selectedItems: [] as string[],
   });
+
+  const fetchRuleTypes = async () => {
+    if (!venue) return;
+    const { data } = await supabase
+      .from("pricing_rule_types")
+      .select("name, label")
+      .eq("venue_id", venue.id)
+      .eq("is_active", true)
+      .order("display_order");
+    const types = (data || []).map((t: any) => ({ value: t.name, label: t.label }));
+    setRuleTypes(types);
+    if (types.length > 0 && !form.rule_type) {
+      setForm(f => ({ ...f, rule_type: types[0].value }));
+    }
+  };
+
+  useEffect(() => { fetchRuleTypes(); }, [venue]);
 
   const fetchRules = async () => {
     if (!venue) return;
