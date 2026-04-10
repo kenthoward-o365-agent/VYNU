@@ -104,8 +104,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {!isTablessAdmin && venueNavItems.map((item) => {
-            const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings"));
+            const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners"));
             const isMenuBuilder = item.path === "/menu";
+            const isDiners = item.path === "/diners";
             const isSettings = item.path === "/settings";
             return (
               <div key={item.path}>
