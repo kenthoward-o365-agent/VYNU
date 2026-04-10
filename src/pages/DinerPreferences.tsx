@@ -104,7 +104,10 @@ export default function DinerPreferences() {
     if (!venue) return;
     const settings = (venue as any).settings as Record<string, any> | null;
     if (settings?.diner_personalisation) {
-      setConfig({ ...defaultConfig, ...settings.diner_personalisation });
+      setConfig((prev) => ({ ...prev, ...settings.diner_personalisation }));
+    }
+    if (settings?.upsell) {
+      setConfig((prev) => ({ ...prev, upsell: { ...defaultConfig.upsell, ...settings.upsell } }));
     }
   }, [venue]);
 
@@ -116,10 +119,10 @@ export default function DinerPreferences() {
   const save = async () => {
     if (!venue) return;
     setSaving(true);
-    const existingSettings = ((venue as any).settings as Record<string, any>) || {};
+    const { upsell, ...dinerConfig } = config;
     const { error } = await supabase
       .from("venues")
-      .update({ settings: { ...existingSettings, diner_personalisation: config } as any })
+      .update({ settings: { ...existingSettings, diner_personalisation: dinerConfig, upsell } as any })
       .eq("id", venue.id);
     setSaving(false);
     if (error) {
@@ -444,6 +447,102 @@ export default function DinerPreferences() {
             </div>
             <p className="text-xs text-muted-foreground">
               Minimum visits before gamification features unlock for a diner.
+            </p>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* ── E. AI Upsell Engine ── */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <div>
+                <CardTitle className="text-base">AI Upsell Engine</CardTitle>
+                <CardDescription>
+                  Automatically suggest complementary items, add-ons, and reorder prompts to increase average order value. Every suggestion feels helpful, never pushy — guests can dismiss with one tap.
+                </CardDescription>
+              </div>
+            </div>
+            <Switch
+              checked={config.upsell.enabled}
+              onCheckedChange={(enabled) =>
+                update({ upsell: { ...config.upsell, enabled } })
+              }
+            />
+          </div>
+        </CardHeader>
+        {config.upsell.enabled && (
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              {[
+                {
+                  key: "contextual_pairing" as const,
+                  label: "Contextual Pairing",
+                  desc: "When a guest adds an item, suggest a complementary pairing — steak → red wine, coffee → pastry. The AI learns from your menu categories and descriptions.",
+                  icon: Sparkles,
+                },
+                {
+                  key: "addon_prompts" as const,
+                  label: "Add-on Prompts",
+                  desc: "After item selection, prompt upgrades or small extras — \"Add a side of chips for $5?\" or \"Make it a large for $2 more?\" Brief and dismissible.",
+                  icon: ShoppingCart,
+                },
+                {
+                  key: "cart_suggestions" as const,
+                  label: "Smart Cart Suggestions",
+                  desc: "When the guest opens their cart, show 1–2 low-friction additions at the bottom — a side, dessert, or extra drink with image and price. One tap to add.",
+                  icon: Zap,
+                },
+                {
+                  key: "reorder_prompts" as const,
+                  label: "Reorder Prompts",
+                  desc: "For returning guests, gently prompt \"Another round?\" with their previous drink order pre-filled after a configurable time window.",
+                  icon: RefreshCw,
+                },
+              ].map(({ key, label, desc, icon: Icon }) => (
+                <div key={key} className="flex items-center justify-between rounded-lg border border-border p-3">
+                  <div className="flex items-center gap-3">
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{label}</p>
+                      <p className="text-xs text-muted-foreground">{desc}</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={config.upsell[key]}
+                    onCheckedChange={(val) =>
+                      update({ upsell: { ...config.upsell, [key]: val } })
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+
+            <Separator />
+
+            <div className="flex items-center gap-4">
+              <Label className="whitespace-nowrap">Reorder window</Label>
+              <Input
+                type="number"
+                min={5}
+                max={120}
+                className="w-20"
+                value={config.upsell.reorder_window_minutes}
+                onChange={(e) =>
+                  update({
+                    upsell: {
+                      ...config.upsell,
+                      reorder_window_minutes: Number(e.target.value) || 30,
+                    },
+                  })
+                }
+              />
+              <span className="text-sm text-muted-foreground">minutes</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Time since the guest's last drink order before prompting "Another round?"
             </p>
           </CardContent>
         )}
