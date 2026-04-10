@@ -184,6 +184,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     </CollapsibleContent>
                   </Collapsible>
                 )}
+                {isSettings && (
                   <Collapsible defaultOpen={location.pathname === "/settings"}>
                     <CollapsibleTrigger className="flex items-center gap-2 w-full px-3 py-1.5 pl-10 text-xs font-medium text-sidebar-muted hover:text-sidebar-foreground transition-colors group">
                       <span>Sections</span>
