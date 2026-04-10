@@ -119,6 +119,7 @@ export default function DinerPreferences() {
   const save = async () => {
     if (!venue) return;
     setSaving(true);
+    const existingSettings = ((venue as any).settings as Record<string, any>) || {};
     const { upsell, ...dinerConfig } = config;
     const { error } = await supabase
       .from("venues")
