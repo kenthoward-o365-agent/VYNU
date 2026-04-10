@@ -440,6 +440,22 @@ const ConsumerOrder = () => {
         <DinerProfile venueId={venue.id} groupId={venue.group_id} />
       )}
 
+      {/* Upsell Prompt Overlay */}
+      {upsellSuggestion && (
+        <UpsellPrompt
+          suggestion={upsellSuggestion}
+          onAdd={(item) => {
+            addToCart(item);
+            dismissedSuggestions.add(item.id);
+            setUpsellSuggestion(null);
+          }}
+          onDismiss={() => {
+            dismissedSuggestions.add(upsellSuggestion.item_id);
+            setUpsellSuggestion(null);
+          }}
+        />
+      )}
+
       {/* AI Chat Overlay */}
       {showChat && venueId && (
         <AIChatOverlay
