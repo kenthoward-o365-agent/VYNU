@@ -12,8 +12,18 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   MessageSquare, Brain, RotateCcw, Trophy,
-  Clock, CloudRain, Users, Star, Lock, Zap, Compass, Save
+  Clock, CloudRain, Users, Star, Lock, Zap, Compass, Save,
+  Sparkles, ShoppingCart, RefreshCw
 } from "lucide-react";
+
+interface UpsellConfig {
+  enabled: boolean;
+  contextual_pairing: boolean;
+  addon_prompts: boolean;
+  cart_suggestions: boolean;
+  reorder_prompts: boolean;
+  reorder_window_minutes: number;
+}
 
 interface DinerPersonalisation {
   welcome_message: {
@@ -41,6 +51,7 @@ interface DinerPersonalisation {
     exploration_tracker: boolean;
     unlock_threshold: number;
   };
+  upsell: UpsellConfig;
 }
 
 const defaultConfig: DinerPersonalisation = {
@@ -72,6 +83,14 @@ const defaultConfig: DinerPersonalisation = {
     early_access: true,
     exploration_tracker: true,
     unlock_threshold: 5,
+  },
+  upsell: {
+    enabled: true,
+    contextual_pairing: true,
+    addon_prompts: true,
+    cart_suggestions: true,
+    reorder_prompts: true,
+    reorder_window_minutes: 30,
   },
 };
 
