@@ -113,10 +113,11 @@ export default function MenuBuilder() {
   const openAdd = () => {
     setEditingItem(null);
     setForm({ name: "", description: "", price: "", prep_time_minutes: "", allergens: [], dietary_tags: [], category_id: "", food_cost: "", is_available: true, image_url: "" });
+    setSelectedTimeFrames([]);
     setDialogOpen(true);
   };
 
-  const openEdit = (item: MenuItem) => {
+  const openEdit = async (item: MenuItem) => {
     setEditingItem(item);
     setForm({
       name: item.name, description: item.description || "", price: String(item.price),
@@ -125,6 +126,9 @@ export default function MenuBuilder() {
       category_id: item.category_id || "", food_cost: item.food_cost ? String(item.food_cost) : "",
       is_available: item.is_available ?? true, image_url: item.image_url || "",
     });
+    // Load existing time frame assignments
+    const { data } = await supabase.from("menu_item_time_frames").select("time_frame_id").eq("menu_item_id", item.id);
+    setSelectedTimeFrames((data || []).map((r: any) => r.time_frame_id));
     setDialogOpen(true);
   };
 
