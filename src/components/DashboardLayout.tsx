@@ -17,16 +17,23 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 
-const venueNavItems = [
+interface NavItem {
+  path: string;
+  label: string;
+  icon: any;
+  hasSub?: boolean;
+}
+
+const venueNavItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/sippa-analytics", label: "Sippa AI Analytics", icon: BarChart3 },
-  { path: "/menu", label: "Menu Builder", icon: UtensilsCrossed },
+  { path: "/menu", label: "Menu Builder", icon: UtensilsCrossed, hasSub: true },
   { path: "/pricing", label: "Pricing", icon: Tag },
   { path: "/tables", label: "Tables & QR", icon: QrCode },
   { path: "/orders", label: "Orders", icon: ClipboardList },
   { path: "/analytics", label: "Analytics", icon: TrendingUp },
   { path: "/diners", label: "Diners", icon: Users, hasSub: true },
-  { path: "/settings", label: "Settings", icon: Settings },
+  { path: "/settings", label: "Settings", icon: Settings, hasSub: true },
 ];
 
 const groupNavItems = [

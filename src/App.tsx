@@ -80,6 +80,7 @@ function AppRoutes() {
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/sippa-analytics" element={<SippaAnalyticsPage />} />
         <Route path="/diners" element={<Diners />} />
+        <Route path="/diners/preferences" element={<DinerPreferences />} />
         <Route path="/loyalty" element={<Navigate to="/settings" replace />} />
         <Route path="/group" element={<GroupDashboard />} />
         <Route path="/admin/venues" element={<AdminVenues />} />
