@@ -11,7 +11,8 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2 } from "lucide-react";
+import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2, DollarSign } from "lucide-react";
+import BillingConfigTab from "@/components/venue/BillingConfigTab";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import ChildVenueLoyaltyViewer from "@/components/venue/ChildVenueLoyaltyViewer";
 import { Switch } from "@/components/ui/switch";
@@ -186,6 +187,7 @@ export default function AdminVenueDetail() {
             <TabsTrigger value="group-settings"><Building2 className="h-3.5 w-3.5 mr-1" />Group Settings</TabsTrigger>
           )}
           <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
+          <TabsTrigger value="billing"><DollarSign className="h-3.5 w-3.5 mr-1" />Billing</TabsTrigger>
           {venue?.group_id && (
             <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
           )}
@@ -380,6 +382,16 @@ export default function AdminVenueDetail() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <BillingConfigTab
+            venueId={venueId!}
+            venueType={venue.venue_type}
+            groupId={venue.group_id}
+            groupName={groups.find((g) => g.id === venue.group_id)?.name}
+            childVenues={childVenues}
+          />
         </TabsContent>
 
         {venue?.group_id && (

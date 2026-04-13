@@ -25,6 +25,11 @@ interface AdminVenue {
   created_at: string;
 }
 
+interface BillingConfig {
+  venue_id: string;
+  commission_percent: number;
+}
+
 interface VenueGroup {
   id: string;
   name: string;
@@ -56,6 +61,7 @@ export default function AdminVenues() {
   const navigate = useNavigate();
   const [venues, setVenues] = useState<AdminVenue[]>([]);
   const [groups, setGroups] = useState<VenueGroup[]>([]);
+  const [billingMap, setBillingMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -78,12 +84,16 @@ export default function AdminVenues() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: venueData }, { data: groupData }] = await Promise.all([
+    const [{ data: venueData }, { data: groupData }, { data: billingData }] = await Promise.all([
       supabase.from("venues").select("id, name, venue_type, city, state, is_active, subscription_status, subscription_plan, group_id, created_at").order("name"),
       supabase.from("venue_groups").select("id, name"),
+      supabase.from("venue_billing_config").select("venue_id, commission_percent"),
     ]);
     setVenues((venueData || []) as AdminVenue[]);
     setGroups((groupData || []) as VenueGroup[]);
+    const bMap: Record<string, number> = {};
+    (billingData || []).forEach((b: any) => { bMap[b.venue_id] = Number(b.commission_percent); });
+    setBillingMap(bMap);
     setLoading(false);
   };
 
@@ -250,6 +260,7 @@ export default function AdminVenues() {
                   <TableHead>Parent</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Plan</TableHead>
+                  <TableHead>Commission</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -276,6 +287,9 @@ export default function AdminVenues() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground capitalize">{v.subscription_plan || "basic"}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {billingMap[v.id] !== undefined ? `${billingMap[v.id]}%` : "—"}
+                    </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); navigate(`/admin/venues/${v.id}`); }}>
                         <Pencil className="h-4 w-4" />

@@ -1140,6 +1140,50 @@ export type Database = {
           },
         ]
       }
+      venue_billing_config: {
+        Row: {
+          billing_currency: string
+          commission_percent: number
+          created_at: string
+          id: string
+          inherit_from_group: boolean
+          min_monthly_fee: number
+          notes: string | null
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          billing_currency?: string
+          commission_percent?: number
+          created_at?: string
+          id?: string
+          inherit_from_group?: boolean
+          min_monthly_fee?: number
+          notes?: string | null
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          billing_currency?: string
+          commission_percent?: number
+          created_at?: string
+          id?: string
+          inherit_from_group?: boolean
+          min_monthly_fee?: number
+          notes?: string | null
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_billing_config_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: true
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_group_staff: {
         Row: {
           created_at: string
