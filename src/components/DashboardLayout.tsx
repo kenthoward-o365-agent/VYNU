@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       )}>
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-between mb-2">
-            <img src={theme === "dark" ? sippaLogoDark : sippaLogoLight} alt="Sippa" className="h-8" />
+            <img src={theme === "dark" ? noshiLogoDark : noshiLogoLight} alt="Noshi" className="h-8" />
             <button className="lg:hidden text-sidebar-foreground" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </button>
