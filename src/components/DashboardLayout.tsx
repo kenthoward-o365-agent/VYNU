@@ -293,7 +293,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Menu className="h-5 w-5 text-foreground" />
           </button>
           <h1 className="text-lg font-semibold text-foreground">
-            {location.pathname === "/knowledge-base" ? "Knowledge Base" : allNavItems.find((i) => i.path === location.pathname)?.label || "Phewdie"}
+            {location.pathname === "/knowledge-base" ? "Knowledge Base" : allNavItems.find((i) => i.path === location.pathname)?.label || "Phewdee"}
           </h1>
           <div className="ml-auto">
             <Link to="/knowledge-base" className="inline-flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors" title="Knowledge Base">

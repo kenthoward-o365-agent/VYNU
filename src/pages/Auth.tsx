@@ -42,7 +42,7 @@ export default function Auth() {
           <CardHeader>
             <CardTitle>{isSignUp ? "Create your venue account" : "Welcome back"}</CardTitle>
             <CardDescription>
-              {isSignUp ? "Set up your venue on Sippa" : "Sign in to manage your venue"}
+              {isSignUp ? "Set up your venue on Phewdee" : "Sign in to manage your venue"}
             </CardDescription>
           </CardHeader>
           <CardContent>

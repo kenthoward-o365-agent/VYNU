@@ -117,7 +117,7 @@ export default function SippaAnalytics({ venueId }: Props) {
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            Sippa AI Analytics
+            Phewdee AI Analytics
           </h3>
           <p className="text-sm text-muted-foreground">Chat performance and diner engagement</p>
         </div>

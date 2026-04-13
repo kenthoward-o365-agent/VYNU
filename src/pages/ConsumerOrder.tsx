@@ -69,7 +69,7 @@ const ConsumerOrder = () => {
   const [tab, setTab] = useState<"feed" | "chat" | "cart" | "profile">("feed");
   const [showChat, setShowChat] = useState(false);
   const [chatMode, setChatMode] = useState<string>("chat_optional");
-  const [agentName, setAgentName] = useState<string>("Sippa");
+  const [agentName, setAgentName] = useState<string>("Phewdee");
   const [agentIconUrl, setAgentIconUrl] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
