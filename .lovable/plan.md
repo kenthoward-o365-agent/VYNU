@@ -1,80 +1,52 @@
 
 
-# Remove "AI Features" Header + Add Menu Times Feature
+# Sippa Platform Pricing Model — Venue Billing Configuration
 
 ## Overview
-Three changes: (1) remove the non-functional "AI Features" header from the Menu Builder sidebar, (2) create a Menu Times system (Breakfast, Lunch, Dinner, etc.) under Pricing, and (3) allow each menu item to be assigned to menu times. Pricing rules will support three modifier modes: percentage change, dollar change, and fixed price override.
+Build a pricing configuration system that lets Sippa admins set per-venue (or per-group) billing terms: a percentage commission on ticket sales (excl. tax) and a minimum monthly SaaS fee. This lays the groundwork for a future billing/invoicing tool.
 
 ## What gets built
 
-### 1. Remove "AI Features" label from sidebar
-In `DashboardLayout.tsx`, remove the 4-line `<div>` block (lines 140–143) that renders the "AI Features" heading with the Sparkles icon. The sub-links (Import, Enhance Images, Modifiers) remain.
+### 1. Database: `venue_billing_config` table
+Stores the billing terms for each venue. Group-level defaults can be set on the parent venue and inherited by children.
 
-### 2. Database: `menu_time_frames` table
-Stores venue-defined time frames (Breakfast, Lunch, Happy Hour, etc.):
-- `id` uuid PK
-- `venue_id` uuid FK → venues
-- `name` text (e.g. "Breakfast")
-- `start_time` time
-- `end_time` time
-- `days_of_week` int[] (0=Sun..6=Sat)
-- `is_active` boolean default true
-- `display_order` int default 0
-- `created_at`, `updated_at` timestamptz
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid PK | |
+| `venue_id` | uuid FK → venues, UNIQUE | One config per venue |
+| `commission_percent` | numeric, default 0 | % of ticket sale excl. tax |
+| `min_monthly_fee` | numeric, default 0 | Minimum SaaS fee per month (AUD) |
+| `billing_currency` | text, default 'AUD' | |
+| `inherit_from_group` | boolean, default true | If true, use parent venue's config |
+| `notes` | text, nullable | Internal admin notes |
+| `created_at`, `updated_at` | timestamptz | |
 
-RLS: staff can view, managers can insert/update/delete (matching venue).
+RLS: only `tabless_admin` role can SELECT/INSERT/UPDATE/DELETE.
 
-### 3. Database: `menu_item_time_frames` junction table
-Links menu items to time frames:
-- `id` uuid PK
-- `menu_item_id` uuid FK → menu_items ON DELETE CASCADE
-- `time_frame_id` uuid FK → menu_time_frames ON DELETE CASCADE
-- UNIQUE(menu_item_id, time_frame_id)
-- `created_at` timestamptz
+### 2. Admin UI: "Billing" tab on AdminVenueDetail page
+Add a new tab alongside the existing Details/Staff/Loyalty tabs:
+- **Commission rate (%)** — numeric input with two decimals
+- **Minimum monthly fee ($)** — currency input
+- **Inherit from group** — toggle (only shown if venue belongs to a group). When on, the fields show the parent's values as read-only with a note "Inherited from [Group Name]"
+- **Notes** — textarea for internal admin notes
+- Save button persists to `venue_billing_config` (upsert)
 
-RLS: staff can view, managers can insert/delete (via venue ownership).
+### 3. Group-level billing defaults
+When viewing a **parent venue** in AdminVenueDetail, the Billing tab shows:
+- The commission % and min fee fields as "Group default" values
+- A list of child venues showing which ones inherit vs override, with their effective rates
+- Admins can set overrides per child venue from the parent view or from the child's own detail page
 
-### 4. Database: update `pricing_rules` table
-Add two new columns:
-- `modifier_type` text default 'percent' — values: 'percent', 'dollar', 'fixed'
-- `modifier_value` numeric default 0 — the amount (percent %, dollar $, or fixed price $)
-
-The existing `modifier_percent` column stays for backward compatibility; new rules use `modifier_type` + `modifier_value`.
-
-### 5. New page: `src/pages/MenuTimes.tsx`
-A CRUD interface under Pricing for managing time frames:
-- List all time frames as cards showing name, time range, active days
-- Add/edit dialog with name, start/end time, days-of-week selector
-- Toggle active, delete
-- Route: `/menu-times`
-
-### 6. Update sidebar navigation
-Under Pricing in `DashboardLayout.tsx`, add `hasSub: true` to the Pricing nav item and add a collapsible sub-item "Menu Times" linking to `/menu-times` with a Clock icon.
-
-### 7. Update `MenuBuilder.tsx` item edit dialog
-Add a "Menu Times" multi-select section in the item edit form:
-- Fetch venue's active time frames
-- Show checkboxes for each time frame
-- On save, sync `menu_item_time_frames` junction table (delete existing, insert selected)
-
-### 8. Update `Pricing.tsx` rule creation
-Replace the single "Price modifier (%)" field with a modifier type selector:
-- Dropdown: Percentage / Dollar Amount / Fixed Price
-- Input label changes dynamically: "Modifier (%)" / "Amount ($)" / "Fixed price ($)"
-- Store as `modifier_type` + `modifier_value` on the pricing rule
-- Display on rule cards: "-15%", "+$2.00", or "$24.99 fixed"
+### 4. Display billing info on AdminVenues list
+Add a "Commission" column to the venues table showing the effective commission % for quick scanning.
 
 ## Files
-- **Migration** — create `menu_time_frames`, `menu_item_time_frames` tables + RLS; add `modifier_type` and `modifier_value` columns to `pricing_rules`
-- **Create** `src/pages/MenuTimes.tsx` — time frame CRUD page
-- **Edit** `src/App.tsx` — add `/menu-times` route
-- **Edit** `src/components/DashboardLayout.tsx` — remove "AI Features" header; add Menu Times sub-nav under Pricing
-- **Edit** `src/pages/MenuBuilder.tsx` — add time frame selector to item edit dialog
-- **Edit** `src/pages/Pricing.tsx` — add modifier type selector (%, $, fixed)
+- **Migration** — create `venue_billing_config` table with RLS (tabless_admin only)
+- **Edit** `src/pages/AdminVenueDetail.tsx` — add Billing tab with commission/fee inputs, inherit toggle, group defaults display
+- **Edit** `src/pages/AdminVenues.tsx` — add commission column to venue list table
 
 ## Technical notes
-- Items with no time frame assignments are available all day (backward compatible)
-- Pricing rules with `modifier_type = 'fixed'` override the item's base price entirely during the active window
-- Dollar modifier adds/subtracts a flat amount (e.g. +$2 or -$3)
-- The `Sparkles` icon import can be removed from DashboardLayout if no longer used elsewhere
+- `inherit_from_group = true` means: at query time, if the venue has a group_id, look up the parent venue's (venue_type = 'parent') billing config for effective values. This logic lives in the UI for now; the billing tool will use it server-side later.
+- Commission is on ticket total **excluding tax** — the tax exclusion calculation already exists in `src/lib/tax-utils.ts` and will be reused by the future billing engine.
+- No charges are processed here — this is configuration only. The billing tool built later will read these configs to generate invoices.
 
