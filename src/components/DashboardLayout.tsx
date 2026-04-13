@@ -26,7 +26,7 @@ interface NavItem {
 
 const venueNavItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/sippa-analytics", label: "Sippa AI Analytics", icon: BarChart3 },
+  { path: "/sippa-analytics", label: "Noshi AI Analytics", icon: BarChart3 },
   { path: "/menu", label: "Menu Builder", icon: UtensilsCrossed, hasSub: true },
   { path: "/pricing", label: "Pricing", icon: Tag, hasSub: true },
   { path: "/tables", label: "Tables & QR", icon: QrCode },
