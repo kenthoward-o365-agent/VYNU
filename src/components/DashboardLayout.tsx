@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
-import sippaLogoLight from "@/assets/sippa-lockup.svg";
-import sippaLogoDark from "@/assets/sippa-lockup-dark.svg";
+import noshiLogoLight from "@/assets/noshi-lockup.svg";
+import noshiLogoDark from "@/assets/noshi-lockup-dark.svg";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
@@ -26,7 +26,7 @@ interface NavItem {
 
 const venueNavItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/sippa-analytics", label: "Sippa AI Analytics", icon: BarChart3 },
+  { path: "/sippa-analytics", label: "Noshi AI Analytics", icon: BarChart3 },
   { path: "/menu", label: "Menu Builder", icon: UtensilsCrossed, hasSub: true },
   { path: "/pricing", label: "Pricing", icon: Tag, hasSub: true },
   { path: "/tables", label: "Tables & QR", icon: QrCode },
@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       )}>
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-between mb-2">
-            <img src={theme === "dark" ? sippaLogoDark : sippaLogoLight} alt="Sippa" className="h-8" />
+            <img src={theme === "dark" ? noshiLogoDark : noshiLogoLight} alt="Noshi" className="h-8" />
             <button className="lg:hidden text-sidebar-foreground" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </button>
