@@ -1,6 +1,6 @@
 import { ReactNode, useState } from "react";
-import sippaLogoLight from "@/assets/sippa-lockup.svg";
-import sippaLogoDark from "@/assets/sippa-lockup-dark.svg";
+import noshiLogoLight from "@/assets/noshi-lockup.svg";
+import noshiLogoDark from "@/assets/noshi-lockup-dark.svg";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
