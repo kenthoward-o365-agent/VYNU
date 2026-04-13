@@ -112,7 +112,7 @@ const ConsumerOrder = () => {
       if (itemsRes.data) setMenuItems(itemsRes.data as MenuItem[]);
       if (catsRes.data) setCategories(catsRes.data);
 
-      // Load Sippa AI chat mode
+      // Load Phewdee AI chat mode
       const { data: aiConfig } = await supabase
         .from("venue_ai_config")
         .select("chat_mode, agent_name, agent_icon_url")
