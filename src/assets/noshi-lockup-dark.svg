@@ -21,6 +21,6 @@
   <circle cx="32" cy="41" r="3"   fill="#C9A84C"/>
   <circle cx="23" cy="32" r="3"   fill="#C9A84C"/>
   <circle cx="32" cy="32" r="4"   fill="#C9A84C"/>
-  <text x="80" y="38" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="30" font-weight="500" fill="#F8F5ED">Noshi</text>
-  <rect x="80" y="46" width="38" height="2.5" rx="1.25" fill="#C9A84C"/>
+  <text x="80" y="38" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="30" font-weight="500" fill="#F8F5ED">Phewdie</text>
+  <rect x="80" y="46" width="52" height="2.5" rx="1.25" fill="#C9A84C"/>
 </svg>

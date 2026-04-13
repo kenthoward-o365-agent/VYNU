@@ -26,7 +26,7 @@ interface NavItem {
 
 const venueNavItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/sippa-analytics", label: "Noshi AI Analytics", icon: BarChart3 },
+  { path: "/sippa-analytics", label: "Phewdie AI Analytics", icon: BarChart3 },
   { path: "/menu", label: "Menu Builder", icon: UtensilsCrossed, hasSub: true },
   { path: "/pricing", label: "Pricing", icon: Tag, hasSub: true },
   { path: "/tables", label: "Tables & QR", icon: QrCode },
@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       )}>
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-between mb-2">
-            <img src={theme === "dark" ? noshiLogoDark : noshiLogoLight} alt="Noshi" className="h-8" />
+            <img src={theme === "dark" ? noshiLogoDark : noshiLogoLight} alt="Phewdie" className="h-8" />
             <button className="lg:hidden text-sidebar-foreground" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </button>
