@@ -134,7 +134,7 @@ export default function AdminStaff() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Platform Staff</h2>
-          <p className="text-muted-foreground">Manage Sippa admin accounts</p>
+          <p className="text-muted-foreground">Manage Phewdee admin accounts</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -204,7 +204,7 @@ export default function AdminStaff() {
                   <TableCell className="font-medium">{a.email}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
-                      <Shield className="h-3 w-3 mr-1" /> Sippa Admin
+                      <Shield className="h-3 w-3 mr-1" /> Phewdee Admin
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -219,7 +219,7 @@ export default function AdminStaff() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Remove Admin Access</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will remove the Sippa admin role from {a.email}. They will retain any venue-level access.
+                              This will remove the Phewdee admin role from {a.email}. They will retain any venue-level access.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>

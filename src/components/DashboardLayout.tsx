@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       )}>
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-between mb-2">
-            <img src={theme === "dark" ? noshiLogoDark : noshiLogoLight} alt="Phewdie" className="h-8" />
+            <img src={theme === "dark" ? noshiLogoDark : noshiLogoLight} alt="Phewdee" className="h-8" />
             <button className="lg:hidden text-sidebar-foreground" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </button>
@@ -174,7 +174,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       { to: "/settings?tab=details", label: "Details", icon: Settings },
                       { to: "/settings?tab=users", label: "Users", icon: Users },
                       { to: "/settings?tab=loyalty", label: "Loyalty", icon: Gift },
-                      { to: "/settings?tab=sippa", label: "Phewdie AI", icon: Bot },
+                      { to: "/settings?tab=sippa", label: "Phewdee AI", icon: Bot },
                       { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
                       { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
                       { to: "/settings?tab=surcharges", label: "Surcharges", icon: Percent },
@@ -293,7 +293,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Menu className="h-5 w-5 text-foreground" />
           </button>
           <h1 className="text-lg font-semibold text-foreground">
-            {location.pathname === "/knowledge-base" ? "Knowledge Base" : allNavItems.find((i) => i.path === location.pathname)?.label || "Phewdie"}
+            {location.pathname === "/knowledge-base" ? "Knowledge Base" : allNavItems.find((i) => i.path === location.pathname)?.label || "Phewdee"}
           </h1>
           <div className="ml-auto">
             <Link to="/knowledge-base" className="inline-flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors" title="Knowledge Base">

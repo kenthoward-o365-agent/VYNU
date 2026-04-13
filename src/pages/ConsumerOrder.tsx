@@ -69,7 +69,7 @@ const ConsumerOrder = () => {
   const [tab, setTab] = useState<"feed" | "chat" | "cart" | "profile">("feed");
   const [showChat, setShowChat] = useState(false);
   const [chatMode, setChatMode] = useState<string>("chat_optional");
-  const [agentName, setAgentName] = useState<string>("Sippa");
+  const [agentName, setAgentName] = useState<string>("Phewdee");
   const [agentIconUrl, setAgentIconUrl] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
@@ -112,7 +112,7 @@ const ConsumerOrder = () => {
       if (itemsRes.data) setMenuItems(itemsRes.data as MenuItem[]);
       if (catsRes.data) setCategories(catsRes.data);
 
-      // Load Sippa AI chat mode
+      // Load Phewdee AI chat mode
       const { data: aiConfig } = await supabase
         .from("venue_ai_config")
         .select("chat_mode, agent_name, agent_icon_url")

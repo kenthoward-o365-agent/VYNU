@@ -68,7 +68,7 @@ interface Props {
 export default function SippaAISettings({ venueId }: Props) {
   const [config, setConfig] = useState<SippaConfig>({
     venue_id: venueId,
-    agent_name: "Sippa",
+    agent_name: "Phewdee",
     agent_icon_url: null,
     opening_message: "Hey! 👋 I'm your AI server. Tell me what you're in the mood for and I'll find the perfect dish.",
     tone: "aussie",
@@ -124,7 +124,7 @@ export default function SippaAISettings({ venueId }: Props) {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("Sippa AI configured!");
+        toast.success("Phewdee AI configured!");
         setIsNew(false);
       }
     } else {
@@ -162,7 +162,7 @@ export default function SippaAISettings({ venueId }: Props) {
 
   const selectedTone = toneOptions.find((t) => t.value === config.tone);
 
-  if (loading) return <p className="text-muted-foreground">Loading Sippa AI settings...</p>;
+  if (loading) return <p className="text-muted-foreground">Loading Phewdee AI settings...</p>;
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -181,7 +181,7 @@ export default function SippaAISettings({ venueId }: Props) {
             <Input
               value={config.agent_name}
               onChange={(e) => setConfig((c) => ({ ...c, agent_name: e.target.value }))}
-              placeholder="Sippa"
+              placeholder="Phewdee"
               className="mt-1 max-w-xs"
             />
             <p className="text-xs text-muted-foreground mt-1">This name is shown to diners in the chat header</p>
@@ -356,7 +356,7 @@ export default function SippaAISettings({ venueId }: Props) {
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} size="lg">
           <Sparkles className="h-4 w-4 mr-2" />
-          {saving ? "Saving..." : "Save Sippa AI Settings"}
+          {saving ? "Saving..." : "Save Phewdee AI Settings"}
         </Button>
       </div>
     </div>
