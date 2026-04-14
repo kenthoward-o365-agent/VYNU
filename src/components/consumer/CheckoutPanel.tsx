@@ -103,7 +103,7 @@ const CheckoutPanel = ({
       .from("venue_payment_config" as any)
       .select("is_active")
       .eq("venue_id", venueId)
-      .eq("provider", "adyen")
+      .eq("provider", "ordrpayments")
       .maybeSingle();
     setPaymentEnabled(!!(data as any)?.is_active);
   };
@@ -530,7 +530,7 @@ const CheckoutPanel = ({
                     <div>
                       <p className="text-sm font-medium">Save card for next time</p>
                       <p className="text-xs text-muted-foreground">
-                        Securely stored by Adyen — we never see your full card number
+                        Securely stored by OrdrPayments — we never see your full card number
                       </p>
                     </div>
                     <Switch checked={saveCard} onCheckedChange={setSaveCard} />
@@ -541,7 +541,7 @@ const CheckoutPanel = ({
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Payments processed securely by Adyen</span>
+              <span>Secured by OrdrPayments</span>
             </div>
           </>
         )}

@@ -346,7 +346,7 @@ export default function KnowledgeBase() {
             </ul>
           </SubSection>
           <SubSection title="Payments">
-            <p>Connect your payment gateway to accept payments through the ordering experience. Currently supports Adyen. Enter your merchant account details and API keys to go live.</p>
+            <p>OrdrPayments is Ordrup's built-in payment processing. No third-party accounts or API keys needed — just toggle it on in Settings → Payments and you're ready to accept payments. Use test mode to verify your flow before going live.</p>
           </SubSection>
           <SubSection title="Taxes">
             <p>Configure tax rules for your venue:</p>

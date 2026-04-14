@@ -1,23 +1,19 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { CreditCard, Eye, EyeOff, ShieldCheck, AlertTriangle, CheckCircle2, ExternalLink } from "lucide-react";
+import { CreditCard, ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 interface PaymentConfig {
   id?: string;
   venue_id: string;
   provider: string;
   environment: "test" | "live";
-  api_key_test: string;
-  api_key_live: string;
-  merchant_account: string;
   is_active: boolean;
 }
 
@@ -32,17 +28,12 @@ const TEST_CARDS = [
 export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
   const [config, setConfig] = useState<PaymentConfig>({
     venue_id: venueId,
-    provider: "adyen",
+    provider: "ordrpayments",
     environment: "test",
-    api_key_test: "",
-    api_key_live: "",
-    merchant_account: "",
     is_active: false,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showTestKey, setShowTestKey] = useState(false);
-  const [showLiveKey, setShowLiveKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -52,12 +43,34 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
 
   const fetchConfig = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("venue_payment_config" as any)
       .select("*")
       .eq("venue_id", venueId)
-      .eq("provider", "adyen")
+      .eq("provider", "ordrpayments")
       .maybeSingle();
+
+    if (!data) {
+      // Also check for legacy "adyen" provider
+      const { data: legacyData } = await supabase
+        .from("venue_payment_config" as any)
+        .select("*")
+        .eq("venue_id", venueId)
+        .eq("provider", "adyen")
+        .maybeSingle();
+      if (legacyData) {
+        const d = legacyData as any;
+        setConfig({
+          id: d.id,
+          venue_id: d.venue_id,
+          provider: d.provider,
+          environment: d.environment,
+          is_active: d.is_active,
+        });
+        setLoading(false);
+        return;
+      }
+    }
 
     if (data) {
       const d = data as any;
@@ -66,9 +79,6 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         venue_id: d.venue_id,
         provider: d.provider,
         environment: d.environment,
-        api_key_test: d.api_key_test || "",
-        api_key_live: d.api_key_live || "",
-        merchant_account: d.merchant_account || "",
         is_active: d.is_active,
       });
     }
@@ -79,11 +89,8 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
     setSaving(true);
     const payload: any = {
       venue_id: venueId,
-      provider: "adyen",
+      provider: "ordrpayments",
       environment: config.environment,
-      api_key_test: config.api_key_test || null,
-      api_key_live: config.api_key_live || null,
-      merchant_account: config.merchant_account || null,
       is_active: config.is_active,
     };
 
@@ -133,7 +140,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
       );
       const result = await resp.json();
       if (resp.ok && result.success) {
-        setTestResult({ success: true, message: "Connection successful! Adyen API is reachable." });
+        setTestResult({ success: true, message: "OrdrPayments connection verified successfully." });
       } else {
         setTestResult({ success: false, message: result.error || "Connection failed" });
       }
@@ -147,10 +154,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
     return <p className="text-muted-foreground">Loading payment settings...</p>;
   }
 
-  const activeKey = config.environment === "test" ? config.api_key_test : config.api_key_live;
-  const hasActiveKey = !!activeKey;
-  const isMockMode = config.environment === "test" && !config.api_key_test;
-  const canEnable = config.environment === "test" || (hasActiveKey && !!config.merchant_account);
+  const isMockMode = config.environment === "test";
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -167,18 +171,16 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
               <p className="font-medium text-sm">
                 {config.is_active
                   ? isMockMode
-                    ? "Payments active in MOCK mode"
-                    : `Payments active in ${config.environment.toUpperCase()} mode`
-                  : "Payments not enabled"}
+                    ? "OrdrPayments active in TEST mode"
+                    : "OrdrPayments active — LIVE transactions"
+                  : "OrdrPayments not enabled"}
               </p>
               <p className="text-xs text-muted-foreground">
                 {config.is_active
                   ? isMockMode
-                    ? "Simulated payments — no Adyen account needed. Use test cards below."
-                    : config.environment === "test"
-                    ? "Using Adyen test environment — no real charges"
-                    : "Using Adyen LIVE environment — real transactions"
-                  : "Enable payments below to test the full ordering flow"}
+                    ? "Simulated payments — use test cards below to verify your flow."
+                    : "Live payment processing — real transactions will be charged."
+                  : "Enable OrdrPayments below to accept payments from diners."}
               </p>
             </div>
             <Badge variant="outline" className={config.environment === "live" ? "border-red-500/50 text-red-500" : "border-blue-500/50 text-blue-500"}>
@@ -193,44 +195,20 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Adyen Configuration
+            OrdrPayments Configuration
           </CardTitle>
           <CardDescription>
-            Connect your Adyen merchant account to accept payments.{" "}
-            <a
-              href="https://docs.adyen.com/get-started-with-adyen/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline inline-flex items-center gap-1"
-            >
-              Adyen docs <ExternalLink className="h-3 w-3" />
-            </a>
+            Built-in payment processing by Ordrup. No third-party accounts or API keys needed — we handle everything for you.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          {/* Merchant Account */}
-          <div>
-            <Label>Merchant Account</Label>
-            <Input
-              value={config.merchant_account}
-              onChange={(e) => setConfig((c) => ({ ...c, merchant_account: e.target.value }))}
-              placeholder="YourMerchantAccount"
-              className="mt-1"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Found in your Adyen Customer Area under Account → Merchant accounts
-            </p>
-          </div>
-
-          <Separator />
-
           {/* Environment Toggle */}
           <div className="flex items-center justify-between">
             <div>
               <Label>Environment</Label>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {config.environment === "test"
-                  ? "Test mode — use test card numbers below"
+                  ? "Test mode — use test card numbers below, no real charges"
                   : "Live mode — real transactions will be processed"}
               </p>
             </div>
@@ -248,82 +226,19 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
 
           <Separator />
 
-          {/* Test API Key */}
-          <div>
-            <Label>Test API Key</Label>
-            <div className="relative mt-1">
-              <Input
-                type={showTestKey ? "text" : "password"}
-                value={config.api_key_test}
-                onChange={(e) => setConfig((c) => ({ ...c, api_key_test: e.target.value }))}
-                placeholder="AQE..."
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                onClick={() => setShowTestKey(!showTestKey)}
-              >
-                {showTestKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Generate in Adyen Customer Area → Developers → API credentials → Generate API key (Test)
-            </p>
-          </div>
-
-          {/* Live API Key */}
-          <div>
-            <Label>Live API Key</Label>
-            <div className="relative mt-1">
-              <Input
-                type={showLiveKey ? "text" : "password"}
-                value={config.api_key_live}
-                onChange={(e) => setConfig((c) => ({ ...c, api_key_live: e.target.value }))}
-                placeholder="AQE..."
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                onClick={() => setShowLiveKey(!showLiveKey)}
-              >
-                {showLiveKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Generate in Adyen Customer Area → Developers → API credentials → Generate API key (Live)
-            </p>
-          </div>
-
-          {/* Mock Mode Info */}
-          {config.environment === "test" && !config.api_key_test && (
-            <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4 space-y-1">
-              <p className="text-sm font-medium text-blue-600">Mock Mode Available</p>
-              <p className="text-xs text-muted-foreground">
-                Leave API keys blank to use <strong>mock mode</strong> — simulated payments that work end-to-end without an Adyen account. 
-                Just enable payments and save. Add real credentials later when you're ready to go live.
-              </p>
-            </div>
-          )}
-
-          {/* Activate Payments */}
-          <Separator />
+          {/* Enable Payments */}
           <div className="flex items-center justify-between">
             <div>
               <Label>Enable Payments</Label>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {config.environment === "test" && !config.api_key_test
-                  ? "Enable mock payments — no credentials needed for testing"
-                  : "Turn on to accept payments from diners at this venue"}
+                {config.environment === "test"
+                  ? "Enable test payments — simulated transactions for testing your ordering flow"
+                  : "Turn on to accept real payments from diners at this venue"}
               </p>
             </div>
             <Switch
               checked={config.is_active}
               onCheckedChange={(checked) => setConfig((c) => ({ ...c, is_active: checked }))}
-              disabled={config.environment === "live" && (!hasActiveKey || !config.merchant_account)}
             />
           </div>
 
@@ -335,7 +250,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             <Button
               variant="outline"
               onClick={testConnection}
-              disabled={testing || (config.environment === "live" && (!hasActiveKey || !config.merchant_account))}
+              disabled={testing}
             >
               <ShieldCheck className="h-4 w-4 mr-2" />
               {testing ? "Testing..." : "Test Connection"}
@@ -356,7 +271,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Test Card Numbers</CardTitle>
-            <CardDescription>{isMockMode ? "Use these cards in mock mode — payments are simulated locally" : "Use these card numbers in test mode — no real charges"}</CardDescription>
+            <CardDescription>Use these cards in test mode — payments are simulated, no real charges</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
