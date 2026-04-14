@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Loader2, Check, X, ImagePlus, ImageOff, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { resizeToWebP } from "@/lib/image-utils";
 
 interface EnhanceableItem {
   id: string;
@@ -169,16 +170,12 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
     setAccepting(true);
     for (const result of selected) {
       try {
-        const base64Data = result.enhancedBase64.replace(/^data:image\/\w+;base64,/, "");
-        const binaryString = atob(base64Data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-        const blob = new Blob([bytes], { type: "image/png" });
+        const blob = await resizeToWebP(result.enhancedBase64, 800, 0.8);
 
-        const path = `menu-items/${venueId}/enhanced/${result.itemId}-${Date.now()}.png`;
+        const path = `menu-items/${venueId}/enhanced/${result.itemId}-${Date.now()}.webp`;
         const { error: uploadError } = await supabase.storage
           .from("venue-assets")
-          .upload(path, blob, { contentType: "image/png", upsert: true });
+          .upload(path, blob, { contentType: "image/webp", upsert: true });
         if (uploadError) throw uploadError;
 
         const { data: urlData } = supabase.storage.from("venue-assets").getPublicUrl(path);
