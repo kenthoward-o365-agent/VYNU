@@ -495,7 +495,7 @@ export default function VenueSettings() {
         {/* ── PAYMENTS TAB ── */}
         {isManager && venue && (
           <>
-            <TabsContent value="ordrup" className="space-y-6">
+            <TabsContent value="sippa" className="space-y-6">
               <SippaAISettings venueId={venue.id} />
             </TabsContent>
             <TabsContent value="payments" className="space-y-6">
