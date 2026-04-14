@@ -8,9 +8,14 @@ export function optimizedImageUrl(
   quality = 75,
 ): string {
   if (!url) return "";
+  // Supabase image transforms use /render/image/ instead of /object/
   if (!url.includes("/storage/v1/object/public/")) return url;
   const base = url.split("?")[0];
-  return `${base}?width=${width}&quality=${quality}&format=webp`;
+  const renderUrl = base.replace(
+    "/storage/v1/object/public/",
+    "/storage/v1/render/image/public/",
+  );
+  return `${renderUrl}?width=${width}&quality=${quality}`;
 }
 
 /**
