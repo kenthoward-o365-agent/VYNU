@@ -81,7 +81,7 @@ function AppRoutes() {
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/rule-types" element={<RuleTypes />} />
         <Route path="/analytics" element={<Analytics />} />
-        <Route path="/ordrup-analytics" element={<OrdrupAnalyticsPage />} />
+        <Route path="/sippa-analytics" element={<SippaAnalyticsPage />} />
         <Route path="/diners" element={<Diners />} />
         <Route path="/diners/preferences" element={<DinerPreferences />} />
         <Route path="/loyalty" element={<Navigate to="/settings" replace />} />

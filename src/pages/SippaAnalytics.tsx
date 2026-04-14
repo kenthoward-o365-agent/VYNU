@@ -1,7 +1,7 @@
 import { useVenue } from "@/contexts/VenueContext";
 import SippaAnalyticsComponent from "@/components/venue/SippaAnalytics";
 
-export default function OrdrupAnalyticsPage() {
+export default function SippaAnalyticsPage() {
   const { venue } = useVenue();
   if (!venue) return null;
   return (
@@ -10,7 +10,7 @@ export default function OrdrupAnalyticsPage() {
         <h2 className="text-2xl font-bold text-foreground">Ordrup AI Analytics</h2>
         <p className="text-muted-foreground">Chat performance and conversion insights</p>
       </div>
-      <OrdrupAnalyticsComponent venueId={venue.id} />
+      <SippaAnalyticsComponent venueId={venue.id} />
     </div>
   );
 }
