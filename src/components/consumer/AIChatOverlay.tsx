@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, X, Sparkles, Users, AlertTriangle, Mic, MicOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,9 +27,10 @@ interface AIChatOverlayProps {
   tableId?: string | null;
   lastOrderItems?: LastOrderItem[];
   cartTotal?: number;
+  onSessionCreated?: (sessionId: string) => void;
 }
 
-const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tableId, lastOrderItems, cartTotal = 0 }: AIChatOverlayProps) => {
+const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tableId, lastOrderItems, cartTotal = 0, onSessionCreated }: AIChatOverlayProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,8 +40,6 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
   const inputRef = useRef<HTMLInputElement>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
   const sessionIdRef = useRef<string | null>(null);
-  const messageCountRef = useRef(0);
-  const itemsAddedRef = useRef(0);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
 
@@ -102,23 +100,31 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
   // Create chat session on mount
   useEffect(() => {
     const createSession = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("chat_sessions")
         .insert({ venue_id: venueId, diner_id: dinerId || null, table_id: tableId || null })
         .select("id")
         .single();
-      if (data) sessionIdRef.current = data.id;
+
+      if (error) {
+        console.error("Failed to create chat session:", error);
+        return;
+      }
+      if (data) {
+        sessionIdRef.current = data.id;
+        onSessionCreated?.(data.id);
+      }
     };
     createSession();
 
-    // Update session on unmount
+    // Close session on unmount
     return () => {
       if (sessionIdRef.current) {
         supabase.from("chat_sessions").update({
-          message_count: messageCountRef.current,
-          items_added: itemsAddedRef.current,
           ended_at: new Date().toISOString(),
-        }).eq("id", sessionIdRef.current).then(() => {});
+        }).eq("id", sessionIdRef.current).then(({ error }) => {
+          if (error) console.error("Failed to close chat session:", error);
+        });
       }
     };
   }, [venueId, dinerId, tableId]);
@@ -126,6 +132,29 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  const updateSessionStats = async (newMessages: number, newItems: number) => {
+    if (!sessionIdRef.current) return;
+
+    // Use raw SQL-style increment via RPC isn't available, so we read-then-write
+    const { data: session } = await supabase
+      .from("chat_sessions")
+      .select("message_count, items_added")
+      .eq("id", sessionIdRef.current)
+      .maybeSingle();
+
+    if (session) {
+      const { error } = await supabase
+        .from("chat_sessions")
+        .update({
+          message_count: session.message_count + newMessages,
+          items_added: session.items_added + newItems,
+        })
+        .eq("id", sessionIdRef.current);
+
+      if (error) console.error("Failed to update session stats:", error);
+    }
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
@@ -177,21 +206,23 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
 
       setMessages((prev) => [...prev, assistantMsg]);
 
-      const hadItems = data.suggested_items?.length > 0;
+      const itemsAdded = data.suggested_items?.length || 0;
       if (data.suggested_items?.length > 0) {
         data.suggested_items.forEach((item: { id: string; name: string; price: number }) => {
           onAddToCart(item);
         });
-        itemsAddedRef.current += data.suggested_items.length;
       }
 
+      // Update session stats inline (2 messages: user + assistant)
+      await updateSessionStats(2, itemsAdded);
+
       // Log messages for analytics
-      messageCountRef.current += 2; // user + assistant
       if (sessionIdRef.current) {
-        supabase.from("chat_messages_log").insert([
+        const { error: logError } = await supabase.from("chat_messages_log").insert([
           { session_id: sessionIdRef.current, venue_id: venueId, role: "user", content: userMsg.content, had_items_added: false },
-          { session_id: sessionIdRef.current, venue_id: venueId, role: "assistant", content: assistantMsg.content, had_items_added: hadItems },
-        ]).then(() => {});
+          { session_id: sessionIdRef.current, venue_id: venueId, role: "assistant", content: assistantMsg.content, had_items_added: itemsAdded > 0 },
+        ]);
+        if (logError) console.error("Failed to log chat messages:", logError);
       }
     } catch (err) {
       console.error("Chat error:", err);
