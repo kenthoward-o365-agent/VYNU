@@ -137,7 +137,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     )}
                   >
-                    <item.icon className="h-4 w-4 shrink-0" />
+                    {typeof item.icon === 'string' ? (
+                      <img src={item.icon} className="h-4 w-4 shrink-0 dark:invert dark:brightness-200" alt="" />
+                    ) : (
+                      <item.icon className="h-4 w-4 shrink-0" />
+                    )}
                     {item.label}
                   </Link>
                   {hasSub && (
