@@ -1,54 +1,46 @@
 
 
-# Rebrand "Phewdee" → "Ordrup" (+ clean up all legacy Sippa/Noshi references)
+# Rebrand Payments to "OrdrPayments" (Ordrup as PayFac)
 
-## Scope
-Replace every occurrence of "Phewdee", "Sippa", and "Noshi" (in user-visible text, comments, imports, filenames, and assets) with "Ordrup". Pure text/asset replacement — no database, routing, or structural changes.
+## Overview
+Replace all Adyen-specific branding and references with "OrdrPayments" — Ordrup's own payment facilitation brand. The current payment infrastructure (edge function, mock mode, stored cards, checkout flow) stays intact structurally, but all user-facing text shifts from "Adyen" to "OrdrPayments". Since Ordrup is the PayFac, venues no longer need to bring their own Adyen credentials — the configuration simplifies to an activation toggle with OrdrPayments managing the underlying processing.
 
-## Files to edit
+## Changes
 
-### HTML & Assets (4 files)
-- **`index.html`** — title, author, description, og/twitter tags: "Phewdee" → "Ordrup"
-- **`src/assets/noshi-lockup.svg`** — text element → "Ordrup", adjust underline width (~48px for 6 chars)
-- **`src/assets/noshi-lockup-dark.svg`** — same as above
-- **`public/noshi-icon.svg`** — no text change needed (just the geometric icon), but favicon `<link>` in index.html still references it
+### 1. Payment Settings Tab (`src/components/venue/PaymentSettingsTab.tsx`)
+- Replace all "Adyen" text with "OrdrPayments"
+- Change card title to "OrdrPayments Configuration"
+- Remove Adyen docs link — replace with Ordrup help text
+- Update helper text: "Powered by OrdrPayments" instead of "Connect your Adyen merchant account"
+- Remove the merchant account and API key fields (Ordrup is the PayFac — venues don't enter their own keys)
+- Simplify to: environment toggle (test/live), enable payments switch, test connection button
+- Keep mock mode and test cards section
+- Update status banner text ("OrdrPayments active" etc.)
 
-### Core App (2 files)
-- **`src/App.tsx`** — loading screen text, import path for SippaAnalyticsPage
-- **`src/components/DashboardLayout.tsx`** — alt text, nav labels ("Phewdee AI" → "Ordrup AI"), header fallback
+### 2. Checkout Panel (`src/components/consumer/CheckoutPanel.tsx`)
+- Change provider filter from `"adyen"` to `"ordrpayments"` in `checkPaymentEnabled`
+- Update edge function URL references from `adyen-payment` to `ordr-payment` (or keep same function, just rebrand)
+- Add "Secured by OrdrPayments" badge at bottom of payment form
 
-### Pages (9 files)
-- **`src/pages/Auth.tsx`** — heading, description ("Set up your venue on Ordrup")
-- **`src/pages/Onboarding.tsx`** — card description
-- **`src/pages/AdminStaff.tsx`** — badge text, description
-- **`src/pages/KnowledgeBase.tsx`** — all section titles, body text, support email → `support@ordrup.com`
-- **`src/pages/SippaAnalytics.tsx`** — heading text
-- **`src/pages/Tables.tsx`** — published base URL comment
-- **`src/pages/DinerPreferences.tsx`** — any remaining references
-- **`src/pages/VenueSettings.tsx`** — import reference (SippaAISettings)
-- **`src/pages/ConsumerOrder.tsx`** — fallback agent name
+### 3. Edge Function (`supabase/functions/adyen-payment/index.ts`)
+- Keep the existing function name for now (avoid breaking routes)
+- Update internal comments from "Adyen" to "OrdrPayments"
+- The mock mode continues to work as-is — when Ordrup has real PayFac credentials, the live path will route through Ordrup's merchant account rather than per-venue Adyen keys
 
-### Components (4 files)
-- **`src/components/venue/SippaAISettings.tsx`** — default agent name, placeholder text, toast messages, storage path comment
-- **`src/components/venue/SippaAnalytics.tsx`** — heading text
-- **`src/components/consumer/VenueLanding.tsx`** — "Powered by Ordrup"
-- **`src/components/consumer/ReceiptView.tsx`** — "Powered by Ordrup Pty Ltd"
-- **`src/components/consumer/AIChatOverlay.tsx`** — default agent name
+### 4. Knowledge Base (`src/pages/KnowledgeBase.tsx`)
+- Update the Payments subsection: "OrdrPayments" instead of "Adyen"
+- Describe it as Ordrup's built-in payment processing
 
-### Edge Functions (2 files)
-- **`supabase/functions/diner-chat/index.ts`** — fallback agent name
-- **`supabase/functions/admin-create-user/index.ts`** — error message text
+### 5. Database consideration
+- The `venue_payment_config` table has `provider` column — new rows will use `"ordrpayments"` instead of `"adyen"`
+- No schema migration needed — the provider column is already a text field
 
-### Legacy asset cleanup
-- **`src/assets/sippa-lockup.svg`** — still contains old Sippa branding; delete or update
-- **`src/assets/sippa-lockup-dark.svg`** — same
-
-### Memory (1 file)
-- **`.lovable/memory/index.md`** — update project name to Ordrup
+### 6. Memory update
+- Update `.lovable/memory/index.md` to note OrdrPayments as the built-in PayFac
 
 ## Technical details
-- SVG text elements: update the `<text>` content and adjust the `<rect>` underline width to match "Ordrup" (~48px)
-- Default agent name in AI settings and edge functions changes from "Phewdee" to "Ordrup"
-- Support email becomes `support@ordrup.com` (placeholder)
-- No route path changes (routes like `/sippa-analytics` stay as-is to avoid breaking bookmarks; only labels change)
+- Provider string changes from `"adyen"` to `"ordrpayments"` in all queries and inserts
+- The edge function `adyen-payment` keeps its route name to avoid redeployment churn — can be renamed later
+- PaymentSettingsTab simplifies significantly: no API key fields, no merchant account — just enable/disable and environment toggle
+- Mock mode remains for testing without real processing credentials
 
