@@ -3,8 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
-  LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
-  TrendingUp, Settings, LogOut, Menu, X, ChevronDown, Users, Building2, Check, Sun, Moon, Shield, Sparkles, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, BarChart3, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Clock
+  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -15,6 +14,16 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 
+import navDashboard from "@/assets/nav-icons/dashboard.svg";
+import navAIAnalytics from "@/assets/nav-icons/Ordrup_AI_Analytics.svg";
+import navMenuBuilder from "@/assets/nav-icons/menu-builder.svg";
+import navPricing from "@/assets/nav-icons/pricing.svg";
+import navTablesQR from "@/assets/nav-icons/tables-qr.svg";
+import navOrders from "@/assets/nav-icons/orders.svg";
+import navAnalytics from "@/assets/nav-icons/analytics.svg";
+import navDiners from "@/assets/nav-icons/diners.svg";
+import navSettings from "@/assets/nav-icons/settings.svg";
+
 interface NavItem {
   path: string;
   label: string;
@@ -23,15 +32,15 @@ interface NavItem {
 }
 
 const venueNavItems: NavItem[] = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/sippa-analytics", label: "Ordrup AI Analytics", icon: BarChart3 },
-  { path: "/menu", label: "Menu Builder", icon: UtensilsCrossed, hasSub: true },
-  { path: "/pricing", label: "Pricing", icon: Tag, hasSub: true },
-  { path: "/tables", label: "Tables & QR", icon: QrCode },
-  { path: "/orders", label: "Orders", icon: ClipboardList },
-  { path: "/analytics", label: "Analytics", icon: TrendingUp },
-  { path: "/diners", label: "Diners", icon: Users, hasSub: true },
-  { path: "/settings", label: "Settings", icon: Settings, hasSub: true },
+  { path: "/dashboard", label: "Dashboard", icon: navDashboard },
+  { path: "/sippa-analytics", label: "Ordrup AI Analytics", icon: navAIAnalytics },
+  { path: "/menu", label: "Menu Builder", icon: navMenuBuilder, hasSub: true },
+  { path: "/pricing", label: "Pricing", icon: navPricing, hasSub: true },
+  { path: "/tables", label: "Tables & QR", icon: navTablesQR },
+  { path: "/orders", label: "Orders", icon: navOrders },
+  { path: "/analytics", label: "Analytics", icon: navAnalytics },
+  { path: "/diners", label: "Diners", icon: navDiners, hasSub: true },
+  { path: "/settings", label: "Settings", icon: navSettings, hasSub: true },
 ];
 
 const groupNavItems = [
@@ -128,7 +137,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     )}
                   >
-                    <item.icon className="h-4 w-4 shrink-0" />
+                    {typeof item.icon === 'string' ? (
+                      <img src={item.icon} className="h-4 w-4 shrink-0 dark:invert dark:brightness-200" alt="" />
+                    ) : (
+                      <item.icon className="h-4 w-4 shrink-0" />
+                    )}
                     {item.label}
                   </Link>
                   {hasSub && (
