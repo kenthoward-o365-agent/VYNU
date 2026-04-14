@@ -3,6 +3,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTheme } from "@/contexts/ThemeContext";
+import lockupLight from "@/assets/noshi-lockup.svg";
+import lockupDark from "@/assets/noshi-lockup-dark.svg";
 import { toast } from "sonner";
 
 export default function Auth() {
