@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- OrdrUp D2 Radial Logo Mark - On Light -->
+  <circle cx="256" cy="256" r="45" fill="#1B3A5C"/>
+  <circle cx="256" cy="136" r="26" fill="#1B3A5C"/>
+  <circle cx="256" cy="376" r="26" fill="#1B3A5C"/>
+  <circle cx="136" cy="256" r="26" fill="#1B3A5C"/>
+  <circle cx="376" cy="256" r="26" fill="#1B3A5C"/>
+  <circle cx="171.2" cy="171.2" r="21" fill="#C9A84C"/>
+  <circle cx="340.8" cy="171.2" r="21" fill="#C9A84C"/>
+  <circle cx="171.2" cy="340.8" r="21" fill="#C9A84C"/>
+  <circle cx="340.8" cy="340.8" r="21" fill="#C9A84C"/>
+  <circle cx="256" cy="31" r="16" fill="#1B3A5C" opacity="0.5"/>
+  <circle cx="256" cy="481" r="16" fill="#1B3A5C" opacity="0.5"/>
+  <circle cx="31" cy="256" r="16" fill="#1B3A5C" opacity="0.5"/>
+  <circle cx="481" cy="256" r="16" fill="#1B3A5C" opacity="0.5"/>
+  <circle cx="96.8" cy="96.8" r="13" fill="#C9A84C" opacity="0.35"/>
+  <circle cx="415.2" cy="96.8" r="13" fill="#C9A84C" opacity="0.35"/>
+  <circle cx="96.8" cy="415.2" r="13" fill="#C9A84C" opacity="0.35"/>
+  <circle cx="415.2" cy="415.2" r="13" fill="#C9A84C" opacity="0.35"/>
+</svg>

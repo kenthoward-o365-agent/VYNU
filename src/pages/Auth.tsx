@@ -4,9 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTheme } from "@/contexts/ThemeContext";
-import lockupLight from "@/assets/noshi-lockup.svg";
-import lockupDark from "@/assets/noshi-lockup-dark.svg";
-import noshiIcon from "/noshi-icon.svg";
 import { toast } from "sonner";
 
 export default function Auth() {
@@ -17,6 +14,8 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const logoSrc = theme === "dark" ? "/ordrup-icon-dark.svg" : "/ordrup-icon.svg";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +39,7 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-4">
-          <img src={noshiIcon} alt="Ordrup" className="h-16 w-16 mx-auto" />
+          <img src={logoSrc} alt="Ordrup" className="h-16 w-16 mx-auto" />
           <div className="space-y-1">
             <h1 className="text-3xl font-bold text-foreground">Ordrup</h1>
             <p className="text-muted-foreground">The world's first agentic dining platform</p>
