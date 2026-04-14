@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <!-- Duotone plate/bowl -->
+  <ellipse cx="12" cy="17" rx="9" ry="4" fill="#C9A96E" opacity="0.25"/>
+  <!-- Fork -->
+  <path d="M7 3V9C7 10.1046 7.89543 11 9 11V11V21" stroke="#EBEBEB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="7" y1="3" x2="7" y2="7" stroke="#EBEBEB" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="9" y1="3" x2="9" y2="7" stroke="#EBEBEB" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="11" y1="3" x2="11" y2="7" stroke="#EBEBEB" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M11 7V9C11 10.1046 10.1046 11 9 11" stroke="#EBEBEB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Knife -->
+  <path d="M17 3C17 3 15 5 15 9C15 10.1046 15.8954 11 17 11V21" stroke="#EBEBEB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Plate rim -->
+  <ellipse cx="12" cy="17" rx="9" ry="4" stroke="#EBEBEB" stroke-width="1.5"/>
+</svg>
