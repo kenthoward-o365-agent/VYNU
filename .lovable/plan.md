@@ -1,46 +1,31 @@
 
 
-# Rebrand Payments to "OrdrPayments" (Ordrup as PayFac)
+# Update Logo Icon to New Radial Design
 
-## Overview
-Replace all Adyen-specific branding and references with "OrdrPayments" — Ordrup's own payment facilitation brand. The current payment infrastructure (edge function, mock mode, stored cards, checkout flow) stays intact structurally, but all user-facing text shifts from "Adyen" to "OrdrPayments". Since Ordrup is the PayFac, venues no longer need to bring their own Adyen credentials — the configuration simplifies to an activation toggle with OrdrPayments managing the underlying processing.
+## What's changing
+Replace the old filled-circle icon (`noshi-icon.svg`) with the new D2 radial logo mark across the app. The uploaded SVG is the "on light" variant — we also need a "on dark" variant for dark theme contexts.
 
-## Changes
+## Logo variant strategy
 
-### 1. Payment Settings Tab (`src/components/venue/PaymentSettingsTab.tsx`)
-- Replace all "Adyen" text with "OrdrPayments"
-- Change card title to "OrdrPayments Configuration"
-- Remove Adyen docs link — replace with Ordrup help text
-- Update helper text: "Powered by OrdrPayments" instead of "Connect your Adyen merchant account"
-- Remove the merchant account and API key fields (Ordrup is the PayFac — venues don't enter their own keys)
-- Simplify to: environment toggle (test/live), enable payments switch, test connection button
-- Keep mock mode and test cards section
-- Update status banner text ("OrdrPayments active" etc.)
+The uploaded logo uses **Ai Indigo dots on transparent/light background**. For dark mode, we need to invert the indigo dots to white/ivory (`#F8F5ED`) so they're visible against dark backgrounds.
 
-### 2. Checkout Panel (`src/components/consumer/CheckoutPanel.tsx`)
-- Change provider filter from `"adyen"` to `"ordrpayments"` in `checkPaymentEnabled`
-- Update edge function URL references from `adyen-payment` to `ordr-payment` (or keep same function, just rebrand)
-- Add "Secured by OrdrPayments" badge at bottom of payment form
+- **`public/ordrup-icon.svg`** — "on light" version (indigo + gold on transparent) — used as favicon and default
+- **`public/ordrup-icon-dark.svg`** — "on dark" version (ivory + gold on transparent) — used on dark backgrounds
+- **Delete** `public/noshi-icon.svg` (old icon)
 
-### 3. Edge Function (`supabase/functions/adyen-payment/index.ts`)
-- Keep the existing function name for now (avoid breaking routes)
-- Update internal comments from "Adyen" to "OrdrPayments"
-- The mock mode continues to work as-is — when Ordrup has real PayFac credentials, the live path will route through Ordrup's merchant account rather than per-venue Adyen keys
+## Files to edit
 
-### 4. Knowledge Base (`src/pages/KnowledgeBase.tsx`)
-- Update the Payments subsection: "OrdrPayments" instead of "Adyen"
-- Describe it as Ordrup's built-in payment processing
-
-### 5. Database consideration
-- The `venue_payment_config` table has `provider` column — new rows will use `"ordrpayments"` instead of `"adyen"`
-- No schema migration needed — the provider column is already a text field
-
-### 6. Memory update
-- Update `.lovable/memory/index.md` to note OrdrPayments as the built-in PayFac
+| File | Change |
+|------|--------|
+| `public/ordrup-icon.svg` | Copy uploaded SVG (scaled to 64×64 viewBox for favicon use) |
+| `public/ordrup-icon-dark.svg` | Same SVG but indigo circles → `#F8F5ED`, gold stays |
+| `index.html` | Favicon href → `/ordrup-icon.svg` |
+| `src/pages/Auth.tsx` | Import new icon, use dark variant when `theme === 'dark'` |
+| `src/pages/ResetPassword.tsx` | Same icon swap with theme awareness |
+| `public/noshi-icon.svg` | Delete |
 
 ## Technical details
-- Provider string changes from `"adyen"` to `"ordrpayments"` in all queries and inserts
-- The edge function `adyen-payment` keeps its route name to avoid redeployment churn — can be renamed later
-- PaymentSettingsTab simplifies significantly: no API key fields, no merchant account — just enable/disable and environment toggle
-- Mock mode remains for testing without real processing credentials
+- The uploaded SVG is 512×512 with no background fill — perfect for both themes on transparent
+- Auth.tsx already has `useTheme()` — we'll conditionally pick the light/dark icon variant
+- The 512px SVG works fine as favicon (browsers downscale); no need to resize
 
