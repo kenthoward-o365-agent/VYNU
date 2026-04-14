@@ -26,7 +26,7 @@ interface NavItem {
 
 const venueNavItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/ordrup-analytics", label: "Ordrup AI Analytics", icon: BarChart3 },
+  { path: "/sippa-analytics", label: "Ordrup AI Analytics", icon: BarChart3 },
   { path: "/menu", label: "Menu Builder", icon: UtensilsCrossed, hasSub: true },
   { path: "/pricing", label: "Pricing", icon: Tag, hasSub: true },
   { path: "/tables", label: "Tables & QR", icon: QrCode },
@@ -174,7 +174,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       { to: "/settings?tab=details", label: "Details", icon: Settings },
                       { to: "/settings?tab=users", label: "Users", icon: Users },
                       { to: "/settings?tab=loyalty", label: "Loyalty", icon: Gift },
-                      { to: "/settings?tab=ordrup", label: "Ordrup AI", icon: Bot },
+                      { to: "/settings?tab=sippa", label: "Ordrup AI", icon: Bot },
                       { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
                       { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
                       { to: "/settings?tab=surcharges", label: "Surcharges", icon: Percent },
