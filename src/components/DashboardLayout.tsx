@@ -15,14 +15,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import navDashboard from "@/assets/nav-icons/dashboard.svg";
+import navDashboardDark from "@/assets/nav-icons/dashboard-dark.svg";
 import navAIAnalytics from "@/assets/nav-icons/Ordrup_AI_Analytics.svg";
+import navAIAnalyticsDark from "@/assets/nav-icons/Ordrup_AI_Analytics-dark.svg";
 import navMenuBuilder from "@/assets/nav-icons/menu-builder.svg";
+import navMenuBuilderDark from "@/assets/nav-icons/menu-builder-dark.svg";
 import navPricing from "@/assets/nav-icons/pricing.svg";
+import navPricingDark from "@/assets/nav-icons/pricing-dark.svg";
 import navTablesQR from "@/assets/nav-icons/tables-qr.svg";
+import navTablesQRDark from "@/assets/nav-icons/tables-qr-dark.svg";
 import navOrders from "@/assets/nav-icons/orders.svg";
+import navOrdersDark from "@/assets/nav-icons/orders-dark.svg";
 import navAnalytics from "@/assets/nav-icons/analytics.svg";
+import navAnalyticsDark from "@/assets/nav-icons/analytics-dark.svg";
 import navDiners from "@/assets/nav-icons/diners.svg";
+import navDinersDark from "@/assets/nav-icons/diners-dark.svg";
 import navSettings from "@/assets/nav-icons/settings.svg";
+import navSettingsDark from "@/assets/nav-icons/settings-dark.svg";
 
 interface NavItem {
   path: string;
@@ -32,15 +41,15 @@ interface NavItem {
 }
 
 const venueNavItems: NavItem[] = [
-  { path: "/dashboard", label: "Dashboard", icon: navDashboard },
-  { path: "/sippa-analytics", label: "Ordrup AI Analytics", icon: navAIAnalytics },
-  { path: "/menu", label: "Menu Builder", icon: navMenuBuilder, hasSub: true },
-  { path: "/pricing", label: "Pricing", icon: navPricing, hasSub: true },
-  { path: "/tables", label: "Tables & QR", icon: navTablesQR },
-  { path: "/orders", label: "Orders", icon: navOrders },
-  { path: "/analytics", label: "Analytics", icon: navAnalytics },
-  { path: "/diners", label: "Diners", icon: navDiners, hasSub: true },
-  { path: "/settings", label: "Settings", icon: navSettings, hasSub: true },
+  { path: "/dashboard", label: "Dashboard", icon: { light: navDashboard, dark: navDashboardDark } },
+  { path: "/sippa-analytics", label: "Ordrup AI Analytics", icon: { light: navAIAnalytics, dark: navAIAnalyticsDark } },
+  { path: "/menu", label: "Menu Builder", icon: { light: navMenuBuilder, dark: navMenuBuilderDark }, hasSub: true },
+  { path: "/pricing", label: "Pricing", icon: { light: navPricing, dark: navPricingDark }, hasSub: true },
+  { path: "/tables", label: "Tables & QR", icon: { light: navTablesQR, dark: navTablesQRDark } },
+  { path: "/orders", label: "Orders", icon: { light: navOrders, dark: navOrdersDark } },
+  { path: "/analytics", label: "Analytics", icon: { light: navAnalytics, dark: navAnalyticsDark } },
+  { path: "/diners", label: "Diners", icon: { light: navDiners, dark: navDinersDark }, hasSub: true },
+  { path: "/settings", label: "Settings", icon: { light: navSettings, dark: navSettingsDark }, hasSub: true },
 ];
 
 const groupNavItems = [
@@ -137,8 +146,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     )}
                   >
-                    {typeof item.icon === 'string' ? (
-                      <img src={item.icon} className="h-4 w-4 shrink-0 dark:invert dark:brightness-200" alt="" />
+                    {typeof item.icon === 'object' && 'light' in item.icon ? (
+                      <img src={theme === 'dark' ? item.icon.dark : item.icon.light} className="h-4 w-4 shrink-0" alt="" />
+                    ) : typeof item.icon === 'string' ? (
+                      <img src={item.icon} className="h-4 w-4 shrink-0" alt="" />
                     ) : (
                       <item.icon className="h-4 w-4 shrink-0" />
                     )}
