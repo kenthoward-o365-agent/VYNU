@@ -3,10 +3,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTheme } from "@/contexts/ThemeContext";
+import lockupLight from "@/assets/noshi-lockup.svg";
+import lockupDark from "@/assets/noshi-lockup-dark.svg";
+import noshiIcon from "/noshi-icon.svg";
 import { toast } from "sonner";
 
 export default function Auth() {
   const { signIn, signUp } = useAuth();
+  const { theme } = useTheme();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,9 +39,12 @@ export default function Auth() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">Ordrup</h1>
-          <p className="text-muted-foreground">The world's first agentic dining platform</p>
+        <div className="text-center space-y-4">
+          <img src={noshiIcon} alt="Ordrup" className="h-16 w-16 mx-auto" />
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold text-foreground">Ordrup</h1>
+            <p className="text-muted-foreground">The world's first agentic dining platform</p>
+          </div>
         </div>
         <Card>
           <CardHeader>
