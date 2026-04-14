@@ -1,30 +1,54 @@
 
 
-# Rename "Phewdie" → "Phewdee" + Replace All Remaining "Sippa" References
+# Rebrand "Phewdee" → "Ordrup" (+ clean up all legacy Sippa/Noshi references)
 
-## Overview
-Two tasks combined: (1) correct the spelling from "Phewdie" to "Phewdee" everywhere it appears, and (2) replace all remaining "Sippa" references across the entire codebase — including the Knowledge Base, Auth page, Admin Staff page, Consumer Order page, AI Settings component, App.tsx, and Tables page.
+## Scope
+Replace every occurrence of "Phewdee", "Sippa", and "Noshi" (in user-visible text, comments, imports, filenames, and assets) with "Ordrup". Pure text/asset replacement — no database, routing, or structural changes.
 
 ## Files to edit
 
-### 1. "Phewdie" → "Phewdee" (6 files)
-- **`index.html`** — title, author, og/twitter tags
-- **`src/assets/noshi-lockup.svg`** — brand text
-- **`src/assets/noshi-lockup-dark.svg`** — brand text
-- **`src/components/DashboardLayout.tsx`** — nav labels, alt text, header fallback
-- **`src/pages/SippaAnalytics.tsx`** — page heading
-- **`.lovable/memory/index.md`** — project memory
+### HTML & Assets (4 files)
+- **`index.html`** — title, author, description, og/twitter tags: "Phewdee" → "Ordrup"
+- **`src/assets/noshi-lockup.svg`** — text element → "Ordrup", adjust underline width (~48px for 6 chars)
+- **`src/assets/noshi-lockup-dark.svg`** — same as above
+- **`public/noshi-icon.svg`** — no text change needed (just the geometric icon), but favicon `<link>` in index.html still references it
 
-### 2. "Sippa" → "Phewdee" (8 files, ~49 occurrences in Knowledge Base alone)
-- **`src/pages/KnowledgeBase.tsx`** — TOC label, all section titles, body text, support email → `support@phewdee.com` (or placeholder)
-- **`src/pages/Auth.tsx`** — login/signup headings and descriptions
-- **`src/pages/AdminStaff.tsx`** — "Sippa admin" badges and descriptions
-- **`src/pages/ConsumerOrder.tsx`** — default agent name fallback
-- **`src/pages/Tables.tsx`** — published base URL comment (cosmetic)
-- **`src/components/venue/SippaAISettings.tsx`** — placeholder text, toast messages, loading text, button label, storage path comment
+### Core App (2 files)
+- **`src/App.tsx`** — loading screen text, import path for SippaAnalyticsPage
+- **`src/components/DashboardLayout.tsx`** — alt text, nav labels ("Phewdee AI" → "Ordrup AI"), header fallback
+
+### Pages (9 files)
+- **`src/pages/Auth.tsx`** — heading, description ("Set up your venue on Ordrup")
+- **`src/pages/Onboarding.tsx`** — card description
+- **`src/pages/AdminStaff.tsx`** — badge text, description
+- **`src/pages/KnowledgeBase.tsx`** — all section titles, body text, support email → `support@ordrup.com`
+- **`src/pages/SippaAnalytics.tsx`** — heading text
+- **`src/pages/Tables.tsx`** — published base URL comment
+- **`src/pages/DinerPreferences.tsx`** — any remaining references
+- **`src/pages/VenueSettings.tsx`** — import reference (SippaAISettings)
+- **`src/pages/ConsumerOrder.tsx`** — fallback agent name
+
+### Components (4 files)
+- **`src/components/venue/SippaAISettings.tsx`** — default agent name, placeholder text, toast messages, storage path comment
 - **`src/components/venue/SippaAnalytics.tsx`** — heading text
-- **`src/App.tsx`** — loading screen text
+- **`src/components/consumer/VenueLanding.tsx`** — "Powered by Ordrup"
+- **`src/components/consumer/ReceiptView.tsx`** — "Powered by Ordrup Pty Ltd"
+- **`src/components/consumer/AIChatOverlay.tsx`** — default agent name
 
-### 3. No structural or database changes
-Pure text replacement — no routing, schema, or component renames needed.
+### Edge Functions (2 files)
+- **`supabase/functions/diner-chat/index.ts`** — fallback agent name
+- **`supabase/functions/admin-create-user/index.ts`** — error message text
+
+### Legacy asset cleanup
+- **`src/assets/sippa-lockup.svg`** — still contains old Sippa branding; delete or update
+- **`src/assets/sippa-lockup-dark.svg`** — same
+
+### Memory (1 file)
+- **`.lovable/memory/index.md`** — update project name to Ordrup
+
+## Technical details
+- SVG text elements: update the `<text>` content and adjust the `<rect>` underline width to match "Ordrup" (~48px)
+- Default agent name in AI settings and edge functions changes from "Phewdee" to "Ordrup"
+- Support email becomes `support@ordrup.com` (placeholder)
+- No route path changes (routes like `/sippa-analytics` stay as-is to avoid breaking bookmarks; only labels change)
 
