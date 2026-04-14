@@ -27,7 +27,6 @@ interface VenueInfo {
   postcode: string | null;
   phone: string | null;
   email: string | null;
-  tax_id: string | null;
   landing_page_html: string | null;
   group_id: string | null;
 }
@@ -94,7 +93,7 @@ const ConsumerOrder = () => {
       if (!venueId || !tableId) return;
 
       const [venueRes, itemsRes, catsRes] = await Promise.all([
-        supabase.from("venues").select("id, name, venue_type, logo_url, address, city, state, postcode, phone, email, tax_id, landing_page_html, group_id").eq("id", venueId).single(),
+        supabase.from("venues").select("id, name, venue_type, logo_url, address, city, state, postcode, phone, email, landing_page_html, group_id").eq("id", venueId).single(),
         supabase.from("menu_items").select("*").eq("venue_id", venueId).eq("is_available", true).order("display_order"),
         supabase.from("menu_categories").select("id, name").eq("venue_id", venueId).eq("is_active", true).order("display_order"),
       ]);

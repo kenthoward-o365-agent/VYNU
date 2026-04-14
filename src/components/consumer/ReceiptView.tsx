@@ -21,7 +21,6 @@ interface VenueInfo {
   postcode?: string | null;
   phone: string | null;
   email: string | null;
-  tax_id: string | null;
 }
 
 interface DinerInfo {
@@ -141,12 +140,6 @@ const ReceiptView = ({
               <span className="text-muted-foreground">Table</span>
               <span className="font-medium">{tableNumber}</span>
             </div>
-            {venue.tax_id && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">ABN / Tax ID</span>
-                <span className="font-medium">{venue.tax_id}</span>
-              </div>
-            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Order #</span>
               <span className="font-medium font-mono text-xs">{orderId.slice(0, 8).toUpperCase()}</span>
