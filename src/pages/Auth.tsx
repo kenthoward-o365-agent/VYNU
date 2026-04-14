@@ -39,9 +39,12 @@ export default function Auth() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">Ordrup</h1>
-          <p className="text-muted-foreground">The world's first agentic dining platform</p>
+        <div className="text-center space-y-4">
+          <img src={noshiIcon} alt="Ordrup" className="h-16 w-16 mx-auto" />
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold text-foreground">Ordrup</h1>
+            <p className="text-muted-foreground">The world's first agentic dining platform</p>
+          </div>
         </div>
         <Card>
           <CardHeader>
