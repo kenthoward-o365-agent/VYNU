@@ -11,7 +11,7 @@ import { Plus, QrCode, Trash2, Download, Printer } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
-const PUBLISHED_BASE_URL = "https://sippaai.lovable.app"; // Published domain — Phewdee
+const PUBLISHED_BASE_URL = "https://ordrupai.lovable.app"; // Published domain — Ordrup
 
 interface Table {
   id: string;

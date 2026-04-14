@@ -15,7 +15,7 @@ import Tables from "@/pages/Tables";
 import Orders from "@/pages/Orders";
 import Pricing from "@/pages/Pricing";
 import Analytics from "@/pages/Analytics";
-import SippaAnalyticsPage from "@/pages/SippaAnalytics";
+import OrdrupAnalyticsPage from "@/pages/OrdrupAnalytics";
 import VenueSettings from "@/pages/VenueSettings";
 import LandingPageEditor from "@/pages/LandingPageEditor";
 import RuleTypes from "@/pages/RuleTypes";
@@ -43,7 +43,7 @@ function AppRoutes() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center space-y-2">
-          <h2 className="text-xl font-semibold text-foreground">Phewdee</h2>
+          <h2 className="text-xl font-semibold text-foreground">Ordrup</h2>
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
@@ -81,7 +81,7 @@ function AppRoutes() {
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/rule-types" element={<RuleTypes />} />
         <Route path="/analytics" element={<Analytics />} />
-        <Route path="/sippa-analytics" element={<SippaAnalyticsPage />} />
+        <Route path="/ordrup-analytics" element={<OrdrupAnalyticsPage />} />
         <Route path="/diners" element={<Diners />} />
         <Route path="/diners/preferences" element={<DinerPreferences />} />
         <Route path="/loyalty" element={<Navigate to="/settings" replace />} />

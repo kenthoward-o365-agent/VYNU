@@ -34,7 +34,7 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [agentName, setAgentName] = useState("Phewdee");
+  const [agentName, setAgentName] = useState("Ordrup");
   const [agentIcon, setAgentIcon] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,7 +86,7 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
         .eq("venue_id", venueId)
         .maybeSingle();
 
-      const name = data?.agent_name || "Phewdee";
+      const name = data?.agent_name || "Ordrup";
       const icon = data?.agent_icon_url || null;
       const greeting = data?.opening_message ||
         `Hey! 👋 I'm ${name}, your AI server. Tell me what you're in the mood for and I'll find the perfect dish. Try saying:\n\n- "Something spicy under $25"\n- "I'm vegetarian, what do you recommend?"\n- "Another round please"`;

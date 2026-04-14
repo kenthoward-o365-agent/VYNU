@@ -232,7 +232,7 @@ const ReceiptView = ({
 
         {/* Footer */}
         <div className="bg-muted/50 px-5 py-3 text-center">
-          <p className="text-[10px] text-muted-foreground">Powered by Phewdee Pty Ltd</p>
+          <p className="text-[10px] text-muted-foreground">Powered by Ordrup Pty Ltd</p>
         </div>
       </div>
 

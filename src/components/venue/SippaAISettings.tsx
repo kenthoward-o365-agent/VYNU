@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Sparkles, Upload, X, MessageSquare, Bot } from "lucide-react";
 
-interface SippaConfig {
+interface OrdrupConfig {
   id?: string;
   venue_id: string;
   agent_name: string;
@@ -65,10 +65,10 @@ interface Props {
   venueId: string;
 }
 
-export default function SippaAISettings({ venueId }: Props) {
-  const [config, setConfig] = useState<SippaConfig>({
+export default function OrdrupAISettings({ venueId }: Props) {
+  const [config, setConfig] = useState<OrdrupConfig>({
     venue_id: venueId,
-    agent_name: "Phewdee",
+    agent_name: "Ordrup",
     agent_icon_url: null,
     opening_message: "Hey! 👋 I'm your AI server. Tell me what you're in the mood for and I'll find the perfect dish.",
     tone: "aussie",
@@ -124,7 +124,7 @@ export default function SippaAISettings({ venueId }: Props) {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("Phewdee AI configured!");
+        toast.success("Ordrup AI configured!");
         setIsNew(false);
       }
     } else {
@@ -142,7 +142,7 @@ export default function SippaAISettings({ venueId }: Props) {
     }
     setUploading(true);
     const ext = file.name.split(".").pop();
-    const path = `sippa-icons/${venueId}.${ext}`;
+    const path = `ordrup-icons/${venueId}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from("venue-assets")
@@ -162,7 +162,7 @@ export default function SippaAISettings({ venueId }: Props) {
 
   const selectedTone = toneOptions.find((t) => t.value === config.tone);
 
-  if (loading) return <p className="text-muted-foreground">Loading Phewdee AI settings...</p>;
+  if (loading) return <p className="text-muted-foreground">Loading Ordrup AI settings...</p>;
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -181,7 +181,7 @@ export default function SippaAISettings({ venueId }: Props) {
             <Input
               value={config.agent_name}
               onChange={(e) => setConfig((c) => ({ ...c, agent_name: e.target.value }))}
-              placeholder="Phewdee"
+              placeholder="Ordrup"
               className="mt-1 max-w-xs"
             />
             <p className="text-xs text-muted-foreground mt-1">This name is shown to diners in the chat header</p>
@@ -356,7 +356,7 @@ export default function SippaAISettings({ venueId }: Props) {
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} size="lg">
           <Sparkles className="h-4 w-4 mr-2" />
-          {saving ? "Saving..." : "Save Phewdee AI Settings"}
+          {saving ? "Saving..." : "Save Ordrup AI Settings"}
         </Button>
       </div>
     </div>

@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard, Receipt, Bot } from "lucide-react";
-import SippaAISettings from "@/components/venue/SippaAISettings";
+import OrdrupAISettings from "@/components/venue/OrdrupAISettings";
 import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
 import TaxSettingsTab from "@/components/venue/TaxSettingsTab";
 import SurchargeSettingsTab from "@/components/venue/SurchargeSettingsTab";
@@ -495,8 +495,8 @@ export default function VenueSettings() {
         {/* ── PAYMENTS TAB ── */}
         {isManager && venue && (
           <>
-            <TabsContent value="sippa" className="space-y-6">
-              <SippaAISettings venueId={venue.id} />
+            <TabsContent value="ordrup" className="space-y-6">
+              <OrdrupAISettings venueId={venue.id} />
             </TabsContent>
             <TabsContent value="payments" className="space-y-6">
               <PaymentSettingsTab venueId={venue.id} />
