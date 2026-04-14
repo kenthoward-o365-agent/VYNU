@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { Plus, Minus, ChevronLeft, ChevronRight, Flame, Leaf, AlertTriangle, Ban, Filter } from "lucide-react";
+import { optimizedImageUrl } from "@/lib/image-utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -118,7 +119,7 @@ const MenuItemRow = ({
       {/* Column A: Image */}
       <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg overflow-hidden shrink-0 bg-muted">
         {item.image_url ? (
-          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+          <img src={optimizedImageUrl(item.image_url, 128)} alt={item.name} loading="lazy" width={64} height={64} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/20">
             <Flame className="h-4 w-4 sm:h-6 sm:w-6 text-primary/30" />
@@ -197,7 +198,7 @@ const MobileCardFeed = ({
 
       <div className={cn("h-[55%] bg-muted relative", !isAvailable && "grayscale opacity-50")}>
         {currentItem.image_url ? (
-          <img src={currentItem.image_url} alt={currentItem.name} className="w-full h-full object-cover" />
+          <img src={optimizedImageUrl(currentItem.image_url, 640)} alt={currentItem.name} loading="lazy" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/20">
             <Flame className="h-16 w-16 text-primary/30" />

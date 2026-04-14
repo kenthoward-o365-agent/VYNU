@@ -160,10 +160,10 @@ async function generateAndSaveImage(
   const bytes = new Uint8Array(binaryStr.length);
   for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
 
-  const path = `menu-items/${venueId}/generated/${item.id}-${Date.now()}.png`;
+  const path = `menu-items/${venueId}/generated/${item.id}-${Date.now()}.webp`;
   const { error: uploadError } = await supabaseAdmin.storage
     .from("venue-assets")
-    .upload(path, bytes, { contentType: "image/png", upsert: true });
+    .upload(path, bytes, { contentType: "image/webp", upsert: true });
 
   if (uploadError) {
     console.error(`Upload failed for ${item.name}:`, uploadError.message);
