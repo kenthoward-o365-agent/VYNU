@@ -15,7 +15,7 @@ import Tables from "@/pages/Tables";
 import Orders from "@/pages/Orders";
 import Pricing from "@/pages/Pricing";
 import Analytics from "@/pages/Analytics";
-import OrdrupAnalyticsPage from "@/pages/OrdrupAnalytics";
+import SippaAnalyticsPage from "@/pages/SippaAnalytics";
 import VenueSettings from "@/pages/VenueSettings";
 import LandingPageEditor from "@/pages/LandingPageEditor";
 import RuleTypes from "@/pages/RuleTypes";

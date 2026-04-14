@@ -1,5 +1,5 @@
 import { useVenue } from "@/contexts/VenueContext";
-import OrdrupAnalyticsComponent from "@/components/venue/OrdrupAnalytics";
+import SippaAnalyticsComponent from "@/components/venue/SippaAnalytics";
 
 export default function OrdrupAnalyticsPage() {
   const { venue } = useVenue();

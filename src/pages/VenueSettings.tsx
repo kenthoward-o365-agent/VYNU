@@ -17,7 +17,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard, Receipt, Bot } from "lucide-react";
-import OrdrupAISettings from "@/components/venue/OrdrupAISettings";
+import SippaAISettings from "@/components/venue/SippaAISettings";
 import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
 import TaxSettingsTab from "@/components/venue/TaxSettingsTab";
 import SurchargeSettingsTab from "@/components/venue/SurchargeSettingsTab";
