@@ -5,6 +5,7 @@ Ordrup: agentic dining platform (formerly Noshi/Sippa/Phewdee). Australia-first.
 Dark sidebar operator UI. Primary indigo #1B3A5C, accent gold #C9A84C, bg ivory #F8F5ED. Mobile-first consumer (Phase 2).
 Lovable Cloud backend. Pay-per-order model. Chat + TikTok feed for consumer AI.
 QR codes are permanent, printed as stickers — never regenerate URLs.
+OrdrPayments is Ordrup's built-in PayFac — venues don't need third-party payment credentials.
 
 ## Memories
 - [Product vision](mem://features/vision) — Full product vision and competitive positioning

@@ -12,7 +12,7 @@ const json = (data: any, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// ── MOCK RESPONSES ──
+// ── OrdrPayments — Mock Responses ──
 const MOCK_PAYMENT_METHODS = {
   paymentMethods: [
     { type: "scheme", name: "Credit Card", brands: ["visa", "mc", "amex"] },
