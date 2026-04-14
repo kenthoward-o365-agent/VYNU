@@ -130,7 +130,7 @@ export type Database = {
           phone: string | null
           preferences: Json | null
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           allergens?: string[] | null
@@ -144,7 +144,7 @@ export type Database = {
           phone?: string | null
           preferences?: Json | null
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           allergens?: string[] | null
@@ -158,7 +158,7 @@ export type Database = {
           phone?: string | null
           preferences?: Json | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1405,7 +1405,6 @@ export type Database = {
           subscription_notes: string | null
           subscription_plan: string | null
           subscription_status: string | null
-          tax_id: string | null
           timezone: string | null
           updated_at: string
           venue_type: string
@@ -1430,7 +1429,6 @@ export type Database = {
           subscription_notes?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
-          tax_id?: string | null
           timezone?: string | null
           updated_at?: string
           venue_type?: string
@@ -1455,7 +1453,6 @@ export type Database = {
           subscription_notes?: string | null
           subscription_plan?: string | null
           subscription_status?: string | null
-          tax_id?: string | null
           timezone?: string | null
           updated_at?: string
           venue_type?: string
