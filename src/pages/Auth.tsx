@@ -35,14 +35,14 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">Phewdee</h1>
+          <h1 className="text-3xl font-bold text-foreground">Ordrup</h1>
           <p className="text-muted-foreground">The world's first agentic dining platform</p>
         </div>
         <Card>
           <CardHeader>
             <CardTitle>{isSignUp ? "Create your venue account" : "Welcome back"}</CardTitle>
             <CardDescription>
-              {isSignUp ? "Set up your venue on Phewdee" : "Sign in to manage your venue"}
+              {isSignUp ? "Set up your venue on Ordrup" : "Sign in to manage your venue"}
             </CardDescription>
           </CardHeader>
           <CardContent>

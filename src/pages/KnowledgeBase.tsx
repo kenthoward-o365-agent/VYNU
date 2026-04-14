@@ -18,7 +18,7 @@ interface TocItem {
 const tocItems: TocItem[] = [
   { id: "getting-started", label: "Getting Started", icon: Rocket },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "sippa-ai-analytics", label: "Phewdee AI Analytics", icon: BarChart3 },
+  { id: "ordrup-ai-analytics", label: "Ordrup AI Analytics", icon: BarChart3 },
   { id: "menu-builder", label: "Menu Builder", icon: UtensilsCrossed },
   { id: "pricing", label: "Pricing", icon: Tag },
   { id: "tables-qr", label: "Tables & QR", icon: QrCode },
@@ -123,15 +123,15 @@ export default function KnowledgeBase() {
       <div className="flex-1 space-y-8 min-w-0">
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-1">Knowledge Base</h1>
-          <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on Phewdee.</p>
+          <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on Ordrup.</p>
         </div>
 
         <Separator />
 
         {/* Getting Started */}
         <Section id="getting-started" title="Getting Started" icon={Rocket}>
-          <SubSection title="Welcome to Phewdee">
-            <p>Phewdee replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue's AI assistant, and place orders — no app download required.</p>
+          <SubSection title="Welcome to Ordrup">
+            <p>Ordrup replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue's AI assistant, and place orders — no app download required.</p>
           </SubSection>
           <SubSection title="First-Time Setup Checklist">
             <StepList steps={[
@@ -141,7 +141,7 @@ export default function KnowledgeBase() {
               "Set up your tables and generate QR codes in Tables & QR.",
               "Configure your payment gateway in Settings → Payments.",
               "Set up tax rules in Settings → Taxes.",
-              "Customise your Phewdee AI agent personality in Settings → Phewdee AI.",
+              "Customise your Ordrup AI agent personality in Settings → Ordrup AI.",
               "Print and place QR stickers on each table — you're live!",
             ]} />
           </SubSection>
@@ -165,10 +165,10 @@ export default function KnowledgeBase() {
           <Tip>Use the date picker in the top-right to compare different time periods.</Tip>
         </Section>
 
-        {/* Phewdee AI Analytics */}
-        <Section id="sippa-ai-analytics" title="Phewdee AI Analytics" icon={BarChart3}>
+        {/* Ordrup AI Analytics */}
+        <Section id="ordrup-ai-analytics" title="Ordrup AI Analytics" icon={BarChart3}>
           <SubSection title="What the AI Tracks">
-            <p>Phewdee AI Analytics shows you how diners interact with your AI assistant:</p>
+            <p>Ordrup AI Analytics shows you how diners interact with your AI assistant:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Chat Sessions</strong> — Total conversations started.</li>
               <li><strong>Conversion Rate</strong> — Percentage of chats that led to an order.</li>
@@ -177,7 +177,7 @@ export default function KnowledgeBase() {
             </ul>
           </SubSection>
           <SubSection title="Reading the Insights">
-            <p>A high conversion rate means your AI personality and menu descriptions are working well. If diners are chatting a lot but not ordering, consider simplifying your menu descriptions or adjusting the AI's tone in Settings → Phewdee AI.</p>
+            <p>A high conversion rate means your AI personality and menu descriptions are working well. If diners are chatting a lot but not ordering, consider simplifying your menu descriptions or adjusting the AI's tone in Settings → Ordrup AI.</p>
           </SubSection>
         </Section>
 
@@ -193,7 +193,7 @@ export default function KnowledgeBase() {
             ]} />
           </SubSection>
           <SubSection title="AI Import">
-            <p>Upload a photo or PDF of your existing menu. Phewdee's AI will read it and create categories and items automatically. Review and adjust before saving.</p>
+            <p>Upload a photo or PDF of your existing menu. Ordrup's AI will read it and create categories and items automatically. Review and adjust before saving.</p>
             <StepList steps={[
               "Go to Menu Builder → Settings → AI Features → Import.",
               "Upload your menu file (PDF, JPG, PNG).",
@@ -335,7 +335,7 @@ export default function KnowledgeBase() {
               "Toggle the programme active when ready.",
             ]} />
           </SubSection>
-          <SubSection title="Phewdee AI">
+          <SubSection title="Ordrup AI">
             <p>Customise your AI dining assistant:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Agent Name</strong> — What your AI introduces itself as.</li>
@@ -364,7 +364,7 @@ export default function KnowledgeBase() {
 
         <Separator />
         <p className="text-xs text-muted-foreground text-center pb-8">
-          Need more help? Contact us at support@sippa.ai
+          Need more help? Contact us at support@ordrup.com
         </p>
       </div>
     </div>

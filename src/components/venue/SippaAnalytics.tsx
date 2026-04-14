@@ -29,7 +29,7 @@ interface MessageData {
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--muted-foreground) / 0.3)"];
 
-export default function SippaAnalytics({ venueId }: Props) {
+export default function OrdrupAnalytics({ venueId }: Props) {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [range, setRange] = useState("7");
@@ -117,7 +117,7 @@ export default function SippaAnalytics({ venueId }: Props) {
         <div>
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            Phewdee AI Analytics
+            Ordrup AI Analytics
           </h3>
           <p className="text-sm text-muted-foreground">Chat performance and diner engagement</p>
         </div>

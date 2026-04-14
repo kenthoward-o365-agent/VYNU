@@ -74,7 +74,7 @@ export default function Onboarding() {
         <Card>
           <CardHeader>
             <CardTitle>Venue Details</CardTitle>
-            <CardDescription>We'll use this to configure your Phewdee experience</CardDescription>
+            <CardDescription>We'll use this to configure your Ordrup experience</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
