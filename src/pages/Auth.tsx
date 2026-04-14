@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useTheme } from "@/contexts/ThemeContext";
 import lockupLight from "@/assets/noshi-lockup.svg";
 import lockupDark from "@/assets/noshi-lockup-dark.svg";
+import noshiIcon from "/noshi-icon.svg";
 import { toast } from "sonner";
 
 export default function Auth() {
