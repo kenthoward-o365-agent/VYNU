@@ -79,6 +79,7 @@ const ConsumerOrder = () => {
   const [dinerId, setDinerId] = useState<string | null>(null);
   const [dinerInfo, setDinerInfo] = useState<{ first_name: string | null; last_name: string | null; email: string | null; phone: string | null } | null>(null);
   const [lastOrderItems, setLastOrderItems] = useState<{ id: string; name: string; quantity: number }[]>([]);
+  const chatSessionIdRef = useRef<string | null>(null);
 
   // Upsell state
   const [upsellSuggestion, setUpsellSuggestion] = useState<UpsellSuggestion | null>(null);
@@ -297,14 +298,16 @@ const ConsumerOrder = () => {
     setShowCheckout(false);
     setTab("feed");
 
-    // Mark any active chat session as converted
-    supabase
-      .from("chat_sessions")
-      .update({ converted_to_order: true })
-      .eq("venue_id", venueId!)
-      .eq("converted_to_order", false)
-      .is("ended_at", null)
-      .then(() => {});
+    // Mark the active chat session as converted
+    if (chatSessionIdRef.current) {
+      supabase
+        .from("chat_sessions")
+        .update({ converted_to_order: true })
+        .eq("id", chatSessionIdRef.current)
+        .then(({ error }) => {
+          if (error) console.error("Failed to mark session as converted:", error);
+        });
+    }
   };
 
   const handleTabChange = (newTab: "feed" | "chat" | "cart" | "profile") => {
@@ -466,6 +469,7 @@ const ConsumerOrder = () => {
           tableId={resolvedTableId}
           lastOrderItems={lastOrderItems}
           cartTotal={cart.reduce((sum, c) => sum + c.price * c.quantity, 0)}
+          onSessionCreated={(id) => { chatSessionIdRef.current = id; }}
         />
       )}
 
