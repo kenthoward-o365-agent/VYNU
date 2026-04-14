@@ -1,6 +1,4 @@
 import { ReactNode, useState } from "react";
-import noshiLogoLight from "@/assets/noshi-lockup.svg";
-import noshiLogoDark from "@/assets/noshi-lockup-dark.svg";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
@@ -73,7 +71,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       )}>
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-between mb-2">
-            <img src={theme === "dark" ? noshiLogoDark : noshiLogoLight} alt="Ordrup" className="h-8" />
+            <div className="flex items-center gap-2">
+              <img src={theme === "dark" ? "/ordrup-icon-dark.svg" : "/ordrup-icon.svg"} alt="Ordrup" className="h-8 w-8" />
+              <span className="text-lg font-bold text-sidebar-foreground">Ordrup</span>
+            </div>
             <button className="lg:hidden text-sidebar-foreground" onClick={() => setSidebarOpen(false)}>
               <X className="h-5 w-5" />
             </button>
