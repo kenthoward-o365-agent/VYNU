@@ -54,6 +54,8 @@ export default function MenuBuilder() {
   );
   const [searchParams, setSearchParams] = useSearchParams();
   const { venue } = useVenue();
+  const isPosMode = (venue as any)?.menu_source === "pos";
+  const [posIntegration, setPosIntegration] = useState<{ pos_provider: string; last_sync_at: string | null; sync_status: string } | null>(null);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
   const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
