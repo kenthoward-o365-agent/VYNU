@@ -1,112 +1,51 @@
 
 
-# OrdrUp API Integration — Gap Analysis and Implementation Plan
+# Expose POS Identifiers as Editable Fields
 
-## What the API Document Covers
+## Overview
 
-The uploaded OrdrUp API v1 document defines a comprehensive platform API across 12 domains: Authentication (OAuth M2M + HMAC webhooks), POS Integration, Commerce, Channels, Payments, Recommendations, Fulfillment/Delivery, Store Management, KDS (Kitchen Display), Gift Cards, Dispatch, and common data models.
+Add editable POS ID and PLU fields to menu items, modifiers, and modifier categories in the Menu Builder and Modifiers pages. These fields allow venue managers to manually map their items to external POS records -- useful during initial setup, troubleshooting, or when full automated sync isn't available.
 
-## Current State vs. API Requirements
+## Database Changes
 
-We already have the foundation: `venue_pos_integrations` table, `menu_source` toggle, `pos_id` on menu items/categories, and read-only mode in the Menu Builder. Here is what needs to change to support this API.
+Add missing POS columns to modifiers and related tables:
 
-## Phase 1 — Core POS Menu Sync (Build Now)
+```sql
+ALTER TABLE public.modifiers ADD COLUMN pos_id text;
+ALTER TABLE public.modifiers ADD COLUMN plu text;
+ALTER TABLE public.modifier_categories ADD COLUMN pos_id text;
+ALTER TABLE public.orders ADD COLUMN pos_order_id text;
+ALTER TABLE public.tables ADD COLUMN pos_table_id text;
+```
 
-This is the most immediately useful part: receiving product catalogs from POS partners and mapping orders back.
+## Frontend Changes
 
-### 1. Database Schema Changes
+### 1. Menu Builder item edit dialog
 
-**Extend `venue_pos_integrations`** with fields the API requires:
-- `location_id` (text) — the OrdrUp `locationId` for this venue
-- `account_id` (text) — the OrdrUp `accountId`
-- `webhook_secret` (text) — for HMAC verification of inbound webhooks
-- `client_id` / `client_secret_ref` — M2M OAuth credentials (secret ref, not actual value)
-- `token_cache` (jsonb) — cached access token + expiry
+Add a collapsible "POS Integration" section at the bottom of the item add/edit form with:
+- **PLU** (text input) -- Product Lookup Unit code
+- **POS ID** (text input) -- external system identifier
 
-**New table: `pos_sync_log`** — tracks every inbound sync event (product push, order status update) with timestamp, event type, payload hash, and result.
+These fields are always visible (not just in POS mode) so managers can pre-populate mappings before switching to POS sync. The form state and save logic will include `plu` and `pos_id`.
 
-**Extend `menu_items`**:
-- `plu` (text) — POS product lookup unit code (the API uses `plu` as the product identifier)
-- `pos_allergens` (integer[]) — raw allergen IDs from POS (numeric codes per API spec)
-- `pos_tags` (text[]) — raw tag names from POS
+### 2. Modifiers page
 
-**Extend `menu_categories`**:
-- `sort_order` (integer) — POS-provided sort order (distinct from our `display_order`)
+Add `pos_id` and `plu` fields to the modifier edit dialog, and `pos_id` to the modifier category edit flow. Same collapsible "POS Integration" section pattern.
 
-### 2. Edge Function: `pos-product-sync`
+### 3. Tables page
 
-**Inbound webhook** that POS partners call to push product catalogs.
+Add a `pos_table_id` text field to the table edit dialog so venues can map tables to POS terminal/table numbers.
 
-Matches the API spec: `POST /pos/{locationId}/products`
+### 4. Menu Builder item cards (POS mode)
 
-- Accepts `{ products: [...], categories: [...] }` payload
-- Verifies HMAC signature from `X-Signature` header
-- Looks up venue by `location_id` in `venue_pos_integrations`
-- Upserts categories by `categoryId` → `pos_id` match
-- Upserts items by `plu` → `pos_id` match
-- Maps allergen IDs and tags to our string arrays
-- Logs sync result to `pos_sync_log`
-- Updates `last_sync_at` and `sync_status` on `venue_pos_integrations`
+When `isPosMode` is true, show the PLU as a small badge on each item card (already partially done -- this ensures the value is current after manual edits).
 
-### 3. Edge Function: `pos-order-webhook`
-
-**Outbound order push** — when an order is created in our system, format it per the API spec and POST to the partner's webhook URL.
-
-Also handles **inbound status updates**: `POST /pos/orders/{orderId}/status` — receives status code (1-7) from POS and updates our `orders.status` + `order_status_log`.
-
-### 4. Edge Function: `pos-auth`
-
-Handles M2M OAuth token acquisition and caching:
-- `POST /oauth/token` with `client_credentials` grant
-- Caches token in `venue_pos_integrations.token_cache`
-- Auto-refreshes when expired
-- Used by outbound API calls
-
-### 5. Frontend: Integrations Settings Update
-
-Extend `IntegrationsSettingsTab.tsx`:
-- Add fields for `location_id` and `account_id`
-- Show webhook URL that partners should configure (our edge function URL)
-- Display `pos_sync_log` entries (last 10 syncs with status)
-- "Sync Now" button that calls `GET {partnerBaseUrl}/products?locationId=...` to pull catalog
-
-### 6. Frontend: Menu Builder POS Enhancements
-
-- Show `plu` code on each item card in POS mode
-- Show allergen/tag mapping status (POS codes mapped to our labels)
-- Display last sync timestamp per item
-
-## Phase 2 — Commerce & Orders (Build Next)
-
-The Commerce API (baskets, checkout, fulfillment) maps to our existing order flow but needs:
-- Basket management edge functions
-- Channel link management
-- Order status webhook handlers for partner notifications
-
-## Phase 3 — Advanced Features (Future)
-
-- **Store Management API**: Operating hours, busy mode, product snooze
-- **KDS API**: Kitchen display integration
-- **Gift Cards API**: Stored value provider integration
-- **Dispatch API**: Delivery logistics
-- **Recommendations API**: Already partially built with our upsell system
-
-## Files Changed (Phase 1)
+## Files Changed
 
 | File | Change |
 |------|--------|
-| Migration SQL | Extend `venue_pos_integrations`, `menu_items`, `menu_categories`; create `pos_sync_log` |
-| `supabase/functions/pos-product-sync/index.ts` | New — inbound product catalog webhook |
-| `supabase/functions/pos-order-webhook/index.ts` | New — order push + status updates |
-| `supabase/functions/pos-auth/index.ts` | New — M2M OAuth token management |
-| `src/components/venue/IntegrationsSettingsTab.tsx` | Add location ID, account ID, webhook URL display, sync log |
-| `src/pages/MenuBuilder.tsx` | Show PLU codes, allergen mapping in POS mode |
-
-## Technical Details
-
-- **HMAC verification**: Every inbound webhook verifies `X-Signature` using `crypto.subtle.importKey` + `crypto.subtle.sign` in Deno
-- **Price format**: API uses integer cents (e.g. 999 = $9.99) — matches our existing `price` column which stores cents
-- **Allergen mapping**: API uses numeric IDs (1=Gluten, 2=Peanuts, etc.) — we store string labels; the sync function maps between them
-- **Idempotency**: Product syncs use `plu`/`categoryId` as the merge key via upsert, preventing duplicates
-- **Rate limits**: API allows 100 req/min for POS endpoints — our sync functions respect this
+| Migration SQL | Add `pos_id`, `plu` to modifiers; `pos_id` to modifier_categories; `pos_order_id` to orders; `pos_table_id` to tables |
+| `src/pages/MenuBuilder.tsx` | Add PLU + POS ID fields to item form, include in save/update |
+| `src/pages/Modifiers.tsx` | Add POS ID + PLU fields to modifier edit, POS ID to category edit |
+| `src/pages/Tables.tsx` | Add POS Table ID field to table edit dialog |
 
