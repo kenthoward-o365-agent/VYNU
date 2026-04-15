@@ -1401,6 +1401,7 @@ export type Database = {
           phone: string | null
           postcode: string | null
           settings: Json | null
+          site_id: string
           state: string | null
           subscription_notes: string | null
           subscription_plan: string | null
@@ -1425,6 +1426,7 @@ export type Database = {
           phone?: string | null
           postcode?: string | null
           settings?: Json | null
+          site_id?: string
           state?: string | null
           subscription_notes?: string | null
           subscription_plan?: string | null
@@ -1449,6 +1451,7 @@ export type Database = {
           phone?: string | null
           postcode?: string | null
           settings?: Json | null
+          site_id?: string
           state?: string | null
           subscription_notes?: string | null
           subscription_plan?: string | null
@@ -1490,6 +1493,7 @@ export type Database = {
         }
         Returns: string
       }
+      generate_site_id: { Args: never; Returns: string }
       get_user_diner_profile_id: { Args: never; Returns: string }
       get_venue_payment_active: {
         Args: { _venue_id: string }
@@ -1536,6 +1540,13 @@ export type Database = {
       is_venue_staff: {
         Args: { _user_id: string; _venue_id: string }
         Returns: boolean
+      }
+      lookup_venue_by_site_id: {
+        Args: { _site_id: string }
+        Returns: {
+          venue_id: string
+          venue_name: string
+        }[]
       }
     }
     Enums: {
