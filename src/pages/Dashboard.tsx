@@ -104,7 +104,7 @@ export default function Dashboard() {
           </h2>
           <p className="text-sm text-muted-foreground">{venue?.name}</p>
         </div>
-        <AuditDatePicker value={auditDate} onChange={setAuditDate} />
+        <AuditDatePicker value={auditDate} onChange={setAuditDate} auditDateOverride={venueAuditDate} />
       </div>
 
       {/* Financial KPIs - compact row */}
