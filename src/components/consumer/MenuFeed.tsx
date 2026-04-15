@@ -119,7 +119,7 @@ const MenuItemRow = ({
       {/* Column A: Image */}
       <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg overflow-hidden shrink-0 bg-muted">
         {item.image_url ? (
-          <img src={optimizedImageUrl(item.image_url, 128)} alt={item.name} loading="lazy" width={64} height={64} className="w-full h-full object-cover" />
+          <img src={optimizedImageUrl(item.image_url, 256, 80, 256)} alt={item.name} loading="lazy" width={64} height={64} className="w-full h-full object-contain" />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/20">
             <Flame className="h-4 w-4 sm:h-6 sm:w-6 text-primary/30" />
