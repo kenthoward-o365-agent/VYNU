@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { format, startOfDay, subDays, startOfWeek, startOfMonth, endOfDay } from "date-fns";
+import { useState, useMemo } from "react";
+import { format, startOfDay, subDays, startOfWeek, startOfMonth, endOfDay, parseISO } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -12,42 +12,46 @@ import {
 
 export type DateRange = { from: Date; to: Date; label: string };
 
-const presets: { label: string; getRange: () => { from: Date; to: Date } }[] = [
-  {
-    label: "Today",
-    getRange: () => ({ from: startOfDay(new Date()), to: endOfDay(new Date()) }),
-  },
-  {
-    label: "Yesterday",
-    getRange: () => {
-      const d = subDays(new Date(), 1);
-      return { from: startOfDay(d), to: endOfDay(d) };
+function buildPresets(auditDateOverride?: string | null) {
+  const todayDate = auditDateOverride ? parseISO(auditDateOverride) : new Date();
+  const yesterdayDate = subDays(todayDate, 1);
+  return [
+    {
+      label: "Today",
+      getRange: () => ({ from: startOfDay(todayDate), to: endOfDay(todayDate) }),
     },
-  },
-  {
-    label: "Last 7 Days",
-    getRange: () => ({ from: startOfDay(subDays(new Date(), 6)), to: endOfDay(new Date()) }),
-  },
-  {
-    label: "This Week",
-    getRange: () => ({ from: startOfWeek(new Date(), { weekStartsOn: 1 }), to: endOfDay(new Date()) }),
-  },
-  {
-    label: "This Month",
-    getRange: () => ({ from: startOfMonth(new Date()), to: endOfDay(new Date()) }),
-  },
-  {
-    label: "Last 30 Days",
-    getRange: () => ({ from: startOfDay(subDays(new Date(), 29)), to: endOfDay(new Date()) }),
-  },
-];
+    {
+      label: "Yesterday",
+      getRange: () => ({ from: startOfDay(yesterdayDate), to: endOfDay(yesterdayDate) }),
+    },
+    {
+      label: "Last 7 Days",
+      getRange: () => ({ from: startOfDay(subDays(todayDate, 6)), to: endOfDay(todayDate) }),
+    },
+    {
+      label: "This Week",
+      getRange: () => ({ from: startOfWeek(todayDate, { weekStartsOn: 1 }), to: endOfDay(todayDate) }),
+    },
+    {
+      label: "This Month",
+      getRange: () => ({ from: startOfMonth(todayDate), to: endOfDay(todayDate) }),
+    },
+    {
+      label: "Last 30 Days",
+      getRange: () => ({ from: startOfDay(subDays(todayDate, 29)), to: endOfDay(todayDate) }),
+    },
+  ];
+}
 
 interface AuditDatePickerProps {
   value: DateRange;
   onChange: (range: DateRange) => void;
+  /** Override what "Today" means — pass the venue audit date (YYYY-MM-DD) */
+  auditDateOverride?: string | null;
 }
 
-export default function AuditDatePicker({ value, onChange }: AuditDatePickerProps) {
+export default function AuditDatePicker({ value, onChange, auditDateOverride }: AuditDatePickerProps) {
+  const presets = useMemo(() => buildPresets(auditDateOverride), [auditDateOverride]);
   const [open, setOpen] = useState(false);
   const [customDate, setCustomDate] = useState<Date | undefined>();
 
@@ -120,10 +124,11 @@ export default function AuditDatePicker({ value, onChange }: AuditDatePickerProp
   );
 }
 
-export function getDefaultAuditDate(): DateRange {
+export function getDefaultAuditDate(auditDateOverride?: string | null): DateRange {
+  const d = auditDateOverride ? parseISO(auditDateOverride) : new Date();
   return {
-    from: startOfDay(new Date()),
-    to: endOfDay(new Date()),
+    from: startOfDay(d),
+    to: endOfDay(d),
     label: "Today",
   };
 }

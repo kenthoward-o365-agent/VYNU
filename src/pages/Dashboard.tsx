@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useVenue } from "@/contexts/VenueContext";
+import { useAuditDate } from "@/contexts/AuditDateContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, TrendingUp, Receipt, Percent } from "lucide-react";
@@ -13,7 +14,8 @@ import TicketTimesCard from "@/components/dashboard/TicketTimesCard";
 
 export default function Dashboard() {
   const { venue } = useVenue();
-  const [auditDate, setAuditDate] = useState<DateRange>(getDefaultAuditDate);
+  const { auditDate: venueAuditDate } = useAuditDate();
+  const [auditDate, setAuditDate] = useState<DateRange>(() => getDefaultAuditDate(venueAuditDate));
   const [taxes, setTaxes] = useState<TaxConfig[]>([]);
   const [orders, setOrders] = useState<{ id: string; total: number | null; status: string; created_at: string }[]>([]);
   const [stats, setStats] = useState({
@@ -27,6 +29,13 @@ export default function Dashboard() {
     cancelledOrders: 0,
     avgOrderValue: 0,
   });
+
+  // When venue audit date loads, reset the date picker to use it
+  useEffect(() => {
+    if (venueAuditDate) {
+      setAuditDate(getDefaultAuditDate(venueAuditDate));
+    }
+  }, [venueAuditDate]);
 
   useEffect(() => {
     if (!venue) return;
@@ -95,7 +104,7 @@ export default function Dashboard() {
           </h2>
           <p className="text-sm text-muted-foreground">{venue?.name}</p>
         </div>
-        <AuditDatePicker value={auditDate} onChange={setAuditDate} />
+        <AuditDatePicker value={auditDate} onChange={setAuditDate} auditDateOverride={venueAuditDate} />
       </div>
 
       {/* Financial KPIs - compact row */}

@@ -1140,6 +1140,41 @@ export type Database = {
           },
         ]
       }
+      venue_audit_dates: {
+        Row: {
+          advanced_at: string | null
+          advanced_by: string | null
+          audit_date: string
+          created_at: string
+          id: string
+          venue_id: string
+        }
+        Insert: {
+          advanced_at?: string | null
+          advanced_by?: string | null
+          audit_date?: string
+          created_at?: string
+          id?: string
+          venue_id: string
+        }
+        Update: {
+          advanced_at?: string | null
+          advanced_by?: string | null
+          audit_date?: string
+          created_at?: string
+          id?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_audit_dates_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: true
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_billing_config: {
         Row: {
           billing_currency: string
@@ -1179,6 +1214,38 @@ export type Database = {
             foreignKeyName: "venue_billing_config_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: true
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_dayend_log: {
+        Row: {
+          audit_date: string
+          closed_at: string
+          closed_by: string | null
+          id: string
+          venue_id: string
+        }
+        Insert: {
+          audit_date: string
+          closed_at?: string
+          closed_by?: string | null
+          id?: string
+          venue_id: string
+        }
+        Update: {
+          audit_date?: string
+          closed_at?: string
+          closed_by?: string | null
+          id?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_dayend_log_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
             referencedRelation: "venues"
             referencedColumns: ["id"]
           },
@@ -1475,6 +1542,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      advance_audit_date: { Args: { _venue_id: string }; Returns: string }
       can_manage_loyalty_program_balance: {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
@@ -1524,6 +1592,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      initialize_venue_audit_date: {
+        Args: { _venue_id: string }
+        Returns: string
       }
       is_group_admin: {
         Args: { _group_id: string; _user_id: string }

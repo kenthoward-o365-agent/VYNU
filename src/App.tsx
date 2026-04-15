@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { VenueProvider, useVenue } from "@/contexts/VenueContext";
+import { AuditDateProvider } from "@/contexts/AuditDateContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import Auth from "@/pages/Auth";
 import Onboarding from "@/pages/Onboarding";
@@ -32,6 +33,7 @@ import ResetPassword from "@/pages/ResetPassword";
 import Modifiers from "@/pages/Modifiers";
 import DinerPreferences from "@/pages/DinerPreferences";
 import KnowledgeBase from "@/pages/KnowledgeBase";
+import Reporting from "@/pages/Reporting";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +93,7 @@ function AppRoutes() {
         <Route path="/admin/staff" element={<AdminStaff />} />
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />
+        <Route path="/reporting" element={<Reporting />} />
         <Route path="/knowledge-base" element={<KnowledgeBase />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
@@ -113,7 +116,9 @@ const App = () => (
             <Route path="/*" element={
               <AuthProvider>
                 <VenueProvider>
-                  <AppRoutes />
+                  <AuditDateProvider>
+                    <AppRoutes />
+                  </AuditDateProvider>
                 </VenueProvider>
               </AuthProvider>
             } />

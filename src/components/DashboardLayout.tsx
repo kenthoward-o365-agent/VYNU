@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
-  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard
+  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -49,6 +49,7 @@ const venueNavItems: NavItem[] = [
   { path: "/orders", label: "Orders", icon: { light: navOrders, dark: navOrdersDark } },
   { path: "/analytics", label: "Analytics", icon: { light: navAnalytics, dark: navAnalyticsDark } },
   { path: "/diners", label: "Diners", icon: { light: navDiners, dark: navDinersDark }, hasSub: true },
+  { path: "/reporting", label: "DayEnd", icon: CalendarCheck, hasSub: true },
   { path: "/settings", label: "Settings", icon: { light: navSettings, dark: navSettingsDark }, hasSub: true },
 ];
 
@@ -123,12 +124,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {!isTablessAdmin && venueNavItems.map((item) => {
-            const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners")) || (item.path === "/pricing" && location.pathname === "/menu-times");
+            const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners")) || (item.path === "/pricing" && location.pathname === "/menu-times") || (item.path === "/reporting" && location.pathname.startsWith("/reporting"));
             const isMenuBuilder = item.path === "/menu";
             const isDiners = item.path === "/diners";
             const isSettings = item.path === "/settings";
             const isPricing = item.path === "/pricing";
-            const hasSub = isMenuBuilder || isDiners || isSettings || isPricing;
+            const isDayEnd = item.path === "/reporting";
+            const hasSub = isMenuBuilder || isDiners || isSettings || isPricing || isDayEnd;
             return (
               <Collapsible key={item.path} defaultOpen={
                 (isDiners && location.pathname.startsWith("/diners/")) ||
@@ -190,6 +192,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     <Link to="/diners/preferences" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/diners/preferences" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
                       <Settings className="h-3 w-3" />
                       Diner Preferences
+                    </Link>
+                  </CollapsibleContent>
+                )}
+                {isDayEnd && (
+                  <CollapsibleContent className="pl-10 space-y-0.5">
+                    <Link to="/reporting" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/reporting" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
+                      <FileText className="h-3 w-3" />
+                      Reporting
                     </Link>
                   </CollapsibleContent>
                 )}
