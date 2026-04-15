@@ -35,6 +35,8 @@ interface MenuItem {
   category_id: string | null;
   display_order: number | null;
   food_cost: number | null;
+  plu?: string | null;
+  pos_tags?: string[] | null;
 }
 
 interface Category {
@@ -840,6 +842,9 @@ function ItemCard({ item, taxes, onEdit, onDelete, onToggle, readOnly, dragHandl
           <div className="flex items-center gap-2">
             <span className="font-medium text-foreground truncate">{item.name}</span>
             {!item.is_available && <Badge variant="secondary" className="text-xs">86'd</Badge>}
+            {readOnly && item.plu && (
+              <Badge variant="outline" className="text-xs font-mono">PLU: {item.plu}</Badge>
+            )}
           </div>
           {item.description && <p className="text-sm text-muted-foreground truncate">{item.description}</p>}
           <div className="flex gap-1.5 mt-1 flex-wrap">
