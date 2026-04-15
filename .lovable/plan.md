@@ -1,87 +1,112 @@
 
 
-# POS Integration Mode for Menu Builder
+# OrdrUp API Integration — Gap Analysis and Implementation Plan
 
-## Overview
+## What the API Document Covers
 
-Add a venue-level `menu_source` setting that controls whether the menu is managed manually via the AI-driven builder or synced from an external POS system. When POS mode is active, the Menu Builder shows a read-only view with a banner indicating POS ownership, and manual editing is disabled.
+The uploaded OrdrUp API v1 document defines a comprehensive platform API across 12 domains: Authentication (OAuth M2M + HMAC webhooks), POS Integration, Commerce, Channels, Payments, Recommendations, Fulfillment/Delivery, Store Management, KDS (Kitchen Display), Gift Cards, Dispatch, and common data models.
 
-## Database Changes
+## Current State vs. API Requirements
 
-### Add `menu_source` column to `venues`
+We already have the foundation: `venue_pos_integrations` table, `menu_source` toggle, `pos_id` on menu items/categories, and read-only mode in the Menu Builder. Here is what needs to change to support this API.
 
-```sql
-ALTER TABLE public.venues
-  ADD COLUMN menu_source text NOT NULL DEFAULT 'manual';
--- values: 'manual' | 'pos'
-```
+## Phase 1 — Core POS Menu Sync (Build Now)
 
-### New table: `venue_pos_integrations`
+This is the most immediately useful part: receiving product catalogs from POS partners and mapping orders back.
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | uuid | PK |
-| `venue_id` | uuid | unique, references venues |
-| `pos_provider` | text | e.g. 'lightspeed', 'square', 'kounta', 'doshii' |
-| `api_key_ref` | text | secret name reference (not the key itself) |
-| `endpoint_url` | text | nullable, provider webhook/API base |
-| `last_sync_at` | timestamptz | nullable |
-| `sync_status` | text | 'idle', 'syncing', 'error' |
-| `config` | jsonb | provider-specific settings |
-| `created_at` | timestamptz | default now() |
-| `updated_at` | timestamptz | default now() |
+### 1. Database Schema Changes
 
-RLS: managers can CRUD, staff can SELECT.
+**Extend `venue_pos_integrations`** with fields the API requires:
+- `location_id` (text) — the OrdrUp `locationId` for this venue
+- `account_id` (text) — the OrdrUp `accountId`
+- `webhook_secret` (text) — for HMAC verification of inbound webhooks
+- `client_id` / `client_secret_ref` — M2M OAuth credentials (secret ref, not actual value)
+- `token_cache` (jsonb) — cached access token + expiry
 
-### Add `pos_id` to `menu_items` and `menu_categories`
+**New table: `pos_sync_log`** — tracks every inbound sync event (product push, order status update) with timestamp, event type, payload hash, and result.
 
-```sql
-ALTER TABLE public.menu_items ADD COLUMN pos_id text;
-ALTER TABLE public.menu_categories ADD COLUMN pos_id text;
-```
+**Extend `menu_items`**:
+- `plu` (text) — POS product lookup unit code (the API uses `plu` as the product identifier)
+- `pos_allergens` (integer[]) — raw allergen IDs from POS (numeric codes per API spec)
+- `pos_tags` (text[]) — raw tag names from POS
 
-These store the external POS identifier for each item/category so syncs can match records.
+**Extend `menu_categories`**:
+- `sort_order` (integer) — POS-provided sort order (distinct from our `display_order`)
 
-## Frontend Changes
+### 2. Edge Function: `pos-product-sync`
 
-### 1. Menu Builder — `src/pages/MenuBuilder.tsx`
+**Inbound webhook** that POS partners call to push product catalogs.
 
-- Read `venue.menu_source` from the venue context
-- If `menu_source === 'pos'`:
-  - Show a banner: "Menu managed by POS — [Provider Name]. Last synced: [timestamp]"
-  - Hide add/edit/delete/import/AI-generate buttons
-  - Items render in read-only mode (no drag-and-drop, no edit dialogs)
-  - Show a "Sync Now" button that triggers a manual re-sync
-- If `menu_source === 'manual'` (default): current behavior unchanged
+Matches the API spec: `POST /pos/{locationId}/products`
 
-### 2. Venue Settings — `src/pages/VenueSettings.tsx`
+- Accepts `{ products: [...], categories: [...] }` payload
+- Verifies HMAC signature from `X-Signature` header
+- Looks up venue by `location_id` in `venue_pos_integrations`
+- Upserts categories by `categoryId` → `pos_id` match
+- Upserts items by `plu` → `pos_id` match
+- Maps allergen IDs and tags to our string arrays
+- Logs sync result to `pos_sync_log`
+- Updates `last_sync_at` and `sync_status` on `venue_pos_integrations`
 
-Add a new **"Integrations"** tab with:
-- A toggle/switch: "Menu Source" — Manual vs POS
-- When POS is selected, show provider dropdown (Lightspeed, Square, Kounta, Doshii, Other)
-- Fields for connection config (API key reference, endpoint)
-- Connection status indicator
-- "Test Connection" button (placeholder for now)
-- Warning dialog when switching from Manual to POS: "Existing manual menu items will be preserved but POS sync will overwrite them"
+### 3. Edge Function: `pos-order-webhook`
 
-### 3. VenueContext update
+**Outbound order push** — when an order is created in our system, format it per the API spec and POST to the partner's webhook URL.
 
-Expose `menu_source` from the venue object so components can check it without extra queries.
+Also handles **inbound status updates**: `POST /pos/orders/{orderId}/status` — receives status code (1-7) from POS and updates our `orders.status` + `order_status_log`.
 
-## Files Changed
+### 4. Edge Function: `pos-auth`
+
+Handles M2M OAuth token acquisition and caching:
+- `POST /oauth/token` with `client_credentials` grant
+- Caches token in `venue_pos_integrations.token_cache`
+- Auto-refreshes when expired
+- Used by outbound API calls
+
+### 5. Frontend: Integrations Settings Update
+
+Extend `IntegrationsSettingsTab.tsx`:
+- Add fields for `location_id` and `account_id`
+- Show webhook URL that partners should configure (our edge function URL)
+- Display `pos_sync_log` entries (last 10 syncs with status)
+- "Sync Now" button that calls `GET {partnerBaseUrl}/products?locationId=...` to pull catalog
+
+### 6. Frontend: Menu Builder POS Enhancements
+
+- Show `plu` code on each item card in POS mode
+- Show allergen/tag mapping status (POS codes mapped to our labels)
+- Display last sync timestamp per item
+
+## Phase 2 — Commerce & Orders (Build Next)
+
+The Commerce API (baskets, checkout, fulfillment) maps to our existing order flow but needs:
+- Basket management edge functions
+- Channel link management
+- Order status webhook handlers for partner notifications
+
+## Phase 3 — Advanced Features (Future)
+
+- **Store Management API**: Operating hours, busy mode, product snooze
+- **KDS API**: Kitchen display integration
+- **Gift Cards API**: Stored value provider integration
+- **Dispatch API**: Delivery logistics
+- **Recommendations API**: Already partially built with our upsell system
+
+## Files Changed (Phase 1)
 
 | File | Change |
 |------|--------|
-| Migration SQL | Add `menu_source` to venues, create `venue_pos_integrations`, add `pos_id` to menu_items/categories |
-| `src/pages/MenuBuilder.tsx` | Read-only mode when `menu_source === 'pos'`, POS banner, sync button |
-| `src/pages/VenueSettings.tsx` | New "Integrations" tab with POS config |
-| `src/contexts/VenueContext.tsx` | Expose `menu_source` (already available via venue row) |
+| Migration SQL | Extend `venue_pos_integrations`, `menu_items`, `menu_categories`; create `pos_sync_log` |
+| `supabase/functions/pos-product-sync/index.ts` | New — inbound product catalog webhook |
+| `supabase/functions/pos-order-webhook/index.ts` | New — order push + status updates |
+| `supabase/functions/pos-auth/index.ts` | New — M2M OAuth token management |
+| `src/components/venue/IntegrationsSettingsTab.tsx` | Add location ID, account ID, webhook URL display, sync log |
+| `src/pages/MenuBuilder.tsx` | Show PLU codes, allergen mapping in POS mode |
 
-## What This Does NOT Include (Next Phase)
+## Technical Details
 
-- Actual POS API edge functions (sync logic per provider)
-- Webhook receivers for real-time POS pushes
-- Conflict resolution between manual overrides and POS syncs
-
-These will be built in the next step once the integration framework is in place.
+- **HMAC verification**: Every inbound webhook verifies `X-Signature` using `crypto.subtle.importKey` + `crypto.subtle.sign` in Deno
+- **Price format**: API uses integer cents (e.g. 999 = $9.99) — matches our existing `price` column which stores cents
+- **Allergen mapping**: API uses numeric IDs (1=Gluten, 2=Peanuts, etc.) — we store string labels; the sync function maps between them
+- **Idempotency**: Product syncs use `plu`/`categoryId` as the merge key via upsert, preventing duplicates
+- **Rate limits**: API allows 100 req/min for POS endpoints — our sync functions respect this
 
