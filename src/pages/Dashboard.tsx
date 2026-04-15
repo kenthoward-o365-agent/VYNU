@@ -30,6 +30,13 @@ export default function Dashboard() {
     avgOrderValue: 0,
   });
 
+  // When venue audit date loads, reset the date picker to use it
+  useEffect(() => {
+    if (venueAuditDate) {
+      setAuditDate(getDefaultAuditDate(venueAuditDate));
+    }
+  }, [venueAuditDate]);
+
   useEffect(() => {
     if (!venue) return;
     supabase
