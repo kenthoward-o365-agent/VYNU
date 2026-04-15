@@ -155,15 +155,20 @@ async function generateAndSaveImage(
     return;
   }
 
+  // Detect actual MIME type from data URI prefix
+  const mimeMatch = base64Url.match(/^data:image\/(\w+);base64,/);
+  const ext = mimeMatch?.[1] || "png";
+  const contentType = `image/${ext}`;
+
   const base64Data = base64Url.replace(/^data:image\/\w+;base64,/, "");
   const binaryStr = atob(base64Data);
   const bytes = new Uint8Array(binaryStr.length);
   for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
 
-  const path = `menu-items/${venueId}/generated/${item.id}-${Date.now()}.webp`;
+  const path = `menu-items/${venueId}/generated/${item.id}-${Date.now()}.${ext}`;
   const { error: uploadError } = await supabaseAdmin.storage
     .from("venue-assets")
-    .upload(path, bytes, { contentType: "image/webp", upsert: true });
+    .upload(path, bytes, { contentType, upsert: true });
 
   if (uploadError) {
     console.error(`Upload failed for ${item.name}:`, uploadError.message);

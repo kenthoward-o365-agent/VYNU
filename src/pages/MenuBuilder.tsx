@@ -15,6 +15,7 @@ import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, Fil
 import { Checkbox } from "@/components/ui/checkbox";
 import ImageEnhancerDialog from "@/components/menu/ImageEnhancerDialog";
 import { cn } from "@/lib/utils";
+import { resizeFileToWebP } from "@/lib/image-utils";
 import { toast } from "sonner";
 import { formatItemTaxBreakdown, type TaxConfig } from "@/lib/tax-utils";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
@@ -504,15 +505,19 @@ export default function MenuBuilder() {
                         return;
                       }
                       setUploadingImage(true);
-                      const ext = file.name.split(".").pop() || "jpg";
-                      const path = `menu-items/${venue.id}/${Date.now()}.${ext}`;
-                      const { error } = await supabase.storage.from("venue-assets").upload(path, file, { upsert: true });
-                      if (error) {
-                        toast.error("Upload failed: " + error.message);
-                      } else {
-                        const { data: urlData } = supabase.storage.from("venue-assets").getPublicUrl(path);
-                        setForm((f) => ({ ...f, image_url: urlData.publicUrl }));
-                        toast.success("Image uploaded");
+                      try {
+                        const webpBlob = await resizeFileToWebP(file);
+                        const path = `menu-items/${venue.id}/${Date.now()}.webp`;
+                        const { error } = await supabase.storage.from("venue-assets").upload(path, webpBlob, { contentType: "image/webp", upsert: true });
+                        if (error) {
+                          toast.error("Upload failed: " + error.message);
+                        } else {
+                          const { data: urlData } = supabase.storage.from("venue-assets").getPublicUrl(path);
+                          setForm((f) => ({ ...f, image_url: urlData.publicUrl }));
+                          toast.success("Image uploaded");
+                        }
+                      } catch (err: any) {
+                        toast.error("Image processing failed: " + (err.message || "Unknown error"));
                       }
                       setUploadingImage(false);
                     }}
