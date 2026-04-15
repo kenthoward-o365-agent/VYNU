@@ -195,7 +195,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     </Link>
                   </CollapsibleContent>
                 )}
-                {isSettings && (
+                {isDayEnd && (
+                  <CollapsibleContent className="pl-10 space-y-0.5">
+                    <Link to="/reporting" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/reporting" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
+                      <FileText className="h-3 w-3" />
+                      Reporting
+                    </Link>
+                  </CollapsibleContent>
+                )}
                   <CollapsibleContent className="pl-10 space-y-0.5">
                     {[
                       { to: "/settings?tab=details", label: "Details", icon: Settings },
