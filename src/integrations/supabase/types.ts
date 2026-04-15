@@ -633,6 +633,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          pos_id: string | null
           updated_at: string
           venue_id: string
         }
@@ -642,6 +643,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          pos_id?: string | null
           updated_at?: string
           venue_id: string
         }
@@ -651,6 +653,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          pos_id?: string | null
           updated_at?: string
           venue_id?: string
         }
@@ -672,6 +675,8 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          plu: string | null
+          pos_id: string | null
           price: number
           updated_at: string
           venue_id: string
@@ -683,6 +688,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          plu?: string | null
+          pos_id?: string | null
           price?: number
           updated_at?: string
           venue_id: string
@@ -694,6 +701,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          plu?: string | null
+          pos_id?: string | null
           price?: number
           updated_at?: string
           venue_id?: string
@@ -801,6 +810,7 @@ export type Database = {
           customer_id: string | null
           customer_notes: string | null
           id: string
+          pos_order_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           table_id: string | null
           total: number | null
@@ -812,6 +822,7 @@ export type Database = {
           customer_id?: string | null
           customer_notes?: string | null
           id?: string
+          pos_order_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string | null
           total?: number | null
@@ -823,6 +834,7 @@ export type Database = {
           customer_id?: string | null
           customer_notes?: string | null
           id?: string
+          pos_order_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string | null
           total?: number | null
@@ -1095,6 +1107,7 @@ export type Database = {
           capacity: number | null
           created_at: string
           id: string
+          pos_table_id: string | null
           qr_code: string | null
           status: string | null
           table_number: string
@@ -1106,6 +1119,7 @@ export type Database = {
           capacity?: number | null
           created_at?: string
           id?: string
+          pos_table_id?: string | null
           qr_code?: string | null
           status?: string | null
           table_number: string
@@ -1117,6 +1131,7 @@ export type Database = {
           capacity?: number | null
           created_at?: string
           id?: string
+          pos_table_id?: string | null
           qr_code?: string | null
           status?: string | null
           table_number?: string
