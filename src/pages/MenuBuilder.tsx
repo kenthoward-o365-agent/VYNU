@@ -336,30 +336,81 @@ export default function MenuBuilder() {
 
   return (
     <div className="space-y-6">
+      {/* POS Mode Banner */}
+      {isPosMode && (
+        <Card className="border-yellow-500/30 bg-yellow-500/5">
+          <CardContent className="py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              <span className="text-sm font-medium text-foreground">
+                Menu managed by POS
+                {posIntegration?.pos_provider && ` — ${posIntegration.pos_provider.charAt(0).toUpperCase() + posIntegration.pos_provider.slice(1)}`}
+              </span>
+              {posIntegration?.last_sync_at && (
+                <span className="text-xs text-muted-foreground">
+                  Last synced: {new Date(posIntegration.last_sync_at).toLocaleString()}
+                </span>
+              )}
+            </div>
+            <Button variant="outline" size="sm" disabled>
+              <RefreshCw className="h-3.5 w-3.5 mr-1" /> Sync Now
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Menu Builder</h2>
           <p className="text-muted-foreground">{items.length} items across {categories.length} categories</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm"><Plus className="h-4 w-4 mr-1" />Category</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Add Category</DialogTitle></DialogHeader>
-              <div className="space-y-4">
-                <Input placeholder="Category name" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
-                <Button onClick={addCategory} className="w-full">Add Category</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-          <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Item</Button>
-        </div>
+        {!isPosMode && (
+          <div className="flex gap-2 flex-wrap">
+            <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm"><Plus className="h-4 w-4 mr-1" />Category</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Add Category</DialogTitle></DialogHeader>
+                <div className="space-y-4">
+                  <Input placeholder="Category name" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
+                  <Button onClick={addCategory} className="w-full">Add Category</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Item</Button>
+          </div>
+        )}
       </div>
 
       {/* Dietary tag filter row */}
       <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-sm font-medium text-muted-foreground mr-1">Filter:</span>
+        {dietaryOptions.map((tag) => (
+          <Badge
+            key={tag}
+            variant={activeDietaryFilters.includes(tag) ? "default" : "outline"}
+            className={cn(
+              "cursor-pointer select-none transition-colors",
+              activeDietaryFilters.includes(tag)
+                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                : "hover:bg-accent"
+            )}
+            onClick={() =>
+              setActiveDietaryFilters((prev) =>
+                prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+              )
+            }
+          >
+            {tag}
+          </Badge>
+        ))}
+        {activeDietaryFilters.length > 0 && (
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setActiveDietaryFilters([])}>
+            Clear
+          </Button>
+        )}
+      </div>
         <span className="text-sm font-medium text-muted-foreground mr-1">Filter:</span>
         {dietaryOptions.map((tag) => (
           <Badge
