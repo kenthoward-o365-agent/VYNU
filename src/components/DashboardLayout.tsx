@@ -203,6 +203,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     </Link>
                   </CollapsibleContent>
                 )}
+                {isSettings && (
                   <CollapsibleContent className="pl-10 space-y-0.5">
                     {[
                       { to: "/settings?tab=details", label: "Details", icon: Settings },
