@@ -214,6 +214,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
                       { to: "/settings?tab=surcharges", label: "Surcharges", icon: Percent },
                       { to: "/settings?tab=taxes", label: "Taxes", icon: Receipt },
+                      { to: "/settings?tab=integrations", label: "Integrations", icon: Plug },
                     ].map((sub) => {
                       const params = new URLSearchParams(location.search);
                       const currentTab = params.get("tab") || "details";
