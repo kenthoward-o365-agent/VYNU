@@ -71,8 +71,12 @@ export default function Modifiers() {
   const [editingModId, setEditingModId] = useState<string | null>(null);
   const [editingModName, setEditingModName] = useState("");
   const [editingModPrice, setEditingModPrice] = useState("");
+  const [editingModPosId, setEditingModPosId] = useState("");
+  const [editingModPlu, setEditingModPlu] = useState("");
   const [newModName, setNewModName] = useState("");
   const [newModPrice, setNewModPrice] = useState("0");
+  const [newModPosId, setNewModPosId] = useState("");
+  const [newModPlu, setNewModPlu] = useState("");
 
   // AI state
   const [aiLoading, setAiLoading] = useState(false);
@@ -134,18 +138,20 @@ export default function Modifiers() {
     if (!venue || !selectedCatId || !newModName.trim()) return;
     const { error } = await supabase.from("modifiers").insert({
       venue_id: venue.id, category_id: selectedCatId, name: newModName.trim(),
-      price: parseFloat(newModPrice) || 0, display_order: modifiers.filter(m => m.category_id === selectedCatId).length
-    });
+      price: parseFloat(newModPrice) || 0, display_order: modifiers.filter(m => m.category_id === selectedCatId).length,
+      pos_id: newModPosId || null, plu: newModPlu || null,
+    } as any);
     if (error) { toast.error("Failed to add modifier"); return; }
-    setNewModName(""); setNewModPrice("0");
+    setNewModName(""); setNewModPrice("0"); setNewModPosId(""); setNewModPlu("");
     toast.success("Modifier added");
     fetchData();
   };
 
   const updateModifier = async (id: string) => {
     const { error } = await supabase.from("modifiers").update({
-      name: editingModName.trim(), price: parseFloat(editingModPrice) || 0
-    }).eq("id", id);
+      name: editingModName.trim(), price: parseFloat(editingModPrice) || 0,
+      pos_id: editingModPosId || null, plu: editingModPlu || null,
+    } as any).eq("id", id);
     if (error) { toast.error("Failed to update"); return; }
     setEditingModId(null);
     toast.success("Updated");
@@ -312,10 +318,19 @@ export default function Modifiers() {
               <CardContent>
                 {selectedCatId ? (
                   <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <Input placeholder="Modifier name" value={newModName} onChange={e => setNewModName(e.target.value)} className="text-sm" />
-                      <Input placeholder="Price" type="number" step="0.01" value={newModPrice} onChange={e => setNewModPrice(e.target.value)} className="text-sm w-24" />
-                      <Button size="sm" onClick={addModifier} disabled={!newModName.trim()}><Plus className="h-4 w-4" /></Button>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input placeholder="Modifier name" value={newModName} onChange={e => setNewModName(e.target.value)} className="text-sm" />
+                        <Input placeholder="Price" type="number" step="0.01" value={newModPrice} onChange={e => setNewModPrice(e.target.value)} className="text-sm w-24" />
+                        <Button size="sm" onClick={addModifier} disabled={!newModName.trim()}><Plus className="h-4 w-4" /></Button>
+                      </div>
+                      <details className="border border-border rounded-lg">
+                        <summary className="px-3 py-1.5 text-xs font-medium cursor-pointer text-muted-foreground hover:text-foreground">POS Integration</summary>
+                        <div className="px-3 pb-3 pt-1 flex gap-2">
+                          <Input placeholder="POS ID" value={newModPosId} onChange={e => setNewModPosId(e.target.value)} className="text-sm" />
+                          <Input placeholder="PLU" value={newModPlu} onChange={e => setNewModPlu(e.target.value)} className="text-sm" />
+                        </div>
+                      </details>
                     </div>
                     <Separator />
                     <ScrollArea className="h-[360px]">
@@ -323,19 +338,26 @@ export default function Modifiers() {
                       {selectedCatModifiers.map(mod => (
                         <div key={mod.id} className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-muted">
                           {editingModId === mod.id ? (
-                            <>
-                              <Input value={editingModName} onChange={e => setEditingModName(e.target.value)} className="text-sm h-7 flex-1" autoFocus />
-                              <Input value={editingModPrice} onChange={e => setEditingModPrice(e.target.value)} type="number" step="0.01" className="text-sm h-7 w-20" />
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => updateModifier(mod.id)}><Check className="h-3 w-3" /></Button>
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingModId(null)}><X className="h-3 w-3" /></Button>
-                            </>
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Input value={editingModName} onChange={e => setEditingModName(e.target.value)} className="text-sm h-7 flex-1" autoFocus />
+                                <Input value={editingModPrice} onChange={e => setEditingModPrice(e.target.value)} type="number" step="0.01" className="text-sm h-7 w-20" />
+                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => updateModifier(mod.id)}><Check className="h-3 w-3" /></Button>
+                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingModId(null)}><X className="h-3 w-3" /></Button>
+                              </div>
+                              <div className="flex gap-2">
+                                <Input placeholder="POS ID" value={editingModPosId} onChange={e => setEditingModPosId(e.target.value)} className="text-sm h-7" />
+                                <Input placeholder="PLU" value={editingModPlu} onChange={e => setEditingModPlu(e.target.value)} className="text-sm h-7" />
+                              </div>
+                            </div>
                           ) : (
                             <>
                               <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
                               <span className="text-sm flex-1">{mod.name}</span>
+                              {(mod as any).plu && <Badge variant="outline" className="text-[10px] font-mono">PLU: {(mod as any).plu}</Badge>}
                               {mod.price > 0 && <Badge variant="outline" className="text-[10px]">+${mod.price.toFixed(2)}</Badge>}
                               {mod.price === 0 && <Badge variant="secondary" className="text-[10px]">Free</Badge>}
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditingModId(mod.id); setEditingModName(mod.name); setEditingModPrice(String(mod.price)); }}>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditingModId(mod.id); setEditingModName(mod.name); setEditingModPrice(String(mod.price)); setEditingModPosId((mod as any).pos_id || ""); setEditingModPlu((mod as any).plu || ""); }}>
                                 <Pencil className="h-3 w-3" />
                               </Button>
                               <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive" onClick={() => deleteModifier(mod.id)}>

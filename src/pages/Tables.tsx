@@ -27,7 +27,7 @@ export default function Tables() {
   const [tables, setTables] = useState<Table[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [qrDialogTable, setQrDialogTable] = useState<Table | null>(null);
-  const [form, setForm] = useState({ table_number: "", zone: "", capacity: "4" });
+  const [form, setForm] = useState({ table_number: "", zone: "", capacity: "4", pos_table_id: "" });
   const printRef = useRef<HTMLDivElement>(null);
 
   const fetchTables = async () => {
@@ -45,13 +45,14 @@ export default function Tables() {
       table_number: form.table_number,
       zone: form.zone || null,
       capacity: parseInt(form.capacity) || 4,
-    }).select().single();
+      pos_table_id: form.pos_table_id || null,
+    } as any).select().single();
     if (error) { toast.error(error.message); return; }
     const qrUrl = `${PUBLISHED_BASE_URL}/order/${venue.id}/${data.id}`;
     await supabase.from("tables").update({ qr_code: qrUrl }).eq("id", data.id);
     toast.success("Table added");
     setDialogOpen(false);
-    setForm({ table_number: "", zone: "", capacity: "4" });
+    setForm({ table_number: "", zone: "", capacity: "4", pos_table_id: "" });
     fetchTables();
   };
 
@@ -114,6 +115,13 @@ export default function Tables() {
               <Input placeholder="Table number (e.g. 1, A1)" value={form.table_number} onChange={(e) => setForm((f) => ({ ...f, table_number: e.target.value }))} />
               <Input placeholder="Zone (e.g. Patio, Main)" value={form.zone} onChange={(e) => setForm((f) => ({ ...f, zone: e.target.value }))} />
               <Input type="number" placeholder="Capacity" value={form.capacity} onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))} />
+              <details className="border border-border rounded-lg">
+                <summary className="px-4 py-2.5 text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground">POS Integration</summary>
+                <div className="px-4 pb-4 pt-2">
+                  <Label className="text-sm font-medium mb-1.5 block">POS Table ID</Label>
+                  <Input placeholder="External POS table identifier" value={form.pos_table_id} onChange={(e) => setForm((f) => ({ ...f, pos_table_id: e.target.value }))} />
+                </div>
+              </details>
               <Button onClick={addTable} className="w-full" disabled={!form.table_number}>Add Table</Button>
             </div>
           </DialogContent>

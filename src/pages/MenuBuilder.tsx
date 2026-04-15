@@ -79,6 +79,7 @@ export default function MenuBuilder() {
     name: "", description: "", price: "", prep_time_minutes: "",
     allergens: [] as string[], dietary_tags: [] as string[],
     category_id: "", food_cost: "", is_available: true, image_url: "" as string,
+    plu: "", pos_id: "",
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [timeFrames, setTimeFrames] = useState<{ id: string; name: string }[]>([]);
@@ -130,7 +131,7 @@ export default function MenuBuilder() {
 
   const openAdd = () => {
     setEditingItem(null);
-    setForm({ name: "", description: "", price: "", prep_time_minutes: "", allergens: [], dietary_tags: [], category_id: "", food_cost: "", is_available: true, image_url: "" });
+    setForm({ name: "", description: "", price: "", prep_time_minutes: "", allergens: [], dietary_tags: [], category_id: "", food_cost: "", is_available: true, image_url: "", plu: "", pos_id: "" });
     setSelectedTimeFrames([]);
     setDialogOpen(true);
   };
@@ -143,6 +144,7 @@ export default function MenuBuilder() {
       allergens: item.allergens || [], dietary_tags: item.dietary_tags || [],
       category_id: item.category_id || "", food_cost: item.food_cost ? String(item.food_cost) : "",
       is_available: item.is_available ?? true, image_url: item.image_url || "",
+      plu: (item as any).plu || "", pos_id: (item as any).pos_id || "",
     });
     // Load existing time frame assignments
     const { data } = await supabase.from("menu_item_time_frames").select("time_frame_id").eq("menu_item_id", item.id);
@@ -164,6 +166,8 @@ export default function MenuBuilder() {
       food_cost: form.food_cost ? parseFloat(form.food_cost) : null,
       is_available: form.is_available,
       image_url: form.image_url || null,
+      plu: form.plu || null,
+      pos_id: form.pos_id || null,
     };
 
     let itemId: string;
@@ -623,6 +627,21 @@ export default function MenuBuilder() {
                 ))}
               </div>
             </div>
+
+            {/* POS Integration */}
+            <details className="border border-border rounded-lg">
+              <summary className="px-4 py-2.5 text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground">POS Integration</summary>
+              <div className="px-4 pb-4 pt-2 space-y-3">
+                <div>
+                  <Label className="text-sm font-medium mb-1.5 block">PLU (Product Lookup Unit)</Label>
+                  <Input placeholder="e.g. 10042" value={form.plu} onChange={(e) => setForm((f) => ({ ...f, plu: e.target.value }))} />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-1.5 block">POS ID</Label>
+                  <Input placeholder="External system identifier" value={form.pos_id} onChange={(e) => setForm((f) => ({ ...f, pos_id: e.target.value }))} />
+                </div>
+              </div>
+            </details>
 
             <div className="flex items-center gap-3">
               <Switch checked={form.is_available} onCheckedChange={(v) => setForm((f) => ({ ...f, is_available: v }))} />
