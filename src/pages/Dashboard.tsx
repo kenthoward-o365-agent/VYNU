@@ -15,7 +15,7 @@ import TicketTimesCard from "@/components/dashboard/TicketTimesCard";
 export default function Dashboard() {
   const { venue } = useVenue();
   const { auditDate: venueAuditDate } = useAuditDate();
-  const [auditDate, setAuditDate] = useState<DateRange>(getDefaultAuditDate);
+  const [auditDate, setAuditDate] = useState<DateRange>(() => getDefaultAuditDate(venueAuditDate));
   const [taxes, setTaxes] = useState<TaxConfig[]>([]);
   const [orders, setOrders] = useState<{ id: string; total: number | null; status: string; created_at: string }[]>([]);
   const [stats, setStats] = useState({
