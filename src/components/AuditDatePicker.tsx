@@ -124,10 +124,11 @@ export default function AuditDatePicker({ value, onChange, auditDateOverride }: 
   );
 }
 
-export function getDefaultAuditDate(): DateRange {
+export function getDefaultAuditDate(auditDateOverride?: string | null): DateRange {
+  const d = auditDateOverride ? parseISO(auditDateOverride) : new Date();
   return {
-    from: startOfDay(new Date()),
-    to: endOfDay(new Date()),
+    from: startOfDay(d),
+    to: endOfDay(d),
     label: "Today",
   };
 }

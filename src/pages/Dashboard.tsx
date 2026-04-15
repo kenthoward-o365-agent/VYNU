@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useVenue } from "@/contexts/VenueContext";
+import { useAuditDate } from "@/contexts/AuditDateContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, TrendingUp, Receipt, Percent } from "lucide-react";
@@ -13,6 +14,7 @@ import TicketTimesCard from "@/components/dashboard/TicketTimesCard";
 
 export default function Dashboard() {
   const { venue } = useVenue();
+  const { auditDate: venueAuditDate } = useAuditDate();
   const [auditDate, setAuditDate] = useState<DateRange>(getDefaultAuditDate);
   const [taxes, setTaxes] = useState<TaxConfig[]>([]);
   const [orders, setOrders] = useState<{ id: string; total: number | null; status: string; created_at: string }[]>([]);
