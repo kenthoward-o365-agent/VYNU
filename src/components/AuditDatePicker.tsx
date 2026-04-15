@@ -51,6 +51,7 @@ interface AuditDatePickerProps {
 }
 
 export default function AuditDatePicker({ value, onChange, auditDateOverride }: AuditDatePickerProps) {
+  const presets = useMemo(() => buildPresets(auditDateOverride), [auditDateOverride]);
   const [open, setOpen] = useState(false);
   const [customDate, setCustomDate] = useState<Date | undefined>();
 
