@@ -1,104 +1,87 @@
 
 
-# Audit Date System with DayEnd Navigation
+# POS Integration Mode for Menu Builder
 
 ## Overview
 
-Add a venue-level **audit date** that decouples the business day from the calendar clock. Venues open past midnight keep the same audit date until staff explicitly advance it via a "DayEnd" action. The Dashboard will use the current audit date instead of `new Date()` for "Today."
+Add a venue-level `menu_source` setting that controls whether the menu is managed manually via the AI-driven builder or synced from an external POS system. When POS mode is active, the Menu Builder shows a read-only view with a banner indicating POS ownership, and manual editing is disabled.
 
 ## Database Changes
 
-### New table: `venue_audit_dates`
+### Add `menu_source` column to `venues`
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | uuid | PK, default `gen_random_uuid()` |
-| `venue_id` | uuid | unique, references venues |
-| `current_date` | date | The active business day |
-| `advanced_by` | uuid | User who last advanced |
-| `advanced_at` | timestamptz | When last advanced |
-| `created_at` | timestamptz | default `now()` |
+```sql
+ALTER TABLE public.venues
+  ADD COLUMN menu_source text NOT NULL DEFAULT 'manual';
+-- values: 'manual' | 'pos'
+```
 
-- On venue creation or first access, default to `CURRENT_DATE` in venue timezone.
-- RLS: staff can SELECT; managers can UPDATE.
-
-### New table: `venue_dayend_log`
+### New table: `venue_pos_integrations`
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | uuid | PK |
-| `venue_id` | uuid | |
-| `audit_date` | date | The date that was closed |
-| `closed_by` | uuid | |
-| `closed_at` | timestamptz | default `now()` |
+| `venue_id` | uuid | unique, references venues |
+| `pos_provider` | text | e.g. 'lightspeed', 'square', 'kounta', 'doshii' |
+| `api_key_ref` | text | secret name reference (not the key itself) |
+| `endpoint_url` | text | nullable, provider webhook/API base |
+| `last_sync_at` | timestamptz | nullable |
+| `sync_status` | text | 'idle', 'syncing', 'error' |
+| `config` | jsonb | provider-specific settings |
+| `created_at` | timestamptz | default now() |
+| `updated_at` | timestamptz | default now() |
 
-- Immutable audit trail of every DayEnd action.
-- RLS: staff can SELECT and INSERT.
+RLS: managers can CRUD, staff can SELECT.
 
-### Database function: `advance_audit_date`
+### Add `pos_id` to `menu_items` and `menu_categories`
 
-An RPC that atomically:
-1. Reads current audit date for venue
-2. Inserts a row into `venue_dayend_log`
-3. Sets `current_date = current_date + 1` on `venue_audit_dates`
-4. Returns the new date
+```sql
+ALTER TABLE public.menu_items ADD COLUMN pos_id text;
+ALTER TABLE public.menu_categories ADD COLUMN pos_id text;
+```
 
-Uses `SECURITY DEFINER` with venue staff check.
+These store the external POS identifier for each item/category so syncs can match records.
 
 ## Frontend Changes
 
-### 1. Audit Date Context — `src/contexts/AuditDateContext.tsx`
+### 1. Menu Builder — `src/pages/MenuBuilder.tsx`
 
-New context that:
-- Fetches `venue_audit_dates.current_date` for the active venue
-- Exposes `auditDate: string` (YYYY-MM-DD), `advanceDay()`, and `loading`
-- Wraps inside `VenueProvider` in App.tsx
-- If no row exists for venue, calls an RPC to initialize it
+- Read `venue.menu_source` from the venue context
+- If `menu_source === 'pos'`:
+  - Show a banner: "Menu managed by POS — [Provider Name]. Last synced: [timestamp]"
+  - Hide add/edit/delete/import/AI-generate buttons
+  - Items render in read-only mode (no drag-and-drop, no edit dialogs)
+  - Show a "Sync Now" button that triggers a manual re-sync
+- If `menu_source === 'manual'` (default): current behavior unchanged
 
-### 2. Dashboard Integration — `src/pages/Dashboard.tsx`
+### 2. Venue Settings — `src/pages/VenueSettings.tsx`
 
-- Import `useAuditDate()` from the new context
-- Replace `getDefaultAuditDate()` with the audit date from context
-- "Today" label maps to the current audit date, not `new Date()`
-- The date picker still allows historical browsing
+Add a new **"Integrations"** tab with:
+- A toggle/switch: "Menu Source" — Manual vs POS
+- When POS is selected, show provider dropdown (Lightspeed, Square, Kounta, Doshii, Other)
+- Fields for connection config (API key reference, endpoint)
+- Connection status indicator
+- "Test Connection" button (placeholder for now)
+- Warning dialog when switching from Manual to POS: "Existing manual menu items will be preserved but POS sync will overwrite them"
 
-### 3. Navigation — `src/components/DashboardLayout.tsx`
+### 3. VenueContext update
 
-Add a new collapsible "DayEnd" entry in the sidebar nav, positioned between "Diners" and "Settings":
-
-```text
-├── Diners
-├── DayEnd          ← new, collapsible
-│   └── Reporting   ← sub-link to /reporting
-├── Settings
-```
-
-- Uses `CalendarCheck` or `ClipboardCheck` lucide icon
-- Collapsible with same pattern as Menu Builder / Settings
-- "Reporting" links to `/reporting`
-
-### 4. DayEnd / Reporting Page — `src/pages/Reporting.tsx`
-
-Initial page with:
-- Current audit date display (prominent)
-- "Close Day" button (advances audit date via RPC)
-- Confirmation dialog before advancing
-- Log of previous DayEnd closings (from `venue_dayend_log`)
-- Placeholder section for future reports
-
-### 5. Routing — `src/App.tsx`
-
-Add `<Route path="/reporting" element={<Reporting />} />`
+Expose `menu_source` from the venue object so components can check it without extra queries.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| Migration SQL | Create `venue_audit_dates`, `venue_dayend_log`, `advance_audit_date` RPC |
-| `src/contexts/AuditDateContext.tsx` | New context |
-| `src/App.tsx` | Add AuditDateProvider wrapper, `/reporting` route |
-| `src/pages/Dashboard.tsx` | Use audit date from context as default |
-| `src/components/DashboardLayout.tsx` | Add DayEnd collapsible nav with Reporting sub-item |
-| `src/pages/Reporting.tsx` | New page with day-close controls and log |
-| `src/components/AuditDatePicker.tsx` | Minor update to accept an audit date override for "Today" |
+| Migration SQL | Add `menu_source` to venues, create `venue_pos_integrations`, add `pos_id` to menu_items/categories |
+| `src/pages/MenuBuilder.tsx` | Read-only mode when `menu_source === 'pos'`, POS banner, sync button |
+| `src/pages/VenueSettings.tsx` | New "Integrations" tab with POS config |
+| `src/contexts/VenueContext.tsx` | Expose `menu_source` (already available via venue row) |
+
+## What This Does NOT Include (Next Phase)
+
+- Actual POS API edge functions (sync logic per provider)
+- Webhook receivers for real-time POS pushes
+- Conflict resolution between manual overrides and POS syncs
+
+These will be built in the next step once the integration framework is in place.
 
