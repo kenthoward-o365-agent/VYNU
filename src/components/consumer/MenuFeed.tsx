@@ -119,7 +119,7 @@ const MenuItemRow = ({
       {/* Column A: Image */}
       <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-lg overflow-hidden shrink-0 bg-muted">
         {item.image_url ? (
-          <img src={optimizedImageUrl(item.image_url, 256, 80, 256)} alt={item.name} loading="lazy" width={64} height={64} className="w-full h-full object-contain" />
+          <img src={optimizedImageUrl(item.image_url, 256, 80, 256)} alt={item.name} loading="lazy" width={64} height={64} className="w-full h-full object-contain" onError={(e) => { if (item.image_url && e.currentTarget.src !== item.image_url) e.currentTarget.src = item.image_url; }} />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/20">
             <Flame className="h-4 w-4 sm:h-6 sm:w-6 text-primary/30" />
@@ -198,7 +198,7 @@ const MobileCardFeed = ({
 
       <div className={cn("h-[55%] bg-muted relative", !isAvailable && "grayscale opacity-50")}>
         {currentItem.image_url ? (
-          <img src={optimizedImageUrl(currentItem.image_url, 640)} alt={currentItem.name} loading="lazy" className="w-full h-full object-cover" />
+          <img src={optimizedImageUrl(currentItem.image_url, 640)} alt={currentItem.name} loading="lazy" className="w-full h-full object-cover" onError={(e) => { if (currentItem.image_url && e.currentTarget.src !== currentItem.image_url) e.currentTarget.src = currentItem.image_url; }} />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/20">
             <Flame className="h-16 w-16 text-primary/30" />

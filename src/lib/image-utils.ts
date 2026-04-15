@@ -21,6 +21,27 @@ export function optimizedImageUrl(
 }
 
 /**
+ * Resize + convert a File to WebP via an off-screen canvas.
+ * Returns a Blob ready for upload.
+ */
+export function resizeFileToWebP(
+  file: File,
+  maxDimension = 1200,
+  quality = 0.85,
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUri = ev.target?.result as string;
+      if (!dataUri) return reject(new Error("FileReader returned empty"));
+      resizeToWebP(dataUri, maxDimension, quality).then(resolve, reject);
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
  * Resize + convert a base64 data-URI image to WebP via an off-screen canvas.
  * Returns a Blob ready for upload.
  */
