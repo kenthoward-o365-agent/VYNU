@@ -381,6 +381,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name: string
+          pos_id: string | null
           updated_at: string
           venue_id: string
         }
@@ -391,6 +392,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name: string
+          pos_id?: string | null
           updated_at?: string
           venue_id: string
         }
@@ -401,6 +403,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name?: string
+          pos_id?: string | null
           updated_at?: string
           venue_id?: string
         }
@@ -503,6 +506,7 @@ export type Database = {
           image_url: string | null
           is_available: boolean | null
           name: string
+          pos_id: string | null
           prep_time_minutes: number | null
           price: number
           updated_at: string
@@ -521,6 +525,7 @@ export type Database = {
           image_url?: string | null
           is_available?: boolean | null
           name: string
+          pos_id?: string | null
           prep_time_minutes?: number | null
           price: number
           updated_at?: string
@@ -539,6 +544,7 @@ export type Database = {
           image_url?: string | null
           is_available?: boolean | null
           name?: string
+          pos_id?: string | null
           prep_time_minutes?: number | null
           price?: number
           updated_at?: string
@@ -1363,6 +1369,53 @@ export type Database = {
           },
         ]
       }
+      venue_pos_integrations: {
+        Row: {
+          api_key_ref: string | null
+          config: Json | null
+          created_at: string
+          endpoint_url: string | null
+          id: string
+          last_sync_at: string | null
+          pos_provider: string
+          sync_status: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          api_key_ref?: string | null
+          config?: Json | null
+          created_at?: string
+          endpoint_url?: string | null
+          id?: string
+          last_sync_at?: string | null
+          pos_provider: string
+          sync_status?: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          api_key_ref?: string | null
+          config?: Json | null
+          created_at?: string
+          endpoint_url?: string | null
+          id?: string
+          last_sync_at?: string | null
+          pos_provider?: string
+          sync_status?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_pos_integrations_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: true
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_staff: {
         Row: {
           created_at: string
@@ -1463,6 +1516,7 @@ export type Database = {
           is_active: boolean | null
           landing_page_html: string | null
           logo_url: string | null
+          menu_source: string
           name: string
           operating_hours: Json | null
           phone: string | null
@@ -1488,6 +1542,7 @@ export type Database = {
           is_active?: boolean | null
           landing_page_html?: string | null
           logo_url?: string | null
+          menu_source?: string
           name: string
           operating_hours?: Json | null
           phone?: string | null
@@ -1513,6 +1568,7 @@ export type Database = {
           is_active?: boolean | null
           landing_page_html?: string | null
           logo_url?: string | null
+          menu_source?: string
           name?: string
           operating_hours?: Json | null
           phone?: string | null
