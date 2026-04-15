@@ -113,7 +113,18 @@ export default function MenuBuilder() {
 
   useEffect(() => { fetchData(); }, [venue]);
 
-  const openAdd = () => {
+  // Fetch POS integration info when in POS mode
+  useEffect(() => {
+    if (!venue || !isPosMode) { setPosIntegration(null); return; }
+    supabase
+      .from("venue_pos_integrations" as any)
+      .select("pos_provider, last_sync_at, sync_status")
+      .eq("venue_id", venue.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setPosIntegration(data as any);
+      });
+  }, [venue, isPosMode]);
     setEditingItem(null);
     setForm({ name: "", description: "", price: "", prep_time_minutes: "", allergens: [], dietary_tags: [], category_id: "", food_cost: "", is_available: true, image_url: "" });
     setSelectedTimeFrames([]);
