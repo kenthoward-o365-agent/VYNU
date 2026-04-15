@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
   const { signIn, signUp } = useAuth();
@@ -13,6 +14,7 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [siteId, setSiteId] = useState("");
   const [loading, setLoading] = useState(false);
 
   const logoSrc = theme === "dark" ? "/ordrup-icon-dark.svg" : "/ordrup-icon.svg";
@@ -25,6 +27,23 @@ export default function Auth() {
         await signUp(email, password, displayName);
         toast.success("Account created! Check your email to confirm.");
       } else {
+        // Validate site ID before signing in
+        const trimmed = siteId.trim().toUpperCase();
+        if (!trimmed) {
+          toast.error("Please enter your Site ID");
+          setLoading(false);
+          return;
+        }
+
+        const { data: venueData, error: lookupError } = await supabase.rpc("lookup_venue_by_site_id", { _site_id: trimmed });
+        if (lookupError || !venueData || venueData.length === 0) {
+          toast.error("Invalid Site ID. Please check and try again.");
+          setLoading(false);
+          return;
+        }
+
+        // Store the target venue ID so VenueContext picks it up after login
+        localStorage.setItem("tabless_active_venue", venueData[0].venue_id);
         await signIn(email, password);
         toast.success("Welcome back!");
       }
@@ -49,7 +68,7 @@ export default function Auth() {
           <CardHeader>
             <CardTitle>{isSignUp ? "Create your venue account" : "Welcome back"}</CardTitle>
             <CardDescription>
-              {isSignUp ? "Set up your venue on Ordrup" : "Sign in to manage your venue"}
+              {isSignUp ? "Set up your venue on Ordrup" : "Enter your Site ID and credentials to sign in"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -61,6 +80,18 @@ export default function Auth() {
                   onChange={(e) => setDisplayName(e.target.value)}
                   required
                 />
+              )}
+              {!isSignUp && (
+                <div>
+                  <Input
+                    placeholder="Site ID (e.g. VNU-7X4K2)"
+                    value={siteId}
+                    onChange={(e) => setSiteId(e.target.value.toUpperCase())}
+                    required
+                    className="font-mono tracking-wider"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Your venue's unique Site ID — provided by your administrator</p>
+                </div>
               )}
               <Input
                 type="email"
