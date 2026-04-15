@@ -84,6 +84,9 @@ export default function Auth() {
               {!isSignUp && (
                 <div>
                   <Input
+                    id="site-id"
+                    name="organization"
+                    autoComplete="organization"
                     placeholder="Site ID (e.g. VNU-7X4K2)"
                     value={siteId}
                     onChange={(e) => setSiteId(e.target.value.toUpperCase())}
@@ -94,14 +97,20 @@ export default function Auth() {
                 </div>
               )}
               <Input
+                id="email"
+                name="username"
                 type="email"
+                autoComplete="username"
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
               <Input
+                id="password"
+                name="password"
                 type="password"
+                autoComplete={isSignUp ? "new-password" : "current-password"}
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
