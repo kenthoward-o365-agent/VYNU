@@ -1,28 +1,29 @@
 
 
-# Fix Zoomed-In Menu Item Thumbnails
+# Make Site ID a Browser-Recognized Credential Field
 
 ## Problem
-The `optimizedImageUrl` helper requests `width=128` but no `height`. For non-square source images, the Supabase render endpoint returns images with mismatched aspect ratios. Combined with `object-cover` on 48×48 / 64×64 CSS containers, this crops aggressively — making images look "zoomed in."
+Browsers use the `autocomplete` and `name` attributes to decide which fields to save in password managers. Currently, the Site ID field has no `name` or `autocomplete` attribute, so browsers either ignore it or confuse it with the email field when offering to save credentials.
 
-## Fixes
+## Fix
 
-### 1. Update `optimizedImageUrl` in `src/lib/image-utils.ts`
-- Add an optional `height` parameter
-- When both `width` and `height` are provided, append `&height=N&resize=contain` to the transform URL — this ensures the image fits within bounds without cropping
-- Increase default quality slightly (75 → 80) for better visual fidelity at small sizes
+### `src/pages/Auth.tsx` — Add proper HTML attributes to all three login fields
 
-### 2. Update `MenuFeed.tsx` thumbnail rendering
-- Request **256px** width instead of 128px — this properly serves 64px containers on 3x retina displays and avoids the pixelated/zoomed look
-- For the full-card mobile view, keep 640px
-- Change `object-cover` to `object-contain` on the thumbnail `<img>` to prevent aggressive cropping, with a subtle background fill behind the image
+| Field | Attributes to add |
+|-------|-------------------|
+| **Site ID** | `name="organization"`, `autoComplete="organization"`, `id="site-id"` |
+| **Email** | `name="username"`, `autoComplete="username"`, `id="email"` |
+| **Password** | `name="password"`, `autoComplete="current-password"`, `id="password"` |
 
-### 3. Update `MenuFeed.tsx` mobile card view
-- Ensure the large hero image in the swipe card also uses the correct transform parameters
+The `organization` autocomplete hint tells browsers this is a separate credential dimension — like a company or workspace ID. Chrome, Safari, and Firefox all recognize it and will store it alongside the username/password tuple. This means when a user returns and the browser autofills, it will populate all three fields correctly.
+
+For the sign-up form, the password field should use `autoComplete="new-password"` instead so browsers offer to generate a strong password.
+
+### Why `organization`?
+The HTML spec defines `autocomplete="organization"` for exactly this use case — a company/site identifier that's part of the login context but isn't the username. Password managers like 1Password and Bitwarden also recognize this token.
 
 ## Files changed
 | File | Change |
 |------|--------|
-| `src/lib/image-utils.ts` | Add `height` param, use `resize=contain` |
-| `src/components/consumer/MenuFeed.tsx` | Request 256px thumbnails, adjust `object-fit` to prevent aggressive cropping |
+| `src/pages/Auth.tsx` | Add `name`, `autoComplete`, and `id` attributes to Site ID, email, and password fields |
 
