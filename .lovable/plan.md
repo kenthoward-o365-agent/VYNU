@@ -1,66 +1,104 @@
 
 
-# Fix Image Display Issues End-to-End
+# Audit Date System with DayEnd Navigation
 
-## Problem Analysis
+## Overview
 
-Looking at the screenshot, some menu item thumbnails display correctly while others appear broken or zoomed. The root causes:
+Add a venue-level **audit date** that decouples the business day from the calendar clock. Venues open past midnight keep the same audit date until staff explicitly advance it via a "DayEnd" action. The Dashboard will use the current audit date instead of `new Date()` for "Today."
 
-1. **The `optimizedImageUrl` helper uses Supabase's `/render/image/` endpoint** — this transformation endpoint may not work for all file types or may fail silently for certain images, returning nothing or a broken response. When the render endpoint fails, the browser shows a broken/zoomed image.
+## Database Changes
 
-2. **Original uploads keep their native format** (PNG, JPG, HEIC, etc.) while AI-enhanced images are saved as WebP. The render endpoint may not handle all source formats equally well.
+### New table: `venue_audit_dates`
 
-3. **Generated images are uploaded as raw bytes with `contentType: "image/webp"`** but the actual content from Gemini is PNG (base64 data URI starts with `data:image/png`). This content-type mismatch means the file is stored as PNG bytes but labeled as WebP — which can cause the render/transform endpoint to fail or produce garbled output.
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid | PK, default `gen_random_uuid()` |
+| `venue_id` | uuid | unique, references venues |
+| `current_date` | date | The active business day |
+| `advanced_by` | uuid | User who last advanced |
+| `advanced_at` | timestamptz | When last advanced |
+| `created_at` | timestamptz | default `now()` |
 
-4. **No fallback** — if the render URL fails to load, nothing catches it and falls back to the original public URL.
+- On venue creation or first access, default to `CURRENT_DATE` in venue timezone.
+- RLS: staff can SELECT; managers can UPDATE.
 
-## Fixes
+### New table: `venue_dayend_log`
 
-### 1. Fix content-type mismatch in `batch-generate-images/index.ts`
-The edge function strips the base64 prefix but hardcodes `contentType: "image/webp"`. The AI actually returns PNG. Detect the actual MIME type from the data URI prefix and use that for upload.
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | uuid | PK |
+| `venue_id` | uuid | |
+| `audit_date` | date | The date that was closed |
+| `closed_by` | uuid | |
+| `closed_at` | timestamptz | default `now()` |
 
-### 2. Fix content-type in `enhance-menu-image` flow (`ImageEnhancerDialog.tsx`)
-The enhance flow uses `resizeToWebP()` which correctly converts to WebP — this is fine. But verify the canvas `toBlob` actually produces valid WebP (some browsers may fall back to PNG).
+- Immutable audit trail of every DayEnd action.
+- RLS: staff can SELECT and INSERT.
 
-### 3. Add `<img>` error fallback in `MenuFeed.tsx`
-Add an `onError` handler that falls back to the original (non-transformed) public URL when the `/render/image/` endpoint fails. This makes existing broken images work immediately.
+### Database function: `advance_audit_date`
 
-### 4. Normalize initial uploads in `MenuBuilder.tsx`
-Convert user-uploaded images to WebP before storing (using `resizeToWebP`), so all images in storage have a consistent format that the render endpoint handles reliably.
+An RPC that atomically:
+1. Reads current audit date for venue
+2. Inserts a row into `venue_dayend_log`
+3. Sets `current_date = current_date + 1` on `venue_audit_dates`
+4. Returns the new date
+
+Uses `SECURITY DEFINER` with venue staff check.
+
+## Frontend Changes
+
+### 1. Audit Date Context — `src/contexts/AuditDateContext.tsx`
+
+New context that:
+- Fetches `venue_audit_dates.current_date` for the active venue
+- Exposes `auditDate: string` (YYYY-MM-DD), `advanceDay()`, and `loading`
+- Wraps inside `VenueProvider` in App.tsx
+- If no row exists for venue, calls an RPC to initialize it
+
+### 2. Dashboard Integration — `src/pages/Dashboard.tsx`
+
+- Import `useAuditDate()` from the new context
+- Replace `getDefaultAuditDate()` with the audit date from context
+- "Today" label maps to the current audit date, not `new Date()`
+- The date picker still allows historical browsing
+
+### 3. Navigation — `src/components/DashboardLayout.tsx`
+
+Add a new collapsible "DayEnd" entry in the sidebar nav, positioned between "Diners" and "Settings":
+
+```text
+├── Diners
+├── DayEnd          ← new, collapsible
+│   └── Reporting   ← sub-link to /reporting
+├── Settings
+```
+
+- Uses `CalendarCheck` or `ClipboardCheck` lucide icon
+- Collapsible with same pattern as Menu Builder / Settings
+- "Reporting" links to `/reporting`
+
+### 4. DayEnd / Reporting Page — `src/pages/Reporting.tsx`
+
+Initial page with:
+- Current audit date display (prominent)
+- "Close Day" button (advances audit date via RPC)
+- Confirmation dialog before advancing
+- Log of previous DayEnd closings (from `venue_dayend_log`)
+- Placeholder section for future reports
+
+### 5. Routing — `src/App.tsx`
+
+Add `<Route path="/reporting" element={<Reporting />} />`
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/consumer/MenuFeed.tsx` | Add `onError` fallback on `<img>` to use raw public URL when render endpoint fails |
-| `supabase/functions/batch-generate-images/index.ts` | Detect actual MIME type from base64 prefix; use correct content-type and file extension |
-| `src/pages/MenuBuilder.tsx` | Convert uploaded images to WebP via `resizeToWebP` before storage upload |
-| `src/lib/image-utils.ts` | Add a `resizeFileToWebP` helper that accepts a `File` object (not just base64) |
-
-## Technical Detail
-
-**The critical bug**: In `batch-generate-images/index.ts` line 163, files are saved as `.webp` with `contentType: "image/webp"`, but the actual bytes are PNG (from the AI response). The Supabase render endpoint sees the `.webp` extension, tries to process it as WebP, but the bytes are PNG — causing display failures.
-
-```typescript
-// Current (broken):
-const path = `menu-items/${venueId}/generated/${item.id}-${Date.now()}.webp`;
-// contentType: "image/webp" — but bytes are PNG
-
-// Fixed:
-const mimeMatch = base64Url.match(/^data:image\/(\w+);base64,/);
-const ext = mimeMatch?.[1] === "png" ? "png" : "webp";
-const contentType = `image/${ext}`;
-const path = `menu-items/${venueId}/generated/${item.id}-${Date.now()}.${ext}`;
-```
-
-**The fallback**: For the `<img>` tag, catch render failures gracefully:
-```typescript
-<img
-  src={optimizedImageUrl(item.image_url, 256, 80, 256)}
-  onError={(e) => { e.currentTarget.src = item.image_url!; }}
-  // ...
-/>
-```
-
-This two-pronged approach fixes new images going forward AND makes existing broken images display immediately via the fallback.
+| Migration SQL | Create `venue_audit_dates`, `venue_dayend_log`, `advance_audit_date` RPC |
+| `src/contexts/AuditDateContext.tsx` | New context |
+| `src/App.tsx` | Add AuditDateProvider wrapper, `/reporting` route |
+| `src/pages/Dashboard.tsx` | Use audit date from context as default |
+| `src/components/DashboardLayout.tsx` | Add DayEnd collapsible nav with Reporting sub-item |
+| `src/pages/Reporting.tsx` | New page with day-close controls and log |
+| `src/components/AuditDatePicker.tsx` | Minor update to accept an audit date override for "Today" |
 
