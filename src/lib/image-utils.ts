@@ -5,17 +5,19 @@
 export function optimizedImageUrl(
   url: string | null | undefined,
   width: number,
-  quality = 75,
+  quality = 80,
+  height?: number,
 ): string {
   if (!url) return "";
-  // Supabase image transforms use /render/image/ instead of /object/
   if (!url.includes("/storage/v1/object/public/")) return url;
   const base = url.split("?")[0];
   const renderUrl = base.replace(
     "/storage/v1/object/public/",
     "/storage/v1/render/image/public/",
   );
-  return `${renderUrl}?width=${width}&quality=${quality}`;
+  let params = `width=${width}&quality=${quality}`;
+  if (height) params += `&height=${height}&resize=contain`;
+  return `${renderUrl}?${params}`;
 }
 
 /**
