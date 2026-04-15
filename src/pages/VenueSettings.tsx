@@ -16,11 +16,12 @@ import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard, Receipt, Bot } from "lucide-react";
+import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard, Receipt, Bot, Plug } from "lucide-react";
 import SippaAISettings from "@/components/venue/SippaAISettings";
 import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
 import TaxSettingsTab from "@/components/venue/TaxSettingsTab";
 import SurchargeSettingsTab from "@/components/venue/SurchargeSettingsTab";
+import IntegrationsSettingsTab from "@/components/venue/IntegrationsSettingsTab";
 
 const venueTypes = [
   { value: "restaurant", label: "Restaurant" },
@@ -512,6 +513,9 @@ export default function VenueSettings() {
             </TabsContent>
             <TabsContent value="surcharges" className="space-y-6">
               <SurchargeSettingsTab venueId={venue.id} />
+            </TabsContent>
+            <TabsContent value="integrations" className="space-y-6">
+              <IntegrationsSettingsTab venueId={venue.id} />
             </TabsContent>
           </>
         )}

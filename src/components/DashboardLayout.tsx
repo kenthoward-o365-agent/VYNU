@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
-  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText
+  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -214,6 +214,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
                       { to: "/settings?tab=surcharges", label: "Surcharges", icon: Percent },
                       { to: "/settings?tab=taxes", label: "Taxes", icon: Receipt },
+                      { to: "/settings?tab=integrations", label: "Integrations", icon: Plug },
                     ].map((sub) => {
                       const params = new URLSearchParams(location.search);
                       const currentTab = params.get("tab") || "details";

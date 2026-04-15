@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban, Clock } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban, Clock, AlertTriangle, RefreshCw } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import ImageEnhancerDialog from "@/components/menu/ImageEnhancerDialog";
 import { cn } from "@/lib/utils";
@@ -54,6 +54,8 @@ export default function MenuBuilder() {
   );
   const [searchParams, setSearchParams] = useSearchParams();
   const { venue } = useVenue();
+  const isPosMode = (venue as any)?.menu_source === "pos";
+  const [posIntegration, setPosIntegration] = useState<{ pos_provider: string; last_sync_at: string | null; sync_status: string } | null>(null);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
   const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
@@ -110,6 +112,19 @@ export default function MenuBuilder() {
   };
 
   useEffect(() => { fetchData(); }, [venue]);
+
+  // Fetch POS integration info when in POS mode
+  useEffect(() => {
+    if (!venue || !isPosMode) { setPosIntegration(null); return; }
+    supabase
+      .from("venue_pos_integrations" as any)
+      .select("pos_provider, last_sync_at, sync_status")
+      .eq("venue_id", venue.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setPosIntegration(data as any);
+      });
+  }, [venue, isPosMode]);
 
   const openAdd = () => {
     setEditingItem(null);
@@ -321,26 +336,51 @@ export default function MenuBuilder() {
 
   return (
     <div className="space-y-6">
+      {/* POS Mode Banner */}
+      {isPosMode && (
+        <Card className="border-yellow-500/30 bg-yellow-500/5">
+          <CardContent className="py-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              <span className="text-sm font-medium text-foreground">
+                Menu managed by POS
+                {posIntegration?.pos_provider && ` — ${posIntegration.pos_provider.charAt(0).toUpperCase() + posIntegration.pos_provider.slice(1)}`}
+              </span>
+              {posIntegration?.last_sync_at && (
+                <span className="text-xs text-muted-foreground">
+                  Last synced: {new Date(posIntegration.last_sync_at).toLocaleString()}
+                </span>
+              )}
+            </div>
+            <Button variant="outline" size="sm" disabled>
+              <RefreshCw className="h-3.5 w-3.5 mr-1" /> Sync Now
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Menu Builder</h2>
           <p className="text-muted-foreground">{items.length} items across {categories.length} categories</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm"><Plus className="h-4 w-4 mr-1" />Category</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Add Category</DialogTitle></DialogHeader>
-              <div className="space-y-4">
-                <Input placeholder="Category name" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
-                <Button onClick={addCategory} className="w-full">Add Category</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-          <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Item</Button>
-        </div>
+        {!isPosMode && (
+          <div className="flex gap-2 flex-wrap">
+            <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm"><Plus className="h-4 w-4 mr-1" />Category</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Add Category</DialogTitle></DialogHeader>
+                <div className="space-y-4">
+                  <Input placeholder="Category name" value={newCatName} onChange={(e) => setNewCatName(e.target.value)} />
+                  <Button onClick={addCategory} className="w-full">Add Category</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Item</Button>
+          </div>
+        )}
       </div>
 
       {/* Dietary tag filter row */}
@@ -372,6 +412,8 @@ export default function MenuBuilder() {
         )}
       </div>
 
+
+
       {/* Item list grouped by category */}
       {categories.length === 0 && items.length === 0 ? (
         <Card>
@@ -394,7 +436,7 @@ export default function MenuBuilder() {
                   <SortableContext items={uncatItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                     <div className="grid gap-3">
                       {uncatItems.map((item) => (
-                        <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
+                        <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} readOnly={isPosMode} />
                       ))}
                     </div>
                   </SortableContext>
@@ -412,7 +454,7 @@ export default function MenuBuilder() {
                     <SortableContext items={catItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                       <div className="grid gap-3">
                         {catItems.map((item) => (
-                          <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
+                          <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} readOnly={isPosMode} />
                         ))}
                       </div>
                     </SortableContext>
@@ -757,6 +799,7 @@ type ItemCardProps = {
   onEdit: (i: MenuItem) => void;
   onDelete: (id: string) => void;
   onToggle: (id: string, current: boolean) => void;
+  readOnly?: boolean;
 };
 
 function SortableItemCard(props: ItemCardProps) {
@@ -769,19 +812,21 @@ function SortableItemCard(props: ItemCardProps) {
   };
   return (
     <div ref={setNodeRef} style={style}>
-      <ItemCard {...props} dragHandleProps={{ ...attributes, ...listeners }} />
+      <ItemCard {...props} dragHandleProps={props.readOnly ? undefined : { ...attributes, ...listeners }} />
     </div>
   );
 }
 
-function ItemCard({ item, taxes, onEdit, onDelete, onToggle, dragHandleProps }: ItemCardProps & { dragHandleProps?: Record<string, any> }) {
+function ItemCard({ item, taxes, onEdit, onDelete, onToggle, readOnly, dragHandleProps }: ItemCardProps & { dragHandleProps?: Record<string, any> }) {
   const taxBreakdown = taxes.length > 0 ? formatItemTaxBreakdown(Number(item.price), taxes) : "";
   return (
     <Card className={!item.is_available ? "opacity-60" : ""}>
       <CardContent className="flex items-center gap-4 py-3 px-4">
-        <button type="button" className="cursor-grab active:cursor-grabbing touch-none shrink-0 text-muted-foreground hover:text-foreground" {...dragHandleProps}>
-          <GripVertical className="h-5 w-5" />
-        </button>
+        {!readOnly && (
+          <button type="button" className="cursor-grab active:cursor-grabbing touch-none shrink-0 text-muted-foreground hover:text-foreground" {...dragHandleProps}>
+            <GripVertical className="h-5 w-5" />
+          </button>
+        )}
         {item.image_url ? (
           <div className="h-14 w-14 rounded-lg overflow-hidden shrink-0 border border-border">
             <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
@@ -807,18 +852,20 @@ function ItemCard({ item, taxes, onEdit, onDelete, onToggle, dragHandleProps }: 
           {taxBreakdown && <p className="text-[10px] text-muted-foreground">{taxBreakdown}</p>}
           {item.prep_time_minutes && <p className="text-xs text-muted-foreground">{item.prep_time_minutes} min</p>}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button
-            variant={item.is_available ? "ghost" : "destructive"}
-            size="icon"
-            title={item.is_available ? "86 this item" : "Un-86 this item"}
-            onClick={() => onToggle(item.id, item.is_available ?? true)}
-          >
-            <Ban className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => onEdit(item)}><Pencil className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => onDelete(item.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-        </div>
+        {!readOnly && (
+          <div className="flex items-center gap-1 shrink-0">
+            <Button
+              variant={item.is_available ? "ghost" : "destructive"}
+              size="icon"
+              title={item.is_available ? "86 this item" : "Un-86 this item"}
+              onClick={() => onToggle(item.id, item.is_available ?? true)}
+            >
+              <Ban className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => onEdit(item)}><Pencil className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => onDelete(item.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
