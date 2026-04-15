@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Plug, RefreshCw, AlertTriangle } from "lucide-react";
 
 const posProviders = [
+  { value: "hl_exceed", label: "H&L Exceed POS" },
   { value: "lightspeed", label: "Lightspeed" },
   { value: "square", label: "Square" },
   { value: "kounta", label: "Kounta" },
@@ -35,7 +36,7 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
   const { venue, refetch } = useVenue();
   const [menuSource, setMenuSource] = useState<string>("manual");
   const [integration, setIntegration] = useState<PosIntegration | null>(null);
-  const [provider, setProvider] = useState("lightspeed");
+  const [provider, setProvider] = useState("hl_exceed");
   const [apiKeyRef, setApiKeyRef] = useState("");
   const [endpointUrl, setEndpointUrl] = useState("");
   const [saving, setSaving] = useState(false);
