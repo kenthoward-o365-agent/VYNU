@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
-  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard
+  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -49,6 +49,7 @@ const venueNavItems: NavItem[] = [
   { path: "/orders", label: "Orders", icon: { light: navOrders, dark: navOrdersDark } },
   { path: "/analytics", label: "Analytics", icon: { light: navAnalytics, dark: navAnalyticsDark } },
   { path: "/diners", label: "Diners", icon: { light: navDiners, dark: navDinersDark }, hasSub: true },
+  { path: "/reporting", label: "DayEnd", icon: CalendarCheck, hasSub: true },
   { path: "/settings", label: "Settings", icon: { light: navSettings, dark: navSettingsDark }, hasSub: true },
 ];
 
