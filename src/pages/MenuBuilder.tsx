@@ -799,6 +799,7 @@ type ItemCardProps = {
   onEdit: (i: MenuItem) => void;
   onDelete: (id: string) => void;
   onToggle: (id: string, current: boolean) => void;
+  readOnly?: boolean;
 };
 
 function SortableItemCard(props: ItemCardProps) {
@@ -811,19 +812,21 @@ function SortableItemCard(props: ItemCardProps) {
   };
   return (
     <div ref={setNodeRef} style={style}>
-      <ItemCard {...props} dragHandleProps={{ ...attributes, ...listeners }} />
+      <ItemCard {...props} dragHandleProps={props.readOnly ? undefined : { ...attributes, ...listeners }} />
     </div>
   );
 }
 
-function ItemCard({ item, taxes, onEdit, onDelete, onToggle, dragHandleProps }: ItemCardProps & { dragHandleProps?: Record<string, any> }) {
+function ItemCard({ item, taxes, onEdit, onDelete, onToggle, readOnly, dragHandleProps }: ItemCardProps & { dragHandleProps?: Record<string, any> }) {
   const taxBreakdown = taxes.length > 0 ? formatItemTaxBreakdown(Number(item.price), taxes) : "";
   return (
     <Card className={!item.is_available ? "opacity-60" : ""}>
       <CardContent className="flex items-center gap-4 py-3 px-4">
-        <button type="button" className="cursor-grab active:cursor-grabbing touch-none shrink-0 text-muted-foreground hover:text-foreground" {...dragHandleProps}>
-          <GripVertical className="h-5 w-5" />
-        </button>
+        {!readOnly && (
+          <button type="button" className="cursor-grab active:cursor-grabbing touch-none shrink-0 text-muted-foreground hover:text-foreground" {...dragHandleProps}>
+            <GripVertical className="h-5 w-5" />
+          </button>
+        )}
         {item.image_url ? (
           <div className="h-14 w-14 rounded-lg overflow-hidden shrink-0 border border-border">
             <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
@@ -849,18 +852,20 @@ function ItemCard({ item, taxes, onEdit, onDelete, onToggle, dragHandleProps }: 
           {taxBreakdown && <p className="text-[10px] text-muted-foreground">{taxBreakdown}</p>}
           {item.prep_time_minutes && <p className="text-xs text-muted-foreground">{item.prep_time_minutes} min</p>}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button
-            variant={item.is_available ? "ghost" : "destructive"}
-            size="icon"
-            title={item.is_available ? "86 this item" : "Un-86 this item"}
-            onClick={() => onToggle(item.id, item.is_available ?? true)}
-          >
-            <Ban className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => onEdit(item)}><Pencil className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => onDelete(item.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-        </div>
+        {!readOnly && (
+          <div className="flex items-center gap-1 shrink-0">
+            <Button
+              variant={item.is_available ? "ghost" : "destructive"}
+              size="icon"
+              title={item.is_available ? "86 this item" : "Un-86 this item"}
+              onClick={() => onToggle(item.id, item.is_available ?? true)}
+            >
+              <Ban className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => onEdit(item)}><Pencil className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => onDelete(item.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
