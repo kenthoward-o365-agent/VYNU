@@ -382,6 +382,7 @@ export type Database = {
           is_active: boolean | null
           name: string
           pos_id: string | null
+          sort_order: number | null
           updated_at: string
           venue_id: string
         }
@@ -393,6 +394,7 @@ export type Database = {
           is_active?: boolean | null
           name: string
           pos_id?: string | null
+          sort_order?: number | null
           updated_at?: string
           venue_id: string
         }
@@ -404,6 +406,7 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           pos_id?: string | null
+          sort_order?: number | null
           updated_at?: string
           venue_id?: string
         }
@@ -506,7 +509,10 @@ export type Database = {
           image_url: string | null
           is_available: boolean | null
           name: string
+          plu: string | null
+          pos_allergens: number[] | null
           pos_id: string | null
+          pos_tags: string[] | null
           prep_time_minutes: number | null
           price: number
           updated_at: string
@@ -525,7 +531,10 @@ export type Database = {
           image_url?: string | null
           is_available?: boolean | null
           name: string
+          plu?: string | null
+          pos_allergens?: number[] | null
           pos_id?: string | null
+          pos_tags?: string[] | null
           prep_time_minutes?: number | null
           price: number
           updated_at?: string
@@ -544,7 +553,10 @@ export type Database = {
           image_url?: string | null
           is_available?: boolean | null
           name?: string
+          plu?: string | null
+          pos_allergens?: number[] | null
           pos_id?: string | null
+          pos_tags?: string[] | null
           prep_time_minutes?: number | null
           price?: number
           updated_at?: string
@@ -827,6 +839,50 @@ export type Database = {
           },
           {
             foreignKeyName: "orders_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_sync_log: {
+        Row: {
+          created_at: string
+          direction: string
+          error_message: string | null
+          event_type: string
+          id: string
+          items_synced: number | null
+          payload_hash: string | null
+          result: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_sync_log_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
@@ -1371,40 +1427,58 @@ export type Database = {
       }
       venue_pos_integrations: {
         Row: {
+          account_id: string | null
           api_key_ref: string | null
+          client_id: string | null
+          client_secret_ref: string | null
           config: Json | null
           created_at: string
           endpoint_url: string | null
           id: string
           last_sync_at: string | null
+          location_id: string | null
           pos_provider: string
           sync_status: string
+          token_cache: Json | null
           updated_at: string
           venue_id: string
+          webhook_secret: string | null
         }
         Insert: {
+          account_id?: string | null
           api_key_ref?: string | null
+          client_id?: string | null
+          client_secret_ref?: string | null
           config?: Json | null
           created_at?: string
           endpoint_url?: string | null
           id?: string
           last_sync_at?: string | null
+          location_id?: string | null
           pos_provider: string
           sync_status?: string
+          token_cache?: Json | null
           updated_at?: string
           venue_id: string
+          webhook_secret?: string | null
         }
         Update: {
+          account_id?: string | null
           api_key_ref?: string | null
+          client_id?: string | null
+          client_secret_ref?: string | null
           config?: Json | null
           created_at?: string
           endpoint_url?: string | null
           id?: string
           last_sync_at?: string | null
+          location_id?: string | null
           pos_provider?: string
           sync_status?: string
+          token_cache?: Json | null
           updated_at?: string
           venue_id?: string
+          webhook_secret?: string | null
         }
         Relationships: [
           {
