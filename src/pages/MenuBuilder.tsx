@@ -411,32 +411,8 @@ export default function MenuBuilder() {
           </Button>
         )}
       </div>
-        <span className="text-sm font-medium text-muted-foreground mr-1">Filter:</span>
-        {dietaryOptions.map((tag) => (
-          <Badge
-            key={tag}
-            variant={activeDietaryFilters.includes(tag) ? "default" : "outline"}
-            className={cn(
-              "cursor-pointer select-none transition-colors",
-              activeDietaryFilters.includes(tag)
-                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                : "hover:bg-accent"
-            )}
-            onClick={() =>
-              setActiveDietaryFilters((prev) =>
-                prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-              )
-            }
-          >
-            {tag}
-          </Badge>
-        ))}
-        {activeDietaryFilters.length > 0 && (
-          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setActiveDietaryFilters([])}>
-            Clear
-          </Button>
-        )}
-      </div>
+
+
 
       {/* Item list grouped by category */}
       {categories.length === 0 && items.length === 0 ? (
