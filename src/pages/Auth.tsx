@@ -87,9 +87,9 @@ export default function Auth() {
                     id="site-id"
                     name="organization"
                     autoComplete="organization"
-                    placeholder="Site ID (e.g. VNU-7X4K2)"
+                    placeholder="Venue ID (e.g. 1000)"
                     value={siteId}
-                    onChange={(e) => setSiteId(e.target.value.toUpperCase())}
+                    onChange={(e) => setSiteId(e.target.value)}
                     required
                     className="font-mono tracking-wider"
                   />
