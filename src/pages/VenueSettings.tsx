@@ -242,7 +242,16 @@ export default function VenueSettings() {
         <TabsContent value="details" className="space-y-6 max-w-2xl">
           {venue && (
             <Card>
-              <CardContent className="pt-6">
+              <CardContent className="pt-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Site ID</p>
+                    <p className="font-mono text-lg font-bold text-foreground">{(venue as any).site_id || "—"}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Staff use this to log in to your venue</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText((venue as any).site_id || ""); toast.success("Site ID copied"); }}>Copy</Button>
+                </div>
+                <Separator />
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Venue ID</p>

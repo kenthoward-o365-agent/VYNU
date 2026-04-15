@@ -196,6 +196,18 @@ export default function AdminVenueDetail() {
         {/* ── DETAILS TAB ── */}
         <TabsContent value="details" className="space-y-6 max-w-2xl">
           <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Site ID</p>
+                  <p className="font-mono text-lg font-bold text-foreground">{(venue as any).site_id || "—"}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Staff use this to log in to this venue</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText((venue as any).site_id || ""); toast({ title: "Site ID copied" }); }}>Copy</Button>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
             <CardHeader><CardTitle>Venue Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <Input placeholder="Venue name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
