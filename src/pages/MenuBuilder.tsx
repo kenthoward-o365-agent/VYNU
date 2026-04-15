@@ -125,6 +125,8 @@ export default function MenuBuilder() {
         setPosIntegration(data as any);
       });
   }, [venue, isPosMode]);
+
+  const openAdd = () => {
     setEditingItem(null);
     setForm({ name: "", description: "", price: "", prep_time_minutes: "", allergens: [], dietary_tags: [], category_id: "", food_cost: "", is_available: true, image_url: "" });
     setSelectedTimeFrames([]);
