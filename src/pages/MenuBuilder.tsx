@@ -436,7 +436,7 @@ export default function MenuBuilder() {
                   <SortableContext items={uncatItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                     <div className="grid gap-3">
                       {uncatItems.map((item) => (
-                        <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
+                        <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} readOnly={isPosMode} />
                       ))}
                     </div>
                   </SortableContext>
@@ -454,7 +454,7 @@ export default function MenuBuilder() {
                     <SortableContext items={catItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                       <div className="grid gap-3">
                         {catItems.map((item) => (
-                          <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} />
+                          <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} readOnly={isPosMode} />
                         ))}
                       </div>
                     </SortableContext>
