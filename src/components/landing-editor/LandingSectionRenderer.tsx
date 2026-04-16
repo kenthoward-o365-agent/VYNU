@@ -22,14 +22,25 @@ function RenderSection({ section, tableNumber }: { section: LandingSection; tabl
     case "hero":
       return (
         <div
-          className="flex flex-col items-center justify-center text-center min-h-[40vh] px-6 py-12 md:py-20"
-          style={{ background: section.bgColor || "transparent" }}
+          className="flex flex-col items-center justify-center text-center min-h-[40vh] px-6 py-12 md:py-20 relative overflow-hidden"
+          style={
+            section.heroImageUrl
+              ? { backgroundImage: `url(${section.heroImageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+              : { background: section.bgColor || "transparent" }
+          }
         >
-          <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl flex items-center justify-center text-3xl md:text-5xl mb-4 md:mb-6" style={{ background: "rgba(124,58,237,0.2)" }}>
-            {section.logoEmoji}
+          {section.heroImageUrl && (
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
+          )}
+          <div className="relative z-10">
+            {!section.heroImageUrl && (
+              <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl flex items-center justify-center text-3xl md:text-5xl mb-4 md:mb-6 mx-auto" style={{ background: "rgba(124,58,237,0.2)" }}>
+                {section.logoEmoji}
+              </div>
+            )}
+            <h1 className="text-2xl md:text-4xl font-extrabold mb-1 md:mb-2">{section.title}</h1>
+            <p className="text-sm md:text-lg text-white/70">{section.subtitle}</p>
           </div>
-          <h1 className="text-2xl md:text-4xl font-extrabold mb-1 md:mb-2">{section.title}</h1>
-          <p className="text-sm md:text-lg text-white/70">{section.subtitle}</p>
         </div>
       );
 
@@ -60,6 +71,22 @@ function RenderSection({ section, tableNumber }: { section: LandingSection; tabl
       );
 
     case "loyalty-cta":
+      if (section.variant === "image" && section.imageUrl) {
+        return (
+          <div className="flex justify-center px-6 py-6">
+            <div
+              className="rounded-2xl w-full max-w-xs md:max-w-md text-center relative overflow-hidden min-h-[160px] md:min-h-[200px] flex items-center justify-center"
+              style={{ backgroundImage: `url(${section.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }}
+            >
+              <div className="absolute inset-0 bg-black/40" />
+              <div className="relative z-10 p-5 md:p-8">
+                <p className="font-semibold text-base md:text-xl mb-2">🎁 {section.heading}</p>
+                <p className="text-sm md:text-base text-white/80">{section.description}</p>
+              </div>
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="flex justify-center px-6 py-6">
           <div className="rounded-2xl p-5 md:p-8 w-full max-w-xs md:max-w-md text-center border border-[#7c3aed]/30" style={{ background: "rgba(124,58,237,0.15)" }}>

@@ -22,26 +22,34 @@ const SectionEditPanel = ({ section, onChange }: Props) => {
 
       {section.type === "hero" && (
         <>
+          <Field label="Hero Image URL">
+            <Input value={section.heroImageUrl || ""} onChange={(e) => update({ heroImageUrl: e.target.value })} placeholder="https://example.com/hero.jpg" />
+            <p className="text-[0.65rem] text-muted-foreground">Leave empty to use emoji logo instead.</p>
+          </Field>
           <Field label="Title">
             <Input value={section.title} onChange={(e) => update({ title: e.target.value })} />
           </Field>
           <Field label="Subtitle">
             <Input value={section.subtitle} onChange={(e) => update({ subtitle: e.target.value })} />
           </Field>
-          <Field label="Logo Emoji">
-            <Input value={section.logoEmoji} onChange={(e) => update({ logoEmoji: e.target.value })} />
-          </Field>
-          <Field label="Background Color">
-            <div className="flex gap-2">
-              <input
-                type="color"
-                value={section.bgColor}
-                onChange={(e) => update({ bgColor: e.target.value })}
-                className="w-10 h-10 rounded border border-border cursor-pointer"
-              />
-              <Input value={section.bgColor} onChange={(e) => update({ bgColor: e.target.value })} className="flex-1" />
-            </div>
-          </Field>
+          {!section.heroImageUrl && (
+            <>
+              <Field label="Logo Emoji">
+                <Input value={section.logoEmoji} onChange={(e) => update({ logoEmoji: e.target.value })} />
+              </Field>
+              <Field label="Background Color">
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={section.bgColor}
+                    onChange={(e) => update({ bgColor: e.target.value })}
+                    className="w-10 h-10 rounded border border-border cursor-pointer"
+                  />
+                  <Input value={section.bgColor} onChange={(e) => update({ bgColor: e.target.value })} className="flex-1" />
+                </div>
+              </Field>
+            </>
+          )}
         </>
       )}
 
@@ -120,6 +128,31 @@ const SectionEditPanel = ({ section, onChange }: Props) => {
 
       {section.type === "loyalty-cta" && (
         <>
+          <Field label="Display Mode">
+            <div className="flex gap-1">
+              <Button
+                variant={(!section.variant || section.variant === "text") ? "default" : "outline"}
+                size="sm"
+                className="flex-1"
+                onClick={() => update({ variant: "text" })}
+              >
+                Text
+              </Button>
+              <Button
+                variant={section.variant === "image" ? "default" : "outline"}
+                size="sm"
+                className="flex-1"
+                onClick={() => update({ variant: "image" })}
+              >
+                Image
+              </Button>
+            </div>
+          </Field>
+          {section.variant === "image" && (
+            <Field label="Image URL">
+              <Input value={section.imageUrl || ""} onChange={(e) => update({ imageUrl: e.target.value })} placeholder="https://example.com/promo.jpg" />
+            </Field>
+          )}
           <Field label="Heading">
             <Input value={section.heading} onChange={(e) => update({ heading: e.target.value })} />
           </Field>
