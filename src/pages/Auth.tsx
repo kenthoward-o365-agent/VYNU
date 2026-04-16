@@ -40,22 +40,48 @@ export default function Auth() {
     setLoading(true);
     setNotProvisioned(false);
     try {
+      // 1. Sign in first
+      await signIn(email, password);
+
+      // 2. Check if this user is an OrdrUp admin
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Sign-in failed");
+        setLoading(false);
+        return;
+      }
+
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      const isAdmin = roles?.some((r) => r.role === "tabless_admin") ?? false;
+
+      // 3a. Admin → skip Site ID, route to admin console
+      if (isAdmin) {
+        localStorage.removeItem("tabless_active_venue");
+        toast.success("Welcome, OrdrUp admin");
+        return;
+      }
+
+      // 3b. Operator → require Site ID
       const trimmed = siteId.trim().toUpperCase();
       if (!trimmed) {
-        toast.error("Please enter your Site ID");
+        await supabase.auth.signOut();
+        toast.error("Site ID is required for venue operators");
         setLoading(false);
         return;
       }
 
       const { data: venueData, error: lookupError } = await supabase.rpc("lookup_venue_by_site_id", { _site_id: trimmed });
       if (lookupError || !venueData || venueData.length === 0) {
+        await supabase.auth.signOut();
         toast.error("Invalid Site ID. Please check and try again.");
         setLoading(false);
         return;
       }
 
       localStorage.setItem("tabless_active_venue", venueData[0].venue_id);
-      await signIn(email, password);
       toast.success("Welcome back!");
     } catch (err: any) {
       toast.error(err.message);
