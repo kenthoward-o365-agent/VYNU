@@ -1,17 +1,107 @@
+import { useState, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Upload, X, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { resizeFileToWebP } from "@/lib/image-utils";
+import { toast } from "sonner";
 import type { LandingSection, FeaturedItem } from "./types";
 import { SECTION_LABELS } from "./types";
 
 interface Props {
   section: LandingSection;
   onChange: (updated: LandingSection) => void;
+  venueId?: string;
 }
 
-const SectionEditPanel = ({ section, onChange }: Props) => {
+function ImageUploadField({
+  label,
+  value,
+  onChange,
+  venueId,
+}: {
+  label: string;
+  value: string;
+  onChange: (url: string) => void;
+  venueId?: string;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = useCallback(async (file: File) => {
+    if (!venueId) {
+      toast.error("No venue selected");
+      return;
+    }
+    setUploading(true);
+    try {
+      const blob = await resizeFileToWebP(file, 1200, 0.85);
+      const path = `landing/${venueId}/${Date.now()}.webp`;
+      const { error } = await supabase.storage.from("venue-assets").upload(path, blob, {
+        contentType: "image/webp",
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("venue-assets").getPublicUrl(path);
+      onChange(urlData.publicUrl);
+      toast.success("Image uploaded");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }, [venueId, onChange]);
+
+  return (
+    <Field label={label}>
+      {value ? (
+        <div className="relative rounded-md overflow-hidden border border-border">
+          <img src={value} alt="Preview" className="w-full h-28 object-cover" />
+          <Button
+            variant="destructive"
+            size="icon"
+            className="absolute top-1 right-1 h-6 w-6"
+            onClick={() => onChange("")}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          {uploading ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+          {uploading ? "Uploading..." : "Upload Image"}
+        </Button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+          e.target.value = "";
+        }}
+      />
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Or paste image URL"
+        className="mt-1.5 text-xs"
+      />
+    </Field>
+  );
+}
+
+const SectionEditPanel = ({ section, onChange, venueId }: Props) => {
   const update = (patch: Partial<LandingSection>) => {
     onChange({ ...section, ...patch } as LandingSection);
   };
@@ -22,10 +112,13 @@ const SectionEditPanel = ({ section, onChange }: Props) => {
 
       {section.type === "hero" && (
         <>
-          <Field label="Hero Image URL">
-            <Input value={section.heroImageUrl || ""} onChange={(e) => update({ heroImageUrl: e.target.value })} placeholder="https://example.com/hero.jpg" />
-            <p className="text-[0.65rem] text-muted-foreground">Leave empty to use emoji logo instead.</p>
-          </Field>
+          <ImageUploadField
+            label="Hero Image"
+            value={section.heroImageUrl || ""}
+            onChange={(url) => update({ heroImageUrl: url })}
+            venueId={venueId}
+          />
+          <p className="text-[0.65rem] text-muted-foreground -mt-2">Leave empty to use emoji logo instead.</p>
           <Field label="Title">
             <Input value={section.title} onChange={(e) => update({ title: e.target.value })} />
           </Field>
@@ -149,9 +242,12 @@ const SectionEditPanel = ({ section, onChange }: Props) => {
             </div>
           </Field>
           {section.variant === "image" && (
-            <Field label="Image URL">
-              <Input value={section.imageUrl || ""} onChange={(e) => update({ imageUrl: e.target.value })} placeholder="https://example.com/promo.jpg" />
-            </Field>
+            <ImageUploadField
+              label="CTA Image"
+              value={section.imageUrl || ""}
+              onChange={(url) => update({ imageUrl: url })}
+              venueId={venueId}
+            />
           )}
           <Field label="Heading">
             <Input value={section.heading} onChange={(e) => update({ heading: e.target.value })} />

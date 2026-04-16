@@ -147,7 +147,7 @@ export default function LandingPageEditor() {
         {/* Right: Edit panel */}
         <div className="w-64 border-l border-border bg-card overflow-y-auto shrink-0">
           {selectedSection ? (
-            <SectionEditPanel section={selectedSection} onChange={handleUpdate} />
+            <SectionEditPanel section={selectedSection} onChange={handleUpdate} venueId={venue?.id} />
           ) : (
             <div className="p-4 text-center text-muted-foreground text-sm">
               <p className="mt-8">Select a section to edit</p>
