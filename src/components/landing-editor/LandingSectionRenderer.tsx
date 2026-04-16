@@ -80,7 +80,7 @@ function RenderSection({ section, tableNumber }: { section: LandingSection; tabl
             >
               <div className="absolute inset-0 bg-black/40" />
               <div className="relative z-10 p-5 md:p-8">
-                <p className="font-semibold text-base md:text-xl mb-2">{(section.icon !== undefined ? section.icon : "🎁") ? `${section.icon !== undefined ? section.icon : "🎁"} ` : ""}{section.heading}</p>
+                <p className="font-semibold text-base md:text-xl mb-2">{(() => { const icon = section.icon !== undefined ? section.icon : "🎁"; return icon ? `${icon} ` : ""; })()}{section.heading}</p>
                 <p className="text-sm md:text-base text-white/80">{section.description}</p>
               </div>
             </div>
@@ -90,7 +90,7 @@ function RenderSection({ section, tableNumber }: { section: LandingSection; tabl
       return (
         <div className="flex justify-center px-6 py-6">
           <div className="rounded-2xl p-5 md:p-8 w-full max-w-xs md:max-w-md text-center border border-[#7c3aed]/30" style={{ background: "rgba(124,58,237,0.15)" }}>
-            <p className="font-semibold text-base md:text-xl mb-2">{(section.icon !== undefined ? section.icon : "🎁") ? `${section.icon !== undefined ? section.icon : "🎁"} ` : ""}{section.heading}</p>
+            <p className="font-semibold text-base md:text-xl mb-2">{(() => { const icon = section.icon !== undefined ? section.icon : "🎁"; return icon ? `${icon} ` : ""; })()}{section.heading}</p>
             <p className="text-sm md:text-base text-white/70">{section.description}</p>
           </div>
         </div>
