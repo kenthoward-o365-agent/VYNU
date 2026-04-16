@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, QrCode, Trash2, Download, Printer, Smartphone } from "lucide-react";
+import { Plus, QrCode, Trash2, Download, Printer, Smartphone, ExternalLink } from "lucide-react";
 import MobilePreviewFrame from "@/components/landing-editor/MobilePreviewFrame";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
@@ -33,25 +33,10 @@ export default function Tables() {
   const [form, setForm] = useState({ table_number: "", zone: "", capacity: "4", pos_table_id: "" });
   const printRef = useRef<HTMLDivElement>(null);
 
-  const getPreviewUrl = (table: Table) => {
+  const getLiveUrl = (table: Table) => {
+    if (table.qr_code) return table.qr_code;
     if (!venue) return "";
-
-    const path = `/order/${venue.id}/${table.id}`;
-
-    if (typeof window === "undefined") {
-      return path;
-    }
-
-    const currentParams = new URLSearchParams(window.location.search);
-    const previewParams = new URLSearchParams();
-    const lovableToken = currentParams.get("__lovable_token");
-
-    if (lovableToken) {
-      previewParams.set("__lovable_token", lovableToken);
-    }
-
-    const query = previewParams.toString();
-    return query ? `${path}?${query}` : path;
+    return `${PUBLISHED_BASE_URL}/order/${venue.id}/${table.id}`;
   };
 
   const fetchTables = async () => {
@@ -270,7 +255,7 @@ export default function Tables() {
             <MobilePreviewFrame>
               {venue && previewTable && (
                 <iframe
-                  src={getPreviewUrl(previewTable)}
+                  src={getLiveUrl(previewTable)}
                   className="w-full border-0"
                   style={{ height: "100%" }}
                   title={`Mobile preview for table ${previewTable.table_number}`}
@@ -278,6 +263,14 @@ export default function Tables() {
               )}
             </MobilePreviewFrame>
           </div>
+          {previewTable && (
+            <div className="px-4 pb-4 flex flex-col gap-2">
+              <p className="text-xs text-muted-foreground text-center break-all">{getLiveUrl(previewTable)}</p>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => window.open(getLiveUrl(previewTable), '_blank')}>
+                <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open live page
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
