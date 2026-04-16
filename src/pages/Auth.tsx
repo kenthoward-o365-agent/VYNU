@@ -1,52 +1,62 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Auth() {
-  const { signIn, signUp } = useAuth();
-  const { theme } = useTheme();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [siteId, setSiteId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [notProvisioned, setNotProvisioned] = useState(false);
 
   const logoSrc = "/ordrup-symbol-1024.png";
+
+  useEffect(() => {
+    if (sessionStorage.getItem("ordrup_not_provisioned") === "1") {
+      setNotProvisioned(true);
+      sessionStorage.removeItem("ordrup_not_provisioned");
+    }
+  }, []);
+
+  const handleResetPassword = async () => {
+    if (!email.trim()) {
+      toast.error("Enter your email above first");
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) toast.error(error.message);
+    else toast.success("Password reset link sent to your email");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setNotProvisioned(false);
     try {
-      if (isSignUp) {
-        await signUp(email, password, displayName);
-        toast.success("Account created! Check your email to confirm.");
-      } else {
-        // Validate site ID before signing in
-        const trimmed = siteId.trim().toUpperCase();
-        if (!trimmed) {
-          toast.error("Please enter your Site ID");
-          setLoading(false);
-          return;
-        }
-
-        const { data: venueData, error: lookupError } = await supabase.rpc("lookup_venue_by_site_id", { _site_id: trimmed });
-        if (lookupError || !venueData || venueData.length === 0) {
-          toast.error("Invalid Site ID. Please check and try again.");
-          setLoading(false);
-          return;
-        }
-
-        // Store the target venue ID so VenueContext picks it up after login
-        localStorage.setItem("tabless_active_venue", venueData[0].venue_id);
-        await signIn(email, password);
-        toast.success("Welcome back!");
+      const trimmed = siteId.trim().toUpperCase();
+      if (!trimmed) {
+        toast.error("Please enter your Site ID");
+        setLoading(false);
+        return;
       }
+
+      const { data: venueData, error: lookupError } = await supabase.rpc("lookup_venue_by_site_id", { _site_id: trimmed });
+      if (lookupError || !venueData || venueData.length === 0) {
+        toast.error("Invalid Site ID. Please check and try again.");
+        setLoading(false);
+        return;
+      }
+
+      localStorage.setItem("tabless_active_venue", venueData[0].venue_id);
+      await signIn(email, password);
+      toast.success("Welcome back!");
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -66,36 +76,31 @@ export default function Auth() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>{isSignUp ? "Create your venue account" : "Welcome back"}</CardTitle>
+            <CardTitle>Operator sign in</CardTitle>
             <CardDescription>
-              {isSignUp ? "Set up your venue on OrdrUp" : "Enter your Site ID and credentials to sign in"}
+              Enter your Site ID and credentials to sign in
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {notProvisioned && (
+              <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                Account not provisioned. Please contact your venue administrator to be granted access.
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {isSignUp && (
+              <div>
                 <Input
-                  placeholder="Your name"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  id="site-id"
+                  name="organization"
+                  autoComplete="organization"
+                  placeholder="Venue ID (e.g. 1000)"
+                  value={siteId}
+                  onChange={(e) => setSiteId(e.target.value)}
                   required
+                  className="font-mono tracking-wider"
                 />
-              )}
-              {!isSignUp && (
-                <div>
-                  <Input
-                    id="site-id"
-                    name="organization"
-                    autoComplete="organization"
-                    placeholder="Venue ID (e.g. 1000)"
-                    value={siteId}
-                    onChange={(e) => setSiteId(e.target.value)}
-                    required
-                    className="font-mono tracking-wider"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">Your venue's unique Site ID — provided by your administrator</p>
-                </div>
-              )}
+                <p className="text-xs text-muted-foreground mt-1">Your venue's unique Site ID — provided by your administrator</p>
+              </div>
               <Input
                 id="email"
                 name="username"
@@ -110,7 +115,7 @@ export default function Auth() {
                 id="password"
                 name="password"
                 type="password"
-                autoComplete={isSignUp ? "new-password" : "current-password"}
+                autoComplete="current-password"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -118,17 +123,22 @@ export default function Auth() {
                 minLength={6}
               />
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
+                {loading ? "Loading..." : "Sign In"}
               </Button>
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={handleResetPassword}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
             </form>
-            <div className="mt-4 text-center">
-              <button
-                type="button"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setIsSignUp(!isSignUp)}
-              >
-                {isSignUp ? "Already have an account? Sign in" : "New venue? Create an account"}
-              </button>
+            <div className="mt-6 pt-4 border-t border-border text-center">
+              <p className="text-xs text-muted-foreground">
+                Diner? Scan your table's QR code to order — no account needed here.
+              </p>
             </div>
           </CardContent>
         </Card>
