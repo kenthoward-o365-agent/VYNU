@@ -37,6 +37,7 @@ interface VenueContextType {
   groups: VenueGroup[];
   isGroupAdmin: boolean;
   isTablessAdmin: boolean;
+  hasProvisioningResolved: boolean;
   venueRole: string | null;
   loading: boolean;
   setVenue: (v: Venue | null) => void;
@@ -70,6 +71,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   const [isTablessAdmin, setIsTablessAdmin] = useState(false);
   const [venueRole, setVenueRole] = useState<string | null>(null);
   const [staffRolesMap, setStaffRolesMap] = useState<Record<string, string>>({});
+  const [resolvedAccessUserId, setResolvedAccessUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchVenues = async () => {
@@ -81,6 +83,8 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       setIsGroupAdmin(false);
       setIsTablessAdmin(false);
       setVenueRole(null);
+      setStaffRolesMap({});
+      setResolvedAccessUserId(null);
       setLoading(false);
       return;
     }
@@ -88,6 +92,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     setLoading(true);
 
     if (!session?.access_token) {
+      setResolvedAccessUserId(null);
       setLoading(true);
       return;
     }
@@ -167,8 +172,11 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       setVenues([]);
       setGroup(null);
       setGroups([]);
+      setIsGroupAdmin(false);
+      setVenueRole(null);
     }
 
+    setResolvedAccessUserId(user.id);
     setLoading(false);
   };
 
@@ -201,8 +209,10 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     fetchVenues();
   }, [authLoading, user, session?.access_token]);
 
+  const hasProvisioningResolved = !user || resolvedAccessUserId === user.id;
+
   return (
-    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, venueRole, loading, setVenue, switchVenue, refetch: fetchVenues }}>
+    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, hasProvisioningResolved, venueRole, loading, setVenue, switchVenue, refetch: fetchVenues }}>
       {children}
     </VenueContext.Provider>
   );

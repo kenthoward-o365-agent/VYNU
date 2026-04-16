@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -39,10 +40,17 @@ const queryClient = new QueryClient();
 
 function AppRoutes() {
   const { user, loading: authLoading } = useAuth();
-  const { venue, loading: venueLoading, isTablessAdmin } = useVenue();
+  const { venue, loading: venueLoading, isTablessAdmin, hasProvisioningResolved } = useVenue();
   const hasVenueContext = !!venue;
 
-  if (authLoading || venueLoading) {
+  useEffect(() => {
+    if (!user || !hasProvisioningResolved || venue || isTablessAdmin) return;
+
+    sessionStorage.setItem("ordrup_not_provisioned", "1");
+    void supabase.auth.signOut();
+  }, [user?.id, hasProvisioningResolved, venue?.id, isTablessAdmin]);
+
+  if (authLoading || venueLoading || !hasProvisioningResolved) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center space-y-2">
@@ -62,19 +70,13 @@ function AppRoutes() {
   }
 
   if (!venue && !isTablessAdmin) {
-    const hasProvisioningAttempted = !!user && !authLoading && !venueLoading;
-
-    if (hasProvisioningAttempted) {
-      sessionStorage.setItem("ordrup_not_provisioned", "1");
-      supabase.auth.signOut();
-      return (
-        <div className="flex min-h-screen items-center justify-center bg-background">
-          <div className="text-center space-y-2">
-            <p className="text-muted-foreground">Signing out…</p>
-          </div>
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center space-y-2">
+          <p className="text-muted-foreground">Signing out…</p>
         </div>
-      );
-    }
+      </div>
+    );
   }
 
   const defaultRoute = hasVenueContext ? "/dashboard" : isTablessAdmin ? "/admin/dashboard" : "/dashboard";
