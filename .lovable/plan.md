@@ -1,33 +1,25 @@
 
 
-# Landing Page Editor — Image Upload for Hero & Loyalty CTA
+# Fix Landing Page Editor — Images Not Persisting
 
-## Overview
+## Root Cause
 
-Replace the URL-only input for hero images (and loyalty CTA images) with a file upload button that uploads to the existing `venue-assets` storage bucket and sets the public URL automatically. Users can still paste a URL manually as a fallback.
+1. The `Venue` interface in `VenueContext.tsx` doesn't include `landing_page_html`, so the field is silently dropped from the venue object even though `select("*")` returns it from the database.
+2. After saving, `handleSave` doesn't refresh the venue context — so when navigating away and back, the old venue data (without the saved sections JSON) initializes the editor with defaults.
 
 ## Changes
 
-### 1. `SectionEditPanel.tsx` — Add upload UI
+### 1. `src/contexts/VenueContext.tsx`
+Add `landing_page_html: string | null` to the `Venue` interface.
 
-- Import `supabase`, `useVenue`, `resizeFileToWebP`, and `useState` for upload state
-- Accept `venueId` as a new prop (passed from `LandingPageEditor.tsx`)
-- **Hero section**: Replace the plain URL input with an upload area — a file input button + optional manual URL input. On file select: resize to WebP via `resizeFileToWebP`, upload to `venue-assets/landing/{venueId}/{timestamp}.webp`, get public URL, call `update({ heroImageUrl: publicUrl })`. Show a small preview thumbnail when set, with a "Remove" button
-- **Loyalty CTA (image variant)**: Same upload pattern for `imageUrl`
-- Show a loading spinner during upload
-
-### 2. `LandingPageEditor.tsx` — Pass venue ID
-
-- Pass `venueId={venue?.id}` to `SectionEditPanel`
-
-### 3. No database or storage changes needed
-
-The `venue-assets` bucket already exists and is public. The upload path pattern (`landing/{venueId}/...`) keeps files organized. The same `resizeFileToWebP` utility already used by Menu Builder handles image optimization.
+### 2. `src/pages/LandingPageEditor.tsx`
+- Remove the `(venue as any)` cast — use `venue?.landing_page_html` directly now that the type includes it.
+- After a successful save, call `refetch()` from the venue context so the in-memory venue object reflects the saved data.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/landing-editor/SectionEditPanel.tsx` | Add file upload with preview for hero image and loyalty CTA image fields |
-| `src/pages/LandingPageEditor.tsx` | Pass `venueId` prop to `SectionEditPanel` |
+| `src/contexts/VenueContext.tsx` | Add `landing_page_html` to Venue interface |
+| `src/pages/LandingPageEditor.tsx` | Remove `as any` cast; call `refetch()` after save |
 
