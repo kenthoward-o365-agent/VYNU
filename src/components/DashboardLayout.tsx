@@ -16,8 +16,8 @@ import {
 
 import navDashboard from "@/assets/nav-icons/dashboard.svg";
 import navDashboardDark from "@/assets/nav-icons/dashboard-dark.svg";
-import navAIAnalytics from "@/assets/nav-icons/OrdrUp_AI_Analytics.svg";
-import navAIAnalyticsDark from "@/assets/nav-icons/OrdrUp_AI_Analytics-dark.svg";
+import navAIAnalytics from "@/assets/nav-icons/Ordrup_AI_Analytics.svg";
+import navAIAnalyticsDark from "@/assets/nav-icons/Ordrup_AI_Analytics-dark.svg";
 import navMenuBuilder from "@/assets/nav-icons/menu-builder.svg";
 import navMenuBuilderDark from "@/assets/nav-icons/menu-builder-dark.svg";
 import navPricing from "@/assets/nav-icons/pricing.svg";
