@@ -17,12 +17,13 @@ export default function Dashboard() {
   const { auditDate: venueAuditDate } = useAuditDate();
   const [auditDate, setAuditDate] = useState<DateRange>(() => getDefaultAuditDate(venueAuditDate));
   const [taxes, setTaxes] = useState<TaxConfig[]>([]);
-  const [orders, setOrders] = useState<{ id: string; total: number | null; status: string; created_at: string }[]>([]);
+  const [orders, setOrders] = useState<{ id: string; total: number | null; status: string; created_at: string; gratuity_amount: number | null }[]>([]);
   const [stats, setStats] = useState({
     grossRevenue: 0,
     netRevenue: 0,
     totalTax: 0,
     taxLines: [] as { name: string; amount: number; is_inclusive: boolean }[],
+    gratuities: 0,
     orderCount: 0,
     activeOrders: 0,
     completedOrders: 0,
@@ -53,16 +54,18 @@ export default function Dashboard() {
     const fetchStats = async () => {
       const { data } = await supabase
         .from("orders")
-        .select("id, total, status, created_at")
+        .select("id, total, status, created_at, gratuity_amount")
         .eq("venue_id", venue.id)
         .gte("created_at", auditDate.from.toISOString())
         .lte("created_at", auditDate.to.toISOString());
 
-      const all = data || [];
+      const all = (data || []) as typeof orders;
       setOrders(all);
       const billable = all.filter((o) => o.status !== "cancelled");
-      const grossRevenue = billable.reduce((s, o) => s + (Number(o.total) || 0), 0);
-      const { subtotalExTax, totalTax, lines } = calculateTaxes(grossRevenue, taxes);
+      const grossWithTips = billable.reduce((s, o) => s + (Number(o.total) || 0), 0);
+      const gratuities = billable.reduce((s, o) => s + (Number(o.gratuity_amount) || 0), 0);
+      const taxableTotal = grossWithTips - gratuities;
+      const { subtotalExTax, totalTax, lines } = calculateTaxes(taxableTotal, taxes);
 
       const taxMap = new Map<string, { name: string; amount: number; is_inclusive: boolean }>();
       for (const l of lines) {
@@ -76,10 +79,11 @@ export default function Dashboard() {
       const cancelledOrders = all.filter((o) => o.status === "cancelled").length;
 
       setStats({
-        grossRevenue, netRevenue: subtotalExTax, totalTax,
+        grossRevenue: taxableTotal, netRevenue: subtotalExTax, totalTax,
         taxLines: Array.from(taxMap.values()),
+        gratuities,
         orderCount: all.length, activeOrders, completedOrders, cancelledOrders,
-        avgOrderValue: billable.length ? grossRevenue / billable.length : 0,
+        avgOrderValue: billable.length ? taxableTotal / billable.length : 0,
       });
     };
     fetchStats();
