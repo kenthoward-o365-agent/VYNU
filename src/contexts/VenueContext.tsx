@@ -61,7 +61,7 @@ const createSessionClient = (accessToken: string) =>
   });
 
 export function VenueProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [venue, setVenue] = useState<Venue | null>(null);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [group, setGroup] = useState<VenueGroup | null>(null);
@@ -87,11 +87,12 @@ export function VenueProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      setLoading(true);
+      return;
+    }
 
-    const queryClient = session?.access_token ? createSessionClient(session.access_token) : supabase;
+    const queryClient = createSessionClient(session.access_token);
 
     const { data: staffData } = await queryClient
       .from("venue_staff")
@@ -187,9 +188,18 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (user) setLoading(true);
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
+    if (user && !session?.access_token) {
+      setLoading(true);
+      return;
+    }
+
     fetchVenues();
-  }, [user]);
+  }, [authLoading, user, session?.access_token]);
 
   return (
     <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, venueRole, loading, setVenue, switchVenue, refetch: fetchVenues }}>
