@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 
@@ -45,8 +46,22 @@ interface VenueContextType {
 
 const VenueContext = createContext<VenueContextType | undefined>(undefined);
 
+const createSessionClient = (accessToken: string) =>
+  createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+
 export function VenueProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
   const [venue, setVenue] = useState<Venue | null>(null);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [group, setGroup] = useState<VenueGroup | null>(null);
@@ -58,11 +73,28 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchVenues = async () => {
-    if (!user) { setVenue(null); setVenues([]); setGroup(null); setGroups([]); setIsGroupAdmin(false); setIsTablessAdmin(false); setVenueRole(null); setLoading(false); return; }
+    if (!user) {
+      setVenue(null);
+      setVenues([]);
+      setGroup(null);
+      setGroups([]);
+      setIsGroupAdmin(false);
+      setIsTablessAdmin(false);
+      setVenueRole(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
-    // Fetch all venue_staff records for this user
-    const { data: staffData } = await supabase
+    if (!session?.access_token) {
+      setLoading(true);
+      return;
+    }
+
+    const queryClient = createSessionClient(session.access_token);
+
+    const { data: staffData } = await queryClient
       .from("venue_staff")
       .select("venue_id, role")
       .eq("user_id", user.id)
@@ -72,13 +104,13 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     setStaffRolesMap(staffRoles);
     const venueIds = (staffData || []).map((s) => s.venue_id);
 
-    // Check tabless_admin role early so we can use it for venue fetching
-    const { data: roleData } = await supabase
+    const { data: roleData } = await queryClient
       .from("user_roles")
       .select("id")
       .eq("user_id", user.id)
       .eq("role", "tabless_admin" as any)
       .maybeSingle();
+
     const adminFlag = !!roleData;
     setIsTablessAdmin(adminFlag);
 
@@ -86,51 +118,44 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       let allVenues: Venue[] = [];
 
       if (adminFlag) {
-        // Tabless admins can see all venues
-        const { data: venueData } = await supabase.from("venues").select("*");
+        const { data: venueData } = await queryClient.from("venues").select("*");
         allVenues = (venueData || []) as Venue[];
       } else {
-        const { data: venueData } = await supabase.from("venues").select("*").in("id", venueIds);
+        const { data: venueData } = await queryClient.from("venues").select("*").in("id", venueIds);
         allVenues = (venueData || []) as Venue[];
       }
 
       setVenues(allVenues);
 
-      // Restore last selected venue or pick first
       const savedId = localStorage.getItem("tabless_active_venue");
       const saved = allVenues.find((v) => v.id === savedId);
       const active = saved || allVenues[0] || null;
       setVenue(active);
-      setVenueRole(active ? (staffRoles[active.id] || (adminFlag ? "owner" : null)) : null);
+      setVenueRole(active ? staffRoles[active.id] || (adminFlag ? "owner" : null) : null);
 
-      // Fetch groups
-      const { data: groupStaff } = await supabase
+      const { data: groupStaff } = await queryClient
         .from("venue_group_staff")
         .select("group_id, role")
         .eq("user_id", user.id);
 
-      // For admins, also fetch all groups
       if (adminFlag) {
-        const { data: allGroups } = await supabase.from("venue_groups").select("*");
+        const { data: allGroups } = await queryClient.from("venue_groups").select("*");
         setGroups((allGroups || []) as VenueGroup[]);
         setIsGroupAdmin(true);
         if (active?.group_id) {
           const activeGroup = (allGroups || []).find((g: any) => g.id === active.group_id);
-          setGroup(activeGroup as VenueGroup || null);
+          setGroup((activeGroup as VenueGroup) || null);
         }
       } else if (groupStaff && groupStaff.length > 0) {
         const groupIds = groupStaff.map((g) => g.group_id);
-        const { data: groupData } = await supabase
-          .from("venue_groups")
-          .select("*")
-          .in("id", groupIds);
+        const { data: groupData } = await queryClient.from("venue_groups").select("*").in("id", groupIds);
 
         setGroups((groupData || []) as VenueGroup[]);
         setIsGroupAdmin(groupStaff.some((g) => g.role === "group_admin"));
 
         if (active?.group_id) {
           const activeGroup = (groupData || []).find((g: any) => g.id === active.group_id);
-          setGroup(activeGroup as VenueGroup || null);
+          setGroup((activeGroup as VenueGroup) || null);
         }
       } else {
         setGroups([]);
@@ -143,8 +168,6 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       setGroup(null);
       setGroups([]);
     }
-
-    // Already set above
 
     setLoading(false);
   };
@@ -165,9 +188,18 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (user) setLoading(true); // block App.tsx guard until fetchVenues completes
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
+    if (user && !session?.access_token) {
+      setLoading(true);
+      return;
+    }
+
     fetchVenues();
-  }, [user]);
+  }, [authLoading, user, session?.access_token]);
 
   return (
     <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, venueRole, loading, setVenue, switchVenue, refetch: fetchVenues }}>
