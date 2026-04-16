@@ -134,7 +134,9 @@ export function VenueProvider({ children }: { children: ReactNode }) {
 
       const savedId = localStorage.getItem("tabless_active_venue");
       const saved = allVenues.find((v) => v.id === savedId);
-      const active = saved || allVenues[0] || null;
+      // For tabless_admin: only use a saved selection, never auto-pick the first venue.
+      // Admins land on /admin/dashboard with no active venue until they explicitly choose one.
+      const active = saved || (adminFlag ? null : allVenues[0]) || null;
       setVenue(active);
       setVenueRole(active ? staffRoles[active.id] || (adminFlag ? "owner" : null) : null);
 
