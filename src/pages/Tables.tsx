@@ -190,6 +190,9 @@ export default function Tables() {
                   <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setQrDialogTable(table)}>
                     <QrCode className="h-3.5 w-3.5 mr-1" /> Enlarge
                   </Button>
+                  <Button variant="default" size="sm" className="flex-1 text-xs" onClick={() => setPreviewTable(table)}>
+                    <Smartphone className="h-3.5 w-3.5 mr-1" /> Preview
+                  </Button>
                 </div>
               </CardContent>
             </Card>
