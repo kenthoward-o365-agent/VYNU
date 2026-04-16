@@ -1,40 +1,44 @@
 
 
-# Update App URL Without Breaking Existing QR Codes
+# Fix QR Code URLs and Enlarge Dialog Layout
 
-## Problem
+## Problem Summary
 
-QR codes are stored in the database with the full URL (e.g. `https://sippaai.lovable.app/order/{venueId}/{tableId}`). Changing the domain would break all printed stickers unless we handle the migration.
+1. **QR codes still point to old domain**: All 12 Morris House tables have `qr_code` values stored as `https://sippaai.lovable.app/order/...`. The code constant `PUBLISHED_BASE_URL` is also still `"https://sippaai.lovable.app"`. The published URL is now `https://ordrup.lovable.app`.
 
-## Approach
+2. **Enlarge dialog overflow**: The QR zoom dialog (`max-w-sm`) has three buttons (Download SVG, Print, Preview) in a single `flex gap-2` row that bleeds outside the dialog on narrower viewports.
 
-**Two-part solution:**
+## Changes
 
-1. **Connect your custom domain** via Lovable's built-in domain settings — no code change needed for this step.
+### 1. Update `PUBLISHED_BASE_URL` in `src/pages/Tables.tsx`
+Change line 16 from `"https://sippaai.lovable.app"` to `"https://ordrup.lovable.app"`.
 
-2. **Migrate existing QR code URLs in the database** and update the code constant so new QR codes use the new domain.
+### 2. Migrate existing QR code URLs in the database
+Run a data update (via the insert tool) to replace the old domain in all stored `qr_code` values:
+```sql
+UPDATE tables
+SET qr_code = REPLACE(qr_code, 'https://sippaai.lovable.app', 'https://ordrup.lovable.app')
+WHERE qr_code LIKE '%sippaai.lovable.app%';
+```
 
-### Step 1: Connect Your Custom Domain
+### 3. Fix Enlarge dialog button overflow
+In the QR zoom dialog (lines 239-249 of `Tables.tsx`), change the three-button row from `flex gap-2` to a stacked layout:
+```tsx
+<div className="flex flex-col gap-2 mt-2">
+  <div className="flex gap-2">
+    <Button variant="outline" className="flex-1" ...>Download SVG</Button>
+    <Button variant="outline" className="flex-1" ...>Print</Button>
+  </div>
+  <Button className="w-full" ...>Preview</Button>
+</div>
+```
 
-Go to **Project Settings → Domains** and connect your custom domain. You'll need to add DNS records (A records pointing to `185.158.133.1` and a TXT verification record) at your domain registrar. Lovable will auto-provision SSL once DNS propagates.
+### 4. Update memory files
+- Update `mem://constraints/qr-codes-permanent` to reflect the new URL format (`https://ordrup.lovable.app/order/...`).
+- Update `mem://index.md` core section if needed.
 
-**Do this first, then tell me the domain so I can proceed with Step 2.**
-
-### Step 2: Code & Data Changes
-
-Once the custom domain is active:
-
-| Change | Detail |
-|--------|--------|
-| **`src/pages/Tables.tsx`** | Update `PUBLISHED_BASE_URL` constant from `"https://sippaai.lovable.app"` to your new custom domain |
-| **Database migration** | Run a SQL migration to update all existing `qr_code` values: `UPDATE tables SET qr_code = REPLACE(qr_code, 'https://sippaai.lovable.app', 'https://yournewdomain.com') WHERE qr_code LIKE '%sippaai.lovable.app%';` |
-| **Memory files** | Update `mem://constraints/qr-codes-permanent` with the new URL format |
-
-### Safety Net
-
-The old `sippaai.lovable.app` URL will continue to work as long as the project remains published — Lovable doesn't remove the `.lovable.app` subdomain when you add a custom domain. So existing printed QR codes will keep working even before migration. The migration just ensures consistency for any new prints or downloads.
-
-## Next Step
-
-Please connect your custom domain first in **Project Settings → Domains**, then share the domain name with me so I can update the code and run the database migration.
+## Impact
+- All existing Morris House QR codes will point to the new domain
+- New tables added in the future will also use the correct domain
+- The Enlarge dialog buttons will no longer overflow
 
