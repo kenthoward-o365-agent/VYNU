@@ -8,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, QrCode, Trash2, Download, Printer } from "lucide-react";
+import { Plus, QrCode, Trash2, Download, Printer, Smartphone } from "lucide-react";
+import MobilePreviewFrame from "@/components/landing-editor/MobilePreviewFrame";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
@@ -28,6 +29,7 @@ export default function Tables() {
   const [tables, setTables] = useState<Table[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [qrDialogTable, setQrDialogTable] = useState<Table | null>(null);
+  const [previewTable, setPreviewTable] = useState<Table | null>(null);
   const [form, setForm] = useState({ table_number: "", zone: "", capacity: "4", pos_table_id: "" });
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -188,6 +190,9 @@ export default function Tables() {
                   <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setQrDialogTable(table)}>
                     <QrCode className="h-3.5 w-3.5 mr-1" /> Enlarge
                   </Button>
+                  <Button variant="default" size="sm" className="flex-1 text-xs" onClick={() => setPreviewTable(table)}>
+                    <Smartphone className="h-3.5 w-3.5 mr-1" /> Preview
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -212,9 +217,32 @@ export default function Tables() {
             <Button variant="outline" className="flex-1" onClick={() => qrDialogTable && downloadQr(qrDialogTable)}>
               <Download className="h-4 w-4 mr-1" /> Download SVG
             </Button>
-            <Button className="flex-1" onClick={() => qrDialogTable && printQr(qrDialogTable)}>
+            <Button variant="outline" className="flex-1" onClick={() => qrDialogTable && printQr(qrDialogTable)}>
               <Printer className="h-4 w-4 mr-1" /> Print
             </Button>
+            <Button className="flex-1" onClick={() => { if (qrDialogTable) { setPreviewTable(qrDialogTable); setQrDialogTable(null); } }}>
+              <Smartphone className="h-4 w-4 mr-1" /> Preview
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Mobile preview dialog */}
+      <Dialog open={!!previewTable} onOpenChange={() => setPreviewTable(null)}>
+        <DialogContent className="max-w-[480px] h-[90vh] p-0 gap-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle>Table {previewTable?.table_number} — Mobile Preview</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            <MobilePreviewFrame>
+              {venue && previewTable && (
+                <iframe
+                  src={`/order/${venue.id}/${previewTable.id}`}
+                  className="w-full h-full border-0"
+                  title={`Mobile preview for table ${previewTable.table_number}`}
+                />
+              )}
+            </MobilePreviewFrame>
           </div>
         </DialogContent>
       </Dialog>
