@@ -74,7 +74,7 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: Venue
             inlineActions={<InlineActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />}
           />
           <p className="text-center text-white/40 text-xs py-4">
-            Powered by <span className="font-semibold text-white/60">Ordrup</span>
+            Powered by <span className="font-semibold text-white/60">OrdrUp</span>
           </p>
         </div>
       );
@@ -125,7 +125,7 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: Venue
         </p>
       </div>
       <p className="text-muted-foreground text-xs mt-4">
-        No account needed · Powered by <span className="font-semibold text-primary">Ordrup</span>
+        No account needed · Powered by <span className="font-semibold text-primary">OrdrUp</span>
       </p>
     </div>
   );

@@ -123,15 +123,15 @@ export default function KnowledgeBase() {
       <div className="flex-1 space-y-8 min-w-0">
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-1">Knowledge Base</h1>
-          <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on Ordrup.</p>
+          <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on OrdrUp.</p>
         </div>
 
         <Separator />
 
         {/* Getting Started */}
         <Section id="getting-started" title="Getting Started" icon={Rocket}>
-          <SubSection title="Welcome to Ordrup">
-            <p>Ordrup replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue's AI assistant, and place orders — no app download required.</p>
+          <SubSection title="Welcome to OrdrUp">
+            <p>OrdrUp replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue's AI assistant, and place orders — no app download required.</p>
           </SubSection>
           <SubSection title="First-Time Setup Checklist">
             <StepList steps={[
@@ -141,7 +141,7 @@ export default function KnowledgeBase() {
               "Set up your tables and generate QR codes in Tables & QR.",
               "Configure your payment gateway in Settings → Payments.",
               "Set up tax rules in Settings → Taxes.",
-              "Customise your Ordrup AI agent personality in Settings → Ordrup AI.",
+              "Customise your OrdrUp AI agent personality in Settings → OrdrUp AI.",
               "Print and place QR stickers on each table — you're live!",
             ]} />
           </SubSection>
@@ -177,7 +177,7 @@ export default function KnowledgeBase() {
             </ul>
           </SubSection>
           <SubSection title="Reading the Insights">
-            <p>A high conversion rate means your AI personality and menu descriptions are working well. If diners are chatting a lot but not ordering, consider simplifying your menu descriptions or adjusting the AI's tone in Settings → Ordrup AI.</p>
+            <p>A high conversion rate means your AI personality and menu descriptions are working well. If diners are chatting a lot but not ordering, consider simplifying your menu descriptions or adjusting the AI's tone in Settings → OrdrUp AI.</p>
           </SubSection>
         </Section>
 
@@ -193,7 +193,7 @@ export default function KnowledgeBase() {
             ]} />
           </SubSection>
           <SubSection title="AI Import">
-            <p>Upload a photo or PDF of your existing menu. Ordrup's AI will read it and create categories and items automatically. Review and adjust before saving.</p>
+            <p>Upload a photo or PDF of your existing menu. OrdrUp's AI will read it and create categories and items automatically. Review and adjust before saving.</p>
             <StepList steps={[
               "Go to Menu Builder → Settings → AI Features → Import.",
               "Upload your menu file (PDF, JPG, PNG).",
@@ -335,7 +335,7 @@ export default function KnowledgeBase() {
               "Toggle the programme active when ready.",
             ]} />
           </SubSection>
-          <SubSection title="Ordrup AI">
+          <SubSection title="OrdrUp AI">
             <p>Customise your AI dining assistant:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Agent Name</strong> — What your AI introduces itself as.</li>
@@ -346,7 +346,7 @@ export default function KnowledgeBase() {
             </ul>
           </SubSection>
           <SubSection title="Payments">
-            <p>OrdrPayments is Ordrup's built-in payment processing. No third-party accounts or API keys needed — just toggle it on in Settings → Payments and you're ready to accept payments. Use test mode to verify your flow before going live.</p>
+            <p>OrdrPayments is OrdrUp's built-in payment processing. No third-party accounts or API keys needed — just toggle it on in Settings → Payments and you're ready to accept payments. Use test mode to verify your flow before going live.</p>
           </SubSection>
           <SubSection title="Taxes">
             <p>Configure tax rules for your venue:</p>

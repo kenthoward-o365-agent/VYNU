@@ -58,9 +58,9 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-4">
-          <img src={logoSrc} alt="Ordrup" className="h-16 w-16 mx-auto" />
+          <img src={logoSrc} alt="OrdrUp" className="h-16 w-16 mx-auto" />
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-foreground">Ordrup</h1>
+            <h1 className="text-3xl font-bold text-foreground">OrdrUp</h1>
             <p className="text-muted-foreground">The world's first agentic dining platform</p>
           </div>
         </div>
@@ -68,7 +68,7 @@ export default function Auth() {
           <CardHeader>
             <CardTitle>{isSignUp ? "Create your venue account" : "Welcome back"}</CardTitle>
             <CardDescription>
-              {isSignUp ? "Set up your venue on Ordrup" : "Enter your Site ID and credentials to sign in"}
+              {isSignUp ? "Set up your venue on OrdrUp" : "Enter your Site ID and credentials to sign in"}
             </CardDescription>
           </CardHeader>
           <CardContent>
