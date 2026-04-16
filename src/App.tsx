@@ -10,6 +10,8 @@ import { AuditDateProvider } from "@/contexts/AuditDateContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import Auth from "@/pages/Auth";
 import Onboarding from "@/pages/Onboarding";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import Dashboard from "@/pages/Dashboard";
 import MenuBuilder from "@/pages/MenuBuilder";
 import Tables from "@/pages/Tables";
@@ -62,10 +64,17 @@ function AppRoutes() {
   }
 
   if (!venue && !isTablessAdmin) {
+    // User is signed in but has no venue_staff record and no admin role.
+    // Could be a diner who landed here by mistake, or an unprovisioned account.
+    // Sign them out and show the "not provisioned" message on /auth.
+    sessionStorage.setItem("ordrup_not_provisioned", "1");
+    supabase.auth.signOut();
     return (
-      <Routes>
-        <Route path="*" element={<Onboarding />} />
-      </Routes>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center space-y-2">
+          <p className="text-muted-foreground">Signing out…</p>
+        </div>
+      </div>
     );
   }
 
