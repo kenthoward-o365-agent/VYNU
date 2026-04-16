@@ -35,11 +35,11 @@ function parseSections(raw: string | null | undefined): LandingSection[] {
 }
 
 export default function LandingPageEditor() {
-  const { venue } = useVenue();
+  const { venue, refetch } = useVenue();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const [sections, setSections] = useState<LandingSection[]>(() =>
-    parseSections((venue as any)?.landing_page_html)
+    parseSections(venue?.landing_page_html)
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -89,6 +89,7 @@ export default function LandingPageEditor() {
       toast.error("Failed to save landing page");
     } else {
       toast.success("Landing page saved!");
+      await refetch();
     }
     setSaving(false);
   };
