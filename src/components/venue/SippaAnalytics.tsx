@@ -29,7 +29,7 @@ interface MessageData {
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--muted-foreground) / 0.3)"];
 
-export default function OrdrupAnalytics({ venueId }: Props) {
+export default function OrdrUpAnalytics({ venueId }: Props) {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [range, setRange] = useState("7");

@@ -248,7 +248,7 @@ export default function DinerPreferences() {
               <div>
                 <CardTitle className="text-base">Predictive Dining</CardTitle>
                 <CardDescription>
-                  Go beyond "previous orders" — Ordrup AI predicts what the diner actually wants right now. It analyses time of day (lunch vs dinner habits), weather conditions (comfort food on rainy days, lighter dishes when it's hot), and party size behaviour to build a "likely basket" before the diner even browses. Returning diners see instant suggestions like "Want your usual Friday night order?" — increasing speed to order and average ticket value.
+                  Go beyond "previous orders" — OrdrUp AI predicts what the diner actually wants right now. It analyses time of day (lunch vs dinner habits), weather conditions (comfort food on rainy days, lighter dishes when it's hot), and party size behaviour to build a "likely basket" before the diner even browses. Returning diners see instant suggestions like "Want your usual Friday night order?" — increasing speed to order and average ticket value.
                 </CardDescription>
               </div>
             </div>

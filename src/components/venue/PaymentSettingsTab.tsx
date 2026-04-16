@@ -198,7 +198,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             OrdrPayments Configuration
           </CardTitle>
           <CardDescription>
-            Built-in payment processing by Ordrup. No third-party accounts or API keys needed — we handle everything for you.
+            Built-in payment processing by OrdrUp. No third-party accounts or API keys needed — we handle everything for you.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
