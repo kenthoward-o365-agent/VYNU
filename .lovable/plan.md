@@ -1,75 +1,54 @@
 
-# Fix the mobile preview properly without more paid test loops
+## Problem
 
-## What the issue actually is
+The current `/auth` flow is a single shared screen for both venue operators and diners. When anyone hits `Auth.tsx` and clicks "New venue? Create an account", they sign up via `signUp()` which creates an `auth.users` row. Because they have no `venue_staff` record, `App.tsx` then routes them to `Onboarding.tsx`, which forces them to create a venue. That's wrong for diners.
 
-You are right: the mobile preview is still broken, and I should not have kept reporting it as fixed.
+Diners should only ever sign up / sign in inside the **consumer mobile flow** (the `/order/:venueId/:tableId` route — `ConsumerOrder.tsx`, which uses `DinerSignup.tsx`). They must never see the operator `Auth.tsx` or `Onboarding.tsx`.
 
-The likely root problem is that the Preview button is **not opening the real live QR destination**. In `src/pages/Tables.tsx`, it builds a **relative preview URL**:
+## Root cause
 
-```ts
-/order/{venueId}/{tableId}
-```
-
-That loads inside the Lovable preview environment, not the live published app. So even though the QR codes themselves now point at `https://ordrup.lovable.app/...`, the in-app “Preview” modal is still trying to render the route through the sandbox/preview stack, which is exactly where these auth/proxy/iframe issues can happen.
-
-So the previous `__lovable_token` workaround addressed the wrong layer.
+`src/pages/Auth.tsx` exposes a generic "Create an account" toggle that is reachable by anyone landing on the operator app URL. There is no separation between:
+- Operator/staff accounts (created by an admin via `admin-create-user` edge function, or by an authorized owner)
+- Diner accounts (created only inside the consumer order flow)
 
 ## Plan
 
-### 1. Change the Preview modal to use the actual live QR URL
-In `src/pages/Tables.tsx`:
+### 1. Lock `/auth` to sign-in only (operator app)
+In `src/pages/Auth.tsx`:
+- Remove the "New venue? Create an account" toggle and all signup UI (display name field, isSignUp state, signUp call).
+- Keep only: Site ID + email + password sign-in.
+- Replace the toggle with a small note: "Diner? Scan your table's QR code to order." and a "Forgot password?" link.
 
-- stop using the current `getPreviewUrl()` relative path for the iframe
-- use `table.qr_code` directly when it exists
-- otherwise fall back to:
-  ```ts
-  `${PUBLISHED_BASE_URL}/order/${venue.id}/${table.id}`
-  ```
+This means no one can accidentally self-register as a venue from the operator URL.
 
-That makes the Preview button match the real sticker destination.
+### 2. Remove the public `Onboarding` route as a self-serve path
+In `src/App.tsx`:
+- Currently, any authenticated user without a venue is auto-routed to `Onboarding`. That's the trap.
+- Change the logic: if a logged-in user has no `venue_staff` record AND is not a Tab-Less admin AND is not a diner with a `diner_profiles` row, sign them out and show an "Account not provisioned — contact your venue administrator" message on `/auth`.
+- Keep `Onboarding.tsx` in the codebase but only reachable via an explicit admin-driven invite flow (future work — out of scope for this fix). For now, it just won't be auto-rendered.
 
-### 2. Remove the preview-token logic
-Delete the `__lovable_token` URL-building logic from `getPreviewUrl()` because it is preview-environment specific and not the real path diners use.
+### 3. Confirm diner signup stays inside the consumer flow
+No change required: `DinerSignup.tsx` is already only mounted from `ConsumerOrder.tsx` (`/order/:venueId/:tableId`), which is a public route outside the `AuthProvider` operator stack. Diners signing up there get a `diner_profiles` row, not a `venue_staff` row.
 
-### 3. Make the preview resilient instead of pretending it works
-Still in `src/pages/Tables.tsx`:
+### 4. Returning diners on mobile
+Returning diners sign back in through the same consumer flow on `/order/:venueId/:tableId` — `DinerSignup.tsx` already handles both signup and sign-in for diners. Confirm it has a "returning diner" sign-in path; if missing, add a sign-in toggle inside `DinerSignup.tsx`.
 
-- keep the iframe preview for convenience
-- add a clear secondary action like **Open live page**
-- show the full live URL in the modal
+I'll need to view `DinerSignup.tsx` during implementation to verify the returning-diner sign-in already exists. If it doesn't, I'll add a simple email+password sign-in toggle there.
 
-That way, even if an iframe is blocked or behaves inconsistently in the editor, the user can open the actual destination directly from the modal.
+## Files to change
 
-### 4. Keep the layout fix in place
-The stacked button layout in the Enlarge dialog was the right fix and should stay.
+- `src/pages/Auth.tsx` — strip signup UI, sign-in only
+- `src/App.tsx` — remove auto-route to `Onboarding`; show "not provisioned" state instead
+- `src/components/consumer/DinerSignup.tsx` — verify/ensure returning-diner sign-in exists (read first, then decide)
 
-### 5. Stop using browser-credit verification for this issue
-I will not rely on browser automation for this fix unless you explicitly ask again. The next implementation should be code-only and based on the actual route flow, not on another expensive “looks fixed in my test” claim.
+## Out of scope (future)
 
-## Files to update
+- Admin-invite flow to provision new venue owners (replacement for self-serve onboarding)
+- Removing `Onboarding.tsx` entirely
 
-- `src/pages/Tables.tsx`
+## Expected result
 
-## No backend migration needed
-This is now a frontend preview-path issue, not another QR migration issue. Your stored QR URLs were already moved to the live domain.
-
-## Technical detail
-
-Current broken behavior:
-```text
-Preview button -> /order/{venueId}/{tableId} inside Lovable preview
-```
-
-Correct behavior:
-```text
-Preview button -> table.qr_code
-             -> https://ordrup.lovable.app/order/{venueId}/{tableId}
-```
-
-## Expected result after implementation
-
-- Preview opens the same destination as the printed QR codes
-- No dependency on preview session tokens
-- No false positive “fixed” result based on sandbox-only behavior
-- If iframe rendering is flaky, the modal still gives a reliable live-page open action
+- Operator URL (`/auth`) only allows sign-in with Site ID + email + password
+- No path from the operator app creates a venue accidentally
+- Diners only ever sign up / sign in via the QR-code consumer flow on mobile
+- Returning diners sign back in through the same consumer mobile flow
