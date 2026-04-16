@@ -13,7 +13,7 @@ import MobilePreviewFrame from "@/components/landing-editor/MobilePreviewFrame";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
-const PUBLISHED_BASE_URL = "https://sippaai.lovable.app"; // Published domain — Ordrup
+const PUBLISHED_BASE_URL = "https://ordrup.lovable.app"; // Published domain — Ordrup
 
 interface Table {
   id: string;
@@ -236,14 +236,16 @@ export default function Tables() {
             <p className="text-xs text-muted-foreground text-center">This QR code is permanent and will never expire.</p>
             <p className="text-[10px] text-muted-foreground text-center break-all">{qrDialogTable?.qr_code}</p>
           </div>
-          <div className="flex gap-2 mt-2">
-            <Button variant="outline" className="flex-1" onClick={() => qrDialogTable && downloadQr(qrDialogTable)}>
-              <Download className="h-4 w-4 mr-1" /> Download SVG
-            </Button>
-            <Button variant="outline" className="flex-1" onClick={() => qrDialogTable && printQr(qrDialogTable)}>
-              <Printer className="h-4 w-4 mr-1" /> Print
-            </Button>
-            <Button className="flex-1" onClick={() => { if (qrDialogTable) { setPreviewTable(qrDialogTable); setQrDialogTable(null); } }}>
+          <div className="flex flex-col gap-2 mt-2">
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => qrDialogTable && downloadQr(qrDialogTable)}>
+                <Download className="h-4 w-4 mr-1" /> Download SVG
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => qrDialogTable && printQr(qrDialogTable)}>
+                <Printer className="h-4 w-4 mr-1" /> Print
+              </Button>
+            </div>
+            <Button className="w-full" onClick={() => { if (qrDialogTable) { setPreviewTable(qrDialogTable); setQrDialogTable(null); } }}>
               <Smartphone className="h-4 w-4 mr-1" /> Preview
             </Button>
           </div>
