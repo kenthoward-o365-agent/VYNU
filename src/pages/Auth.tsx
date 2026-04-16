@@ -17,7 +17,7 @@ export default function Auth() {
   const [siteId, setSiteId] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const logoSrc = theme === "dark" ? "/ordrup-icon-dark.svg" : "/ordrup-icon.svg";
+  const logoSrc = "/ordrup-symbol-1024.png";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
