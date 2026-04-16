@@ -231,16 +231,25 @@ export default function Tables() {
 
       {/* Mobile preview dialog */}
       <Dialog open={!!previewTable} onOpenChange={() => setPreviewTable(null)}>
-        <DialogContent className="max-w-[480px] h-[90vh] p-0 gap-0 overflow-hidden flex flex-col">
+        <DialogContent
+          className="max-w-[480px] h-[90vh] p-0 gap-0 overflow-hidden flex flex-col"
+          onPointerDownOutside={(e) => {
+            // Prevent closing when interacting with iframe
+            const target = e.target as HTMLElement;
+            if (target?.closest?.("iframe")) e.preventDefault();
+          }}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader className="p-4 pb-2">
             <DialogTitle>Table {previewTable?.table_number} — Mobile Preview</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <MobilePreviewFrame>
               {venue && previewTable && (
                 <iframe
                   src={`/order/${venue.id}/${previewTable.id}`}
-                  className="w-full h-full border-0"
+                  className="w-full border-0"
+                  style={{ height: "100%" }}
                   title={`Mobile preview for table ${previewTable.table_number}`}
                 />
               )}
