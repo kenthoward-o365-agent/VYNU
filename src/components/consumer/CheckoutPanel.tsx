@@ -175,6 +175,11 @@ const CheckoutPanel = ({
 
       // Create the order first — generate ID client-side to avoid needing SELECT permission
       const orderId = crypto.randomUUID();
+
+      // Fetch the venue's current audit (business) date so reports tie to operator's day
+      const { data: auditDateData } = await supabase.rpc("get_venue_audit_date", { _venue_id: venueId });
+      const auditDate = (auditDateData as string | null) || new Date().toISOString().slice(0, 10);
+
       const { error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -182,10 +187,12 @@ const CheckoutPanel = ({
           venue_id: venueId,
           table_id: tableId,
           total: total + tipAmount,
+          gratuity_amount: tipAmount,
+          audit_date: auditDate,
           status: "received" as const,
           customer_id: authUserId,
           customer_notes: tipAmount > 0 ? `Tip: $${tipAmount.toFixed(2)}` : null,
-        });
+        } as any);
 
       if (orderError) throw orderError;
 

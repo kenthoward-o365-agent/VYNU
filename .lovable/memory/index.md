@@ -6,6 +6,7 @@ Dark sidebar operator UI. Primary indigo #1B3A5C, accent gold #C9A84C, bg ivory 
 Lovable Cloud backend. Pay-per-order model. Chat + TikTok feed for consumer AI.
 QR codes are permanent, printed as stickers — never regenerate URLs.
 OrdrPayments is Ordrup's built-in PayFac — venues don't need third-party payment credentials.
+Diners only sign up/in via consumer QR flow — operator /auth is sign-in only, never self-serve venue creation.
 
 ## Memories
 - [Product vision](mem://features/vision) — Full product vision and competitive positioning
@@ -13,3 +14,4 @@ OrdrPayments is Ordrup's built-in PayFac — venues don't need third-party payme
 - [Phase plan](mem://features/phases) — Phase 1 operator dashboard, Phase 2 consumer mobile
 - [QR codes permanent](mem://constraints/qr-codes-permanent) — QR codes use stable UUIDs, never expire, printed as stickers
 - [Brand colors](mem://design/brand-colors) — Ordrup brand: Ai indigo #1B3A5C, Kinpaku gold #C9A84C, Sumi #1A1A1A, Shiroi #F8F5ED
+- [Gratuities](mem://features/gratuities) — Tips stored as orders.gratuity_amount, excluded from taxable base, reported by audit_date

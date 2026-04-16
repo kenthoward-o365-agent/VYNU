@@ -806,9 +806,11 @@ export type Database = {
       }
       orders: {
         Row: {
+          audit_date: string | null
           created_at: string
           customer_id: string | null
           customer_notes: string | null
+          gratuity_amount: number
           id: string
           pos_order_id: string | null
           status: Database["public"]["Enums"]["order_status"]
@@ -818,9 +820,11 @@ export type Database = {
           venue_id: string
         }
         Insert: {
+          audit_date?: string | null
           created_at?: string
           customer_id?: string | null
           customer_notes?: string | null
+          gratuity_amount?: number
           id?: string
           pos_order_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -830,9 +834,11 @@ export type Database = {
           venue_id: string
         }
         Update: {
+          audit_date?: string | null
           created_at?: string
           customer_id?: string | null
           customer_notes?: string | null
+          gratuity_amount?: number
           id?: string
           pos_order_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -1708,6 +1714,7 @@ export type Database = {
       }
       generate_site_id: { Args: never; Returns: string }
       get_user_diner_profile_id: { Args: never; Returns: string }
+      get_venue_audit_date: { Args: { _venue_id: string }; Returns: string }
       get_venue_payment_active: {
         Args: { _venue_id: string }
         Returns: {
