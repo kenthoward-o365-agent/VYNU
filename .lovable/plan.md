@@ -1,51 +1,47 @@
 
 
-# Expose POS Identifiers as Editable Fields
+# Landing Page Editor — Hero Image + Loyalty CTA Mode
 
 ## Overview
 
-Add editable POS ID and PLU fields to menu items, modifiers, and modifier categories in the Menu Builder and Modifiers pages. These fields allow venue managers to manually map their items to external POS records -- useful during initial setup, troubleshooting, or when full automated sync isn't available.
+Two enhancements to the Landing Page Editor:
 
-## Database Changes
+1. **Hero section**: Add an optional hero image (URL) that displays as a full-width background image behind the title/subtitle. When set, replaces the emoji logo and solid color with the image.
 
-Add missing POS columns to modifiers and related tables:
+2. **Loyalty CTA section**: Add a `variant` toggle ("text" or "image") so the CTA can either be the current text card or an image-based banner with an optional overlay heading.
 
-```sql
-ALTER TABLE public.modifiers ADD COLUMN pos_id text;
-ALTER TABLE public.modifiers ADD COLUMN plu text;
-ALTER TABLE public.modifier_categories ADD COLUMN pos_id text;
-ALTER TABLE public.orders ADD COLUMN pos_order_id text;
-ALTER TABLE public.tables ADD COLUMN pos_table_id text;
-```
+## Changes
 
-## Frontend Changes
+### 1. Types (`src/components/landing-editor/types.ts`)
 
-### 1. Menu Builder item edit dialog
+**HeroSection** — add `heroImageUrl?: string`. When set, renders as a full-width background image instead of emoji + solid color.
 
-Add a collapsible "POS Integration" section at the bottom of the item add/edit form with:
-- **PLU** (text input) -- Product Lookup Unit code
-- **POS ID** (text input) -- external system identifier
+**LoyaltyCTASection** — add `variant: "text" | "image"` and `imageUrl?: string`. Default variant is `"text"` (backward compatible). When `"image"`, renders the image with heading overlaid.
 
-These fields are always visible (not just in POS mode) so managers can pre-populate mappings before switching to POS sync. The form state and save logic will include `plu` and `pos_id`.
+### 2. Section Edit Panel (`src/components/landing-editor/SectionEditPanel.tsx`)
 
-### 2. Modifiers page
+**Hero**: Add an "Hero Image URL" input field. When populated, the emoji field becomes optional/hidden. Add a note: "Leave empty to use emoji logo instead."
 
-Add `pos_id` and `plu` fields to the modifier edit dialog, and `pos_id` to the modifier category edit flow. Same collapsible "POS Integration" section pattern.
+**Loyalty CTA**: Add a toggle/select for variant (Text / Image). When "image" is selected, show an "Image URL" input. The heading and description fields remain for overlay text.
 
-### 3. Tables page
+### 3. Renderer (`src/components/landing-editor/LandingSectionRenderer.tsx`)
 
-Add a `pos_table_id` text field to the table edit dialog so venues can map tables to POS terminal/table numbers.
+**Hero**: If `heroImageUrl` is set, render the section with `backgroundImage` CSS, a dark overlay gradient, and the title/subtitle on top. Hide the emoji logo box.
 
-### 4. Menu Builder item cards (POS mode)
+**Loyalty CTA**: If `variant === "image"` and `imageUrl` is set, render the image as background with the heading overlaid. Otherwise render the existing text card.
 
-When `isPosMode` is true, show the PLU as a small badge on each item card (already partially done -- this ensures the value is current after manual edits).
+### 4. Default Section Factory (`types.ts` — `createDefaultSection`)
+
+- Hero: add `heroImageUrl: ""` to default
+- Loyalty CTA: add `variant: "text"` and `imageUrl: ""` to default
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| Migration SQL | Add `pos_id`, `plu` to modifiers; `pos_id` to modifier_categories; `pos_order_id` to orders; `pos_table_id` to tables |
-| `src/pages/MenuBuilder.tsx` | Add PLU + POS ID fields to item form, include in save/update |
-| `src/pages/Modifiers.tsx` | Add POS ID + PLU fields to modifier edit, POS ID to category edit |
-| `src/pages/Tables.tsx` | Add POS Table ID field to table edit dialog |
+| `src/components/landing-editor/types.ts` | Add `heroImageUrl` to HeroSection, `variant` + `imageUrl` to LoyaltyCTASection |
+| `src/components/landing-editor/SectionEditPanel.tsx` | Add image URL field for hero, variant toggle + image URL for loyalty CTA |
+| `src/components/landing-editor/LandingSectionRenderer.tsx` | Conditional rendering for hero image bg and loyalty CTA image variant |
+
+No database changes needed — section data is stored as JSON in `landing_page_html`.
 
