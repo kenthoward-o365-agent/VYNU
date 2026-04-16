@@ -153,7 +153,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     const found = venues.find((v) => v.id === venueId);
     if (found) {
       setVenue(found);
-      setVenueRole(staffRolesMap[venueId] || null);
+      setVenueRole(staffRolesMap[venueId] || (isTablessAdmin ? "owner" : null));
       localStorage.setItem("tabless_active_venue", venueId);
       if (found.group_id) {
         const g = groups.find((gr) => gr.id === found.group_id);

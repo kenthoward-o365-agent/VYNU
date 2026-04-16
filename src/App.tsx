@@ -40,6 +40,7 @@ const queryClient = new QueryClient();
 function AppRoutes() {
   const { user, loading: authLoading } = useAuth();
   const { venue, loading: venueLoading, isTablessAdmin } = useVenue();
+  const hasVenueContext = !!venue;
 
   if (authLoading || venueLoading) {
     return (
@@ -68,13 +69,13 @@ function AppRoutes() {
     );
   }
 
-  const defaultRoute = isTablessAdmin ? "/admin/dashboard" : "/dashboard";
+  const defaultRoute = hasVenueContext ? "/dashboard" : isTablessAdmin ? "/admin/dashboard" : "/dashboard";
 
   return (
     <DashboardLayout>
       <Routes>
         <Route path="/" element={<Navigate to={defaultRoute} replace />} />
-        <Route path="/dashboard" element={isTablessAdmin ? <Navigate to="/admin/dashboard" replace /> : <Dashboard />} />
+        <Route path="/dashboard" element={hasVenueContext ? <Dashboard /> : isTablessAdmin ? <Navigate to="/admin/dashboard" replace /> : <Dashboard />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/menu" element={<MenuBuilder />} />
         <Route path="/modifiers" element={<Modifiers />} />
