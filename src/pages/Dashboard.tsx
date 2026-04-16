@@ -112,7 +112,7 @@ export default function Dashboard() {
       </div>
 
       {/* Financial KPIs - compact row */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
         <Card className="shadow-sm">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
@@ -152,6 +152,17 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-pink-500/10 flex items-center justify-center shrink-0">
+              <DollarSign className="h-4 w-4 text-pink-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground truncate">Gratuities</p>
+              <p className="text-lg font-bold text-foreground">${stats.gratuities.toFixed(2)}</p>
             </div>
           </CardContent>
         </Card>
