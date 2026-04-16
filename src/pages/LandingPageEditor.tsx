@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { useVenue } from "@/contexts/VenueContext";
@@ -38,9 +38,17 @@ export default function LandingPageEditor() {
   const { venue, refetch } = useVenue();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
-  const [sections, setSections] = useState<LandingSection[]>(() =>
-    parseSections(venue?.landing_page_html)
-  );
+  const [sections, setSections] = useState<LandingSection[]>([]);
+  const initialLoadDone = useRef(false);
+
+  useEffect(() => {
+    if (venue?.landing_page_html && !initialLoadDone.current) {
+      setSections(parseSections(venue.landing_page_html));
+      initialLoadDone.current = true;
+    } else if (!venue && !initialLoadDone.current) {
+      setSections(parseSections(null));
+    }
+  }, [venue?.landing_page_html]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
 
