@@ -9,8 +9,6 @@ import { VenueProvider, useVenue } from "@/contexts/VenueContext";
 import { AuditDateProvider } from "@/contexts/AuditDateContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import Auth from "@/pages/Auth";
-import Onboarding from "@/pages/Onboarding";
-import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Dashboard from "@/pages/Dashboard";
 import MenuBuilder from "@/pages/MenuBuilder";
