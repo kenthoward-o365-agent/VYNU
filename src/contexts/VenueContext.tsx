@@ -19,6 +19,7 @@ interface Venue {
   settings: any;
   is_active: boolean | null;
   group_id: string | null;
+  landing_page_html: string | null;
 }
 
 interface VenueGroup {
