@@ -27,15 +27,55 @@ function tryParseJsonSections(raw: string): LandingSection[] | null {
   return null;
 }
 
+function InlineActions({ onStart, onSignup, onSignin }: { onStart: () => void; onSignup: () => void; onSignin: () => void }) {
+  return (
+    <div className="px-6 py-6">
+      <div className="max-w-xs mx-auto space-y-3">
+        <Button onClick={onStart} size="lg" className="w-full h-12 text-sm rounded-2xl">
+          Continue as Guest
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full h-12 text-sm rounded-2xl border-primary/30 text-primary hover:bg-primary/10"
+          onClick={onSignup}
+        >
+          <UserPlus className="h-4 w-4 mr-2" />
+          Sign up & earn rewards
+        </Button>
+        <Button
+          variant="ghost"
+          className="w-full h-12 text-sm rounded-2xl text-muted-foreground hover:text-primary"
+          onClick={onSignin}
+        >
+          <LogIn className="h-4 w-4 mr-2" />
+          Already have an account? Sign in
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: VenueLandingProps) => {
   if (venue.landing_page_html) {
     const sections = tryParseJsonSections(venue.landing_page_html);
 
     if (sections) {
+      // Filter out table-display — it now shows on the menu page
+      const filteredSections = sections.filter(s => s.type !== "table-display");
+      // Find hero index to inject action buttons after it
+      const heroIndex = filteredSections.findIndex(s => s.type === "hero");
+
       return (
         <div className="min-h-screen relative">
-          <LandingSectionRenderer sections={sections} tableNumber={tableNumber} />
-          <FloatingActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />
+          <LandingSectionRenderer
+            sections={filteredSections}
+            tableNumber={tableNumber}
+            inlineActionsAfterIndex={heroIndex >= 0 ? heroIndex : 0}
+            inlineActions={<InlineActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />}
+          />
+          <p className="text-center text-white/40 text-xs py-4">
+            Powered by <span className="font-semibold text-white/60">Ordrup</span>
+          </p>
         </div>
       );
     }
@@ -45,7 +85,9 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: Venue
     return (
       <div className="min-h-screen relative">
         <div dangerouslySetInnerHTML={{ __html: processedHtml }} />
-        <FloatingActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />
+        <div className="px-6 py-6">
+          <InlineActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />
+        </div>
       </div>
     );
   }
@@ -70,63 +112,23 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: Venue
           {[venue.address, venue.city].filter(Boolean).join(", ")}
         </p>
       )}
-      <div className="bg-card rounded-2xl border border-border p-6 mb-6 w-full max-w-xs">
-        <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Your Table</p>
-        <p className="text-4xl font-bold text-primary">{tableNumber}</p>
-      </div>
-      <div className="bg-accent/50 rounded-2xl border border-primary/20 p-4 mb-6 w-full max-w-xs">
+
+      <InlineActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />
+
+      <div className="bg-accent/50 rounded-2xl border border-primary/20 p-4 mt-6 w-full max-w-xs">
         <div className="flex items-center gap-2 mb-2">
           <Gift className="h-5 w-5 text-primary" />
           <p className="text-sm font-semibold text-foreground">Earn rewards</p>
         </div>
-        <p className="text-xs text-muted-foreground mb-3">
+        <p className="text-xs text-muted-foreground">
           Sign up for our loyalty program and earn points with every order.
         </p>
-        <Button variant="outline" className="w-full h-12 text-sm rounded-2xl border-primary/30 text-primary hover:bg-primary/10" onClick={onSignup}>
-          <UserPlus className="h-4 w-4 mr-2" />
-          Sign up & earn rewards
-        </Button>
-        <Button variant="ghost" className="w-full h-12 text-sm rounded-2xl text-muted-foreground hover:text-primary" onClick={onSignin}>
-          <LogIn className="h-4 w-4 mr-2" />
-          Already have an account? Sign in
-        </Button>
       </div>
-      <Button onClick={onStart} size="lg" className="w-full max-w-xs h-12 text-sm rounded-2xl">
-        Continue as Guest
-      </Button>
       <p className="text-muted-foreground text-xs mt-4">
         No account needed · Powered by <span className="font-semibold text-primary">Ordrup</span>
       </p>
     </div>
   );
 };
-
-function FloatingActions({ onStart, onSignup, onSignin }: { onStart: () => void; onSignup: () => void; onSignin: () => void }) {
-  return (
-    <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-      <div className="max-w-xs mx-auto space-y-2">
-        <Button onClick={onStart} size="lg" className="w-full h-12 text-sm rounded-2xl">
-          Continue as Guest
-        </Button>
-        <Button
-          variant="outline"
-          className="w-full h-12 text-sm rounded-2xl border-primary/30 text-primary hover:bg-primary/10"
-          onClick={onSignup}
-        >
-          <UserPlus className="h-4 w-4 mr-2" />
-          Sign up & earn rewards
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full h-12 text-sm rounded-2xl text-muted-foreground hover:text-primary"
-          onClick={onSignin}
-        >
-          <LogIn className="h-4 w-4 mr-2" />
-          Already have an account? Sign in
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 export default VenueLanding;

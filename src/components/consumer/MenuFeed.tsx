@@ -28,6 +28,7 @@ interface MenuFeedProps {
   items: MenuItem[];
   categories: MenuCategory[];
   onAddToCart: (item: MenuItem) => void;
+  tableNumber?: string;
 }
 
 const CategoryChips = ({
