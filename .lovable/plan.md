@@ -1,54 +1,76 @@
 
-## Problem
 
-The current `/auth` flow is a single shared screen for both venue operators and diners. When anyone hits `Auth.tsx` and clicks "New venue? Create an account", they sign up via `signUp()` which creates an `auth.users` row. Because they have no `venue_staff` record, `App.tsx` then routes them to `Onboarding.tsx`, which forces them to create a venue. That's wrong for diners.
+## Goal
 
-Diners should only ever sign up / sign in inside the **consumer mobile flow** (the `/order/:venueId/:tableId` route — `ConsumerOrder.tsx`, which uses `DinerSignup.tsx`). They must never see the operator `Auth.tsx` or `Onboarding.tsx`.
+Add a **Gratuities Report** to DayEnd > Reports filterable by audit date, plus a **live Gratuities tile** on the Dashboard that contributes to net revenue calculations.
 
-## Root cause
+## Current state
 
-`src/pages/Auth.tsx` exposes a generic "Create an account" toggle that is reachable by anyone landing on the operator app URL. There is no separation between:
-- Operator/staff accounts (created by an admin via `admin-create-user` edge function, or by an authorized owner)
-- Diner accounts (created only inside the consumer order flow)
+- Tip is only persisted as free text inside `orders.customer_notes` (e.g. `"Tip: $4.50"`). Not queryable, not reportable.
+- `orders.total` already includes the tip (subtotal + tip).
+- Dashboard computes `grossRevenue = sum(orders.total)` then derives `netRevenue` via `calculateTaxes`. Tip is currently being treated as taxable revenue, which is wrong.
+- Reporting page just shows "Reports will be available here soon."
 
 ## Plan
 
-### 1. Lock `/auth` to sign-in only (operator app)
-In `src/pages/Auth.tsx`:
-- Remove the "New venue? Create an account" toggle and all signup UI (display name field, isSignUp state, signUp call).
-- Keep only: Site ID + email + password sign-in.
-- Replace the toggle with a small note: "Diner? Scan your table's QR code to order." and a "Forgot password?" link.
+### 1. Database — make gratuity a first-class field
 
-This means no one can accidentally self-register as a venue from the operator URL.
+Add to `orders`:
+- `gratuity_amount numeric NOT NULL DEFAULT 0`
+- `audit_date date` — populated at order creation from the venue's current audit date so reports tie to the operator's business day, not UTC wall-clock
 
-### 2. Remove the public `Onboarding` route as a self-serve path
-In `src/App.tsx`:
-- Currently, any authenticated user without a venue is auto-routed to `Onboarding`. That's the trap.
-- Change the logic: if a logged-in user has no `venue_staff` record AND is not a Tab-Less admin AND is not a diner with a `diner_profiles` row, sign them out and show an "Account not provisioned — contact your venue administrator" message on `/auth`.
-- Keep `Onboarding.tsx` in the codebase but only reachable via an explicit admin-driven invite flow (future work — out of scope for this fix). For now, it just won't be auto-rendered.
+Backfill existing rows: `gratuity_amount = 0`, `audit_date = created_at::date`. Acceptable since tips weren't tracked before.
 
-### 3. Confirm diner signup stays inside the consumer flow
-No change required: `DinerSignup.tsx` is already only mounted from `ConsumerOrder.tsx` (`/order/:venueId/:tableId`), which is a public route outside the `AuthProvider` operator stack. Diners signing up there get a `diner_profiles` row, not a `venue_staff` row.
+Add a small public RPC `get_venue_audit_date(_venue_id uuid)` so the anonymous checkout flow can stamp the correct audit date without needing read access to `venue_audit_dates`.
 
-### 4. Returning diners on mobile
-Returning diners sign back in through the same consumer flow on `/order/:venueId/:tableId` — `DinerSignup.tsx` already handles both signup and sign-in for diners. Confirm it has a "returning diner" sign-in path; if missing, add a sign-in toggle inside `DinerSignup.tsx`.
+### 2. Checkout — write structured gratuity
 
-I'll need to view `DinerSignup.tsx` during implementation to verify the returning-diner sign-in already exists. If it doesn't, I'll add a simple email+password sign-in toggle there.
+In `src/components/consumer/CheckoutPanel.tsx`:
+- On order insert, set `gratuity_amount: tipAmount` and `audit_date: <fetched audit date>`.
+- Keep `total = subtotal + tip` (no change to payment flow).
+- Keep the `customer_notes` "Tip: $X" line for backwards visibility.
+
+### 3. Dashboard — Gratuities tile + corrected net revenue
+
+In `src/pages/Dashboard.tsx`:
+- Pull `gratuity_amount` alongside `total`.
+- New KPI tile **Gratuities** = `sum(gratuity_amount)` for the period.
+- Fix net/gross so tips are excluded from taxable revenue:
+  ```
+  taxableTotal = sum(total) - sum(gratuity)
+  { subtotalExTax, totalTax } = calculateTaxes(taxableTotal, taxes)
+  grossRevenue = taxableTotal      // tips no longer inflate gross
+  netRevenue   = subtotalExTax
+  gratuities   = sum(gratuity)
+  avgOrder     = taxableTotal / billable.length
+  ```
+
+### 4. Reporting page — Gratuities Report
+
+In `src/pages/Reporting.tsx`, replace the placeholder card with a **Gratuities Report** card:
+- Date selector using existing `AuditDatePicker` (Today / Yesterday / Last 7 days / Custom), default to current `auditDate`.
+- Query `orders` by `audit_date` range, status ≠ `cancelled`.
+- Summary: total tips, tip count, average tip, tips as % of taxable revenue.
+- Detail table: audit date, order id (short), table, time, subtotal (ex tip), tip, tip %.
+- Client-side **Export CSV** button.
+
+Each report (Gratuities, future Tax/Sales reports) is its own card so we can add more later without restructuring.
+
+### 5. Memory
+
+Add `mem://features/gratuities` describing: gratuity is a structured `orders` column, excluded from taxable base, reported by `audit_date`.
 
 ## Files to change
 
-- `src/pages/Auth.tsx` — strip signup UI, sign-in only
-- `src/App.tsx` — remove auto-route to `Onboarding`; show "not provisioned" state instead
-- `src/components/consumer/DinerSignup.tsx` — verify/ensure returning-diner sign-in exists (read first, then decide)
+- New migration: add `gratuity_amount` + `audit_date` columns to `orders`; add public RPC for audit date lookup
+- `src/components/consumer/CheckoutPanel.tsx`
+- `src/pages/Dashboard.tsx`
+- `src/pages/Reporting.tsx`
+- `mem://features/gratuities` (+ `mem://index.md` update)
 
-## Out of scope (future)
+## Out of scope
 
-- Admin-invite flow to provision new venue owners (replacement for self-serve onboarding)
-- Removing `Onboarding.tsx` entirely
+- Splitting tips across staff
+- Reconciling tips against payment provider settlement
+- Other report types (Tax, Sales by Category) — added later as additional cards
 
-## Expected result
-
-- Operator URL (`/auth`) only allows sign-in with Site ID + email + password
-- No path from the operator app creates a venue accidentally
-- Diners only ever sign up / sign in via the QR-code consumer flow on mobile
-- Returning diners sign back in through the same consumer mobile flow
