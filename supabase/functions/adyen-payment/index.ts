@@ -114,13 +114,23 @@ Deno.serve(async (req) => {
 
     if (!venue_id) return json({ error: "venue_id required" }, 400);
 
-    // Fetch venue payment config
-    const { data: config } = await adminClient
+    // Fetch venue payment config — try "ordrpayments" first, fall back to "adyen"
+    let { data: config } = await adminClient
       .from("venue_payment_config")
       .select("*")
       .eq("venue_id", venue_id)
-      .eq("provider", "adyen")
+      .eq("provider", "ordrpayments")
       .maybeSingle();
+
+    if (!config) {
+      const fallback = await adminClient
+        .from("venue_payment_config")
+        .select("*")
+        .eq("venue_id", venue_id)
+        .eq("provider", "adyen")
+        .maybeSingle();
+      config = fallback.data;
+    }
 
     if (!config) {
       return json({ error: "No payment configuration found for this venue" }, 404);
