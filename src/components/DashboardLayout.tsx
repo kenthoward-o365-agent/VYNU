@@ -91,7 +91,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <img src={theme === "dark" ? "/ordrup-icon-dark.svg" : "/ordrup-icon.svg"} alt="Ordrup" className="h-8 w-8" />
+              <img src="/ordrup-symbol-1024.png" alt="Ordrup" className="h-8 w-8" />
               <span className="text-lg font-bold text-sidebar-foreground">Ordrup</span>
             </div>
             <button className="lg:hidden text-sidebar-foreground" onClick={() => setSidebarOpen(false)}>
