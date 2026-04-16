@@ -1,44 +1,75 @@
 
+# Fix the mobile preview properly without more paid test loops
 
-# Fix QR Code URLs and Enlarge Dialog Layout
+## What the issue actually is
 
-## Problem Summary
+You are right: the mobile preview is still broken, and I should not have kept reporting it as fixed.
 
-1. **QR codes still point to old domain**: All 12 Morris House tables have `qr_code` values stored as `https://sippaai.lovable.app/order/...`. The code constant `PUBLISHED_BASE_URL` is also still `"https://sippaai.lovable.app"`. The published URL is now `https://ordrup.lovable.app`.
+The likely root problem is that the Preview button is **not opening the real live QR destination**. In `src/pages/Tables.tsx`, it builds a **relative preview URL**:
 
-2. **Enlarge dialog overflow**: The QR zoom dialog (`max-w-sm`) has three buttons (Download SVG, Print, Preview) in a single `flex gap-2` row that bleeds outside the dialog on narrower viewports.
-
-## Changes
-
-### 1. Update `PUBLISHED_BASE_URL` in `src/pages/Tables.tsx`
-Change line 16 from `"https://sippaai.lovable.app"` to `"https://ordrup.lovable.app"`.
-
-### 2. Migrate existing QR code URLs in the database
-Run a data update (via the insert tool) to replace the old domain in all stored `qr_code` values:
-```sql
-UPDATE tables
-SET qr_code = REPLACE(qr_code, 'https://sippaai.lovable.app', 'https://ordrup.lovable.app')
-WHERE qr_code LIKE '%sippaai.lovable.app%';
+```ts
+/order/{venueId}/{tableId}
 ```
 
-### 3. Fix Enlarge dialog button overflow
-In the QR zoom dialog (lines 239-249 of `Tables.tsx`), change the three-button row from `flex gap-2` to a stacked layout:
-```tsx
-<div className="flex flex-col gap-2 mt-2">
-  <div className="flex gap-2">
-    <Button variant="outline" className="flex-1" ...>Download SVG</Button>
-    <Button variant="outline" className="flex-1" ...>Print</Button>
-  </div>
-  <Button className="w-full" ...>Preview</Button>
-</div>
+That loads inside the Lovable preview environment, not the live published app. So even though the QR codes themselves now point at `https://ordrup.lovable.app/...`, the in-app “Preview” modal is still trying to render the route through the sandbox/preview stack, which is exactly where these auth/proxy/iframe issues can happen.
+
+So the previous `__lovable_token` workaround addressed the wrong layer.
+
+## Plan
+
+### 1. Change the Preview modal to use the actual live QR URL
+In `src/pages/Tables.tsx`:
+
+- stop using the current `getPreviewUrl()` relative path for the iframe
+- use `table.qr_code` directly when it exists
+- otherwise fall back to:
+  ```ts
+  `${PUBLISHED_BASE_URL}/order/${venue.id}/${table.id}`
+  ```
+
+That makes the Preview button match the real sticker destination.
+
+### 2. Remove the preview-token logic
+Delete the `__lovable_token` URL-building logic from `getPreviewUrl()` because it is preview-environment specific and not the real path diners use.
+
+### 3. Make the preview resilient instead of pretending it works
+Still in `src/pages/Tables.tsx`:
+
+- keep the iframe preview for convenience
+- add a clear secondary action like **Open live page**
+- show the full live URL in the modal
+
+That way, even if an iframe is blocked or behaves inconsistently in the editor, the user can open the actual destination directly from the modal.
+
+### 4. Keep the layout fix in place
+The stacked button layout in the Enlarge dialog was the right fix and should stay.
+
+### 5. Stop using browser-credit verification for this issue
+I will not rely on browser automation for this fix unless you explicitly ask again. The next implementation should be code-only and based on the actual route flow, not on another expensive “looks fixed in my test” claim.
+
+## Files to update
+
+- `src/pages/Tables.tsx`
+
+## No backend migration needed
+This is now a frontend preview-path issue, not another QR migration issue. Your stored QR URLs were already moved to the live domain.
+
+## Technical detail
+
+Current broken behavior:
+```text
+Preview button -> /order/{venueId}/{tableId} inside Lovable preview
 ```
 
-### 4. Update memory files
-- Update `mem://constraints/qr-codes-permanent` to reflect the new URL format (`https://ordrup.lovable.app/order/...`).
-- Update `mem://index.md` core section if needed.
+Correct behavior:
+```text
+Preview button -> table.qr_code
+             -> https://ordrup.lovable.app/order/{venueId}/{tableId}
+```
 
-## Impact
-- All existing Morris House QR codes will point to the new domain
-- New tables added in the future will also use the correct domain
-- The Enlarge dialog buttons will no longer overflow
+## Expected result after implementation
 
+- Preview opens the same destination as the printed QR codes
+- No dependency on preview session tokens
+- No false positive “fixed” result based on sandbox-only behavior
+- If iframe rendering is flaky, the modal still gives a reliable live-page open action
