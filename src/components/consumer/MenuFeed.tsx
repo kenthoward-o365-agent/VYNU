@@ -251,7 +251,7 @@ const MobileCardFeed = ({
 };
 
 /* ── Main MenuFeed ── */
-const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
+const MenuFeed = ({ items, categories, onAddToCart, tableNumber }: MenuFeedProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -309,6 +309,13 @@ const MenuFeed = ({ items, categories, onAddToCart }: MenuFeedProps) => {
   // List view for all screen sizes
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] relative overflow-hidden">
+      {tableNumber && (
+        <div className="flex items-center justify-center gap-2 py-2 px-4 shrink-0">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold border border-primary/20">
+            Table {tableNumber}
+          </span>
+        </div>
+      )}
       <CategoryChips categories={categories} activeCategory={activeCategory} onSelect={handleCategorySelect} />
 
       {/* Dietary filter row */}
