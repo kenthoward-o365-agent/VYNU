@@ -22,6 +22,11 @@ export interface HeroSection {
 export interface TableDisplaySection {
   id: string;
   type: "table-display";
+  label?: string;
+  numberColor?: string;
+  bgColor?: string;
+  borderColor?: string;
+  labelColor?: string;
 }
 
 export interface FeaturedItem {
@@ -44,6 +49,7 @@ export interface LoyaltyCTASection {
   description: string;
   variant?: "text" | "image";
   imageUrl?: string;
+  icon?: string;
 }
 
 export interface HoursLocationSection {
@@ -119,7 +125,7 @@ export function createDefaultSection(type: SectionType): LandingSection {
     case "hero":
       return { id, type, title: "Welcome", subtitle: "Scan, order, enjoy — no app needed", bgColor: "#1a1a2e", logoEmoji: "🍽️", heroImageUrl: "" };
     case "table-display":
-      return { id, type };
+      return { id, type, label: "Your Table", numberColor: "#7c3aed", bgColor: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.15)", labelColor: "rgba(255,255,255,0.5)" };
     case "featured-items":
       return {
         id, type, title: "Today's Specials",
@@ -129,7 +135,7 @@ export function createDefaultSection(type: SectionType): LandingSection {
         ],
       };
     case "loyalty-cta":
-      return { id, type, heading: "Earn Rewards", description: "Sign up for our loyalty program and earn points with every order.", variant: "text" as const, imageUrl: "" };
+      return { id, type, heading: "Earn Rewards", description: "Sign up for our loyalty program and earn points with every order.", variant: "text" as const, imageUrl: "", icon: "🎁" };
     case "hours-location":
       return { id, type, address: "123 Main Street, Sydney NSW 2000", hours: "Mon-Fri 11am-10pm · Sat-Sun 9am-11pm" };
     case "social-links":

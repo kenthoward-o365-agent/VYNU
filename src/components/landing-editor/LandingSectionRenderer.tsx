@@ -47,9 +47,9 @@ function RenderSection({ section, tableNumber }: { section: LandingSection; tabl
     case "table-display":
       return (
         <div className="flex justify-center px-6 py-6">
-          <div className="rounded-2xl px-8 py-6 text-center border border-white/15 min-w-[140px] md:min-w-[200px]" style={{ background: "rgba(255,255,255,0.1)" }}>
-            <p className="text-[0.65rem] md:text-xs uppercase tracking-widest text-white/50 mb-1">Your Table</p>
-            <p className="text-4xl md:text-6xl font-bold text-[#7c3aed]">{tableNumber}</p>
+          <div className="rounded-2xl px-8 py-6 text-center min-w-[140px] md:min-w-[200px]" style={{ background: section.bgColor ?? "rgba(255,255,255,0.1)", border: `1px solid ${section.borderColor ?? "rgba(255,255,255,0.15)"}` }}>
+            <p className="text-[0.65rem] md:text-xs uppercase tracking-widest mb-1" style={{ color: section.labelColor ?? "rgba(255,255,255,0.5)" }}>{section.label ?? "Your Table"}</p>
+            <p className="text-4xl md:text-6xl font-bold" style={{ color: section.numberColor ?? "#7c3aed" }}>{tableNumber}</p>
           </div>
         </div>
       );
@@ -80,7 +80,7 @@ function RenderSection({ section, tableNumber }: { section: LandingSection; tabl
             >
               <div className="absolute inset-0 bg-black/40" />
               <div className="relative z-10 p-5 md:p-8">
-                <p className="font-semibold text-base md:text-xl mb-2">🎁 {section.heading}</p>
+                <p className="font-semibold text-base md:text-xl mb-2">{(() => { const icon = section.icon !== undefined ? section.icon : "🎁"; return icon ? `${icon} ` : ""; })()}{section.heading}</p>
                 <p className="text-sm md:text-base text-white/80">{section.description}</p>
               </div>
             </div>
@@ -90,7 +90,7 @@ function RenderSection({ section, tableNumber }: { section: LandingSection; tabl
       return (
         <div className="flex justify-center px-6 py-6">
           <div className="rounded-2xl p-5 md:p-8 w-full max-w-xs md:max-w-md text-center border border-[#7c3aed]/30" style={{ background: "rgba(124,58,237,0.15)" }}>
-            <p className="font-semibold text-base md:text-xl mb-2">🎁 {section.heading}</p>
+            <p className="font-semibold text-base md:text-xl mb-2">{(() => { const icon = section.icon !== undefined ? section.icon : "🎁"; return icon ? `${icon} ` : ""; })()}{section.heading}</p>
             <p className="text-sm md:text-base text-white/70">{section.description}</p>
           </div>
         </div>

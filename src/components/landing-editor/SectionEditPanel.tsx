@@ -147,9 +147,26 @@ const SectionEditPanel = ({ section, onChange, venueId }: Props) => {
       )}
 
       {section.type === "table-display" && (
-        <p className="text-xs text-muted-foreground">
-          This section automatically shows the diner's assigned table number. No configuration needed.
-        </p>
+        <>
+          <Field label="Label Text">
+            <Input value={section.label ?? "Your Table"} onChange={(e) => update({ label: e.target.value })} placeholder="Your Table" />
+          </Field>
+          <Field label="Number Color">
+            <div className="flex gap-2">
+              <input type="color" value={section.numberColor ?? "#7c3aed"} onChange={(e) => update({ numberColor: e.target.value })} className="w-10 h-10 rounded border border-border cursor-pointer" />
+              <Input value={section.numberColor ?? "#7c3aed"} onChange={(e) => update({ numberColor: e.target.value })} className="flex-1" />
+            </div>
+          </Field>
+          <Field label="Background Color">
+            <Input value={section.bgColor ?? "rgba(255,255,255,0.1)"} onChange={(e) => update({ bgColor: e.target.value })} placeholder="rgba(255,255,255,0.1)" />
+          </Field>
+          <Field label="Border Color">
+            <Input value={section.borderColor ?? "rgba(255,255,255,0.15)"} onChange={(e) => update({ borderColor: e.target.value })} placeholder="rgba(255,255,255,0.15)" />
+          </Field>
+          <Field label="Label Color">
+            <Input value={section.labelColor ?? "rgba(255,255,255,0.5)"} onChange={(e) => update({ labelColor: e.target.value })} placeholder="rgba(255,255,255,0.5)" />
+          </Field>
+        </>
       )}
 
       {section.type === "featured-items" && (
@@ -249,6 +266,10 @@ const SectionEditPanel = ({ section, onChange, venueId }: Props) => {
               venueId={venueId}
             />
           )}
+          <Field label="Icon">
+            <Input value={section.icon ?? "🎁"} onChange={(e) => update({ icon: e.target.value })} placeholder="🎁 (leave empty to hide)" />
+            <p className="text-[0.65rem] text-muted-foreground">Emoji or text shown before heading. Leave empty to hide.</p>
+          </Field>
           <Field label="Heading">
             <Input value={section.heading} onChange={(e) => update({ heading: e.target.value })} />
           </Field>
