@@ -403,7 +403,7 @@ const ConsumerOrder = () => {
 
       {/* Main Content */}
       {tab === "feed" && chatMode !== "chat_only" && (
-        <MenuFeed items={menuItems} categories={categories} onAddToCart={addToCart} />
+        <MenuFeed items={menuItems} categories={categories} onAddToCart={addToCart} tableNumber={tableNumber || undefined} />
       )}
       {tab === "feed" && chatMode === "chat_only" && !showChat && (
         <div className="flex-1 flex items-center justify-center px-6 text-center pb-20">

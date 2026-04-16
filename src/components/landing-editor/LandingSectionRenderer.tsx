@@ -1,16 +1,23 @@
 import type { LandingSection } from "./types";
+import type { ReactNode } from "react";
 
 interface Props {
   sections: LandingSection[];
   tableNumber?: string;
+  /** Index after which to inject inline action buttons (used on consumer landing) */
+  inlineActionsAfterIndex?: number;
+  inlineActions?: ReactNode;
 }
 
-const LandingSectionRenderer = ({ sections, tableNumber = "7" }: Props) => {
+const LandingSectionRenderer = ({ sections, tableNumber = "7", inlineActionsAfterIndex, inlineActions }: Props) => {
   return (
     <div className="min-h-screen text-white font-sans" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)" }}>
       <div className="max-w-3xl mx-auto">
-        {sections.map((section) => (
-          <RenderSection key={section.id} section={section} tableNumber={tableNumber} />
+        {sections.map((section, index) => (
+          <div key={section.id}>
+            <RenderSection section={section} tableNumber={tableNumber} />
+            {inlineActions && index === inlineActionsAfterIndex && inlineActions}
+          </div>
         ))}
       </div>
     </div>
