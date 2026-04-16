@@ -33,6 +33,27 @@ export default function Tables() {
   const [form, setForm] = useState({ table_number: "", zone: "", capacity: "4", pos_table_id: "" });
   const printRef = useRef<HTMLDivElement>(null);
 
+  const getPreviewUrl = (table: Table) => {
+    if (!venue) return "";
+
+    const path = `/order/${venue.id}/${table.id}`;
+
+    if (typeof window === "undefined") {
+      return path;
+    }
+
+    const currentParams = new URLSearchParams(window.location.search);
+    const previewParams = new URLSearchParams();
+    const lovableToken = currentParams.get("__lovable_token");
+
+    if (lovableToken) {
+      previewParams.set("__lovable_token", lovableToken);
+    }
+
+    const query = previewParams.toString();
+    return query ? `${path}?${query}` : path;
+  };
+
   const fetchTables = async () => {
     if (!venue) return;
     const { data } = await supabase.from("tables").select("*").eq("venue_id", venue.id).order("table_number");
@@ -247,7 +268,7 @@ export default function Tables() {
             <MobilePreviewFrame>
               {venue && previewTable && (
                 <iframe
-                  src={`/order/${venue.id}/${previewTable.id}`}
+                  src={getPreviewUrl(previewTable)}
                   className="w-full border-0"
                   style={{ height: "100%" }}
                   title={`Mobile preview for table ${previewTable.table_number}`}
