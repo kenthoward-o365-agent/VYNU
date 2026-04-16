@@ -1,41 +1,39 @@
 
 
-# Mobile Web App Preview from QR Code Click
+# Fix: Preview Button Overflow & Dialog Not Working
 
-## Overview
+## Problems
 
-Add a "Preview" button to each table card (and the QR zoom dialog) that opens a dialog containing the consumer-facing mobile web app rendered inside the existing `MobilePreviewFrame` component. This lets operators demo the diner experience without scanning a physical QR code.
+1. **Button overflow**: Three buttons (Download, Enlarge, Preview) in a `flex gap-2` row with `flex-1` — on narrow cards they overflow the card border.
+2. **Preview dialog closes immediately**: The `DialogContent` uses `flex-1` on the inner div but `DialogContent` isn't a flex container, so `MobilePreviewFrame` gets zero height and the iframe renders invisible / the dialog appears empty and closes.
 
-## Approach
-
-Use an **iframe** inside `MobilePreviewFrame` pointing to `/order/{venueId}/{tableId}`. This is the simplest approach — the consumer app already works as a standalone route, so embedding it in an iframe gives a fully functional, live preview.
-
-## Changes
+## Fix
 
 ### `src/pages/Tables.tsx`
 
-1. Add a new state `previewTable` (similar to `qrDialogTable`) to track which table is being previewed
-2. Add a "Preview" button to each table card (e.g. with a `Smartphone` icon)
-3. Add a "Preview" button in the QR zoom dialog
-4. Add a new `Dialog` that renders `MobilePreviewFrame` with an iframe inside:
-   ```
-   <MobilePreviewFrame>
-     <iframe
-       src="/order/{venue.id}/{table.id}"
-       className="w-full h-full border-0"
-       title="Mobile Preview"
-     />
-   </MobilePreviewFrame>
-   ```
-5. Make the dialog wider (`max-w-lg`) to accommodate the phone frame
+**Card buttons** — Stack into two rows: first row for Download + Enlarge, second row for Preview (full width). This prevents overflow on narrow cards.
 
-### No other files need changes
+```
+<div className="space-y-2">
+  <div className="flex gap-2">
+    <Button ...>Download</Button>
+    <Button ...>Enlarge</Button>
+  </div>
+  <Button variant="default" size="sm" className="w-full text-xs" ...>
+    <Smartphone /> Preview
+  </Button>
+</div>
+```
 
-The `MobilePreviewFrame` component already exists and handles phone/tablet device switching. The `ConsumerOrder` page already works as a standalone route.
+**Preview dialog** — Add `flex flex-col` to `DialogContent` so `flex-1` works on the inner div, giving the iframe actual height:
+
+```
+<DialogContent className="max-w-[480px] h-[90vh] p-0 gap-0 overflow-hidden flex flex-col">
+```
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/pages/Tables.tsx` | Add preview state, preview button on cards + QR dialog, preview dialog with iframe in MobilePreviewFrame |
+| `src/pages/Tables.tsx` | Split 3-button row into 2 rows; add `flex flex-col` to preview dialog content |
 
