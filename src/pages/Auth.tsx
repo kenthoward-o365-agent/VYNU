@@ -102,9 +102,9 @@ export default function Auth() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Operator sign in</CardTitle>
+            <CardTitle>Sign in</CardTitle>
             <CardDescription>
-              Enter your Site ID and credentials to sign in
+              Sign in to your venue dashboard or OrdrUp admin console
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -119,13 +119,12 @@ export default function Auth() {
                   id="site-id"
                   name="organization"
                   autoComplete="organization"
-                  placeholder="Venue ID (e.g. 1000)"
+                  placeholder="Venue ID (e.g. 1000) — leave blank for OrdrUp staff"
                   value={siteId}
                   onChange={(e) => setSiteId(e.target.value)}
-                  required
                   className="font-mono tracking-wider"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Your venue's unique Site ID — provided by your administrator</p>
+                <p className="text-xs text-muted-foreground mt-1">Operators: enter your venue's Site ID. OrdrUp staff: leave blank.</p>
               </div>
               <Input
                 id="email"
