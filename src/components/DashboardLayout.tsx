@@ -70,9 +70,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const showGroupNav = !isTablessAdmin && isGroupAdmin;
+  const showVenueNav = !!venue;
+  const showGroupNav = showVenueNav && !isTablessAdmin && isGroupAdmin;
   const allNavItems = [
-    ...(isTablessAdmin ? [] : venueNavItems),
+    ...(showVenueNav ? venueNavItems : []),
     ...(showGroupNav ? groupNavItems : []),
     ...(isTablessAdmin ? adminNavItems : []),
   ];
@@ -99,8 +100,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </button>
           </div>
 
-          {/* Venue Switcher — hidden for platform admins */}
-          {!isTablessAdmin && (venues.length > 1 ? (
+          {showVenueNav && (venues.length > 1 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center justify-between w-full px-2 py-1.5 rounded-md text-sm bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 transition-colors">
@@ -123,7 +123,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-          {!isTablessAdmin && venueNavItems.map((item) => {
+          {showVenueNav && venueNavItems.map((item) => {
             const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners")) || (item.path === "/pricing" && location.pathname === "/menu-times") || (item.path === "/reporting" && location.pathname.startsWith("/reporting"));
             const isMenuBuilder = item.path === "/menu";
             const isDiners = item.path === "/diners";
