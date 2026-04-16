@@ -183,14 +183,16 @@ export default function Tables() {
                     <QRCodeSVG value={table.qr_code} size={120} />
                   </div>
                 )}
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => downloadQr(table)}>
-                    <Download className="h-3.5 w-3.5 mr-1" /> Download
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setQrDialogTable(table)}>
-                    <QrCode className="h-3.5 w-3.5 mr-1" /> Enlarge
-                  </Button>
-                  <Button variant="default" size="sm" className="flex-1 text-xs" onClick={() => setPreviewTable(table)}>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => downloadQr(table)}>
+                      <Download className="h-3.5 w-3.5 mr-1" /> Download
+                    </Button>
+                    <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setQrDialogTable(table)}>
+                      <QrCode className="h-3.5 w-3.5 mr-1" /> Enlarge
+                    </Button>
+                  </div>
+                  <Button variant="default" size="sm" className="w-full text-xs" onClick={() => setPreviewTable(table)}>
                     <Smartphone className="h-3.5 w-3.5 mr-1" /> Preview
                   </Button>
                 </div>
@@ -229,7 +231,7 @@ export default function Tables() {
 
       {/* Mobile preview dialog */}
       <Dialog open={!!previewTable} onOpenChange={() => setPreviewTable(null)}>
-        <DialogContent className="max-w-[480px] h-[90vh] p-0 gap-0 overflow-hidden">
+        <DialogContent className="max-w-[480px] h-[90vh] p-0 gap-0 overflow-hidden flex flex-col">
           <DialogHeader className="p-4 pb-2">
             <DialogTitle>Table {previewTable?.table_number} — Mobile Preview</DialogTitle>
           </DialogHeader>
