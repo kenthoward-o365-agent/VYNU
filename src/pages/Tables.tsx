@@ -29,6 +29,7 @@ export default function Tables() {
   const [tables, setTables] = useState<Table[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [qrDialogTable, setQrDialogTable] = useState<Table | null>(null);
+  const [previewTable, setPreviewTable] = useState<Table | null>(null);
   const [form, setForm] = useState({ table_number: "", zone: "", capacity: "4", pos_table_id: "" });
   const printRef = useRef<HTMLDivElement>(null);
 
