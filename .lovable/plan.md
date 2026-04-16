@@ -1,28 +1,36 @@
 
 
-# Fix: Payment Test Mode Not Working
+# Fix: Landing Page Editor Not Loading Saved Settings
 
 ## Root Cause
 
-Provider name mismatch between the client and the edge function:
+The `sections` state is initialized via `useState(() => parseSections(venue?.landing_page_html))`. This initializer runs **only once** when the component mounts. If the venue context hasn't finished loading yet (which is common — it's async), `venue` is `null` at mount time, so `parseSections(null)` returns the defaults.
 
-- `PaymentSettingsTab.tsx` saves config with `provider: "ordrpayments"`
-- `CheckoutPanel.tsx` queries for `provider: "ordrpayments"` — finds the config, sets `paymentEnabled = true`
-- `adyen-payment` edge function queries for `provider: "adyen"` (line 123) — finds **nothing**, returns 404: "No payment configuration found"
-
-The `PaymentSettingsTab` was rebranded from "adyen" to "ordrpayments" but the edge function was never updated.
+When `venue` later loads with the saved `landing_page_html`, the state has already been set to defaults and never updates.
 
 ## Fix
 
-### `supabase/functions/adyen-payment/index.ts`
+### `src/pages/LandingPageEditor.tsx`
 
-Change the provider filter on line 123 from `"adyen"` to `"ordrpayments"`. Also add a fallback: if no `"ordrpayments"` config is found, try `"adyen"` for backward compatibility with any legacy data.
+Add a `useEffect` that re-parses sections from `venue?.landing_page_html` when the venue loads. Use a `loaded` ref to ensure it only applies the saved data on the initial load (not after every save), so in-progress edits aren't overwritten.
+
+```typescript
+const [sections, setSections] = useState<LandingSection[]>([]);
+const initialLoadDone = useRef(false);
+
+useEffect(() => {
+  if (venue?.landing_page_html && !initialLoadDone.current) {
+    setSections(parseSections(venue.landing_page_html));
+    initialLoadDone.current = true;
+  } else if (!venue && !initialLoadDone.current) {
+    setSections(parseSections(null));
+  }
+}, [venue?.landing_page_html]);
+```
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `supabase/functions/adyen-payment/index.ts` | Query for `"ordrpayments"` provider first, fall back to `"adyen"` |
-
-No database changes needed.
+| `src/pages/LandingPageEditor.tsx` | Replace one-shot `useState` initializer with `useEffect` that waits for venue data |
 
