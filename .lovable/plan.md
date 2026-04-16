@@ -1,43 +1,54 @@
 
 
-## Goal
+## Root cause
 
-Make Site ID optional on `/auth`. If the signed-in user is a `tabless_admin`, skip the Site ID requirement entirely and let them through to `/admin/dashboard`.
+`App.tsx`'s guard `if (!venue && !isTablessAdmin) { signOut + flag "not provisioned" }` is firing **before** `VenueContext.fetchVenues` has a chance to load the user's venue/role data after sign-in.
 
-## Approach
+Sequence:
+1. User signs in → `AuthContext.user` becomes truthy.
+2. React re-renders. `VenueContext`'s `useEffect([user])` is **scheduled** but hasn't run yet.
+3. At this render, `venueLoading=false` (left over from the pre-login "no user" branch which sets `setLoading(false)`), `venue=null`, `isTablessAdmin=false`.
+4. `App.tsx` guard sees `!venue && !isTablessAdmin` → calls `supabase.auth.signOut()` and sets the `ordrup_not_provisioned` flag.
+5. User is bounced back to `/auth` with the "Account not provisioned" banner — even though their data in DB is perfectly fine.
 
-The cleanest UX: keep one form, but make Site ID optional. On submit:
+I confirmed in the DB that all three test accounts are correctly provisioned (one `tabless_admin`, two active venue owners). The auth logs also show the pattern: every login is followed by an immediate logout. This is a regression introduced by adding the auto-signout guard.
 
-1. Sign in first with email + password.
-2. After sign-in succeeds, check `user_roles` for `tabless_admin`.
-   - If admin → ignore Site ID (even if entered), don't set `tabless_active_venue`. `App.tsx` already routes admins via `isTablessAdmin` and `defaultRoute` lands them on `/admin/dashboard`.
-   - If not admin → require Site ID. If missing or invalid, sign them out and show the existing error. If valid, set `tabless_active_venue` and proceed.
+## Fix
 
-This avoids the chicken-and-egg of "do the Site ID lookup before knowing who you are" while keeping a single, simple form.
+Make `VenueContext.loading` start as `true` again whenever `user` changes, so the guard waits for the fetch to complete.
 
-### UI changes in `src/pages/Auth.tsx`
+In `src/contexts/VenueContext.tsx`:
 
-- Site ID input: drop `required`, change placeholder to `Venue ID (e.g. 1000) — leave blank for OrdrUp staff`, update helper text to `Operators: enter your venue's Site ID. OrdrUp staff: leave blank.`
-- Card description: `Sign in to your venue dashboard or OrdrUp admin console`
-- Submit logic order:
-  1. `signInWithPassword(email, password)` — bail on error
-  2. Check `user_roles` for `tabless_admin` for the signed-in user
-  3. Branch:
-     - Admin: clear any stale `tabless_active_venue`, toast `Welcome, OrdrUp admin`, done
-     - Non-admin + no Site ID: `signOut()`, toast `Site ID is required for venue operators`
-     - Non-admin + Site ID: run existing `lookup_venue_by_site_id` RPC; on miss, `signOut()` + toast; on hit, set `tabless_active_venue` and done
+- In the `useEffect([user])`, **before** scheduling `fetchVenues`, synchronously call `setLoading(true)` for the case where `user` exists. This way, the very next render after sign-in sees `venueLoading=true`, and `App.tsx` shows the "Loading..." screen instead of firing the guard.
 
-### No changes needed elsewhere
+Concretely, replace:
 
-- `App.tsx` already routes admins to `/admin/dashboard` via `defaultRoute = isTablessAdmin ? "/admin/dashboard" : "/dashboard"` and the unprovisioned-account guard already skips users who are `isTablessAdmin`.
-- `VenueContext` already detects `tabless_admin` and grants access without a `venue_staff` row.
+```ts
+useEffect(() => { fetchVenues(); }, [user]);
+```
+
+with:
+
+```ts
+useEffect(() => {
+  if (user) setLoading(true);   // block the guard until fetchVenues finishes
+  fetchVenues();
+}, [user]);
+```
+
+Belt-and-braces hardening in `src/App.tsx`: only fire the unprovisioned-signout once we've actually attempted a fetch. Track this by also requiring `!venueLoading` (already done) AND ensuring we don't run the guard on the *initial* user-set tick. The `setLoading(true)` change above is sufficient and the cleaner fix; no change to `App.tsx` should be needed.
 
 ## Files to change
 
-- `src/pages/Auth.tsx` — only file touched
+- `src/contexts/VenueContext.tsx` — one-line change in the `useEffect`
 
 ## Out of scope
 
-- Separate "OrdrUp staff sign-in" toggle UI (option 3 from earlier list)
-- Admin invite/bootstrap flow (option 4)
+- Any change to RLS, schema, or the admin-vs-operator branching logic in `Auth.tsx` (those are working correctly)
+
+## Expected result
+
+- Admin sign-in (no Site ID) → lands on `/admin/dashboard`, no false "not provisioned" message
+- Operator sign-in (with Site ID) → lands on `/dashboard`, no false "not provisioned" message
+- The "not provisioned" message still correctly appears for users who genuinely have no `venue_staff` row and no `tabless_admin` role
 
