@@ -478,8 +478,6 @@ export default function Pricing() {
     </div>
   );
 }
-  const { venue } = useVenue();
-  const [rules, setRules] = useState<PricingRule[]>([]);
   const [ruleItems, setRuleItems] = useState<RuleItemCount>({});
   const [ruleTypes, setRuleTypes] = useState<RuleTypeOption[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
