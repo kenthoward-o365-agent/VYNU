@@ -164,7 +164,10 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  useEffect(() => { fetchVenues(); }, [user]);
+  useEffect(() => {
+    if (user) setLoading(true); // block App.tsx guard until fetchVenues completes
+    fetchVenues();
+  }, [user]);
 
   return (
     <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, venueRole, loading, setVenue, switchVenue, refetch: fetchVenues }}>
