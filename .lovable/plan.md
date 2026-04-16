@@ -1,36 +1,41 @@
 
 
-# Fix: Landing Page Editor Not Loading Saved Settings
+# Mobile Web App Preview from QR Code Click
 
-## Root Cause
+## Overview
 
-The `sections` state is initialized via `useState(() => parseSections(venue?.landing_page_html))`. This initializer runs **only once** when the component mounts. If the venue context hasn't finished loading yet (which is common — it's async), `venue` is `null` at mount time, so `parseSections(null)` returns the defaults.
+Add a "Preview" button to each table card (and the QR zoom dialog) that opens a dialog containing the consumer-facing mobile web app rendered inside the existing `MobilePreviewFrame` component. This lets operators demo the diner experience without scanning a physical QR code.
 
-When `venue` later loads with the saved `landing_page_html`, the state has already been set to defaults and never updates.
+## Approach
 
-## Fix
+Use an **iframe** inside `MobilePreviewFrame` pointing to `/order/{venueId}/{tableId}`. This is the simplest approach — the consumer app already works as a standalone route, so embedding it in an iframe gives a fully functional, live preview.
 
-### `src/pages/LandingPageEditor.tsx`
+## Changes
 
-Add a `useEffect` that re-parses sections from `venue?.landing_page_html` when the venue loads. Use a `loaded` ref to ensure it only applies the saved data on the initial load (not after every save), so in-progress edits aren't overwritten.
+### `src/pages/Tables.tsx`
 
-```typescript
-const [sections, setSections] = useState<LandingSection[]>([]);
-const initialLoadDone = useRef(false);
+1. Add a new state `previewTable` (similar to `qrDialogTable`) to track which table is being previewed
+2. Add a "Preview" button to each table card (e.g. with a `Smartphone` icon)
+3. Add a "Preview" button in the QR zoom dialog
+4. Add a new `Dialog` that renders `MobilePreviewFrame` with an iframe inside:
+   ```
+   <MobilePreviewFrame>
+     <iframe
+       src="/order/{venue.id}/{table.id}"
+       className="w-full h-full border-0"
+       title="Mobile Preview"
+     />
+   </MobilePreviewFrame>
+   ```
+5. Make the dialog wider (`max-w-lg`) to accommodate the phone frame
 
-useEffect(() => {
-  if (venue?.landing_page_html && !initialLoadDone.current) {
-    setSections(parseSections(venue.landing_page_html));
-    initialLoadDone.current = true;
-  } else if (!venue && !initialLoadDone.current) {
-    setSections(parseSections(null));
-  }
-}, [venue?.landing_page_html]);
-```
+### No other files need changes
+
+The `MobilePreviewFrame` component already exists and handles phone/tablet device switching. The `ConsumerOrder` page already works as a standalone route.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/pages/LandingPageEditor.tsx` | Replace one-shot `useState` initializer with `useEffect` that waits for venue data |
+| `src/pages/Tables.tsx` | Add preview state, preview button on cards + QR dialog, preview dialog with iframe in MobilePreviewFrame |
 
