@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { CreditCard, ArrowLeft, ShieldCheck, Trash2, Check } from "lucide-react";
+import AdyenDropin from "./AdyenDropin";
 
 export interface CartItem {
   id: string;
@@ -47,6 +47,7 @@ const CheckoutPanel = ({
 }: CheckoutPanelProps) => {
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+  // Legacy raw-card form (used only as fallback in mock mode without an Adyen client key)
   const [card, setCard] = useState({
     number: "",
     expiry_month: "",
@@ -58,8 +59,8 @@ const CheckoutPanel = ({
   const [storedCards, setStoredCards] = useState<StoredCard[]>([]);
   const [selectedStoredCard, setSelectedStoredCard] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [loadingCards, setLoadingCards] = useState(false);
   const [paymentEnabled, setPaymentEnabled] = useState<boolean | null>(null);
+  const [paymentEnvironment, setPaymentEnvironment] = useState<"test" | "live">("test");
   const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
   const [gratuityOptions, setGratuityOptions] = useState<{ label: string; percent: number }[]>([]);
   const [gratuityEnabled, setGratuityEnabled] = useState(false);
@@ -67,12 +68,25 @@ const CheckoutPanel = ({
   const [gratuityDecline, setGratuityDecline] = useState("No thanks");
   const [selectedTip, setSelectedTip] = useState<number | null>(null);
 
+  // Adyen Drop-in state
+  const [paymentMethodsResponse, setPaymentMethodsResponse] = useState<any>(null);
+  const [adyenClientKey, setAdyenClientKey] = useState<string | null>(null);
+  const [loadingMethods, setLoadingMethods] = useState(false);
+
   useEffect(() => {
     checkPaymentEnabled();
     fetchVenueTaxes();
     fetchGratuityConfig();
     if (dinerId) fetchStoredCards();
   }, [venueId, dinerId]);
+
+  // Once payments are confirmed enabled and we know the total, fetch Adyen methods for Drop-in
+  useEffect(() => {
+    if (paymentEnabled && total > 0 && !paymentMethodsResponse && !selectedStoredCard) {
+      fetchPaymentMethods();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentEnabled, total + (selectedTip ?? 0)]);
 
   const fetchGratuityConfig = async () => {
     const { data } = await supabase.rpc("get_venue_public_info", { _venue_id: venueId });
@@ -101,16 +115,50 @@ const CheckoutPanel = ({
   const checkPaymentEnabled = async () => {
     const { data } = await supabase
       .from("venue_payment_config" as any)
-      .select("is_active")
+      .select("is_active, environment")
       .eq("venue_id", venueId)
       .eq("provider", "ordrpayments")
       .maybeSingle();
     setPaymentEnabled(!!(data as any)?.is_active);
+    setPaymentEnvironment(((data as any)?.environment as "test" | "live") || "test");
+  };
+
+  const fetchPaymentMethods = async () => {
+    setLoadingMethods(true);
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/adyen-payment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            action: "payment_methods",
+            venue_id: venueId,
+            amount: total + tipAmount,
+            currency: "AUD",
+            country_code: "AU",
+            shopper_reference: dinerId ? `diner_${dinerId}` : undefined,
+          }),
+        }
+      );
+      const data = await resp.json();
+      if (data?.paymentMethods) {
+        setPaymentMethodsResponse(data);
+      }
+      // Adyen client key — for now, read from public env if available; otherwise null (mock fallback)
+      const key = (import.meta as any).env?.VITE_ADYEN_CLIENT_KEY || null;
+      setAdyenClientKey(key);
+    } catch (e) {
+      console.error("Failed to load payment methods:", e);
+    }
+    setLoadingMethods(false);
   };
 
   const fetchStoredCards = async () => {
     if (!dinerId) return;
-    setLoadingCards(true);
     try {
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/adyen-payment`,
@@ -134,7 +182,6 @@ const CheckoutPanel = ({
         if (defaultCard) setSelectedStoredCard(defaultCard.token_reference);
       }
     } catch {}
-    setLoadingCards(false);
   };
 
   const deleteStoredCard = async (cardId: string) => {
@@ -166,58 +213,176 @@ const CheckoutPanel = ({
     }
   };
 
-  const processPayment = async () => {
-    setProcessing(true);
-    try {
-      // Get auth user id for customer_id (FK references auth.users, not diner_profiles)
-      const { data: { session } } = await supabase.auth.getSession();
-      const authUserId = session?.user?.id || null;
+  /**
+   * Creates an order in the DB and returns its ID + audit date.
+   * Shared by Drop-in flow, stored-card flow, and confirm-only flow.
+   */
+  const createOrderRow = async (): Promise<string> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const authUserId = session?.user?.id || null;
 
-      // Create the order first — generate ID client-side to avoid needing SELECT permission
-      const orderId = crypto.randomUUID();
+    const orderId = crypto.randomUUID();
+    const { data: auditDateData } = await supabase.rpc("get_venue_audit_date", { _venue_id: venueId });
+    const auditDate = (auditDateData as string | null) || new Date().toISOString().slice(0, 10);
 
-      // Fetch the venue's current audit (business) date so reports tie to operator's day
-      const { data: auditDateData } = await supabase.rpc("get_venue_audit_date", { _venue_id: venueId });
-      const auditDate = (auditDateData as string | null) || new Date().toISOString().slice(0, 10);
+    const { error: orderError } = await supabase
+      .from("orders")
+      .insert({
+        id: orderId,
+        venue_id: venueId,
+        table_id: tableId,
+        total: total + tipAmount,
+        gratuity_amount: tipAmount,
+        audit_date: auditDate,
+        status: "received" as const,
+        customer_id: authUserId,
+        customer_notes: tipAmount > 0 ? `Tip: $${tipAmount.toFixed(2)}` : null,
+      } as any);
+    if (orderError) throw orderError;
 
-      const { error: orderError } = await supabase
-        .from("orders")
+    const orderItems = items.map((item) => ({
+      order_id: orderId,
+      menu_item_id: item.id,
+      quantity: item.quantity,
+      unit_price: item.price,
+    }));
+    const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
+    if (itemsError) throw itemsError;
+
+    return orderId;
+  };
+
+  const cleanupOrder = async (orderId: string) => {
+    await supabase.from("order_items").delete().eq("order_id", orderId);
+    await supabase.from("orders").delete().eq("id", orderId);
+  };
+
+  const finalizePaidOrder = async (orderId: string) => {
+    await supabase.from("orders").update({ status: "paid" as any }).eq("id", orderId);
+    if (dinerId) {
+      const taxResult = calculateTaxes(total, venueTaxes);
+      await supabase
+        .from("diner_visits")
         .insert({
-          id: orderId,
+          diner_id: dinerId,
           venue_id: venueId,
-          table_id: tableId,
-          total: total + tipAmount,
-          gratuity_amount: tipAmount,
-          audit_date: auditDate,
-          status: "received" as const,
-          customer_id: authUserId,
-          customer_notes: tipAmount > 0 ? `Tip: $${tipAmount.toFixed(2)}` : null,
-        } as any);
+          order_id: orderId,
+          spend_excl_tax: taxResult.subtotalExTax,
+        } as any)
+        .maybeSingle();
+    }
+    toast.success("Payment successful! 🎉");
+    onOrderPlaced(orderId);
+  };
 
-      if (orderError) throw orderError;
+  /** Called by Drop-in when the diner submits any payment method (card / Apple Pay / Google Pay) */
+  const handleDropinSubmit = async (
+    paymentMethod: any,
+    browserInfo: any,
+    helpers: { resolve: (res: any) => void; reject: (err?: any) => void }
+  ) => {
+    let orderId: string | null = null;
+    try {
+      orderId = await createOrderRow();
+      const shopperRef = dinerId ? `diner_${dinerId}` : `anon_${Date.now()}`;
 
-      // Insert order items
-      const orderItems = items.map((item) => ({
-        order_id: orderId,
-        menu_item_id: item.id,
-        quantity: item.quantity,
-        unit_price: item.price,
-      }));
-      const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
-      if (itemsError) throw itemsError;
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: any = {
+        "Content-Type": "application/json",
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      };
+      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
 
-      // If payments are enabled, process via Adyen
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/adyen-payment`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            action: "create_payment",
+            venue_id: venueId,
+            amount: total + tipAmount,
+            currency: "AUD",
+            reference: `order_${orderId}`,
+            return_url: window.location.href,
+            payment_method: paymentMethod,
+            browser_info: browserInfo,
+            shopper_reference: shopperRef,
+            store_card: !!(saveCard && dinerId),
+            diner_id: dinerId || undefined,
+          }),
+        }
+      );
+      const result = await resp.json();
+
+      // Pass result back to Drop-in so it can render success/3DS/error
+      helpers.resolve({
+        resultCode: result.resultCode,
+        action: result.action,
+      });
+
+      if (result.resultCode === "Authorised") {
+        await finalizePaidOrder(orderId);
+      } else if (
+        result.resultCode === "Refused" ||
+        result.resultCode === "Error" ||
+        result.resultCode === "Cancelled"
+      ) {
+        toast.error(`Payment ${result.resultCode}: ${result.refusalReason || "Please try again"}`);
+        await cleanupOrder(orderId);
+      }
+      // For RedirectShopper / IdentifyShopper / ChallengeShopper the Drop-in
+      // handles the next step itself; we'll get the final result via onAdditionalDetails.
+    } catch (e: any) {
+      console.error("Drop-in submit error:", e);
+      helpers.reject();
+      if (orderId) await cleanupOrder(orderId);
+      toast.error("Payment failed. Please try again.");
+    }
+  };
+
+  const handleDropinAdditionalDetails = async (
+    details: any,
+    helpers: { resolve: (res: any) => void; reject: (err?: any) => void }
+  ) => {
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/adyen-payment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            action: "payment_details",
+            venue_id: venueId,
+            details: details.details,
+          }),
+        }
+      );
+      const result = await resp.json();
+      helpers.resolve({ resultCode: result.resultCode, action: result.action });
+    } catch (e) {
+      helpers.reject();
+    }
+  };
+
+  /** Stored-card / mock-fallback flow (no Drop-in) */
+  const processLegacyPayment = async () => {
+    setProcessing(true);
+    let orderId: string | null = null;
+    try {
+      orderId = await createOrderRow();
+
       if (paymentEnabled) {
         const shopperRef = dinerId ? `diner_${dinerId}` : `anon_${Date.now()}`;
+        const { data: { session } } = await supabase.auth.getSession();
         const headers: any = {
           "Content-Type": "application/json",
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         };
-
-        // Add auth header if user is logged in
-        if (session?.access_token) {
-          headers.Authorization = `Bearer ${session.access_token}`;
-        }
+        if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
 
         const paymentBody: any = {
           action: "create_payment",
@@ -229,12 +394,10 @@ const CheckoutPanel = ({
         };
 
         if (selectedStoredCard) {
-          // Pay with stored card
           const storedCard = storedCards.find((c) => c.token_reference === selectedStoredCard);
           paymentBody.stored_card_token = selectedStoredCard;
           paymentBody.shopper_reference = storedCard?.shopper_reference || shopperRef;
         } else {
-          // Pay with new card
           paymentBody.card = card;
           paymentBody.shopper_reference = shopperRef;
           if (saveCard && dinerId) {
@@ -247,42 +410,33 @@ const CheckoutPanel = ({
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/adyen-payment`,
           { method: "POST", headers, body: JSON.stringify(paymentBody) }
         );
-
         const result = await resp.json();
 
         if (result.resultCode === "Authorised") {
-          // Update order status to paid
-          await supabase.from("orders").update({ status: "paid" as any }).eq("id", orderId);
-          // Record diner visit with spend excl tax
-          if (dinerId) {
-            const taxResult = calculateTaxes(total, venueTaxes);
-            await supabase.from("diner_visits").insert({ diner_id: dinerId, venue_id: venueId, order_id: orderId, spend_excl_tax: taxResult.subtotalExTax } as any).maybeSingle();
-          }
-          toast.success("Payment successful! 🎉");
-          onOrderPlaced(orderId);
-        } else if (result.resultCode === "RedirectShopper") {
-          // 3DS redirect
-          if (result.action?.url) {
-            window.location.href = result.action.url;
-          }
-          return;
+          await finalizePaidOrder(orderId);
         } else {
           toast.error(`Payment ${result.resultCode || "failed"}: ${result.refusalReason || "Please try again"}`);
-          // Clean up the order
-          await supabase.from("order_items").delete().eq("order_id", orderId);
-          await supabase.from("orders").delete().eq("id", orderId);
+          await cleanupOrder(orderId);
         }
       } else {
-        // No payment processing, just place the order
         if (dinerId) {
           const taxResult = calculateTaxes(total, venueTaxes);
-          await supabase.from("diner_visits").insert({ diner_id: dinerId, venue_id: venueId, order_id: orderId, spend_excl_tax: taxResult.subtotalExTax } as any).maybeSingle();
+          await supabase
+            .from("diner_visits")
+            .insert({
+              diner_id: dinerId,
+              venue_id: venueId,
+              order_id: orderId,
+              spend_excl_tax: taxResult.subtotalExTax,
+            } as any)
+            .maybeSingle();
         }
         toast.success("Order placed! 🎉");
         onOrderPlaced(orderId);
       }
     } catch (err: any) {
       console.error("Checkout error:", err);
+      if (orderId) await cleanupOrder(orderId);
       toast.error("Something went wrong. Please try again.");
     } finally {
       setProcessing(false);
@@ -294,14 +448,22 @@ const CheckoutPanel = ({
     return digits.replace(/(\d{4})/g, "$1 ").trim();
   };
 
-  const isCardValid =
+  const isLegacyCardValid =
     selectedStoredCard ||
     (card.number.replace(/\s/g, "").length >= 15 &&
       card.expiry_month &&
       card.expiry_year &&
       card.cvc.length >= 3);
 
-  const canProceed = paymentEnabled ? isCardValid : true;
+  // Show Drop-in only when payments enabled, no stored card selected, and we have methods + key
+  const showDropin =
+    paymentEnabled && !selectedStoredCard && !!paymentMethodsResponse && !!adyenClientKey;
+
+  // Show legacy form as fallback if Drop-in can't render (no client key) OR if a stored card is picked
+  const showLegacyForm =
+    paymentEnabled && !showDropin;
+
+  const canProceedLegacy = paymentEnabled ? isLegacyCardValid : true;
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
@@ -407,7 +569,7 @@ const CheckoutPanel = ({
           <>
             <Separator />
 
-            {/* Stored Cards */}
+            {/* Stored Cards (signed-in diners) — render above Drop-in */}
             {storedCards.length > 0 && (
               <div className="space-y-3">
                 <Label className="text-sm font-semibold">Saved Cards</Label>
@@ -453,14 +615,45 @@ const CheckoutPanel = ({
 
                 {!selectedStoredCard && (
                   <p className="text-xs text-muted-foreground text-center">
-                    Or enter a new card below
+                    Or pay a different way below
                   </p>
                 )}
               </div>
             )}
 
-            {/* New Card Form */}
-            {!selectedStoredCard && (
+            {/* Adyen Drop-in — Apple Pay / Google Pay / hosted card */}
+            {showDropin && (
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Pay with card or wallet
+                </Label>
+                <AdyenDropin
+                  paymentMethodsResponse={paymentMethodsResponse}
+                  amount={total + tipAmount}
+                  currency="AUD"
+                  countryCode="AU"
+                  environment={paymentEnvironment}
+                  clientKey={adyenClientKey || undefined}
+                  merchantName="OrdrPayments"
+                  onSubmit={handleDropinSubmit}
+                  onAdditionalDetails={handleDropinAdditionalDetails}
+                  onError={(e) => {
+                    console.error("Adyen error:", e);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Loading state */}
+            {paymentEnabled && !showDropin && loadingMethods && !selectedStoredCard && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Loading payment methods…
+              </p>
+            )}
+
+            {/* Legacy raw card form — fallback when Drop-in can't render (no client key) */}
+            {showLegacyForm && !selectedStoredCard && (
               <div className="space-y-4">
                 <Label className="text-sm font-semibold flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
@@ -531,7 +724,6 @@ const CheckoutPanel = ({
                   />
                 </div>
 
-                {/* Save card toggle - only show for signed-in diners */}
                 {dinerId && (
                   <div className="flex items-center justify-between rounded-xl bg-muted/50 p-3">
                     <div>
@@ -554,20 +746,23 @@ const CheckoutPanel = ({
         )}
       </div>
 
-      {/* Pay Button */}
-      <div className="border-t border-border px-5 pt-4 pb-20">
-        <Button
-          onClick={processPayment}
-          disabled={processing || !canProceed}
-          className="w-full h-14 rounded-2xl text-base"
-        >
-          {processing
-            ? "Processing..."
-            : paymentEnabled
-            ? `Pay $${(total + tipAmount).toFixed(2)}`
-            : `Confirm Order — $${(total + tipAmount).toFixed(2)}`}
-        </Button>
-      </div>
+      {/* Pay Button — only used for stored-card flow, legacy form, and confirm-only flow.
+          Drop-in renders its own pay button. */}
+      {!showDropin && (
+        <div className="border-t border-border px-5 pt-4 pb-20">
+          <Button
+            onClick={processLegacyPayment}
+            disabled={processing || !canProceedLegacy}
+            className="w-full h-14 rounded-2xl text-base"
+          >
+            {processing
+              ? "Processing..."
+              : paymentEnabled
+              ? `Pay $${(total + tipAmount).toFixed(2)}`
+              : `Confirm Order — $${(total + tipAmount).toFixed(2)}`}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

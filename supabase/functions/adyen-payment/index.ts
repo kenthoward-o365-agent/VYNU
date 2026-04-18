@@ -13,11 +13,32 @@ const json = (data: any, status = 200) =>
   });
 
 // ── OrdrPayments — Mock Responses ──
+// In mock mode we expose card + applepay + googlepay so the Drop-in UI
+// renders the wallet buttons even without real Adyen credentials.
 const MOCK_PAYMENT_METHODS = {
   paymentMethods: [
-    { type: "scheme", name: "Credit Card", brands: ["visa", "mc", "amex"] },
-    { type: "applepay", name: "Apple Pay" },
-    { type: "googlepay", name: "Google Pay" },
+    {
+      type: "scheme",
+      name: "Credit Card",
+      brands: ["visa", "mc", "amex"],
+    },
+    {
+      type: "applepay",
+      name: "Apple Pay",
+      configuration: {
+        merchantId: "MOCK_APPLEPAY",
+        merchantName: "OrdrPayments (Test)",
+      },
+    },
+    {
+      type: "googlepay",
+      name: "Google Pay",
+      configuration: {
+        merchantId: "MOCK_GOOGLEPAY",
+        merchantName: "OrdrPayments (Test)",
+        gatewayMerchantId: "MOCK_GATEWAY",
+      },
+    },
   ],
 };
 
@@ -30,23 +51,42 @@ const MOCK_TEST_CARDS: Record<string, { resultCode: string; refusalReason?: stri
 };
 
 function mockPayment(body: any) {
-  const cardNumber = body.card?.number?.replace(/\s/g, "") || "";
-  const storedToken = body.stored_card_token;
-
   // Stored card always succeeds
-  if (storedToken) {
+  if (body.stored_card_token) {
     return {
       resultCode: "Authorised",
       pspReference: `MOCK_${Date.now()}`,
       merchantReference: body.reference,
-      additionalData: {
-        cardSummary: "1111",
-        paymentMethod: "visa",
-      },
+      additionalData: { cardSummary: "1111", paymentMethod: "visa" },
     };
   }
 
-  // Check test card mapping
+  // Drop-in payments — wallet tokens or encrypted card payloads
+  const pm = body.payment_method;
+  if (pm) {
+    const type = pm.type;
+    if (type === "applepay" || type === "googlepay") {
+      return {
+        resultCode: "Authorised",
+        pspReference: `MOCK_${type.toUpperCase()}_${Date.now()}`,
+        merchantReference: body.reference,
+        additionalData: {
+          paymentMethod: type,
+          cardSummary: "0000",
+        },
+      };
+    }
+    // Encrypted card from Drop-in — we can't read the digits; just authorise
+    return {
+      resultCode: "Authorised",
+      pspReference: `MOCK_${Date.now()}`,
+      merchantReference: body.reference,
+      additionalData: { cardSummary: "1234", paymentMethod: "visa" },
+    };
+  }
+
+  // Legacy raw-card path (kept for stored-card flow / backwards compat)
+  const cardNumber = body.card?.number?.replace(/\s/g, "") || "";
   const testResult = MOCK_TEST_CARDS[cardNumber];
   const resultCode = testResult?.resultCode || "Authorised";
   const isAuthorised = resultCode === "Authorised";
@@ -61,7 +101,6 @@ function mockPayment(body: any) {
     response.refusalReason = testResult?.refusalReason || "Refused";
   }
 
-  // If storing card, return token info
   if (isAuthorised && body.store_card) {
     response.additionalData = {
       "recurring.recurringDetailReference": `MOCK_TOKEN_${Date.now()}`,
@@ -109,6 +148,13 @@ Deno.serve(async (req) => {
       userId = user?.id || null;
     }
 
+    // Capture origin/IP for Adyen risk + 3DS
+    const origin = req.headers.get("origin") || req.headers.get("referer") || "";
+    const shopperIP =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") ||
+      undefined;
+
     const body = await req.json();
     const { action, venue_id } = body;
 
@@ -141,8 +187,6 @@ Deno.serve(async (req) => {
     }
 
     const isMock = config.environment === "test" && !config.api_key_test;
-    const isLiveAdyen = config.environment === "live" && !!config.api_key_live;
-    const isTestAdyen = config.environment === "test" && !!config.api_key_test;
 
     const apiKey = config.environment === "live" ? config.api_key_live : config.api_key_test;
     const merchantAccount = config.merchant_account;
@@ -171,20 +215,25 @@ Deno.serve(async (req) => {
           merchantAccount,
           countryCode: "AU",
           amount: { value: 0, currency: "AUD" },
+          channel: "Web",
         }),
       });
 
       if (resp.ok) {
         const data = await resp.json();
         const methods = (data.paymentMethods || []).map((m: any) => m.name || m.type);
-        return json({ success: true, message: `Connected. Available methods: ${methods.join(", ")}` });
+        return json({
+          success: true,
+          message: `Connected. Available methods: ${methods.join(", ")}`,
+          methods: data.paymentMethods || [],
+        });
       } else {
         const err = await resp.text();
         return json({ success: false, error: `Adyen returned ${resp.status}: ${err}` }, 400);
       }
     }
 
-    // ═══ PAYMENT METHODS ═══
+    // ═══ PAYMENT METHODS ═══ (Drop-in needs the raw Adyen response)
     if (action === "payment_methods") {
       if (isMock) {
         return json(MOCK_PAYMENT_METHODS);
@@ -194,8 +243,11 @@ Deno.serve(async (req) => {
 
       const reqBody: any = {
         merchantAccount,
-        countryCode: "AU",
-        amount: { value: Math.round((body.amount || 0) * 100), currency: body.currency || "AUD" },
+        countryCode: body.country_code || "AU",
+        amount: {
+          value: Math.round((body.amount || 0) * 100),
+          currency: body.currency || "AUD",
+        },
         channel: "Web",
       };
       if (body.shopper_reference) reqBody.shopperReference = body.shopper_reference;
@@ -215,6 +267,8 @@ Deno.serve(async (req) => {
         amount, currency, reference, return_url, card,
         store_card, shopper_reference, diner_id,
         stored_card_token,
+        payment_method,   // From Adyen Drop-in
+        browser_info,     // From Adyen Drop-in
       } = body;
 
       if (!amount || !reference) {
@@ -224,7 +278,6 @@ Deno.serve(async (req) => {
       let result: any;
 
       if (isMock) {
-        // Simulate a 500ms processing delay for realism
         await new Promise((r) => setTimeout(r, 500));
         result = mockPayment(body);
       } else {
@@ -236,14 +289,33 @@ Deno.serve(async (req) => {
           reference,
           returnUrl: return_url || `${supabaseUrl}/payment-complete`,
           channel: "Web",
+          origin: origin || undefined,
+          shopperIP,
         };
 
+        if (browser_info) paymentRequest.browserInfo = browser_info;
+
         if (stored_card_token && shopper_reference) {
-          paymentRequest.paymentMethod = { type: "scheme", storedPaymentMethodId: stored_card_token };
+          // Stored card (one-click) — server-built paymentMethod
+          paymentRequest.paymentMethod = {
+            type: "scheme",
+            storedPaymentMethodId: stored_card_token,
+          };
           paymentRequest.shopperReference = shopper_reference;
           paymentRequest.shopperInteraction = "ContAuth";
           paymentRequest.recurringProcessingModel = "CardOnFile";
+        } else if (payment_method) {
+          // Drop-in flow — pass through whatever Drop-in produced
+          // (encrypted card, applepay token, googlepay token, etc.)
+          paymentRequest.paymentMethod = payment_method;
+          if (shopper_reference) paymentRequest.shopperReference = shopper_reference;
+          if (store_card && shopper_reference) {
+            paymentRequest.storePaymentMethod = true;
+            paymentRequest.recurringProcessingModel = "CardOnFile";
+            paymentRequest.shopperInteraction = "Ecommerce";
+          }
         } else if (card) {
+          // Legacy raw-card path (kept for backwards compat / non-Drop-in clients)
           paymentRequest.paymentMethod = {
             type: "scheme",
             number: card.number?.replace(/\s/g, ""),
@@ -258,6 +330,8 @@ Deno.serve(async (req) => {
             paymentRequest.recurringProcessingModel = "CardOnFile";
             paymentRequest.shopperInteraction = "Ecommerce";
           }
+        } else {
+          return json({ error: "No payment method provided" }, 400);
         }
 
         const resp = await fetch(`${baseUrl}/payments`, {

@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { CreditCard, ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { CreditCard, ShieldCheck, AlertTriangle, CheckCircle2, Wallet } from "lucide-react";
 
 interface PaymentConfig {
   id?: string;
@@ -36,6 +36,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [availableMethods, setAvailableMethods] = useState<string[] | null>(null);
 
   useEffect(() => {
     fetchConfig();
@@ -140,9 +141,12 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
       );
       const result = await resp.json();
       if (resp.ok && result.success) {
-        setTestResult({ success: true, message: "OrdrPayments connection verified successfully." });
+        setTestResult({ success: true, message: result.message || "OrdrPayments connection verified successfully." });
+        const methodTypes = (result.methods || []).map((m: any) => m.type);
+        setAvailableMethods(methodTypes);
       } else {
         setTestResult({ success: false, message: result.error || "Connection failed" });
+        setAvailableMethods(null);
       }
     } catch (err: any) {
       setTestResult({ success: false, message: err.message });
@@ -263,6 +267,43 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
               {testResult.message}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Wallets status — Apple Pay / Google Pay */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Wallet className="h-5 w-5" />
+            Wallets — Apple Pay & Google Pay
+          </CardTitle>
+          <CardDescription>
+            Wallets let diners pay with one tap using cards stored in Apple Wallet or Google Pay — works for guests too.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {availableMethods === null ? (
+            <p className="text-sm text-muted-foreground">
+              Run <span className="font-medium">Test Connection</span> above to detect which wallets are enabled on your Adyen merchant account.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <div className={`flex items-center gap-2 rounded-lg p-3 text-sm ${availableMethods.includes("applepay") ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground"}`}>
+                {availableMethods.includes("applepay") ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                <span>Apple Pay {availableMethods.includes("applepay") ? "enabled" : "not enabled"}</span>
+              </div>
+              <div className={`flex items-center gap-2 rounded-lg p-3 text-sm ${availableMethods.includes("googlepay") ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground"}`}>
+                {availableMethods.includes("googlepay") ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                <span>Google Pay {availableMethods.includes("googlepay") ? "enabled" : "not enabled"}</span>
+              </div>
+            </div>
+          )}
+          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
+            <p className="font-medium text-foreground">To enable wallets in production:</p>
+            <p>1. Enable Apple Pay / Google Pay on your Adyen merchant account (Adyen Customer Area → Settings → Payment methods).</p>
+            <p>2. For Apple Pay: download the domain-association file from Adyen and replace <code>public/.well-known/apple-developer-merchantid-domain-association</code>.</p>
+            <p>3. Apple Pay only renders on Safari; Google Pay only on Chrome/Android — that's a browser/OS requirement, not a config issue.</p>
+          </div>
         </CardContent>
       </Card>
 
