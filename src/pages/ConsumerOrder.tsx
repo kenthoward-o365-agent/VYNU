@@ -381,15 +381,24 @@ const ConsumerOrder = () => {
     <ConsumerLayout>
       {/* Receipt view when paid */}
       {activeOrder && activeOrder.status === "paid" && venue && (
-        <ReceiptView
-          orderId={activeOrder.id}
-          total={activeOrder.total}
-          createdAt={activeOrder.created_at}
-          venueId={venue.id}
-          tableNumber={tableNumber || "?"}
-          venue={venue}
-          diner={dinerInfo}
-        />
+        <>
+          <ReceiptView
+            orderId={activeOrder.id}
+            total={activeOrder.total}
+            createdAt={activeOrder.created_at}
+            venueId={venue.id}
+            tableNumber={tableNumber || "?"}
+            venue={venue}
+            diner={dinerInfo}
+          />
+          <LoyaltyJoinPrompt
+            venueId={venue.id}
+            groupId={venue.group_id}
+            show={!dinerId}
+            onJoin={() => { setAuthMode("signup"); setShowSignup(true); }}
+            onDismiss={() => {}}
+          />
+        </>
       )}
 
       {/* Active Order Status */}
