@@ -77,22 +77,22 @@ export default function AdyenDropin({
             currency,
           },
           analytics: { enabled: false },
-          onSubmit: (state, _component, actions) => {
+          onSubmit: (state: any, _component: any, actions: any) => {
             onSubmit(state.data.paymentMethod, state.data.browserInfo, {
-              resolve: (res) => actions.resolve(res),
-              reject: (err) => actions.reject(err),
+              resolve: (res: any) => actions.resolve(res),
+              reject: (err?: any) => actions.reject(err),
             });
           },
-          onAdditionalDetails: (state, _component, actions) => {
+          onAdditionalDetails: (state: any, _component: any, actions: any) => {
             onAdditionalDetails(state.data, {
-              resolve: (res) => actions.resolve(res),
-              reject: (err) => actions.reject(err),
+              resolve: (res: any) => actions.resolve(res),
+              reject: (err?: any) => actions.reject(err),
             });
           },
-          onPaymentCompleted: (result) => {
+          onPaymentCompleted: (result: any) => {
             onPaymentCompleted?.(result);
           },
-          onError: (error) => {
+          onError: (error: any) => {
             console.error("[Adyen Drop-in] error:", error);
             onError?.(error);
           },
@@ -110,13 +110,16 @@ export default function AdyenDropin({
             },
             applepay: {
               amount: { value: Math.round(amount * 100), currency },
-              countryCode,
-              configuration: { merchantName },
+              configuration: { merchantName, merchantId: "merchant.com.ordrpayments" },
             },
             googlepay: {
               amount: { value: Math.round(amount * 100), currency },
               countryCode,
-              configuration: { merchantName },
+              configuration: {
+                merchantName,
+                merchantId: "BCR2DN4T...",
+                gatewayMerchantId: "OrdrPaymentsAU",
+              },
             },
           },
         });
