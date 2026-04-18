@@ -15,6 +15,7 @@ import VenueDiscovery from "@/components/consumer/VenueDiscovery";
 import DinerSignup from "@/components/consumer/DinerSignup";
 import DinerProfile from "@/components/consumer/DinerProfile";
 import UpsellPrompt, { UpsellSuggestion } from "@/components/consumer/UpsellPrompt";
+import LoyaltyJoinPrompt from "@/components/consumer/LoyaltyJoinPrompt";
 
 interface VenueInfo {
   id: string;
