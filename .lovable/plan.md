@@ -1,54 +1,90 @@
 
 
-## Root cause
+## Goal
 
-`App.tsx`'s guard `if (!venue && !isTablessAdmin) { signOut + flag "not provisioned" }` is firing **before** `VenueContext.fetchVenues` has a chance to load the user's venue/role data after sign-in.
+Enable **Apple Pay** and **Google Pay** (which surface Apple Wallet / Google Wallet stored cards and bank-linked cards on the device) in the OrdrPayments checkout — for both signed-in diners *and* anonymous guests. This is the table-stakes "tap to pay" experience expected from modern QR-ordering.
 
-Sequence:
-1. User signs in → `AuthContext.user` becomes truthy.
-2. React re-renders. `VenueContext`'s `useEffect([user])` is **scheduled** but hasn't run yet.
-3. At this render, `venueLoading=false` (left over from the pre-login "no user" branch which sets `setLoading(false)`), `venue=null`, `isTablessAdmin=false`.
-4. `App.tsx` guard sees `!venue && !isTablessAdmin` → calls `supabase.auth.signOut()` and sets the `ordrup_not_provisioned` flag.
-5. User is bounced back to `/auth` with the "Account not provisioned" banner — even though their data in DB is perfectly fine.
+## Why Adyen Web Drop-in (not raw fields)
 
-I confirmed in the DB that all three test accounts are correctly provisioned (one `tabless_admin`, two active venue owners). The auth logs also show the pattern: every login is followed by an immediate logout. This is a regression introduced by adding the auto-signout guard.
+Today `CheckoutPanel.tsx` collects raw card number / expiry / CVC into React state and posts them through our edge function. That approach:
 
-## Fix
+- Cannot render Apple Pay / Google Pay sheets (those are browser/OS APIs, not form fields)
+- Pushes us toward PCI-DSS SAQ D (highest scope) the moment we go live
+- Cannot do 3DS2 challenge UI properly
 
-Make `VenueContext.loading` start as `true` again whenever `user` changes, so the guard waits for the fetch to complete.
+The right move is to switch the consumer checkout to **Adyen Web Drop-in v6** (`@adyen/adyen-web`), which:
 
-In `src/contexts/VenueContext.tsx`:
+- Renders Apple Pay button when Safari + a card is in Wallet
+- Renders Google Pay button when Chrome + a card is in Google Wallet/Pay
+- Renders a hosted card field (PCI SAQ A) for cards not in a wallet
+- Handles 3DS2 challenge inline
+- Works for guests (no diner account required) — wallet payments are tokenised by Apple/Google, not us
+- Still supports our existing "saved cards" flow for signed-in diners
 
-- In the `useEffect([user])`, **before** scheduling `fetchVenues`, synchronously call `setLoading(true)` for the case where `user` exists. This way, the very next render after sign-in sees `venueLoading=true`, and `App.tsx` shows the "Loading..." screen instead of firing the guard.
+## Architecture
 
-Concretely, replace:
-
-```ts
-useEffect(() => { fetchVenues(); }, [user]);
+```text
+CheckoutPanel.tsx
+  │
+  ├── 1. POST /functions/v1/adyen-payment {action:"payment_methods", amount, currency}
+  │       ─ returns the venue's enabled methods (card, applepay, googlepay, ...)
+  │
+  ├── 2. Mount <AdyenCheckout> Drop-in with that response
+  │       ─ Drop-in shows Apple Pay / Google Pay buttons natively
+  │       ─ Card form is iframe'd by Adyen (PCI SAQ A)
+  │
+  ├── 3. onSubmit(state) → POST {action:"create_payment", paymentMethod: state.data.paymentMethod, browserInfo, ...}
+  │       ─ edge function forwards to Adyen /payments
+  │
+  ├── 4. onAdditionalDetails (3DS) → POST {action:"payment_details", details}
+  │
+  └── 5. On Authorised → mark order paid, fire onOrderPlaced
 ```
 
-with:
+The edge function changes are small — it already proxies `/payments` and `/payments/details`. We just stop building the `paymentMethod` server-side and instead pass through whatever Drop-in produced (which is a signed token for wallets, encrypted card data for manual entry).
 
-```ts
-useEffect(() => {
-  if (user) setLoading(true);   // block the guard until fetchVenues finishes
-  fetchVenues();
-}, [user]);
-```
+## Apple Pay / Google Pay specifics
 
-Belt-and-braces hardening in `src/App.tsx`: only fire the unprovisioned-signout once we've actually attempted a fetch. Track this by also requiring `!venueLoading` (already done) AND ensuring we don't run the guard on the *initial* user-set tick. The `setLoading(true)` change above is sufficient and the cleaner fix; no change to `App.tsx` should be needed.
+**Apple Pay** requires:
+- Domain verification: download `apple-developer-merchantid-domain-association` from Adyen Customer Area, host it at `/.well-known/apple-developer-merchantid-domain-association` on `ordrup.lovable.app` (and any custom domain). Add as a static file in `public/.well-known/`.
+- HTTPS (already covered)
+- Safari on iOS/macOS with a card in Wallet
+- Adyen merchant account configured for Apple Pay (admin step in Adyen CA, no code)
+
+**Google Pay** requires:
+- Chrome / Android with cards in Google Pay
+- Adyen merchant account configured for Google Pay (admin step, no code)
+- `gatewayMerchantId` is supplied by Drop-in automatically from the `/paymentMethods` response
+
+Both work for **guest checkout** out of the box — the Wallet returns a one-shot tokenised payment credential, no diner profile needed.
 
 ## Files to change
 
-- `src/contexts/VenueContext.tsx` — one-line change in the `useEffect`
+- `package.json` — add `@adyen/adyen-web` (v6.x)
+- `src/components/consumer/CheckoutPanel.tsx` — replace manual card form with Drop-in mount; keep stored-card flow as a "Saved cards" section above Drop-in for signed-in diners; keep gratuity + tax UI unchanged
+- `src/components/consumer/AdyenDropin.tsx` (new) — small wrapper that mounts Drop-in and exposes `onPaymentCompleted` / `onError`
+- `supabase/functions/adyen-payment/index.ts`:
+  - `payment_methods` action: include `channel: "Web"`, return full Adyen response untouched (Drop-in needs the raw shape)
+  - `create_payment` action: accept a generic `payment_method` object from the client and forward it as `paymentRequest.paymentMethod`; add `browserInfo`, `origin`, `shopperIP` from headers; keep stored-card branch
+  - `payment_details` action: already correct
+  - Mock mode: add a `mockPaymentMethods` response that includes `applepay` / `googlepay` so test mode visually shows the buttons (clicks short-circuit to a simulated Authorised)
+- `public/.well-known/apple-developer-merchantid-domain-association` — placeholder file; user will replace contents with the file Adyen provides
+- `src/components/venue/PaymentSettingsTab.tsx` — add a small "Wallets" status row showing whether Apple Pay / Google Pay are enabled for this venue (read from `/paymentMethods` test call), plus a one-line note about needing to enable them in Adyen CA
+- `mem://features/payments` (new) + `mem://index.md` — record the Drop-in architecture decision and Apple Pay domain-verification requirement
 
-## Out of scope
+## Out of scope (stays as-is)
 
-- Any change to RLS, schema, or the admin-vs-operator branching logic in `Auth.tsx` (those are working correctly)
+- Tax & gratuity calculation
+- Stored-card management for signed-in diners (already works; just rendered above Drop-in)
+- Order creation flow and audit-date handling
+- Live Adyen credentials provisioning (admin task in Adyen CA — no code change beyond what's already in `venue_payment_config`)
+- PayPal, Klarna, BNPL — Drop-in supports them but we're scoping this PR to wallets + cards
 
 ## Expected result
 
-- Admin sign-in (no Site ID) → lands on `/admin/dashboard`, no false "not provisioned" message
-- Operator sign-in (with Site ID) → lands on `/dashboard`, no false "not provisioned" message
-- The "not provisioned" message still correctly appears for users who genuinely have no `venue_staff` row and no `tabless_admin` role
+- Anonymous diner on iPhone Safari sees an **Apple Pay** button → Face ID → paid in ~2 seconds, no card entry
+- Anonymous diner on Android Chrome sees a **Google Pay** button → fingerprint → paid
+- Diner without a wallet (or unsupported browser) sees the same hosted card form as today
+- Signed-in returning diner still sees their saved cards on top
+- Test mode still works end-to-end with mocked wallet buttons
 
