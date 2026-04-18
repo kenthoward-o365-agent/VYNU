@@ -1,0 +1,153 @@
+import { useEffect, useRef, useState } from "react";
+import { AdyenCheckout, Dropin, Card, ApplePay, GooglePay } from "@adyen/adyen-web";
+import "@adyen/adyen-web/styles/adyen.css";
+
+interface AdyenDropinProps {
+  /** Raw Adyen /paymentMethods response from the edge function */
+  paymentMethodsResponse: any;
+  amount: number;
+  currency: string;
+  /** Adyen merchant id used for Apple/Google Pay merchant identification (optional) */
+  merchantName?: string;
+  countryCode?: string;
+  environment?: "test" | "live";
+  clientKey?: string;
+  /** Called when Drop-in submits a payment — must call resolve/reject from result */
+  onSubmit: (
+    paymentMethod: any,
+    browserInfo: any,
+    helpers: { resolve: (res: any) => void; reject: (err?: any) => void }
+  ) => Promise<void> | void;
+  onAdditionalDetails: (
+    details: any,
+    helpers: { resolve: (res: any) => void; reject: (err?: any) => void }
+  ) => Promise<void> | void;
+  onPaymentCompleted?: (result: any) => void;
+  onError?: (err: any) => void;
+}
+
+/**
+ * Mounts an Adyen Web Drop-in v6 instance.
+ * - Renders Apple Pay / Google Pay buttons natively when supported
+ * - Falls back to a hosted (PCI SAQ A) card form
+ */
+export default function AdyenDropin({
+  paymentMethodsResponse,
+  amount,
+  currency,
+  merchantName = "OrdrPayments",
+  countryCode = "AU",
+  environment = "test",
+  clientKey,
+  onSubmit,
+  onAdditionalDetails,
+  onPaymentCompleted,
+  onError,
+}: AdyenDropinProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dropinRef = useRef<Dropin | null>(null);
+  const [mountError, setMountError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function mount() {
+      if (!containerRef.current) return;
+
+      try {
+        // For test/mock mode without a real client key we still need *something*;
+        // Adyen Drop-in requires a client key for live HMAC, but in test env
+        // the public test client key works for tokenisation only.
+        // If no key, we render a fallback message.
+        if (!clientKey) {
+          setMountError(
+            "Payments are in mock test mode — no Adyen client key configured. Use the test card form."
+          );
+          return;
+        }
+
+        const checkout = await AdyenCheckout({
+          environment,
+          clientKey,
+          paymentMethodsResponse,
+          locale: "en-AU",
+          countryCode,
+          amount: {
+            value: Math.round(amount * 100),
+            currency,
+          },
+          analytics: { enabled: false },
+          onSubmit: (state, _component, actions) => {
+            onSubmit(state.data.paymentMethod, state.data.browserInfo, {
+              resolve: (res) => actions.resolve(res),
+              reject: (err) => actions.reject(err),
+            });
+          },
+          onAdditionalDetails: (state, _component, actions) => {
+            onAdditionalDetails(state.data, {
+              resolve: (res) => actions.resolve(res),
+              reject: (err) => actions.reject(err),
+            });
+          },
+          onPaymentCompleted: (result) => {
+            onPaymentCompleted?.(result);
+          },
+          onError: (error) => {
+            console.error("[Adyen Drop-in] error:", error);
+            onError?.(error);
+          },
+        });
+
+        if (cancelled) return;
+
+        const dropin = new Dropin(checkout, {
+          paymentMethodComponents: [Card, ApplePay, GooglePay],
+          paymentMethodsConfiguration: {
+            card: {
+              hasHolderName: true,
+              holderNameRequired: true,
+              billingAddressRequired: false,
+            },
+            applepay: {
+              amount: { value: Math.round(amount * 100), currency },
+              countryCode,
+              configuration: { merchantName },
+            },
+            googlepay: {
+              amount: { value: Math.round(amount * 100), currency },
+              countryCode,
+              configuration: { merchantName },
+            },
+          },
+        });
+
+        dropin.mount(containerRef.current);
+        dropinRef.current = dropin;
+      } catch (e: any) {
+        console.error("[Adyen Drop-in] mount failed:", e);
+        setMountError(e?.message || "Failed to load payment form");
+      }
+    }
+
+    mount();
+
+    return () => {
+      cancelled = true;
+      try {
+        dropinRef.current?.unmount();
+      } catch {}
+      dropinRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentMethodsResponse, clientKey, environment]);
+
+  if (mountError) {
+    return (
+      <div className="rounded-xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+        {mountError}
+      </div>
+    );
+  }
+
+  return <div ref={containerRef} className="adyen-dropin-container" />;
+}

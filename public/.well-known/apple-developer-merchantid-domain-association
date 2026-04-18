@@ -1,0 +1,11 @@
+PLACEHOLDER — replace this entire file with the contents of the
+"apple-developer-merchantid-domain-association" file downloaded from your
+Adyen Customer Area (Settings → Apple Pay → Add Domain).
+
+Apple Pay will not work on this domain until this file contains the real
+verification token issued by Apple via Adyen.
+
+Once replaced, the file must be served at:
+  https://<your-domain>/.well-known/apple-developer-merchantid-domain-association
+
+with Content-Type: text/plain and HTTP 200.
