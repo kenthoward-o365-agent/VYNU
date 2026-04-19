@@ -51,7 +51,7 @@ interface MenuCategory {
 
 interface ActiveOrder {
   id: string;
-  status: "received" | "preparing" | "ready" | "served" | "paid" | "cancelled";
+  status: "received" | "preparing" | "ready" | "served" | "paid" | "cancelled" | "refunded";
   total: number;
   created_at: string;
 }
