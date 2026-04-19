@@ -96,10 +96,23 @@ export default function VenueSettings() {
   
 
   useEffect(() => {
-    if (venue && isManager && session) fetchStaff();
+    if (venue && isManager && session) {
+      fetchStaff();
+      fetchVenueRoles();
+    }
   }, [venue, isManager, session]);
 
   const [staffEmails, setStaffEmails] = useState<Record<string, string>>({});
+
+  const fetchVenueRoles = async () => {
+    if (!venue) return;
+    const { data } = await supabase
+      .from("venue_roles")
+      .select("id, name, is_system")
+      .eq("venue_id", venue.id)
+      .order("display_order");
+    setVenueRoles(data || []);
+  };
 
   const fetchStaff = async () => {
     if (!venue) return;
