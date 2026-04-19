@@ -2,96 +2,65 @@
 
 ## Goal
 
-Replace the hard-coded 3-tier `venue_staff_role` (owner/manager/staff) with **custom, venue-defined roles** that drive **per-route navigation visibility** and **two new permissions**: *update order status* and *re-open & refund closed orders* (via OrdrPay).
+Replace the single "Move to next status" button on each order card with **up to 5 status buttons** rendered along the bottom of the card. Clicking a button advances the order to that status (still updating the diner's mobile view via the existing realtime channel). Add an **"Active for Orders Display"** flag to the status setup so venues choose which statuses count as "Active" in the upper-right Active/All filter.
 
-## Schema (one migration)
+## Schema (1 migration)
 
-1. **`venue_roles`** — custom roles per venue
-   - `id`, `venue_id`, `name` (e.g. "Bar Staff"), `description`, `is_system bool` (true for the seeded owner/manager/staff so they can't be deleted), `display_order`, timestamps
-   - Unique `(venue_id, name)`; RLS: staff SELECT, manager write
-   - Auto-seed trigger on venue insert: **Owner** (system, all perms), **Manager** (system, all perms except role mgmt), **Staff** (system, view-only)
+Add to `venue_order_statuses`:
+- `is_active_display bool not null default false` — when true, orders in this status appear under the "Active" filter on the Orders page
 
-2. **`venue_role_permissions`** — JSON-driven permission grid per role
-   - `role_id` (PK), `nav_keys text[]` (e.g. `['dashboard','orders','menu','settings.users']`), `can_update_order_status bool`, `can_reopen_and_refund_orders bool`, `can_manage_roles bool`, `can_manage_settings bool`
-   - One row per role; seed defaults: owner = all perms + all nav, manager = all nav + status/refund, staff = `['dashboard','orders','tables']` + `can_update_order_status=true` only
+Backfill: seed defaults already inserted `received`, `preparing`, `ready` as the active working states → set `is_active_display = true` for those three on every existing venue. All others (`served`, `paid`, `cancelled`, `refunded`) stay false.
 
-3. **`venue_staff.role_id uuid nullable`** → FK to `venue_roles(id) ON DELETE SET NULL`
-   - Backfill: map existing `venue_staff.role` enum values to the seeded system roles for that venue
-   - Keep the legacy enum column for now (drop in a follow-up after UI fully migrated)
-
-4. **`order_refunds`** (new table) — audit trail for OrdrPay refunds
-   - `id`, `order_id`, `venue_id`, `amount`, `currency`, `reason`, `pspReference` (returned by OrdrPay), `status` (`pending`|`received`|`failed`), `requested_by` (user_id), `created_at`
-   - RLS: staff SELECT (own venue), manager INSERT
-
-## Permission system (frontend)
-
-New `usePermissions()` hook in `src/hooks/use-permissions.ts`:
-- Loads the active venue's `venue_role_permissions` for the current user's `venue_staff.role_id`
-- Returns `{ can(navKey), canUpdateOrderStatus, canReopenAndRefund, canManageRoles, canManageSettings, isLoading }`
-- `tabless_admin` and `owner` always return true for everything
-
-Each top-level nav item gets a stable `navKey`. Sub-items inherit the parent's key (per the requirement: "if the role has access to an Expand/Collapse item the sub sections follow same access setting"). Settings tabs use compound keys (`settings.users`, `settings.payments`, etc.) but inherit `settings` if the role has it.
+Update `seed_venue_order_statuses()` so newly created venues get the same defaults.
 
 ## UI changes
 
-### `src/components/DashboardLayout.tsx`
-- Wrap each `venueNavItems` entry with `if (perms.can(item.navKey))` filter before render. Group + Admin nav unchanged.
-- Sub-items render iff parent renders (no separate gating per sub).
+### `src/pages/OrderStatuses.tsx` (status setup)
+- In the status row + the Add/Edit Status dialog, add a switch: **"Show in Active filter"** (writes `is_active_display`)
+- Add a small column/label badge "Active" on rows where it's true
+- Keep existing `is_terminal`, `is_default`, color, order, name, label fields
 
-### `src/pages/VenueSettings.tsx` — Users tab
-Two-section layout:
+### `src/pages/Orders.tsx` (order card)
+Replace the single `nextStatus` button with a **button row of up to 5 statuses**:
 
-**Section A — Roles** (new, above the staff table)
-- List of venue roles with name, description, badge for "System", and member count
-- "Add Role" button → modal with name, description, **nav access checklist** (one checkbox per top-level nav item, no sub-items shown), and three permission toggles (Update Order Status, Re-open & Refund Closed Orders, Manage Roles & Permissions)
-- Edit / delete (delete blocked for system roles or roles with members)
+- Fetch `venue_order_statuses` for the venue once (sorted by `display_order`, `is_active = true`)
+- For each card, render the first **5** statuses as buttons across the bottom
+- The current status button is shown as `variant="default"` (highlighted); other buttons are `variant="outline"`
+- Buttons before the current one are dimmed (`opacity-60`) but still clickable (allows correcting a misclick / going back, gated by `canUpdateOrderStatus`)
+- Clicking a button calls the existing `updateStatus(orderId, status.name)` flow → already triggers the realtime channel that ConsumerOrder is subscribed to, so the diner's mobile view updates with no extra work
+- Hide the entire button row when `!canUpdateOrderStatus`
+- Terminal-status rows (already determined by `TERMINAL_STATUSES`) still show the OrderAgeBadge frozen and the existing Re-open & Refund button below the status row
 
-**Section B — Users** (existing table)
-- "Role" column changes from enum badge to a **role select** (lists `venue_roles` for this venue) — saves `venue_staff.role_id`
-- "Add User" modal role dropdown sourced from `venue_roles` instead of hard-coded enum
+**"Active" filter logic change:**
+- Currently `filter === "active"` is hard-coded to `["received", "preparing", "ready"]`
+- Change to: query the venue's `venue_order_statuses` where `is_active_display = true`, get those `name`s, and use them in the `.in("status", […])` clause
+- Falls back to the hard-coded list if the venue somehow has none flagged (safety)
 
-### `src/pages/Orders.tsx` — order card
-- Hide the status `<Select>` when `!canUpdateOrderStatus`
-- For terminal orders (`paid`, `served`, `cancelled`), show a **"Re-open & Refund"** button when `canReopenAndRefund`
-- Button opens a `RefundDialog` (new component) — amount field (defaults to order total, max = total minus prior refunds), reason textarea, confirm
-- On confirm → calls `adyen-payment` edge function with `action: "refund"`; on success: inserts `order_refunds` row, sets order status back to `received` (or a new `refunded` terminal state — see below), shows toast
-- Below the order total, render a small "Refunds" summary listing prior `order_refunds` rows with timestamp + amount
+### Diner mobile view (`ConsumerOrder.tsx` / `OrderStatus.tsx`)
+- No structural changes required — the diner already subscribes to `orders` realtime updates and re-renders on status change. Verify the displayed status label/timeline still matches the venue's active status set (the consumer's `OrderStatus` component uses a fixed 4-step visual; that's fine for v1, but ideally also driven by `venue_order_statuses` later — out of scope here)
 
-### Order status — add `refunded`
-- Add `refunded` to `order_status` enum (migration) and to `statusConfig` map; mark as terminal
-- "Re-open & Refund" sets status to `received` to allow staff to work it (refund row tracked separately); a fully-refunded order auto-flips to `refunded` once `sum(order_refunds.amount) >= order.total`
+## Constraints / behaviour
 
-## Edge function — `supabase/functions/adyen-payment/index.ts`
-
-Add a new `refund` action:
-- Inputs: `venue_id`, `order_id`, `amount`, `reason`
-- Looks up the original `pspReference` for the order (need a new `orders.payment_psp_reference text` column — add to migration; populate going forward when payment captures)
-- Calls OrdrPay processor refund endpoint with the PSP reference + amount in minor units
-- Returns `{ pspReference, status }` — caller writes the `order_refunds` row
-- All user-visible error strings remain OrdrPay-branded (no processor name)
+- Cap buttons at 5 — if a venue defines more, only the first 5 (by `display_order`) render on the card to keep the card clean. They can still set the rest as terminal or via the Re-open flow.
+- Clicking the *current* status button is a no-op (button disabled).
+- Mobile/responsive: button row uses `flex flex-wrap gap-1.5`; small `size="sm"` buttons with truncated labels.
 
 ## Files touched
 
-- `supabase/migrations/<ts>_roles_permissions_refunds.sql` — `venue_roles`, `venue_role_permissions`, `order_refunds`, `venue_staff.role_id`, `orders.payment_psp_reference`, `refunded` enum value, seed trigger + backfill
-- `src/hooks/use-permissions.ts` — new
-- `src/components/DashboardLayout.tsx` — gate nav items by `perms.can(navKey)`
-- `src/pages/VenueSettings.tsx` — Roles section + role-select on staff
-- `src/pages/Orders.tsx` — gate status select, add Re-open & Refund button + refund summary
-- `src/components/orders/RefundDialog.tsx` — new
-- `supabase/functions/adyen-payment/index.ts` — new `refund` action
+- `supabase/migrations/<ts>_status_active_display.sql` — add column + backfill + update seed function
+- `src/pages/OrderStatuses.tsx` — add "Show in Active filter" switch to status form/list
+- `src/pages/Orders.tsx` — fetch statuses, render up-to-5-button row, drive Active filter from `is_active_display`
 - `src/integrations/supabase/types.ts` — auto-regenerated
-- `.lovable/memory/features/payments.md` & `schema.md` — note refund flow + roles tables
 
 ## Out of scope
 
-- Per-sub-item permissions (sub-items strictly inherit parent — per request)
-- Group-level / cross-venue role templates
-- Partial-refund UX beyond a single amount field (no per-line-item refunds yet)
-- Removing the legacy `venue_staff.role` enum column (retired in a follow-up)
+- Driving the consumer-side `OrderStatus.tsx` timeline from `venue_order_statuses` (still hard-coded 4 steps for now)
+- Per-Display-Area filtering of the button row (will combine with the KDS work later)
+- Drag-to-reorder buttons on the card itself
 
 ## Expected result
 
-- Manager opens **Settings → Users** → creates "Bar Staff" role with only Dashboard + Orders nav and "Update Order Status" enabled → assigns it to a user.
-- That user logs in: sidebar shows only Dashboard + Orders; can advance order status but never sees Menu, Pricing, Settings, etc.
-- A manager opens a paid order → clicks **Re-open & Refund** → enters amount + reason → OrdrPay processes the refund → order is reopened, refund logged on the card, fully-refunded orders flip to `refunded`.
+- Manager opens **Order Display System** → toggles "Show in Active filter" on `received`, `preparing`, `ready` (default), turns it on for "Served" too if they want servers to keep working it.
+- Manager opens **Orders** with the Active filter → sees orders in those flagged statuses only.
+- Each order card shows up to 5 status buttons; tapping one advances the order, the diner's phone reflects the new status within ~1s via realtime.
 
