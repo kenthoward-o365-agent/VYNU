@@ -3,11 +3,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { CreditCard, ShieldCheck, AlertTriangle, CheckCircle2, Wallet } from "lucide-react";
+import {
+  CreditCard,
+  ShieldCheck,
+  AlertTriangle,
+  CheckCircle2,
+  Wallet,
+  Building2,
+  Copy,
+} from "lucide-react";
+
+type CaptureMode = "immediate" | "manual";
+type MerchantStatus = "pending" | "under_review" | "approved" | "suspended";
 
 interface PaymentConfig {
   id?: string;
@@ -15,6 +34,12 @@ interface PaymentConfig {
   provider: string;
   environment: "test" | "live";
   is_active: boolean;
+  capture_mode: CaptureMode;
+  statement_descriptor: string;
+  country_code: string;
+  default_currency: string;
+  merchant_status: MerchantStatus;
+  merchant_id_ordrpay: string | null;
 }
 
 const TEST_CARDS = [
@@ -25,12 +50,32 @@ const TEST_CARDS = [
   { type: "Declined", number: "4000 0000 0000 0002", expiry: "03/30", cvc: "737" },
 ];
 
+const STATUS_LABEL: Record<MerchantStatus, string> = {
+  pending: "Application not started",
+  under_review: "Under review",
+  approved: "Approved",
+  suspended: "Suspended",
+};
+
+const STATUS_VARIANT: Record<MerchantStatus, "secondary" | "default" | "destructive" | "outline"> = {
+  pending: "outline",
+  under_review: "secondary",
+  approved: "default",
+  suspended: "destructive",
+};
+
 export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
   const [config, setConfig] = useState<PaymentConfig>({
     venue_id: venueId,
     provider: "ordrpayments",
     environment: "test",
     is_active: false,
+    capture_mode: "immediate",
+    statement_descriptor: "",
+    country_code: "AU",
+    default_currency: "AUD",
+    merchant_status: "pending",
+    merchant_id_ordrpay: null,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -44,7 +89,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
 
   const fetchConfig = async () => {
     setLoading(true);
-    const { data } = await supabase
+    let { data } = await supabase
       .from("venue_payment_config" as any)
       .select("*")
       .eq("venue_id", venueId)
@@ -52,25 +97,14 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
       .maybeSingle();
 
     if (!data) {
-      // Also check for legacy "adyen" provider
+      // Legacy provider name fallback (internal only — never shown)
       const { data: legacyData } = await supabase
         .from("venue_payment_config" as any)
         .select("*")
         .eq("venue_id", venueId)
         .eq("provider", "adyen")
         .maybeSingle();
-      if (legacyData) {
-        const d = legacyData as any;
-        setConfig({
-          id: d.id,
-          venue_id: d.venue_id,
-          provider: d.provider,
-          environment: d.environment,
-          is_active: d.is_active,
-        });
-        setLoading(false);
-        return;
-      }
+      data = legacyData;
     }
 
     if (data) {
@@ -81,18 +115,32 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         provider: d.provider,
         environment: d.environment,
         is_active: d.is_active,
+        capture_mode: (d.capture_mode as CaptureMode) || "immediate",
+        statement_descriptor: d.statement_descriptor || "",
+        country_code: d.country_code || "AU",
+        default_currency: d.default_currency || "AUD",
+        merchant_status: (d.merchant_status as MerchantStatus) || "pending",
+        merchant_id_ordrpay: d.merchant_id_ordrpay || null,
       });
     }
     setLoading(false);
   };
 
   const save = async () => {
+    if (config.statement_descriptor.length > 22) {
+      toast.error("Statement descriptor must be 22 characters or fewer");
+      return;
+    }
     setSaving(true);
     const payload: any = {
       venue_id: venueId,
       provider: "ordrpayments",
       environment: config.environment,
       is_active: config.is_active,
+      capture_mode: config.capture_mode,
+      statement_descriptor: config.statement_descriptor || null,
+      country_code: config.country_code,
+      default_currency: config.default_currency,
     };
 
     let error;
@@ -112,7 +160,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
     }
 
     if (error) toast.error(error.message);
-    else toast.success("Payment settings saved");
+    else toast.success("OrdrPay settings saved");
     setSaving(false);
   };
 
@@ -141,7 +189,10 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
       );
       const result = await resp.json();
       if (resp.ok && result.success) {
-        setTestResult({ success: true, message: result.message || "OrdrPayments connection verified successfully." });
+        setTestResult({
+          success: true,
+          message: result.message || "OrdrPay connection verified successfully.",
+        });
         const methodTypes = (result.methods || []).map((m: any) => m.type);
         setAvailableMethods(methodTypes);
       } else {
@@ -154,6 +205,17 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
     setTesting(false);
   };
 
+  const startOnboarding = () => {
+    toast.info("OrdrPay merchant onboarding is coming soon. Our team will be in touch.");
+  };
+
+  const copyMerchantId = () => {
+    if (config.merchant_id_ordrpay) {
+      navigator.clipboard.writeText(config.merchant_id_ordrpay);
+      toast.success("Merchant ID copied");
+    }
+  };
+
   if (loading) {
     return <p className="text-muted-foreground">Loading payment settings...</p>;
   }
@@ -163,7 +225,13 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
   return (
     <div className="space-y-6 max-w-2xl">
       {/* Status Banner */}
-      <Card className={config.is_active ? "border-green-500/30 bg-green-500/5" : "border-amber-500/30 bg-amber-500/5"}>
+      <Card
+        className={
+          config.is_active
+            ? "border-green-500/30 bg-green-500/5"
+            : "border-amber-500/30 bg-amber-500/5"
+        }
+      >
         <CardContent className="pt-6">
           <div className="flex items-center gap-3">
             {config.is_active ? (
@@ -175,41 +243,105 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
               <p className="font-medium text-sm">
                 {config.is_active
                   ? isMockMode
-                    ? "OrdrPayments active in TEST mode"
-                    : "OrdrPayments active — LIVE transactions"
-                  : "OrdrPayments not enabled"}
+                    ? "OrdrPay active in TEST mode"
+                    : "OrdrPay active — LIVE transactions"
+                  : "OrdrPay not enabled"}
               </p>
               <p className="text-xs text-muted-foreground">
                 {config.is_active
                   ? isMockMode
                     ? "Simulated payments — use test cards below to verify your flow."
                     : "Live payment processing — real transactions will be charged."
-                  : "Enable OrdrPayments below to accept payments from diners."}
+                  : "Enable OrdrPay below to accept payments from diners."}
               </p>
             </div>
-            <Badge variant="outline" className={config.environment === "live" ? "border-red-500/50 text-red-500" : "border-blue-500/50 text-blue-500"}>
+            <Badge
+              variant="outline"
+              className={
+                config.environment === "live"
+                  ? "border-red-500/50 text-red-500"
+                  : "border-blue-500/50 text-blue-500"
+              }
+            >
               {config.environment.toUpperCase()}
             </Badge>
           </div>
         </CardContent>
       </Card>
 
-      {/* Configuration */}
+      {/* OrdrPay Merchant Account */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            OrdrPay Merchant Account
+          </CardTitle>
+          <CardDescription>
+            OrdrPay handles your merchant account, funding, statements, and chargebacks.
+            No third-party processor accounts to manage.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Application status</Label>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Set automatically by the OrdrPay underwriting team.
+              </p>
+            </div>
+            <Badge variant={STATUS_VARIANT[config.merchant_status]}>
+              {STATUS_LABEL[config.merchant_status]}
+            </Badge>
+          </div>
+
+          <Separator />
+
+          <div>
+            <Label>OrdrPay Merchant ID</Label>
+            <div className="flex items-center gap-2 mt-1.5">
+              <Input
+                value={config.merchant_id_ordrpay || "—"}
+                readOnly
+                className="font-mono text-sm bg-muted"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={copyMerchantId}
+                disabled={!config.merchant_id_ordrpay}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Issued once your application is approved.
+            </p>
+          </div>
+
+          {config.merchant_status !== "approved" && (
+            <Button onClick={startOnboarding} variant="default">
+              {config.merchant_status === "pending" ? "Start onboarding" : "Continue application"}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Payment Behaviour */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            OrdrPayments Configuration
+            Payment Behaviour
           </CardTitle>
           <CardDescription>
-            Built-in payment processing by OrdrUp. No third-party accounts or API keys needed — we handle everything for you.
+            Control how OrdrPay processes payments at this venue.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
           {/* Environment Toggle */}
           <div className="flex items-center justify-between">
             <div>
-              <Label>Environment</Label>
+              <Label>Mode</Label>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {config.environment === "test"
                   ? "Test mode — use test card numbers below, no real charges"
@@ -217,14 +349,30 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <span className={`text-sm ${config.environment === "test" ? "text-blue-500 font-medium" : "text-muted-foreground"}`}>Test</span>
+              <span
+                className={`text-sm ${
+                  config.environment === "test"
+                    ? "text-blue-500 font-medium"
+                    : "text-muted-foreground"
+                }`}
+              >
+                Test
+              </span>
               <Switch
                 checked={config.environment === "live"}
                 onCheckedChange={(checked) =>
                   setConfig((c) => ({ ...c, environment: checked ? "live" : "test" }))
                 }
               />
-              <span className={`text-sm ${config.environment === "live" ? "text-red-500 font-medium" : "text-muted-foreground"}`}>Live</span>
+              <span
+                className={`text-sm ${
+                  config.environment === "live"
+                    ? "text-red-500 font-medium"
+                    : "text-muted-foreground"
+                }`}
+              >
+                Live
+              </span>
             </div>
           </div>
 
@@ -246,24 +394,111 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             />
           </div>
 
+          <Separator />
+
+          {/* Capture mode */}
+          <div className="space-y-1.5">
+            <Label>Capture mode</Label>
+            <Select
+              value={config.capture_mode}
+              onValueChange={(v) =>
+                setConfig((c) => ({ ...c, capture_mode: v as CaptureMode }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="immediate">Immediate — charge when order is placed</SelectItem>
+                <SelectItem value="manual">Manual — authorise now, capture later</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Manual capture lets you authorise the diner's card now and capture funds when the
+              order is fulfilled.
+            </p>
+          </div>
+
+          {/* Statement descriptor */}
+          <div className="space-y-1.5">
+            <Label htmlFor="statement-descriptor">Statement descriptor</Label>
+            <Input
+              id="statement-descriptor"
+              value={config.statement_descriptor}
+              onChange={(e) =>
+                setConfig((c) => ({ ...c, statement_descriptor: e.target.value.slice(0, 22) }))
+              }
+              maxLength={22}
+              placeholder="YOUR VENUE NAME"
+            />
+            <p className="text-xs text-muted-foreground">
+              What appears on your diner's bank statement — max 22 characters (
+              {config.statement_descriptor.length}/22)
+            </p>
+          </div>
+
+          {/* Country & Currency */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Country</Label>
+              <Select
+                value={config.country_code}
+                onValueChange={(v) => setConfig((c) => ({ ...c, country_code: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AU">Australia</SelectItem>
+                  <SelectItem value="NZ">New Zealand</SelectItem>
+                  <SelectItem value="US">United States</SelectItem>
+                  <SelectItem value="GB">United Kingdom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Default currency</Label>
+              <Select
+                value={config.default_currency}
+                onValueChange={(v) => setConfig((c) => ({ ...c, default_currency: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AUD">AUD</SelectItem>
+                  <SelectItem value="NZD">NZD</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="GBP">GBP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="flex gap-3 pt-2">
             <Button onClick={save} disabled={saving}>
               {saving ? "Saving..." : "Save Settings"}
             </Button>
-            <Button
-              variant="outline"
-              onClick={testConnection}
-              disabled={testing}
-            >
+            <Button variant="outline" onClick={testConnection} disabled={testing}>
               <ShieldCheck className="h-4 w-4 mr-2" />
-              {testing ? "Testing..." : "Test Connection"}
+              {testing ? "Testing..." : "Test OrdrPay connection"}
             </Button>
           </div>
 
           {testResult && (
-            <div className={`rounded-lg p-3 text-sm flex items-center gap-2 ${testResult.success ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"}`}>
-              {testResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+            <div
+              className={`rounded-lg p-3 text-sm flex items-center gap-2 ${
+                testResult.success
+                  ? "bg-green-500/10 text-green-600"
+                  : "bg-red-500/10 text-red-600"
+              }`}
+            >
+              {testResult.success ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <AlertTriangle className="h-4 w-4" />
+              )}
               {testResult.message}
             </div>
           )}
@@ -275,34 +510,71 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Wallet className="h-5 w-5" />
-            Wallets — Apple Pay & Google Pay
+            Wallets & Methods
           </CardTitle>
           <CardDescription>
-            Wallets let diners pay with one tap using cards stored in Apple Wallet or Google Pay — works for guests too.
+            Wallets let diners pay with one tap using cards stored in Apple Wallet or Google Pay —
+            works for guests too.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {availableMethods === null ? (
             <p className="text-sm text-muted-foreground">
-              Run <span className="font-medium">Test Connection</span> above to detect which wallets are enabled on your Adyen merchant account.
+              Run <span className="font-medium">Test OrdrPay connection</span> above to detect
+              which payment methods are enabled on your account.
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <div className={`flex items-center gap-2 rounded-lg p-3 text-sm ${availableMethods.includes("applepay") ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground"}`}>
-                {availableMethods.includes("applepay") ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-                <span>Apple Pay {availableMethods.includes("applepay") ? "enabled" : "not enabled"}</span>
+            <div className="grid grid-cols-3 gap-2">
+              <div
+                className={`flex items-center gap-2 rounded-lg p-3 text-sm ${
+                  availableMethods.includes("scheme")
+                    ? "bg-green-500/10 text-green-600"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {availableMethods.includes("scheme") ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4" />
+                )}
+                <span>Cards</span>
               </div>
-              <div className={`flex items-center gap-2 rounded-lg p-3 text-sm ${availableMethods.includes("googlepay") ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground"}`}>
-                {availableMethods.includes("googlepay") ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-                <span>Google Pay {availableMethods.includes("googlepay") ? "enabled" : "not enabled"}</span>
+              <div
+                className={`flex items-center gap-2 rounded-lg p-3 text-sm ${
+                  availableMethods.includes("applepay")
+                    ? "bg-green-500/10 text-green-600"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {availableMethods.includes("applepay") ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4" />
+                )}
+                <span>Apple Pay</span>
+              </div>
+              <div
+                className={`flex items-center gap-2 rounded-lg p-3 text-sm ${
+                  availableMethods.includes("googlepay")
+                    ? "bg-green-500/10 text-green-600"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {availableMethods.includes("googlepay") ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4" />
+                )}
+                <span>Google Pay</span>
               </div>
             </div>
           )}
-          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
-            <p className="font-medium text-foreground">To enable wallets in production:</p>
-            <p>1. Enable Apple Pay / Google Pay on your Adyen merchant account (Adyen Customer Area → Settings → Payment methods).</p>
-            <p>2. For Apple Pay: download the domain-association file from Adyen and replace <code>public/.well-known/apple-developer-merchantid-domain-association</code>.</p>
-            <p>3. Apple Pay only renders on Safari; Google Pay only on Chrome/Android — that's a browser/OS requirement, not a config issue.</p>
+          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+            <p>
+              <span className="font-medium text-foreground">Apple Pay domain verification — automatic.</span>{" "}
+              OrdrPay handles the verification file for every venue. Apple Pay only renders on
+              Safari; Google Pay only on Chrome/Android — that's a browser/OS requirement.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -312,14 +584,21 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Test Card Numbers</CardTitle>
-            <CardDescription>Use these cards in test mode — payments are simulated, no real charges</CardDescription>
+            <CardDescription>
+              Use these cards in test mode — payments are simulated, no real charges
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               {TEST_CARDS.map((card) => (
-                <div key={card.number} className="flex items-center justify-between text-sm bg-muted/50 rounded-lg px-3 py-2">
+                <div
+                  key={card.number}
+                  className="flex items-center justify-between text-sm bg-muted/50 rounded-lg px-3 py-2"
+                >
                   <div className="flex items-center gap-3">
-                    <Badge variant="outline" className="text-xs w-24 justify-center">{card.type}</Badge>
+                    <Badge variant="outline" className="text-xs w-24 justify-center">
+                      {card.type}
+                    </Badge>
                     <code className="text-xs font-mono">{card.number}</code>
                   </div>
                   <div className="flex items-center gap-3 text-muted-foreground text-xs">

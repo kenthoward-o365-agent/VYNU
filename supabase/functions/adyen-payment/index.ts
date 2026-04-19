@@ -12,9 +12,9 @@ const json = (data: any, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// ── OrdrPayments — Mock Responses ──
+// ── OrdrPay — Mock Responses ──
 // In mock mode we expose card + applepay + googlepay so the Drop-in UI
-// renders the wallet buttons even without real Adyen credentials.
+// renders the wallet buttons even without real processor credentials.
 const MOCK_PAYMENT_METHODS = {
   paymentMethods: [
     {
@@ -27,7 +27,7 @@ const MOCK_PAYMENT_METHODS = {
       name: "Apple Pay",
       configuration: {
         merchantId: "MOCK_APPLEPAY",
-        merchantName: "OrdrPayments (Test)",
+        merchantName: "OrdrPay (Test)",
       },
     },
     {
@@ -35,7 +35,7 @@ const MOCK_PAYMENT_METHODS = {
       name: "Google Pay",
       configuration: {
         merchantId: "MOCK_GOOGLEPAY",
-        merchantName: "OrdrPayments (Test)",
+        merchantName: "OrdrPay (Test)",
         gatewayMerchantId: "MOCK_GATEWAY",
       },
     },
@@ -200,12 +200,12 @@ Deno.serve(async (req) => {
       if (isMock) {
         return json({
           success: true,
-          message: "Mock mode active — no Adyen credentials needed. Test cards will simulate payments.",
+          message: "OrdrPay test mode active — test cards will simulate payments.",
         });
       }
 
       if (!apiKey || !merchantAccount) {
-        return json({ error: "Adyen API key or merchant account not configured" }, 400);
+        return json({ error: "OrdrPay account not yet provisioned for this venue" }, 400);
       }
 
       const resp = await fetch(`${baseUrl}/paymentMethods`, {
@@ -213,8 +213,8 @@ Deno.serve(async (req) => {
         headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
         body: JSON.stringify({
           merchantAccount,
-          countryCode: "AU",
-          amount: { value: 0, currency: "AUD" },
+          countryCode: config.country_code || "AU",
+          amount: { value: 0, currency: config.default_currency || "AUD" },
           channel: "Web",
         }),
       });
@@ -224,29 +224,32 @@ Deno.serve(async (req) => {
         const methods = (data.paymentMethods || []).map((m: any) => m.name || m.type);
         return json({
           success: true,
-          message: `Connected. Available methods: ${methods.join(", ")}`,
+          message: `Connected to OrdrPay. Available methods: ${methods.join(", ")}`,
           methods: data.paymentMethods || [],
         });
       } else {
         const err = await resp.text();
-        return json({ success: false, error: `Adyen returned ${resp.status}: ${err}` }, 400);
+        return json({ success: false, error: `OrdrPay returned ${resp.status}: ${err}` }, 400);
       }
     }
 
-    // ═══ PAYMENT METHODS ═══ (Drop-in needs the raw Adyen response)
+    // ═══ PAYMENT METHODS ═══ (Drop-in needs the raw payment-methods response)
     if (action === "payment_methods") {
+      const clientKey =
+        config.environment === "live" ? config.client_key_live : config.client_key_test;
+
       if (isMock) {
-        return json(MOCK_PAYMENT_METHODS);
+        return json({ ...MOCK_PAYMENT_METHODS, client_key: clientKey || null });
       }
 
-      if (!apiKey || !merchantAccount) return json({ error: "Not configured" }, 400);
+      if (!apiKey || !merchantAccount) return json({ error: "OrdrPay not configured" }, 400);
 
       const reqBody: any = {
         merchantAccount,
-        countryCode: body.country_code || "AU",
+        countryCode: body.country_code || config.country_code || "AU",
         amount: {
           value: Math.round((body.amount || 0) * 100),
-          currency: body.currency || "AUD",
+          currency: body.currency || config.default_currency || "AUD",
         },
         channel: "Web",
       };
@@ -258,7 +261,8 @@ Deno.serve(async (req) => {
         body: JSON.stringify(reqBody),
       });
       const result = await resp.json();
-      return json(result, resp.ok ? 200 : 400);
+      // Always include the client_key so the Drop-in can initialise
+      return json({ ...result, client_key: clientKey || null }, resp.ok ? 200 : 400);
     }
 
     // ═══ CREATE PAYMENT ═══
@@ -285,13 +289,22 @@ Deno.serve(async (req) => {
 
         const paymentRequest: any = {
           merchantAccount,
-          amount: { value: Math.round(amount * 100), currency: currency || "AUD" },
+          amount: { value: Math.round(amount * 100), currency: currency || config.default_currency || "AUD" },
           reference,
           returnUrl: return_url || `${supabaseUrl}/payment-complete`,
           channel: "Web",
           origin: origin || undefined,
           shopperIP,
         };
+
+        // Honour venue capture mode — manual = authorise now, capture later
+        if (config.capture_mode === "manual") {
+          paymentRequest.captureDelayHours = 0;
+          paymentRequest.additionalData = {
+            ...(paymentRequest.additionalData || {}),
+            manualCapture: "true",
+          };
+        }
 
         if (browser_info) paymentRequest.browserInfo = browser_info;
 
@@ -428,7 +441,7 @@ Deno.serve(async (req) => {
 
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err: any) {
-    console.error("adyen-payment error:", err);
-    return json({ error: err.message }, 500);
+    console.error("ordrpay error:", err);
+    return json({ error: err.message || "OrdrPay processing error" }, 500);
   }
 });

@@ -27,15 +27,15 @@ interface AdyenDropinProps {
 }
 
 /**
- * Mounts an Adyen Web Drop-in v6 instance.
+ * Mounts an OrdrPay payment Drop-in instance.
  * - Renders Apple Pay / Google Pay buttons natively when supported
  * - Falls back to a hosted (PCI SAQ A) card form
  */
-export default function AdyenDropin({
+export default function OrdrPayDropin({
   paymentMethodsResponse,
   amount,
   currency,
-  merchantName = "OrdrPayments",
+  merchantName = "OrdrPay",
   countryCode = "AU",
   environment = "test",
   clientKey,
@@ -61,7 +61,7 @@ export default function AdyenDropin({
         // If no key, we render a fallback message.
         if (!clientKey) {
           setMountError(
-            "Payments are in mock test mode — no Adyen client key configured. Use the test card form."
+            "Payments are in test mode — use the test card form below."
           );
           return;
         }
@@ -93,7 +93,7 @@ export default function AdyenDropin({
             onPaymentCompleted?.(result);
           },
           onError: (error: any) => {
-            console.error("[Adyen Drop-in] error:", error);
+            console.error("[OrdrPay Drop-in] error:", error);
             onError?.(error);
           },
         });
@@ -127,7 +127,7 @@ export default function AdyenDropin({
         dropin.mount(containerRef.current);
         dropinRef.current = dropin;
       } catch (e: any) {
-        console.error("[Adyen Drop-in] mount failed:", e);
+        console.error("[OrdrPay Drop-in] mount failed:", e);
         setMountError(e?.message || "Failed to load payment form");
       }
     }

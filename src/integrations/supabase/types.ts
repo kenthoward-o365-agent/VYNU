@@ -1459,36 +1459,69 @@ export type Database = {
         Row: {
           api_key_live: string | null
           api_key_test: string | null
+          apple_pay_merchant_id: string | null
+          capture_mode: string
+          client_key_live: string | null
+          client_key_test: string | null
+          country_code: string
           created_at: string
+          default_currency: string
           environment: string
+          google_pay_merchant_id: string | null
+          hmac_key: string | null
           id: string
           is_active: boolean
           merchant_account: string | null
+          merchant_id_ordrpay: string | null
+          merchant_status: string
           provider: string
+          statement_descriptor: string | null
           updated_at: string
           venue_id: string
         }
         Insert: {
           api_key_live?: string | null
           api_key_test?: string | null
+          apple_pay_merchant_id?: string | null
+          capture_mode?: string
+          client_key_live?: string | null
+          client_key_test?: string | null
+          country_code?: string
           created_at?: string
+          default_currency?: string
           environment?: string
+          google_pay_merchant_id?: string | null
+          hmac_key?: string | null
           id?: string
           is_active?: boolean
           merchant_account?: string | null
+          merchant_id_ordrpay?: string | null
+          merchant_status?: string
           provider?: string
+          statement_descriptor?: string | null
           updated_at?: string
           venue_id: string
         }
         Update: {
           api_key_live?: string | null
           api_key_test?: string | null
+          apple_pay_merchant_id?: string | null
+          capture_mode?: string
+          client_key_live?: string | null
+          client_key_test?: string | null
+          country_code?: string
           created_at?: string
+          default_currency?: string
           environment?: string
+          google_pay_merchant_id?: string | null
+          hmac_key?: string | null
           id?: string
           is_active?: boolean
           merchant_account?: string | null
+          merchant_id_ordrpay?: string | null
+          merchant_status?: string
           provider?: string
+          statement_descriptor?: string | null
           updated_at?: string
           venue_id?: string
         }
