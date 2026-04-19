@@ -530,9 +530,25 @@ export default function MenuBuilder() {
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
                   <SortableContext items={uncatItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                     <div className="grid gap-3">
-                      {uncatItems.map((item) => (
-                        <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} readOnly={isPosMode} />
-                      ))}
+                      {uncatItems.map((item) => {
+                        const overrideIds = itemAreas[item.id] || [];
+                        const effectiveAreas = overrideIds
+                          .map(id => displayAreas.find(a => a.id === id))
+                          .filter(Boolean) as DisplayAreaOption[];
+                        return (
+                          <SortableItemCard
+                            key={item.id}
+                            item={item}
+                            taxes={venueTaxes}
+                            onEdit={openEdit}
+                            onDelete={handleDelete}
+                            onToggle={toggleAvailable}
+                            readOnly={isPosMode}
+                            effectiveAreas={effectiveAreas}
+                            isOverride={overrideIds.length > 0}
+                          />
+                        );
+                      })}
                     </div>
                   </SortableContext>
                 </div>
