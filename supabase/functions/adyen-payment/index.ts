@@ -12,9 +12,9 @@ const json = (data: any, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// ── OrdrPayments — Mock Responses ──
+// ── OrdrPay — Mock Responses ──
 // In mock mode we expose card + applepay + googlepay so the Drop-in UI
-// renders the wallet buttons even without real Adyen credentials.
+// renders the wallet buttons even without real processor credentials.
 const MOCK_PAYMENT_METHODS = {
   paymentMethods: [
     {
@@ -27,7 +27,7 @@ const MOCK_PAYMENT_METHODS = {
       name: "Apple Pay",
       configuration: {
         merchantId: "MOCK_APPLEPAY",
-        merchantName: "OrdrPayments (Test)",
+        merchantName: "OrdrPay (Test)",
       },
     },
     {
@@ -35,7 +35,7 @@ const MOCK_PAYMENT_METHODS = {
       name: "Google Pay",
       configuration: {
         merchantId: "MOCK_GOOGLEPAY",
-        merchantName: "OrdrPayments (Test)",
+        merchantName: "OrdrPay (Test)",
         gatewayMerchantId: "MOCK_GATEWAY",
       },
     },
