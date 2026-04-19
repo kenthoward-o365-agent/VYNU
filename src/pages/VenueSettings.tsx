@@ -386,17 +386,17 @@ export default function VenueSettings() {
                     </div>
                     <div>
                       <Label>Role</Label>
-                      <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v })}>
-                        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <Select value={newUser.role_id} onValueChange={(v) => setNewUser({ ...newUser, role_id: v })}>
+                        <SelectTrigger className="mt-1"><SelectValue placeholder="Select a role" /></SelectTrigger>
                         <SelectContent>
-                          {roleOptions.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                          {venueRoles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}{r.is_system ? "" : " (custom)"}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground mt-1">
-                        <strong>Owner:</strong> Full access. <strong>Manager:</strong> Manage menu, staff, settings. <strong>Staff:</strong> View orders, tables.
+                        Roles control sidebar access and permissions. Manage them in the Roles section above.
                       </p>
                     </div>
-                    <Button onClick={createUser} disabled={!newUser.email || !newUser.password || newUser.password.length < 8 || creatingUser} className="w-full">
+                    <Button onClick={createUser} disabled={!newUser.email || !newUser.password || newUser.password.length < 8 || !newUser.role_id || creatingUser} className="w-full">
                       {creatingUser ? "Creating..." : "Create User"}
                     </Button>
                   </div>
