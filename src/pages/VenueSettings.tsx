@@ -39,8 +39,15 @@ interface StaffMember {
   id: string;
   user_id: string;
   role: string;
+  role_id: string | null;
   display_name: string | null;
   is_active: boolean;
+}
+
+interface VenueRoleOption {
+  id: string;
+  name: string;
+  is_system: boolean;
 }
 
 export default function VenueSettings() {
@@ -62,17 +69,18 @@ export default function VenueSettings() {
   // Staff state
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
+  const [venueRoles, setVenueRoles] = useState<VenueRoleOption[]>([]);
 
   // Create user dialog
   const [createDialog, setCreateDialog] = useState(false);
-  const [newUser, setNewUser] = useState({ email: "", password: "", display_name: "", role: "staff" });
+  const [newUser, setNewUser] = useState({ email: "", password: "", display_name: "", role_id: "" });
   const [creatingUser, setCreatingUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   // Edit user dialog
   const [editDialog, setEditDialog] = useState(false);
   const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
-  const [editForm, setEditForm] = useState({ display_name: "", role: "staff" });
+  const [editForm, setEditForm] = useState({ display_name: "", role_id: "" });
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
