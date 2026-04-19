@@ -16,6 +16,7 @@ type OrderStatus = string;
 
 const TERMINAL_STATUSES: OrderStatus[] = ["served", "paid", "cancelled", "refunded"];
 const REFUNDABLE_STATUSES: OrderStatus[] = ["paid", "served", "cancelled"];
+const FALLBACK_ACTIVE: OrderStatus[] = ["received", "preparing", "ready"];
 
 interface OrderItem {
   id: string;
@@ -45,21 +46,24 @@ interface Order {
   order_items: OrderItem[];
 }
 
-const statusConfig: Record<OrderStatus, { label: string; color: string; icon: any }> = {
-  received: { label: "Received", color: "bg-blue-100 text-blue-800", icon: ClipboardList },
-  preparing: { label: "Preparing", color: "bg-amber-100 text-amber-800", icon: ChefHat },
-  ready: { label: "Ready", color: "bg-green-100 text-green-800", icon: CheckCircle },
-  served: { label: "Served", color: "bg-purple-100 text-purple-800", icon: CheckCircle },
-  paid: { label: "Paid", color: "bg-emerald-100 text-emerald-800", icon: DollarSign },
-  cancelled: { label: "Cancelled", color: "bg-red-100 text-red-800", icon: Clock },
-  refunded: { label: "Refunded", color: "bg-orange-100 text-orange-800", icon: Undo2 },
-};
+interface VenueStatus {
+  id: string;
+  name: string;
+  label: string;
+  color: string;
+  display_order: number;
+  is_terminal: boolean;
+  is_active_display: boolean;
+}
 
-const nextStatus: Partial<Record<OrderStatus, OrderStatus>> = {
-  received: "preparing",
-  preparing: "ready",
-  ready: "served",
-  served: "paid",
+const fallbackStatusConfig: Record<string, { label: string; color: string }> = {
+  received: { label: "Received", color: "bg-blue-100 text-blue-800" },
+  preparing: { label: "Preparing", color: "bg-amber-100 text-amber-800" },
+  ready: { label: "Ready", color: "bg-green-100 text-green-800" },
+  served: { label: "Served", color: "bg-purple-100 text-purple-800" },
+  paid: { label: "Paid", color: "bg-emerald-100 text-emerald-800" },
+  cancelled: { label: "Cancelled", color: "bg-red-100 text-red-800" },
+  refunded: { label: "Refunded", color: "bg-orange-100 text-orange-800" },
 };
 
 export default function Orders() {
