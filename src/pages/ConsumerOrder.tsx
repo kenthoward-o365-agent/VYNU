@@ -402,10 +402,10 @@ const ConsumerOrder = () => {
       )}
 
       {/* Active Order Status */}
-      {activeOrder && OPEN_ORDER_STATUSES.includes(activeOrder.status) && (
+      {activeOrder && OPEN_ORDER_STATUSES.includes(activeOrder.status) && activeOrder.status !== "refunded" && (
         <OrderStatus
           orderId={activeOrder.id}
-          status={activeOrder.status}
+          status={activeOrder.status as "received" | "preparing" | "ready" | "served" | "paid" | "cancelled"}
           total={activeOrder.total}
           createdAt={activeOrder.created_at}
         />
