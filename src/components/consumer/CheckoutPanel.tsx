@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { CreditCard, ArrowLeft, ShieldCheck, Trash2, Check } from "lucide-react";
-import AdyenDropin from "./AdyenDropin";
+import OrdrPayDropin from "./AdyenDropin";
 
 export interface CartItem {
   id: string;
@@ -68,9 +68,9 @@ const CheckoutPanel = ({
   const [gratuityDecline, setGratuityDecline] = useState("No thanks");
   const [selectedTip, setSelectedTip] = useState<number | null>(null);
 
-  // Adyen Drop-in state
+  // OrdrPay Drop-in state
   const [paymentMethodsResponse, setPaymentMethodsResponse] = useState<any>(null);
-  const [adyenClientKey, setAdyenClientKey] = useState<string | null>(null);
+  const [ordrPayClientKey, setOrdrPayClientKey] = useState<string | null>(null);
   const [loadingMethods, setLoadingMethods] = useState(false);
 
   useEffect(() => {
@@ -148,9 +148,9 @@ const CheckoutPanel = ({
       if (data?.paymentMethods) {
         setPaymentMethodsResponse(data);
       }
-      // Adyen client key — for now, read from public env if available; otherwise null (mock fallback)
-      const key = (import.meta as any).env?.VITE_ADYEN_CLIENT_KEY || null;
-      setAdyenClientKey(key);
+      // Read client key returned by the OrdrPay backend (per-venue)
+      const key = data?.client_key || (import.meta as any).env?.VITE_ADYEN_CLIENT_KEY || null;
+      setOrdrPayClientKey(key);
     } catch (e) {
       console.error("Failed to load payment methods:", e);
     }
@@ -457,7 +457,7 @@ const CheckoutPanel = ({
 
   // Show Drop-in only when payments enabled, no stored card selected, and we have methods + key
   const showDropin =
-    paymentEnabled && !selectedStoredCard && !!paymentMethodsResponse && !!adyenClientKey;
+    paymentEnabled && !selectedStoredCard && !!paymentMethodsResponse && !!ordrPayClientKey;
 
   // Show legacy form as fallback if Drop-in can't render (no client key) OR if a stored card is picked
   const showLegacyForm =
@@ -621,25 +621,25 @@ const CheckoutPanel = ({
               </div>
             )}
 
-            {/* Adyen Drop-in — Apple Pay / Google Pay / hosted card */}
+            {/* OrdrPay Drop-in — Apple Pay / Google Pay / hosted card */}
             {showDropin && (
               <div className="space-y-3">
                 <Label className="text-sm font-semibold flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
                   Pay with card or wallet
                 </Label>
-                <AdyenDropin
+                <OrdrPayDropin
                   paymentMethodsResponse={paymentMethodsResponse}
                   amount={total + tipAmount}
                   currency="AUD"
                   countryCode="AU"
                   environment={paymentEnvironment}
-                  clientKey={adyenClientKey || undefined}
-                  merchantName="OrdrPayments"
+                  clientKey={ordrPayClientKey || undefined}
+                  merchantName="OrdrPay"
                   onSubmit={handleDropinSubmit}
                   onAdditionalDetails={handleDropinAdditionalDetails}
                   onError={(e) => {
-                    console.error("Adyen error:", e);
+                    console.error("OrdrPay error:", e);
                   }}
                 />
               </div>
@@ -729,7 +729,7 @@ const CheckoutPanel = ({
                     <div>
                       <p className="text-sm font-medium">Save card for next time</p>
                       <p className="text-xs text-muted-foreground">
-                        Securely stored by OrdrPayments — we never see your full card number
+                        Securely stored by OrdrPay — we never see your full card number
                       </p>
                     </div>
                     <Switch checked={saveCard} onCheckedChange={setSaveCard} />
@@ -740,7 +740,7 @@ const CheckoutPanel = ({
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Secured by OrdrPayments</span>
+              <span>Secured by OrdrPay</span>
             </div>
           </>
         )}

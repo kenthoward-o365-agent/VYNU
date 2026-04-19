@@ -289,13 +289,22 @@ Deno.serve(async (req) => {
 
         const paymentRequest: any = {
           merchantAccount,
-          amount: { value: Math.round(amount * 100), currency: currency || "AUD" },
+          amount: { value: Math.round(amount * 100), currency: currency || config.default_currency || "AUD" },
           reference,
           returnUrl: return_url || `${supabaseUrl}/payment-complete`,
           channel: "Web",
           origin: origin || undefined,
           shopperIP,
         };
+
+        // Honour venue capture mode — manual = authorise now, capture later
+        if (config.capture_mode === "manual") {
+          paymentRequest.captureDelayHours = 0;
+          paymentRequest.additionalData = {
+            ...(paymentRequest.additionalData || {}),
+            manualCapture: "true",
+          };
+        }
 
         if (browser_info) paymentRequest.browserInfo = browser_info;
 
@@ -432,7 +441,7 @@ Deno.serve(async (req) => {
 
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err: any) {
-    console.error("adyen-payment error:", err);
-    return json({ error: err.message }, 500);
+    console.error("ordrpay error:", err);
+    return json({ error: err.message || "OrdrPay processing error" }, 500);
   }
 });
