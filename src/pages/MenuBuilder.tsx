@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban, Clock, AlertTriangle, RefreshCw } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import ImageEnhancerDialog from "@/components/menu/ImageEnhancerDialog";
+import DisplayAreaPicker, { type DisplayAreaOption } from "@/components/menu/DisplayAreaPicker";
 import { cn } from "@/lib/utils";
 import { resizeFileToWebP } from "@/lib/image-utils";
 import { toast } from "sonner";
