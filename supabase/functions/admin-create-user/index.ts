@@ -233,7 +233,7 @@ Deno.serve(async (req) => {
     }
 
     // ── CREATE USER ──
-    const { email, password, venue_id, role, display_name } = body;
+    const { email, password, venue_id, role, display_name, role_id } = body;
 
     if (!email || !password || !venue_id) {
       return json({ error: "email, password, and venue_id are required" }, 400);
@@ -242,7 +242,22 @@ Deno.serve(async (req) => {
     if (password.length < 8) return json({ error: "Password must be at least 8 characters" }, 400);
 
     const validRoles = ["owner", "manager", "staff"];
-    const userRole = validRoles.includes(role) ? role : "staff";
+    let userRole = validRoles.includes(role) ? role : "staff";
+    let resolvedRoleId: string | null = null;
+
+    // If role_id provided, validate & derive enum role from its name when possible
+    if (role_id) {
+      const { data: roleRow } = await adminClient
+        .from("venue_roles")
+        .select("id, name")
+        .eq("id", role_id)
+        .eq("venue_id", venue_id)
+        .maybeSingle();
+      if (!roleRow) return json({ error: "Invalid role for this venue" }, 400);
+      resolvedRoleId = roleRow.id;
+      const lower = (roleRow.name || "").toLowerCase();
+      if (validRoles.includes(lower)) userRole = lower;
+    }
 
     // Create or find existing auth user
     let userId: string;
@@ -284,6 +299,7 @@ Deno.serve(async (req) => {
         venue_id,
         user_id: userId,
         role: userRole,
+        role_id: resolvedRoleId,
         display_name: display_name || null,
       });
 
