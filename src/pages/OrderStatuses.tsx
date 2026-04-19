@@ -349,7 +349,7 @@ export default function OrderStatuses() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 pt-2">
+              <div className="grid grid-cols-2 gap-3 pt-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <Switch
                     checked={editing.is_active ?? true}
@@ -370,6 +370,13 @@ export default function OrderStatuses() {
                     onCheckedChange={v => setEditing({ ...editing, is_terminal: v })}
                   />
                   <span className="text-sm">Terminal</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Switch
+                    checked={editing.is_active_display ?? false}
+                    onCheckedChange={v => setEditing({ ...editing, is_active_display: v })}
+                  />
+                  <span className="text-sm">Show in Active filter</span>
                 </label>
               </div>
             </div>
