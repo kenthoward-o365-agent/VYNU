@@ -506,14 +506,14 @@ export default function VenueSettings() {
                   </div>
                   <div>
                     <Label>Role</Label>
-                    <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <Select value={editForm.role_id} onValueChange={(v) => setEditForm({ ...editForm, role_id: v })}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select a role" /></SelectTrigger>
                       <SelectContent>
-                        {roleOptions.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                        {venueRoles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}{r.is_system ? "" : " (custom)"}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      <strong>Owner:</strong> Full access including user management. <strong>Manager:</strong> Manage menu, settings, and staff. <strong>Staff:</strong> View-only for orders and tables.
+                      Roles control sidebar access and permissions. Manage them in the Roles section above.
                     </p>
                   </div>
                 </div>
