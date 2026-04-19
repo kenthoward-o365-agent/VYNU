@@ -227,11 +227,12 @@ export default function Orders() {
       ) : (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {orders.map((order) => {
-            const config = statusConfig[order.status];
-            const next = nextStatus[order.status];
+            const config = statusByName(order.status);
             const refunds = refundsByOrder[order.id] || [];
             const totalRefunded = refunds.reduce((sum, r) => sum + Number(r.amount), 0);
             const showRefundButton = canReopenAndRefund && REFUNDABLE_STATUSES.includes(order.status) && totalRefunded < Number(order.total);
+            const buttonStatuses = venueStatuses.slice(0, 5);
+            const currentIdx = buttonStatuses.findIndex((s) => s.name === order.status);
             return (
               <Card key={order.id} className="flex flex-col">
                 <CardHeader className="pb-2">
@@ -244,7 +245,16 @@ export default function Orders() {
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <Badge className={config.color}>{config.label}</Badge>
+                      {config.vs ? (
+                        <Badge
+                          style={{ backgroundColor: config.vs.color, color: "#fff" }}
+                          className="border-transparent"
+                        >
+                          {config.label}
+                        </Badge>
+                      ) : (
+                        <Badge className={config.color}>{config.label}</Badge>
+                      )}
                       <OrderAgeBadge
                         createdAt={order.created_at}
                         frozen={TERMINAL_STATUSES.includes(order.status)}
@@ -299,10 +309,28 @@ export default function Orders() {
                     </div>
                   )}
 
-                  {next && canUpdateOrderStatus && (
-                    <Button className="w-full" size="sm" onClick={() => updateStatus(order.id, next)}>
-                      Move to {statusConfig[next].label}
-                    </Button>
+                  {/* Status button row (up to 5) */}
+                  {canUpdateOrderStatus && buttonStatuses.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {buttonStatuses.map((s, i) => {
+                        const isCurrent = s.name === order.status;
+                        const isPast = currentIdx >= 0 && i < currentIdx;
+                        return (
+                          <Button
+                            key={s.id}
+                            size="sm"
+                            variant={isCurrent ? "default" : "outline"}
+                            disabled={isCurrent}
+                            onClick={() => updateStatus(order.id, s.name)}
+                            className={`flex-1 min-w-[80px] ${isPast ? "opacity-60" : ""}`}
+                            style={isCurrent ? { backgroundColor: s.color, borderColor: s.color, color: "#fff" } : undefined}
+                            title={s.label}
+                          >
+                            <span className="truncate">{s.label}</span>
+                          </Button>
+                        );
+                      })}
+                    </div>
                   )}
 
                   {showRefundButton && (
