@@ -180,16 +180,17 @@ export default function VenueSettings() {
   };
 
   const createUser = async () => {
-    if (!venue || !newUser.email || !newUser.password) return;
+    if (!venue || !newUser.email || !newUser.password || !newUser.role_id) return;
     setCreatingUser(true);
     try {
+      const roleName = venueRoles.find((r) => r.id === newUser.role_id)?.name || "user";
       await invokeUserFn({
         email: newUser.email, password: newUser.password,
-        venue_id: venue.id, role: newUser.role, display_name: newUser.display_name || null,
+        venue_id: venue.id, role_id: newUser.role_id, display_name: newUser.display_name || null,
       });
-      toast.success(`${newUser.email} added as ${newUser.role}`);
+      toast.success(`${newUser.email} added as ${roleName}`);
       setCreateDialog(false);
-      setNewUser({ email: "", password: "", display_name: "", role: "staff" });
+      setNewUser({ email: "", password: "", display_name: "", role_id: "" });
       fetchStaff();
     } catch (err: any) {
       toast.error(err.message);
@@ -199,7 +200,13 @@ export default function VenueSettings() {
 
   const openEdit = (s: StaffMember) => {
     setEditStaff(s);
-    setEditForm({ display_name: s.display_name || "", role: s.role });
+    // Resolve role_id: prefer existing role_id, else map legacy enum role -> system role
+    let resolvedRoleId = s.role_id || "";
+    if (!resolvedRoleId && s.role) {
+      const match = venueRoles.find((r) => r.name.toLowerCase() === s.role.toLowerCase());
+      if (match) resolvedRoleId = match.id;
+    }
+    setEditForm({ display_name: s.display_name || "", role_id: resolvedRoleId });
     setEditDialog(true);
   };
 
@@ -209,7 +216,7 @@ export default function VenueSettings() {
     try {
       await invokeUserFn({
         action: "update", staff_id: editStaff.id, venue_id: venue.id,
-        display_name: editForm.display_name, role: editForm.role,
+        display_name: editForm.display_name, role_id: editForm.role_id || null,
       });
       toast.success("User updated");
       setEditDialog(false);
