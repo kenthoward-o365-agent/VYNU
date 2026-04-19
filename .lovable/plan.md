@@ -2,89 +2,98 @@
 
 ## Goal
 
-Enable **Apple Pay** and **Google Pay** (which surface Apple Wallet / Google Wallet stored cards and bank-linked cards on the device) in the OrdrPayments checkout — for both signed-in diners *and* anonymous guests. This is the table-stakes "tap to pay" experience expected from modern QR-ordering.
+Restore the credentials/configuration UI in **Settings → Payments**, but white-label everything as **OrdrPay** (PayFac model). No mention of "Adyen" anywhere a venue manager or diner can see — including the Knowledge Base, settings labels, button text, error messages, or memory files used to brief future AI sessions.
 
-## Why Adyen Web Drop-in (not raw fields)
+## Branding rule (new constraint, will be saved to memory)
 
-Today `CheckoutPanel.tsx` collects raw card number / expiry / CVC into React state and posts them through our edge function. That approach:
+- **User-facing**: always "OrdrPay" — the in-house PayFac that handles application, underwriting, merchant onboarding, funding, fee collection, chargebacks, and statements (powered internally by Valpay, also never named to end users).
+- **Code/internal**: existing `adyen-payment` edge function, `venue_payment_config` columns, and Drop-in library imports stay as-is (renaming infra is out of scope and risky). The processor is an internal implementation detail.
+- **Knowledge Base content** (`src/pages/KnowledgeBase.tsx` + any seeded articles): scrub any "Adyen" references, replace with "OrdrPay".
 
-- Cannot render Apple Pay / Google Pay sheets (those are browser/OS APIs, not form fields)
-- Pushes us toward PCI-DSS SAQ D (highest scope) the moment we go live
-- Cannot do 3DS2 challenge UI properly
+## Schema additions (`venue_payment_config`)
 
-The right move is to switch the consumer checkout to **Adyen Web Drop-in v6** (`@adyen/adyen-web`), which:
+Same fields as before, but presented under OrdrPay branding:
 
-- Renders Apple Pay button when Safari + a card is in Wallet
-- Renders Google Pay button when Chrome + a card is in Google Wallet/Pay
-- Renders a hosted card field (PCI SAQ A) for cards not in a wallet
-- Handles 3DS2 challenge inline
-- Works for guests (no diner account required) — wallet payments are tokenised by Apple/Google, not us
-- Still supports our existing "saved cards" flow for signed-in diners
+- `client_key_test`, `client_key_live` — internal processor client keys (hidden from venue UI; auto-provisioned by OrdrPay onboarding, manager never enters these)
+- `hmac_key` — webhook verification (internal, hidden)
+- `apple_pay_merchant_id`, `google_pay_merchant_id` — wallet IDs (internal, hidden)
+- `capture_mode` (`immediate` | `manual`) — **shown** to manager
+- `statement_descriptor` — **shown** to manager (this is what their diners see on bank statements)
+- `country_code` (default `AU`), `default_currency` (default `AUD`) — **shown**
+- `merchant_status` (`pending` | `under_review` | `approved` | `suspended`) — **shown** as read-only badge
+- `merchant_id_ordrpay` — OrdrPay-issued merchant ID, **shown** read-only
 
-## Architecture
+(All nullable / sensible defaults — no breaking changes.)
 
-```text
-CheckoutPanel.tsx
-  │
-  ├── 1. POST /functions/v1/adyen-payment {action:"payment_methods", amount, currency}
-  │       ─ returns the venue's enabled methods (card, applepay, googlepay, ...)
-  │
-  ├── 2. Mount <AdyenCheckout> Drop-in with that response
-  │       ─ Drop-in shows Apple Pay / Google Pay buttons natively
-  │       ─ Card form is iframe'd by Adyen (PCI SAQ A)
-  │
-  ├── 3. onSubmit(state) → POST {action:"create_payment", paymentMethod: state.data.paymentMethod, browserInfo, ...}
-  │       ─ edge function forwards to Adyen /payments
-  │
-  ├── 4. onAdditionalDetails (3DS) → POST {action:"payment_details", details}
-  │
-  └── 5. On Authorised → mark order paid, fire onOrderPlaced
-```
+## UI — `src/components/venue/PaymentSettingsTab.tsx`
 
-The edge function changes are small — it already proxies `/payments` and `/payments/details`. We just stop building the `paymentMethod` server-side and instead pass through whatever Drop-in produced (which is a signed token for wallets, encrypted card data for manual entry).
+Single OrdrPay-branded card with three sections, no "advanced / bring your own" mode:
 
-## Apple Pay / Google Pay specifics
+1. **OrdrPay Merchant Account** (top)
+   - Status badge: Pending / Under Review / Approved / Suspended
+   - OrdrPay Merchant ID (read-only, copy button)
+   - "Start onboarding" / "Continue application" button (placeholder action — emits a toast for now; real KYC flow is a follow-up)
+   - One-line copy: "OrdrPay handles your merchant account, funding, statements, and chargebacks."
 
-**Apple Pay** requires:
-- Domain verification: download `apple-developer-merchantid-domain-association` from Adyen Customer Area, host it at `/.well-known/apple-developer-merchantid-domain-association` on `ordrup.lovable.app` (and any custom domain). Add as a static file in `public/.well-known/`.
-- HTTPS (already covered)
-- Safari on iOS/macOS with a card in Wallet
-- Adyen merchant account configured for Apple Pay (admin step in Adyen CA, no code)
+2. **Payment Behaviour** (manager-editable)
+   - Enable Payments toggle (existing)
+   - Environment: Test / Live (existing — relabel "Test mode" / "Live mode")
+   - Capture mode: Immediate / Manual authorise-then-capture
+   - Statement descriptor (with helper: "What appears on your diner's bank statement, max 22 chars")
+   - Country, Default currency
 
-**Google Pay** requires:
-- Chrome / Android with cards in Google Pay
-- Adyen merchant account configured for Google Pay (admin step, no code)
-- `gatewayMerchantId` is supplied by Drop-in automatically from the `/paymentMethods` response
+3. **Wallets & Methods** (read-only status, existing card retained)
+   - Apple Pay / Google Pay / Cards — green check or grey dash, populated from a backend `payment_methods` test call
+   - Footer link: "Apple Pay domain verification — automatic" (no mention of downloading files; OrdrPay handles it)
 
-Both work for **guest checkout** out of the box — the Wallet returns a one-shot tokenised payment credential, no diner profile needed.
+The existing **Test Connection** button stays — relabel to "Test OrdrPay connection".
 
-## Files to change
+## Edge function — `supabase/functions/adyen-payment/index.ts`
 
-- `package.json` — add `@adyen/adyen-web` (v6.x)
-- `src/components/consumer/CheckoutPanel.tsx` — replace manual card form with Drop-in mount; keep stored-card flow as a "Saved cards" section above Drop-in for signed-in diners; keep gratuity + tax UI unchanged
-- `src/components/consumer/AdyenDropin.tsx` (new) — small wrapper that mounts Drop-in and exposes `onPaymentCompleted` / `onError`
-- `supabase/functions/adyen-payment/index.ts`:
-  - `payment_methods` action: include `channel: "Web"`, return full Adyen response untouched (Drop-in needs the raw shape)
-  - `create_payment` action: accept a generic `payment_method` object from the client and forward it as `paymentRequest.paymentMethod`; add `browserInfo`, `origin`, `shopperIP` from headers; keep stored-card branch
-  - `payment_details` action: already correct
-  - Mock mode: add a `mockPaymentMethods` response that includes `applepay` / `googlepay` so test mode visually shows the buttons (clicks short-circuit to a simulated Authorised)
-- `public/.well-known/apple-developer-merchantid-domain-association` — placeholder file; user will replace contents with the file Adyen provides
-- `src/components/venue/PaymentSettingsTab.tsx` — add a small "Wallets" status row showing whether Apple Pay / Google Pay are enabled for this venue (read from `/paymentMethods` test call), plus a one-line note about needing to enable them in Adyen CA
-- `mem://features/payments` (new) + `mem://index.md` — record the Drop-in architecture decision and Apple Pay domain-verification requirement
+(File name stays internal; no rename.)
 
-## Out of scope (stays as-is)
+- `payment_methods` action: also return `client_key` so the Drop-in initialises without a second round trip.
+- `create_payment` action: honour `capture_mode` from config (send `captureDelayHours: 0` + `additionalData.manualCapture: true` when `manual`).
+- All log lines, error messages returned to the client → scrub "Adyen" wording, replace with "OrdrPay" (e.g. `"OrdrPay returned an error"`).
 
-- Tax & gratuity calculation
-- Stored-card management for signed-in diners (already works; just rendered above Drop-in)
-- Order creation flow and audit-date handling
-- Live Adyen credentials provisioning (admin task in Adyen CA — no code change beyond what's already in `venue_payment_config`)
-- PayPal, Klarna, BNPL — Drop-in supports them but we're scoping this PR to wallets + cards
+## Frontend Drop-in — `src/components/consumer/CheckoutPanel.tsx` + `AdyenDropin.tsx`
+
+- Read `client_key` from the `payment_methods` response (already passed through).
+- Any visible string ("Powered by Adyen", error messages) → "Powered by OrdrPay" or removed.
+- Component file `AdyenDropin.tsx` — keep filename (internal), but rename the exported component to `OrdrPayDropin` and update the import in `CheckoutPanel.tsx`. (Or leave file rename for a follow-up — call the export `OrdrPayDropin` either way so no UI text leaks the underlying processor.)
+
+## Knowledge Base scrub — `src/pages/KnowledgeBase.tsx`
+
+- Search for "Adyen" / "adyen" in the page and any seeded article fixtures → replace with "OrdrPay".
+- Any article describing how to get API keys or configure a processor account → replace with a single "OrdrPay onboarding" article describing the PayFac model (application → underwriting → approval → funding).
+
+## Memory updates
+
+- Update `mem://features/payments` → rewrite to describe OrdrPay (PayFac, internally on Valpay/processor X). Add a hard rule: "Never mention the underlying processor in user-facing UI, Knowledge Base, error messages, or future plans."
+- Add a Core line to `mem://index.md`: "Payments product is **OrdrPay** (in-house PayFac). Never name the underlying processor in any user-visible surface."
+
+## Files touched
+
+- New migration → adds 9 columns to `venue_payment_config`
+- `src/components/venue/PaymentSettingsTab.tsx` — full OrdrPay rebrand + new sections
+- `supabase/functions/adyen-payment/index.ts` — return `client_key`, honour `capture_mode`, scrub user-visible strings
+- `src/components/consumer/CheckoutPanel.tsx` — pick up `client_key` from server, rename import
+- `src/components/consumer/AdyenDropin.tsx` — export as `OrdrPayDropin`, scrub UI strings
+- `src/pages/KnowledgeBase.tsx` — scrub Adyen references
+- `.lovable/memory/features/payments.md` — rewritten under OrdrPay framing
+- `.lovable/memory/index.md` — add OrdrPay branding rule to Core
+
+## Out of scope
+
+- Real OrdrPay onboarding/KYC flow (button is a placeholder for this PR)
+- Webhook handler edge function (HMAC-verified order sync) — separate PR
+- Renaming the internal `adyen-payment` edge function or `AdyenDropin.tsx` filename
+- Statements / chargeback / funding dashboards (future PayFac dashboard work)
 
 ## Expected result
 
-- Anonymous diner on iPhone Safari sees an **Apple Pay** button → Face ID → paid in ~2 seconds, no card entry
-- Anonymous diner on Android Chrome sees a **Google Pay** button → fingerprint → paid
-- Diner without a wallet (or unsupported browser) sees the same hosted card form as today
-- Signed-in returning diner still sees their saved cards on top
-- Test mode still works end-to-end with mocked wallet buttons
+- Manager opens **Settings → Payments** → sees OrdrPay-branded merchant status, behaviour controls, and wallet status. No "Adyen" anywhere.
+- Diner checkout still works end-to-end with Apple Pay / Google Pay / cards.
+- Knowledge Base contains only OrdrPay terminology.
+- Future AI sessions read the memory file and continue using OrdrPay branding by default.
 
