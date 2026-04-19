@@ -173,15 +173,21 @@ export default function Orders() {
             return (
               <Card key={order.id} className="flex flex-col">
                 <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
                       <CardTitle className="text-base">#{order.id.slice(0, 8)}</CardTitle>
                       <p className="text-xs text-muted-foreground">
                         {new Date(order.created_at).toLocaleTimeString()}
                         {order.table?.table_number && ` · Table ${order.table.table_number}`}
                       </p>
                     </div>
-                    <Badge className={config.color}>{config.label}</Badge>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <Badge className={config.color}>{config.label}</Badge>
+                      <OrderAgeBadge
+                        createdAt={order.created_at}
+                        frozen={TERMINAL_STATUSES.includes(order.status)}
+                      />
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 flex-1">
