@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ClipboardList, Clock, ChefHat, CheckCircle, DollarSign, ShoppingCart, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
+import OrderAgeBadge from "@/components/orders/OrderAgeBadge";
+
+const TERMINAL_STATUSES: OrderStatus[] = ["served", "paid", "cancelled"];
 
 type OrderStatus = "received" | "preparing" | "ready" | "served" | "paid" | "cancelled";
 
