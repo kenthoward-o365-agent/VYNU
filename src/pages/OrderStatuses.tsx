@@ -244,7 +244,7 @@ export default function OrderStatuses() {
                     <code className="text-xs text-muted-foreground">{s.name}</code>
                     {s.is_default && <Badge variant="secondary" className="text-xs">Default</Badge>}
                     {s.is_terminal && <Badge variant="outline" className="text-xs">Terminal</Badge>}
-                    {s.is_active_display && <Badge variant="outline" className="text-xs border-emerald-500 text-emerald-600">Active filter</Badge>}
+                    {s.is_active_display && <Badge variant="secondary" className="text-xs">Active filter</Badge>}
                     {!s.is_active && <Badge variant="destructive" className="text-xs">Inactive</Badge>}
                     {s.maps_to_system_status && (
                       <Badge variant="outline" className="text-xs">→ {s.maps_to_system_status}</Badge>
