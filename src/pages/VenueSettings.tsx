@@ -255,9 +255,14 @@ export default function VenueSettings() {
 
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
-  const roleOptions = isOwner
-    ? [{ value: "owner", label: "Owner" }, { value: "manager", label: "Manager" }, { value: "staff", label: "Staff" }]
-    : [{ value: "staff", label: "Staff" }];
+  // Role display helper for the staff table — looks up the custom role name when available, else falls back to legacy enum role.
+  const getRoleLabel = (s: StaffMember) => {
+    if (s.role_id) {
+      const match = venueRoles.find((r) => r.id === s.role_id);
+      if (match) return match.name;
+    }
+    return s.role || "—";
+  };
 
   return (
     <div className="space-y-6">
