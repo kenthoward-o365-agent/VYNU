@@ -2,6 +2,7 @@ import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug, Monitor
 } from "lucide-react";
@@ -38,19 +39,20 @@ interface NavItem {
   label: string;
   icon: any;
   hasSub?: boolean;
+  navKey: string;
 }
 
 const venueNavItems: NavItem[] = [
-  { path: "/dashboard", label: "Dashboard", icon: { light: navDashboard, dark: navDashboardDark } },
-  { path: "/sippa-analytics", label: "L.O.U. AI Analytics", icon: { light: navAIAnalytics, dark: navAIAnalyticsDark } },
-  { path: "/menu", label: "Menu Builder", icon: { light: navMenuBuilder, dark: navMenuBuilderDark }, hasSub: true },
-  { path: "/pricing", label: "Pricing", icon: { light: navPricing, dark: navPricingDark }, hasSub: true },
-  { path: "/tables", label: "Tables & QR", icon: { light: navTablesQR, dark: navTablesQRDark } },
-  { path: "/orders", label: "Orders", icon: { light: navOrders, dark: navOrdersDark } },
-  { path: "/analytics", label: "Analytics", icon: { light: navAnalytics, dark: navAnalyticsDark } },
-  { path: "/diners", label: "Diners", icon: { light: navDiners, dark: navDinersDark }, hasSub: true },
-  { path: "/reporting", label: "DayEnd", icon: CalendarCheck, hasSub: true },
-  { path: "/settings", label: "Settings", icon: { light: navSettings, dark: navSettingsDark }, hasSub: true },
+  { path: "/dashboard", label: "Dashboard", icon: { light: navDashboard, dark: navDashboardDark }, navKey: "dashboard" },
+  { path: "/sippa-analytics", label: "L.O.U. AI Analytics", icon: { light: navAIAnalytics, dark: navAIAnalyticsDark }, navKey: "sippa_analytics" },
+  { path: "/menu", label: "Menu Builder", icon: { light: navMenuBuilder, dark: navMenuBuilderDark }, hasSub: true, navKey: "menu" },
+  { path: "/pricing", label: "Pricing", icon: { light: navPricing, dark: navPricingDark }, hasSub: true, navKey: "pricing" },
+  { path: "/tables", label: "Tables & QR", icon: { light: navTablesQR, dark: navTablesQRDark }, navKey: "tables" },
+  { path: "/orders", label: "Orders", icon: { light: navOrders, dark: navOrdersDark }, navKey: "orders" },
+  { path: "/analytics", label: "Analytics", icon: { light: navAnalytics, dark: navAnalyticsDark }, navKey: "analytics" },
+  { path: "/diners", label: "Diners", icon: { light: navDiners, dark: navDinersDark }, hasSub: true, navKey: "diners" },
+  { path: "/reporting", label: "DayEnd", icon: CalendarCheck, hasSub: true, navKey: "settings" },
+  { path: "/settings", label: "Settings", icon: { light: navSettings, dark: navSettingsDark }, hasSub: true, navKey: "settings" },
 ];
 
 const groupNavItems = [
@@ -69,11 +71,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const perms = usePermissions();
 
   const showVenueNav = !!venue;
   const showGroupNav = showVenueNav && !isTablessAdmin && isGroupAdmin;
+  const filteredVenueNav = venueNavItems.filter((item) => perms.can(item.navKey));
   const allNavItems = [
-    ...(showVenueNav ? venueNavItems : []),
+    ...(showVenueNav ? filteredVenueNav : []),
     ...(showGroupNav ? groupNavItems : []),
     ...(isTablessAdmin ? adminNavItems : []),
   ];
@@ -123,7 +127,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-          {showVenueNav && venueNavItems.map((item) => {
+          {showVenueNav && filteredVenueNav.map((item) => {
             const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners")) || (item.path === "/pricing" && location.pathname === "/menu-times") || (item.path === "/reporting" && location.pathname.startsWith("/reporting")) || (item.path === "/orders" && location.pathname.startsWith("/orders"));
             const isMenuBuilder = item.path === "/menu";
             const isDiners = item.path === "/diners";
