@@ -27,6 +27,7 @@ interface OrderStatus {
   is_active: boolean;
   is_terminal: boolean;
   is_default: boolean;
+  is_active_display: boolean;
   maps_to_system_status: string | null;
 }
 
@@ -55,6 +56,7 @@ const emptyForm = (venueId: string, nextOrder: number): Partial<OrderStatus> => 
   is_active: true,
   is_terminal: false,
   is_default: false,
+  is_active_display: false,
   maps_to_system_status: "received",
 });
 
@@ -114,6 +116,7 @@ export default function OrderStatuses() {
       is_active: editing.is_active ?? true,
       is_terminal: editing.is_terminal ?? false,
       is_default: editing.is_default ?? false,
+      is_active_display: editing.is_active_display ?? false,
       maps_to_system_status: editing.maps_to_system_status || null,
     };
 
@@ -241,6 +244,7 @@ export default function OrderStatuses() {
                     <code className="text-xs text-muted-foreground">{s.name}</code>
                     {s.is_default && <Badge variant="secondary" className="text-xs">Default</Badge>}
                     {s.is_terminal && <Badge variant="outline" className="text-xs">Terminal</Badge>}
+                    {s.is_active_display && <Badge variant="secondary" className="text-xs">Active filter</Badge>}
                     {!s.is_active && <Badge variant="destructive" className="text-xs">Inactive</Badge>}
                     {s.maps_to_system_status && (
                       <Badge variant="outline" className="text-xs">→ {s.maps_to_system_status}</Badge>
@@ -345,7 +349,7 @@ export default function OrderStatuses() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 pt-2">
+              <div className="grid grid-cols-2 gap-3 pt-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <Switch
                     checked={editing.is_active ?? true}
@@ -366,6 +370,13 @@ export default function OrderStatuses() {
                     onCheckedChange={v => setEditing({ ...editing, is_terminal: v })}
                   />
                   <span className="text-sm">Terminal</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Switch
+                    checked={editing.is_active_display ?? false}
+                    onCheckedChange={v => setEditing({ ...editing, is_active_display: v })}
+                  />
+                  <span className="text-sm">Show in Active filter</span>
                 </label>
               </div>
             </div>

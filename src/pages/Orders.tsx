@@ -12,10 +12,11 @@ import OrderAgeBadge from "@/components/orders/OrderAgeBadge";
 import RefundDialog from "@/components/orders/RefundDialog";
 import { usePermissions } from "@/hooks/use-permissions";
 
-type OrderStatus = "received" | "preparing" | "ready" | "served" | "paid" | "cancelled" | "refunded";
+type OrderStatus = string;
 
 const TERMINAL_STATUSES: OrderStatus[] = ["served", "paid", "cancelled", "refunded"];
 const REFUNDABLE_STATUSES: OrderStatus[] = ["paid", "served", "cancelled"];
+const FALLBACK_ACTIVE: OrderStatus[] = ["received", "preparing", "ready"];
 
 interface OrderItem {
   id: string;
@@ -45,21 +46,24 @@ interface Order {
   order_items: OrderItem[];
 }
 
-const statusConfig: Record<OrderStatus, { label: string; color: string; icon: any }> = {
-  received: { label: "Received", color: "bg-blue-100 text-blue-800", icon: ClipboardList },
-  preparing: { label: "Preparing", color: "bg-amber-100 text-amber-800", icon: ChefHat },
-  ready: { label: "Ready", color: "bg-green-100 text-green-800", icon: CheckCircle },
-  served: { label: "Served", color: "bg-purple-100 text-purple-800", icon: CheckCircle },
-  paid: { label: "Paid", color: "bg-emerald-100 text-emerald-800", icon: DollarSign },
-  cancelled: { label: "Cancelled", color: "bg-red-100 text-red-800", icon: Clock },
-  refunded: { label: "Refunded", color: "bg-orange-100 text-orange-800", icon: Undo2 },
-};
+interface VenueStatus {
+  id: string;
+  name: string;
+  label: string;
+  color: string;
+  display_order: number;
+  is_terminal: boolean;
+  is_active_display: boolean;
+}
 
-const nextStatus: Partial<Record<OrderStatus, OrderStatus>> = {
-  received: "preparing",
-  preparing: "ready",
-  ready: "served",
-  served: "paid",
+const fallbackStatusConfig: Record<string, { label: string; color: string }> = {
+  received: { label: "Received", color: "bg-blue-100 text-blue-800" },
+  preparing: { label: "Preparing", color: "bg-amber-100 text-amber-800" },
+  ready: { label: "Ready", color: "bg-green-100 text-green-800" },
+  served: { label: "Served", color: "bg-purple-100 text-purple-800" },
+  paid: { label: "Paid", color: "bg-emerald-100 text-emerald-800" },
+  cancelled: { label: "Cancelled", color: "bg-red-100 text-red-800" },
+  refunded: { label: "Refunded", color: "bg-orange-100 text-orange-800" },
 };
 
 export default function Orders() {
@@ -70,6 +74,25 @@ export default function Orders() {
   const [filter, setFilter] = useState<string>("active");
   const [auditDate, setAuditDate] = useState<DateRange>(getDefaultAuditDate);
   const [refundOrder, setRefundOrder] = useState<Order | null>(null);
+  const [venueStatuses, setVenueStatuses] = useState<VenueStatus[]>([]);
+
+  const statusByName = (name: string) => {
+    const vs = venueStatuses.find((s) => s.name === name);
+    if (vs) return { label: vs.label, color: "", vs };
+    const fb = fallbackStatusConfig[name];
+    return { label: fb?.label ?? name, color: fb?.color ?? "bg-muted text-foreground", vs: undefined as VenueStatus | undefined };
+  };
+
+  const fetchVenueStatuses = async () => {
+    if (!venue) return;
+    const { data } = await supabase
+      .from("venue_order_statuses")
+      .select("id, name, label, color, display_order, is_terminal, is_active_display")
+      .eq("venue_id", venue.id)
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
+    setVenueStatuses((data as VenueStatus[]) || []);
+  };
 
   const fetchOrders = async () => {
     if (!venue) return;
@@ -81,13 +104,14 @@ export default function Orders() {
       .lte("created_at", auditDate.to.toISOString())
       .order("created_at", { ascending: false });
     if (filter === "active") {
-      query = query.in("status", ["received", "preparing", "ready"]);
+      const activeNames = venueStatuses.filter((s) => s.is_active_display).map((s) => s.name);
+      const list = activeNames.length > 0 ? activeNames : FALLBACK_ACTIVE;
+      query = query.in("status", list as any);
     }
     const { data } = await query;
     const list = (data as unknown as Order[]) || [];
     setOrders(list);
 
-    // Pull refund rows for these orders
     if (list.length > 0) {
       const ids = list.map((o) => o.id);
       const { data: refundData } = await supabase
@@ -105,7 +129,8 @@ export default function Orders() {
     }
   };
 
-  useEffect(() => { fetchOrders(); }, [venue, filter, auditDate]);
+  useEffect(() => { fetchVenueStatuses(); }, [venue?.id]);
+  useEffect(() => { fetchOrders(); }, [venue, filter, auditDate, venueStatuses]);
 
   // Realtime subscription
   useEffect(() => {
@@ -120,9 +145,9 @@ export default function Orders() {
   }, [venue, filter, auditDate]);
 
   const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
-    const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId);
+    const { error } = await supabase.from("orders").update({ status: newStatus as any }).eq("id", orderId);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Order moved to ${statusConfig[newStatus].label}`);
+    toast.success(`Order moved to ${statusByName(newStatus).label}`);
     fetchOrders();
   };
 
@@ -202,11 +227,12 @@ export default function Orders() {
       ) : (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {orders.map((order) => {
-            const config = statusConfig[order.status];
-            const next = nextStatus[order.status];
+            const config = statusByName(order.status);
             const refunds = refundsByOrder[order.id] || [];
             const totalRefunded = refunds.reduce((sum, r) => sum + Number(r.amount), 0);
             const showRefundButton = canReopenAndRefund && REFUNDABLE_STATUSES.includes(order.status) && totalRefunded < Number(order.total);
+            const buttonStatuses = venueStatuses.slice(0, 5);
+            const currentIdx = buttonStatuses.findIndex((s) => s.name === order.status);
             return (
               <Card key={order.id} className="flex flex-col">
                 <CardHeader className="pb-2">
@@ -219,7 +245,16 @@ export default function Orders() {
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <Badge className={config.color}>{config.label}</Badge>
+                      {config.vs ? (
+                        <Badge
+                          style={{ backgroundColor: config.vs.color, color: "#fff" }}
+                          className="border-transparent"
+                        >
+                          {config.label}
+                        </Badge>
+                      ) : (
+                        <Badge className={config.color}>{config.label}</Badge>
+                      )}
                       <OrderAgeBadge
                         createdAt={order.created_at}
                         frozen={TERMINAL_STATUSES.includes(order.status)}
@@ -274,10 +309,28 @@ export default function Orders() {
                     </div>
                   )}
 
-                  {next && canUpdateOrderStatus && (
-                    <Button className="w-full" size="sm" onClick={() => updateStatus(order.id, next)}>
-                      Move to {statusConfig[next].label}
-                    </Button>
+                  {/* Status button row (up to 5) */}
+                  {canUpdateOrderStatus && buttonStatuses.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {buttonStatuses.map((s, i) => {
+                        const isCurrent = s.name === order.status;
+                        const isPast = currentIdx >= 0 && i < currentIdx;
+                        return (
+                          <Button
+                            key={s.id}
+                            size="sm"
+                            variant={isCurrent ? "default" : "outline"}
+                            disabled={isCurrent}
+                            onClick={() => updateStatus(order.id, s.name)}
+                            className={`flex-1 min-w-[80px] ${isPast ? "opacity-60" : ""}`}
+                            style={isCurrent ? { backgroundColor: s.color, borderColor: s.color, color: "#fff" } : undefined}
+                            title={s.label}
+                          >
+                            <span className="truncate">{s.label}</span>
+                          </Button>
+                        );
+                      })}
+                    </div>
                   )}
 
                   {showRefundButton && (

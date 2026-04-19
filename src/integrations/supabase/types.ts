@@ -1586,6 +1586,7 @@ export type Database = {
           display_order: number
           id: string
           is_active: boolean
+          is_active_display: boolean
           is_default: boolean
           is_terminal: boolean
           label: string
@@ -1601,6 +1602,7 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean
+          is_active_display?: boolean
           is_default?: boolean
           is_terminal?: boolean
           label: string
@@ -1616,6 +1618,7 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean
+          is_active_display?: boolean
           is_default?: boolean
           is_terminal?: boolean
           label?: string
