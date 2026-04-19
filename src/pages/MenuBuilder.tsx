@@ -86,6 +86,20 @@ export default function MenuBuilder() {
   const [timeFrames, setTimeFrames] = useState<{ id: string; name: string }[]>([]);
   const [selectedTimeFrames, setSelectedTimeFrames] = useState<string[]>([]);
 
+  // Display Areas
+  const [displayAreas, setDisplayAreas] = useState<DisplayAreaOption[]>([]);
+  // Map: categoryId -> areaIds[], itemId -> areaIds[] (item entries mean OVERRIDE; absence = inherit)
+  const [categoryAreas, setCategoryAreas] = useState<Record<string, string[]>>({});
+  const [itemAreas, setItemAreas] = useState<Record<string, string[]>>({});
+  // Form state for the item dialog
+  const [itemAreaMode, setItemAreaMode] = useState<"inherit" | "override">("inherit");
+  const [itemAreaIds, setItemAreaIds] = useState<string[]>([]);
+  // Category edit dialog
+  const [catEditOpen, setCatEditOpen] = useState(false);
+  const [catEditing, setCatEditing] = useState<Category | null>(null);
+  const [catEditName, setCatEditName] = useState("");
+  const [catEditAreaIds, setCatEditAreaIds] = useState<string[]>([]);
+
   // Auto-open import dialog from sidebar link
   useEffect(() => {
     if (searchParams.get("import") === "true") {
@@ -103,16 +117,34 @@ export default function MenuBuilder() {
 
   const fetchData = async () => {
     if (!venue) return;
-    const [itemsRes, catsRes, taxesRes, tfRes] = await Promise.all([
+    const [itemsRes, catsRes, taxesRes, tfRes, daRes, mcdaRes, midaRes] = await Promise.all([
       supabase.from("menu_items").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("menu_categories").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("venue_taxes" as any).select("*").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
       supabase.from("menu_time_frames").select("id, name").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
+      supabase.from("venue_display_areas" as any).select("id, name, color, is_active").eq("venue_id", venue.id).order("display_order"),
+      supabase.from("menu_category_display_areas" as any).select("category_id, display_area_id, menu_categories!inner(venue_id)").eq("menu_categories.venue_id", venue.id),
+      supabase.from("menu_item_display_areas" as any).select("menu_item_id, display_area_id, menu_items!inner(venue_id)").eq("menu_items.venue_id", venue.id),
     ]);
     setItems((itemsRes.data as MenuItem[]) || []);
     setCategories((catsRes.data as Category[]) || []);
     setVenueTaxes((taxesRes.data as any as TaxConfig[]) || []);
     setTimeFrames((tfRes.data as any[]) || []);
+    setDisplayAreas(((daRes.data as any[]) || []) as DisplayAreaOption[]);
+
+    const catMap: Record<string, string[]> = {};
+    ((mcdaRes.data as any[]) || []).forEach(r => {
+      if (!catMap[r.category_id]) catMap[r.category_id] = [];
+      catMap[r.category_id].push(r.display_area_id);
+    });
+    setCategoryAreas(catMap);
+
+    const itemMap: Record<string, string[]> = {};
+    ((midaRes.data as any[]) || []).forEach(r => {
+      if (!itemMap[r.menu_item_id]) itemMap[r.menu_item_id] = [];
+      itemMap[r.menu_item_id].push(r.display_area_id);
+    });
+    setItemAreas(itemMap);
   };
 
   useEffect(() => { fetchData(); }, [venue]);
