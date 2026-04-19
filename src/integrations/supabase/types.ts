@@ -844,6 +844,63 @@ export type Database = {
           },
         ]
       }
+      order_refunds: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          order_id: string
+          psp_reference: string | null
+          reason: string | null
+          requested_by: string | null
+          status: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          order_id: string
+          psp_reference?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          status?: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          order_id?: string
+          psp_reference?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          status?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_refunds_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_status_log: {
         Row: {
           changed_at: string
@@ -884,6 +941,7 @@ export type Database = {
           customer_notes: string | null
           gratuity_amount: number
           id: string
+          payment_psp_reference: string | null
           pos_order_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           table_id: string | null
@@ -898,6 +956,7 @@ export type Database = {
           customer_notes?: string | null
           gratuity_amount?: number
           id?: string
+          payment_psp_reference?: string | null
           pos_order_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string | null
@@ -912,6 +971,7 @@ export type Database = {
           customer_notes?: string | null
           gratuity_amount?: number
           id?: string
+          payment_psp_reference?: string | null
           pos_order_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string | null
@@ -1719,6 +1779,88 @@ export type Database = {
           },
         ]
       }
+      venue_role_permissions: {
+        Row: {
+          can_manage_roles: boolean
+          can_manage_settings: boolean
+          can_reopen_and_refund_orders: boolean
+          can_update_order_status: boolean
+          created_at: string
+          nav_keys: string[]
+          role_id: string
+          updated_at: string
+        }
+        Insert: {
+          can_manage_roles?: boolean
+          can_manage_settings?: boolean
+          can_reopen_and_refund_orders?: boolean
+          can_update_order_status?: boolean
+          created_at?: string
+          nav_keys?: string[]
+          role_id: string
+          updated_at?: string
+        }
+        Update: {
+          can_manage_roles?: boolean
+          can_manage_settings?: boolean
+          can_reopen_and_refund_orders?: boolean
+          can_update_order_status?: boolean
+          created_at?: string
+          nav_keys?: string[]
+          role_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: true
+            referencedRelation: "venue_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_roles: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_system: boolean
+          name: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_system?: boolean
+          name: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_system?: boolean
+          name?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_roles_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_staff: {
         Row: {
           created_at: string
@@ -1726,6 +1868,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           role: Database["public"]["Enums"]["venue_staff_role"]
+          role_id: string | null
           updated_at: string
           user_id: string
           venue_id: string
@@ -1736,6 +1879,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           role?: Database["public"]["Enums"]["venue_staff_role"]
+          role_id?: string | null
           updated_at?: string
           user_id: string
           venue_id: string
@@ -1746,11 +1890,19 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           role?: Database["public"]["Enums"]["venue_staff_role"]
+          role_id?: string | null
           updated_at?: string
           user_id?: string
           venue_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "venue_staff_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "venue_roles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "venue_staff_venue_id_fkey"
             columns: ["venue_id"]
@@ -1994,6 +2146,7 @@ export type Database = {
         | "served"
         | "paid"
         | "cancelled"
+        | "refunded"
       tax_type: "percent" | "fixed" | "compound_percent"
       venue_staff_role: "owner" | "manager" | "staff"
     }
@@ -2135,6 +2288,7 @@ export const Constants = {
         "served",
         "paid",
         "cancelled",
+        "refunded",
       ],
       tax_type: ["percent", "fixed", "compound_percent"],
       venue_staff_role: ["owner", "manager", "staff"],
