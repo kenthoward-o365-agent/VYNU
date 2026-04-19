@@ -116,6 +116,7 @@ export default function OrderStatuses() {
       is_active: editing.is_active ?? true,
       is_terminal: editing.is_terminal ?? false,
       is_default: editing.is_default ?? false,
+      is_active_display: editing.is_active_display ?? false,
       maps_to_system_status: editing.maps_to_system_status || null,
     };
 
