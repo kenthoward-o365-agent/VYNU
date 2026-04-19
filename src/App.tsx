@@ -35,6 +35,7 @@ import Modifiers from "@/pages/Modifiers";
 import DinerPreferences from "@/pages/DinerPreferences";
 import KnowledgeBase from "@/pages/KnowledgeBase";
 import Reporting from "@/pages/Reporting";
+import OrderStatuses from "@/pages/OrderStatuses";
 
 const queryClient = new QueryClient();
 
