@@ -420,6 +420,78 @@ export type Database = {
           },
         ]
       }
+      menu_category_display_areas: {
+        Row: {
+          category_id: string
+          created_at: string
+          display_area_id: string
+          id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          display_area_id: string
+          id?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          display_area_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_category_display_areas_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_category_display_areas_display_area_id_fkey"
+            columns: ["display_area_id"]
+            isOneToOne: false
+            referencedRelation: "venue_display_areas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_item_display_areas: {
+        Row: {
+          created_at: string
+          display_area_id: string
+          id: string
+          menu_item_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_area_id: string
+          id?: string
+          menu_item_id: string
+        }
+        Update: {
+          created_at?: string
+          display_area_id?: string
+          id?: string
+          menu_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_display_areas_display_area_id_fkey"
+            columns: ["display_area_id"]
+            isOneToOne: false
+            referencedRelation: "venue_display_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "menu_item_display_areas_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_item_modifiers: {
         Row: {
           created_at: string
@@ -1327,6 +1399,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "venue_dayend_log_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_display_areas: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_display_areas_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
