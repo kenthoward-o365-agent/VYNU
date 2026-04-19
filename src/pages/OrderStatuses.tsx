@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import DisplayAreasCard from "@/components/orders/DisplayAreasCard";
 
 interface OrderStatus {
   id: string;
@@ -179,15 +180,24 @@ export default function OrderStatuses() {
   if (!venue) return <div className="p-6 text-muted-foreground">Select a venue first.</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Order Display System</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Configure where orders appear (Display Areas) and how staff move them through the workflow (Statuses).
+        </p>
+      </div>
+
+      <DisplayAreasCard venueId={venue.id} />
+
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Order Display System — Statuses</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Define the workflow your kitchen and floor staff use to track orders. Statuses can be re-ordered, recoloured, and mapped to the underlying system status used for reporting.
+          <h2 className="text-lg font-semibold text-foreground">Statuses</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            The workflow stages your kitchen and floor staff use to track orders. Re-order, recolour, and map each one to a system status used for reporting.
           </p>
         </div>
-        <Button onClick={openNew}>
+        <Button onClick={openNew} size="sm">
           <Plus className="h-4 w-4 mr-2" />
           New Status
         </Button>

@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban, Clock, AlertTriangle, RefreshCw } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import ImageEnhancerDialog from "@/components/menu/ImageEnhancerDialog";
+import DisplayAreaPicker, { type DisplayAreaOption } from "@/components/menu/DisplayAreaPicker";
 import { cn } from "@/lib/utils";
 import { resizeFileToWebP } from "@/lib/image-utils";
 import { toast } from "sonner";
@@ -85,6 +86,20 @@ export default function MenuBuilder() {
   const [timeFrames, setTimeFrames] = useState<{ id: string; name: string }[]>([]);
   const [selectedTimeFrames, setSelectedTimeFrames] = useState<string[]>([]);
 
+  // Display Areas
+  const [displayAreas, setDisplayAreas] = useState<DisplayAreaOption[]>([]);
+  // Map: categoryId -> areaIds[], itemId -> areaIds[] (item entries mean OVERRIDE; absence = inherit)
+  const [categoryAreas, setCategoryAreas] = useState<Record<string, string[]>>({});
+  const [itemAreas, setItemAreas] = useState<Record<string, string[]>>({});
+  // Form state for the item dialog
+  const [itemAreaMode, setItemAreaMode] = useState<"inherit" | "override">("inherit");
+  const [itemAreaIds, setItemAreaIds] = useState<string[]>([]);
+  // Category edit dialog
+  const [catEditOpen, setCatEditOpen] = useState(false);
+  const [catEditing, setCatEditing] = useState<Category | null>(null);
+  const [catEditName, setCatEditName] = useState("");
+  const [catEditAreaIds, setCatEditAreaIds] = useState<string[]>([]);
+
   // Auto-open import dialog from sidebar link
   useEffect(() => {
     if (searchParams.get("import") === "true") {
@@ -102,16 +117,34 @@ export default function MenuBuilder() {
 
   const fetchData = async () => {
     if (!venue) return;
-    const [itemsRes, catsRes, taxesRes, tfRes] = await Promise.all([
+    const [itemsRes, catsRes, taxesRes, tfRes, daRes, mcdaRes, midaRes] = await Promise.all([
       supabase.from("menu_items").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("menu_categories").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("venue_taxes" as any).select("*").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
       supabase.from("menu_time_frames").select("id, name").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
+      supabase.from("venue_display_areas" as any).select("id, name, color, is_active").eq("venue_id", venue.id).order("display_order"),
+      supabase.from("menu_category_display_areas" as any).select("category_id, display_area_id, menu_categories!inner(venue_id)").eq("menu_categories.venue_id", venue.id),
+      supabase.from("menu_item_display_areas" as any).select("menu_item_id, display_area_id, menu_items!inner(venue_id)").eq("menu_items.venue_id", venue.id),
     ]);
     setItems((itemsRes.data as MenuItem[]) || []);
     setCategories((catsRes.data as Category[]) || []);
     setVenueTaxes((taxesRes.data as any as TaxConfig[]) || []);
     setTimeFrames((tfRes.data as any[]) || []);
+    setDisplayAreas(((daRes.data as any[]) || []) as DisplayAreaOption[]);
+
+    const catMap: Record<string, string[]> = {};
+    ((mcdaRes.data as any[]) || []).forEach(r => {
+      if (!catMap[r.category_id]) catMap[r.category_id] = [];
+      catMap[r.category_id].push(r.display_area_id);
+    });
+    setCategoryAreas(catMap);
+
+    const itemMap: Record<string, string[]> = {};
+    ((midaRes.data as any[]) || []).forEach(r => {
+      if (!itemMap[r.menu_item_id]) itemMap[r.menu_item_id] = [];
+      itemMap[r.menu_item_id].push(r.display_area_id);
+    });
+    setItemAreas(itemMap);
   };
 
   useEffect(() => { fetchData(); }, [venue]);
@@ -133,6 +166,8 @@ export default function MenuBuilder() {
     setEditingItem(null);
     setForm({ name: "", description: "", price: "", prep_time_minutes: "", allergens: [], dietary_tags: [], category_id: "", food_cost: "", is_available: true, image_url: "", plu: "", pos_id: "" });
     setSelectedTimeFrames([]);
+    setItemAreaMode("inherit");
+    setItemAreaIds([]);
     setDialogOpen(true);
   };
 
@@ -149,7 +184,52 @@ export default function MenuBuilder() {
     // Load existing time frame assignments
     const { data } = await supabase.from("menu_item_time_frames").select("time_frame_id").eq("menu_item_id", item.id);
     setSelectedTimeFrames((data || []).map((r: any) => r.time_frame_id));
+    // Display areas: if item has any rows it's an OVERRIDE; otherwise inherit from category
+    const existing = itemAreas[item.id] || [];
+    setItemAreaMode(existing.length > 0 ? "override" : "inherit");
+    setItemAreaIds(existing);
     setDialogOpen(true);
+  };
+
+  const openCatEdit = (cat: Category) => {
+    setCatEditing(cat);
+    setCatEditName(cat.name);
+    setCatEditAreaIds(categoryAreas[cat.id] || []);
+    setCatEditOpen(true);
+  };
+
+  const saveCatEdit = async () => {
+    if (!catEditing || !venue) return;
+    if (!catEditName.trim()) { toast.error("Category name is required"); return; }
+    const { error } = await supabase
+      .from("menu_categories")
+      .update({ name: catEditName.trim() })
+      .eq("id", catEditing.id);
+    if (error) { toast.error(error.message); return; }
+
+    // Sync display areas (delete-all then re-insert)
+    await supabase.from("menu_category_display_areas" as any)
+      .delete().eq("category_id", catEditing.id);
+    if (catEditAreaIds.length > 0) {
+      const { error: insErr } = await supabase.from("menu_category_display_areas" as any).insert(
+        catEditAreaIds.map(aid => ({ category_id: catEditing.id, display_area_id: aid }))
+      );
+      if (insErr) { toast.error(insErr.message); return; }
+    }
+    toast.success("Category updated");
+    setCatEditOpen(false);
+    setCatEditing(null);
+    fetchData();
+  };
+
+  const deleteCategory = async (cat: Category) => {
+    if (!confirm(`Delete category "${cat.name}"? Items in it will become uncategorized.`)) return;
+    const { error } = await supabase.from("menu_categories").delete().eq("id", cat.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Category deleted");
+    setCatEditOpen(false);
+    setCatEditing(null);
+    fetchData();
   };
 
   const handleSave = async () => {
@@ -189,6 +269,15 @@ export default function MenuBuilder() {
       await supabase.from("menu_item_time_frames").insert(
         selectedTimeFrames.map(tfId => ({ menu_item_id: itemId, time_frame_id: tfId }))
       );
+    }
+
+    // Sync display area override (delete-all then re-insert if override mode)
+    await supabase.from("menu_item_display_areas" as any).delete().eq("menu_item_id", itemId);
+    if (itemAreaMode === "override" && itemAreaIds.length > 0) {
+      const { error: daErr } = await supabase.from("menu_item_display_areas" as any).insert(
+        itemAreaIds.map(aid => ({ menu_item_id: itemId, display_area_id: aid }))
+      );
+      if (daErr) { toast.error(`Display areas: ${daErr.message}`); }
     }
 
     setDialogOpen(false);
@@ -441,9 +530,25 @@ export default function MenuBuilder() {
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
                   <SortableContext items={uncatItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                     <div className="grid gap-3">
-                      {uncatItems.map((item) => (
-                        <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} readOnly={isPosMode} />
-                      ))}
+                      {uncatItems.map((item) => {
+                        const overrideIds = itemAreas[item.id] || [];
+                        const effectiveAreas = overrideIds
+                          .map(id => displayAreas.find(a => a.id === id))
+                          .filter(Boolean) as DisplayAreaOption[];
+                        return (
+                          <SortableItemCard
+                            key={item.id}
+                            item={item}
+                            taxes={venueTaxes}
+                            onEdit={openEdit}
+                            onDelete={handleDelete}
+                            onToggle={toggleAvailable}
+                            readOnly={isPosMode}
+                            effectiveAreas={effectiveAreas}
+                            isOverride={overrideIds.length > 0}
+                          />
+                        );
+                      })}
                     </div>
                   </SortableContext>
                 </div>
@@ -451,17 +556,54 @@ export default function MenuBuilder() {
             })()}
             {categories.map((cat) => {
               const catItems = filterByDietary(items.filter((i) => i.category_id === cat.id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              const catAreaIds = categoryAreas[cat.id] || [];
+              const catAreaObjs = catAreaIds.map(id => displayAreas.find(a => a.id === id)).filter(Boolean) as DisplayAreaOption[];
               return (
                 <div key={cat.id}>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{cat.name}</h3>
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{cat.name}</h3>
+                    {catAreaObjs.map(a => (
+                      <span
+                        key={a.id}
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium border"
+                        style={{ backgroundColor: `${a.color}22`, borderColor: `${a.color}66` }}
+                        title={`Category routes to ${a.name}`}
+                      >
+                        <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: a.color }} />
+                        {a.name}
+                      </span>
+                    ))}
+                    {!isPosMode && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openCatEdit(cat)} aria-label="Edit category">
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
                   {catItems.length === 0 ? (
                     <p className="text-sm text-muted-foreground italic">No items in this category</p>
                   ) : (
                     <SortableContext items={catItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                       <div className="grid gap-3">
-                        {catItems.map((item) => (
-                          <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} readOnly={isPosMode} />
-                        ))}
+                        {catItems.map((item) => {
+                          const overrideIds = itemAreas[item.id] || [];
+                          const effectiveIds = overrideIds.length > 0 ? overrideIds : catAreaIds;
+                          const effectiveAreas = effectiveIds
+                            .map(id => displayAreas.find(a => a.id === id))
+                            .filter(Boolean) as DisplayAreaOption[];
+                          return (
+                            <SortableItemCard
+                              key={item.id}
+                              item={item}
+                              taxes={venueTaxes}
+                              onEdit={openEdit}
+                              onDelete={handleDelete}
+                              onToggle={toggleAvailable}
+                              readOnly={isPosMode}
+                              effectiveAreas={effectiveAreas}
+                              isOverride={overrideIds.length > 0}
+                            />
+                          );
+                        })}
                       </div>
                     </SortableContext>
                   )}
@@ -513,6 +655,54 @@ export default function MenuBuilder() {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Display Areas (item-level override) */}
+            <div className="space-y-2 border border-border rounded-lg p-3">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-sm font-medium">Display Areas</Label>
+                <div className="flex items-center gap-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => { setItemAreaMode("inherit"); setItemAreaIds([]); }}
+                    className={cn("px-2 py-1 rounded", itemAreaMode === "inherit" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent")}
+                  >Inherit</button>
+                  <button
+                    type="button"
+                    onClick={() => setItemAreaMode("override")}
+                    className={cn("px-2 py-1 rounded", itemAreaMode === "override" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent")}
+                  >Override</button>
+                </div>
+              </div>
+              {itemAreaMode === "inherit" ? (
+                <div className="text-xs text-muted-foreground">
+                  {(() => {
+                    const inherited = (categoryAreas[form.category_id] || [])
+                      .map(id => displayAreas.find(a => a.id === id))
+                      .filter(Boolean) as DisplayAreaOption[];
+                    if (!form.category_id) return "Pick a category to inherit its display areas.";
+                    if (inherited.length === 0) return "Category has no display areas set.";
+                    return (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span>Inherits:</span>
+                        {inherited.map(a => (
+                          <span key={a.id} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 border" style={{ backgroundColor: `${a.color}22`, borderColor: `${a.color}66` }}>
+                            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: a.color }} />
+                            {a.name}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <DisplayAreaPicker
+                  available={displayAreas}
+                  selectedIds={itemAreaIds}
+                  onChange={setItemAreaIds}
+                  max={3}
+                />
+              )}
+            </div>
 
             {/* Image Upload */}
             <div>
@@ -821,6 +1011,8 @@ type ItemCardProps = {
   onDelete: (id: string) => void;
   onToggle: (id: string, current: boolean) => void;
   readOnly?: boolean;
+  effectiveAreas?: DisplayAreaOption[];
+  isOverride?: boolean;
 };
 
 function SortableItemCard(props: ItemCardProps) {
@@ -838,7 +1030,7 @@ function SortableItemCard(props: ItemCardProps) {
   );
 }
 
-function ItemCard({ item, taxes, onEdit, onDelete, onToggle, readOnly, dragHandleProps }: ItemCardProps & { dragHandleProps?: Record<string, any> }) {
+function ItemCard({ item, taxes, onEdit, onDelete, onToggle, readOnly, effectiveAreas, isOverride, dragHandleProps }: ItemCardProps & { dragHandleProps?: Record<string, any> }) {
   const taxBreakdown = taxes.length > 0 ? formatItemTaxBreakdown(Number(item.price), taxes) : "";
   return (
     <Card className={!item.is_available ? "opacity-60" : ""}>
@@ -858,12 +1050,24 @@ function ItemCard({ item, taxes, onEdit, onDelete, onToggle, readOnly, dragHandl
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-foreground truncate">{item.name}</span>
             {!item.is_available && <Badge variant="secondary" className="text-xs">86'd</Badge>}
             {readOnly && item.plu && (
               <Badge variant="outline" className="text-xs font-mono">PLU: {item.plu}</Badge>
             )}
+            {effectiveAreas?.map(a => (
+              <span
+                key={a.id}
+                className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium border"
+                style={{ backgroundColor: `${a.color}22`, borderColor: `${a.color}66` }}
+                title={isOverride ? `Override → ${a.name}` : `Inherited from category → ${a.name}`}
+              >
+                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: a.color }} />
+                {a.name}
+                {isOverride && <span className="opacity-60 ml-0.5">★</span>}
+              </span>
+            ))}
           </div>
           {item.description && <p className="text-sm text-muted-foreground truncate">{item.description}</p>}
           <div className="flex gap-1.5 mt-1 flex-wrap">
@@ -894,4 +1098,5 @@ function ItemCard({ item, taxes, onEdit, onDelete, onToggle, readOnly, dragHandl
     </Card>
   );
 }
+
 
