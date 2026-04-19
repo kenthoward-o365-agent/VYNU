@@ -271,6 +271,15 @@ export default function MenuBuilder() {
       );
     }
 
+    // Sync display area override (delete-all then re-insert if override mode)
+    await supabase.from("menu_item_display_areas" as any).delete().eq("menu_item_id", itemId);
+    if (itemAreaMode === "override" && itemAreaIds.length > 0) {
+      const { error: daErr } = await supabase.from("menu_item_display_areas" as any).insert(
+        itemAreaIds.map(aid => ({ menu_item_id: itemId, display_area_id: aid }))
+      );
+      if (daErr) { toast.error(`Display areas: ${daErr.message}`); }
+    }
+
     setDialogOpen(false);
     fetchData();
   };
