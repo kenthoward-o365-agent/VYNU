@@ -27,6 +27,7 @@ interface OrderStatus {
   is_active: boolean;
   is_terminal: boolean;
   is_default: boolean;
+  is_active_display: boolean;
   maps_to_system_status: string | null;
 }
 
