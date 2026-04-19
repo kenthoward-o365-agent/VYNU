@@ -74,6 +74,25 @@ export default function Orders() {
   const [filter, setFilter] = useState<string>("active");
   const [auditDate, setAuditDate] = useState<DateRange>(getDefaultAuditDate);
   const [refundOrder, setRefundOrder] = useState<Order | null>(null);
+  const [venueStatuses, setVenueStatuses] = useState<VenueStatus[]>([]);
+
+  const statusByName = (name: string) => {
+    const vs = venueStatuses.find((s) => s.name === name);
+    if (vs) return { label: vs.label, color: "", vs };
+    const fb = fallbackStatusConfig[name];
+    return { label: fb?.label ?? name, color: fb?.color ?? "bg-muted text-foreground", vs: undefined as VenueStatus | undefined };
+  };
+
+  const fetchVenueStatuses = async () => {
+    if (!venue) return;
+    const { data } = await supabase
+      .from("venue_order_statuses")
+      .select("id, name, label, color, display_order, is_terminal, is_active_display")
+      .eq("venue_id", venue.id)
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
+    setVenueStatuses((data as VenueStatus[]) || []);
+  };
 
   const fetchOrders = async () => {
     if (!venue) return;
@@ -85,13 +104,14 @@ export default function Orders() {
       .lte("created_at", auditDate.to.toISOString())
       .order("created_at", { ascending: false });
     if (filter === "active") {
-      query = query.in("status", ["received", "preparing", "ready"]);
+      const activeNames = venueStatuses.filter((s) => s.is_active_display).map((s) => s.name);
+      const list = activeNames.length > 0 ? activeNames : FALLBACK_ACTIVE;
+      query = query.in("status", list as any);
     }
     const { data } = await query;
     const list = (data as unknown as Order[]) || [];
     setOrders(list);
 
-    // Pull refund rows for these orders
     if (list.length > 0) {
       const ids = list.map((o) => o.id);
       const { data: refundData } = await supabase
@@ -109,7 +129,8 @@ export default function Orders() {
     }
   };
 
-  useEffect(() => { fetchOrders(); }, [venue, filter, auditDate]);
+  useEffect(() => { fetchVenueStatuses(); }, [venue?.id]);
+  useEffect(() => { fetchOrders(); }, [venue, filter, auditDate, venueStatuses]);
 
   // Realtime subscription
   useEffect(() => {
@@ -124,9 +145,9 @@ export default function Orders() {
   }, [venue, filter, auditDate]);
 
   const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
-    const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId);
+    const { error } = await supabase.from("orders").update({ status: newStatus as any }).eq("id", orderId);
     if (error) { toast.error(error.message); return; }
-    toast.success(`Order moved to ${statusConfig[newStatus].label}`);
+    toast.success(`Order moved to ${statusByName(newStatus).label}`);
     fetchOrders();
   };
 
