@@ -354,13 +354,17 @@ export default function KnowledgeBase() {
           <SubSection title="Details">
             <p>Update your venue name, type, address, contact information, logo, and operating hours. This information is displayed to diners and used by the AI assistant.</p>
           </SubSection>
-          <SubSection title="Users">
-            <p>Invite and manage staff accounts. Assign roles:</p>
+          <SubSection title="Users & Roles">
+            <p>Each venue defines its own custom roles under <strong>Settings → Users → Roles</strong>. Three system roles are seeded automatically and cannot be deleted: <strong>Owner</strong>, <strong>Manager</strong>, and <strong>Staff</strong>. You can create additional roles like "Bar Staff", "Floor Lead", or "Kitchen Only" as needed.</p>
+            <p>For each role you control:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Owner</strong> — Full access to all settings and data.</li>
-              <li><strong>Manager</strong> — Can manage menu, orders, and view analytics.</li>
-              <li><strong>Staff</strong> — Can view and manage orders.</li>
+              <li><strong>Sidebar visibility</strong> — tick which top-level nav items the role can see (Dashboard, Orders, Menu, Pricing, Diners, Loyalty, Analytics, etc.). Sub-items inherit their parent (e.g. Modifiers follows Menu, Order Display System follows Orders).</li>
+              <li><strong>Update Order Status</strong> — show or hide the status buttons on the order card.</li>
+              <li><strong>Re-open & Refund Orders</strong> — gate the Re-open & Refund action on terminal orders.</li>
+              <li><strong>Manage Roles</strong> — who can edit roles and permissions.</li>
+              <li><strong>Manage Settings</strong> — who can edit venue-wide settings (Details, Payments, Taxes, Loyalty, etc.).</li>
             </ul>
+            <p>Owners always have full access regardless of permissions. To assign a role, edit the user under Settings → Users and pick the role from the dropdown.</p>
           </SubSection>
           <SubSection title="Loyalty">
             <p>Configure your loyalty programme:</p>
