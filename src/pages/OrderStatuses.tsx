@@ -56,6 +56,7 @@ const emptyForm = (venueId: string, nextOrder: number): Partial<OrderStatus> => 
   is_active: true,
   is_terminal: false,
   is_default: false,
+  is_active_display: false,
   maps_to_system_status: "received",
 });
 
