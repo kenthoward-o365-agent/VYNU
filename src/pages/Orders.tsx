@@ -12,7 +12,7 @@ import OrderAgeBadge from "@/components/orders/OrderAgeBadge";
 import RefundDialog from "@/components/orders/RefundDialog";
 import { usePermissions } from "@/hooks/use-permissions";
 
-type OrderStatus = "received" | "preparing" | "ready" | "served" | "paid" | "cancelled" | "refunded";
+type OrderStatus = string;
 
 const TERMINAL_STATUSES: OrderStatus[] = ["served", "paid", "cancelled", "refunded"];
 const REFUNDABLE_STATUSES: OrderStatus[] = ["paid", "served", "cancelled"];
