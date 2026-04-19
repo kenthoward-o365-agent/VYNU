@@ -656,6 +656,54 @@ export default function MenuBuilder() {
               </SelectContent>
             </Select>
 
+            {/* Display Areas (item-level override) */}
+            <div className="space-y-2 border border-border rounded-lg p-3">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-sm font-medium">Display Areas</Label>
+                <div className="flex items-center gap-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => { setItemAreaMode("inherit"); setItemAreaIds([]); }}
+                    className={cn("px-2 py-1 rounded", itemAreaMode === "inherit" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent")}
+                  >Inherit</button>
+                  <button
+                    type="button"
+                    onClick={() => setItemAreaMode("override")}
+                    className={cn("px-2 py-1 rounded", itemAreaMode === "override" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent")}
+                  >Override</button>
+                </div>
+              </div>
+              {itemAreaMode === "inherit" ? (
+                <div className="text-xs text-muted-foreground">
+                  {(() => {
+                    const inherited = (categoryAreas[form.category_id] || [])
+                      .map(id => displayAreas.find(a => a.id === id))
+                      .filter(Boolean) as DisplayAreaOption[];
+                    if (!form.category_id) return "Pick a category to inherit its display areas.";
+                    if (inherited.length === 0) return "Category has no display areas set.";
+                    return (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span>Inherits:</span>
+                        {inherited.map(a => (
+                          <span key={a.id} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 border" style={{ backgroundColor: `${a.color}22`, borderColor: `${a.color}66` }}>
+                            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: a.color }} />
+                            {a.name}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <DisplayAreaPicker
+                  available={displayAreas}
+                  selectedIds={itemAreaIds}
+                  onChange={setItemAreaIds}
+                  max={3}
+                />
+              )}
+            </div>
+
             {/* Image Upload */}
             <div>
               <p className="text-sm font-medium mb-2">Item Image</p>
