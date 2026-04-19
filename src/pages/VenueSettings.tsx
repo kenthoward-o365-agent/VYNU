@@ -39,8 +39,15 @@ interface StaffMember {
   id: string;
   user_id: string;
   role: string;
+  role_id: string | null;
   display_name: string | null;
   is_active: boolean;
+}
+
+interface VenueRoleOption {
+  id: string;
+  name: string;
+  is_system: boolean;
 }
 
 export default function VenueSettings() {
@@ -62,17 +69,18 @@ export default function VenueSettings() {
   // Staff state
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
+  const [venueRoles, setVenueRoles] = useState<VenueRoleOption[]>([]);
 
   // Create user dialog
   const [createDialog, setCreateDialog] = useState(false);
-  const [newUser, setNewUser] = useState({ email: "", password: "", display_name: "", role: "staff" });
+  const [newUser, setNewUser] = useState({ email: "", password: "", display_name: "", role_id: "" });
   const [creatingUser, setCreatingUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   // Edit user dialog
   const [editDialog, setEditDialog] = useState(false);
   const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
-  const [editForm, setEditForm] = useState({ display_name: "", role: "staff" });
+  const [editForm, setEditForm] = useState({ display_name: "", role_id: "" });
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
@@ -88,10 +96,23 @@ export default function VenueSettings() {
   
 
   useEffect(() => {
-    if (venue && isManager && session) fetchStaff();
+    if (venue && isManager && session) {
+      fetchStaff();
+      fetchVenueRoles();
+    }
   }, [venue, isManager, session]);
 
   const [staffEmails, setStaffEmails] = useState<Record<string, string>>({});
+
+  const fetchVenueRoles = async () => {
+    if (!venue) return;
+    const { data } = await supabase
+      .from("venue_roles")
+      .select("id, name, is_system")
+      .eq("venue_id", venue.id)
+      .order("display_order");
+    setVenueRoles(data || []);
+  };
 
   const fetchStaff = async () => {
     if (!venue) return;
@@ -159,16 +180,17 @@ export default function VenueSettings() {
   };
 
   const createUser = async () => {
-    if (!venue || !newUser.email || !newUser.password) return;
+    if (!venue || !newUser.email || !newUser.password || !newUser.role_id) return;
     setCreatingUser(true);
     try {
+      const roleName = venueRoles.find((r) => r.id === newUser.role_id)?.name || "user";
       await invokeUserFn({
         email: newUser.email, password: newUser.password,
-        venue_id: venue.id, role: newUser.role, display_name: newUser.display_name || null,
+        venue_id: venue.id, role_id: newUser.role_id, display_name: newUser.display_name || null,
       });
-      toast.success(`${newUser.email} added as ${newUser.role}`);
+      toast.success(`${newUser.email} added as ${roleName}`);
       setCreateDialog(false);
-      setNewUser({ email: "", password: "", display_name: "", role: "staff" });
+      setNewUser({ email: "", password: "", display_name: "", role_id: "" });
       fetchStaff();
     } catch (err: any) {
       toast.error(err.message);
@@ -178,7 +200,13 @@ export default function VenueSettings() {
 
   const openEdit = (s: StaffMember) => {
     setEditStaff(s);
-    setEditForm({ display_name: s.display_name || "", role: s.role });
+    // Resolve role_id: prefer existing role_id, else map legacy enum role -> system role
+    let resolvedRoleId = s.role_id || "";
+    if (!resolvedRoleId && s.role) {
+      const match = venueRoles.find((r) => r.name.toLowerCase() === s.role.toLowerCase());
+      if (match) resolvedRoleId = match.id;
+    }
+    setEditForm({ display_name: s.display_name || "", role_id: resolvedRoleId });
     setEditDialog(true);
   };
 
@@ -188,7 +216,7 @@ export default function VenueSettings() {
     try {
       await invokeUserFn({
         action: "update", staff_id: editStaff.id, venue_id: venue.id,
-        display_name: editForm.display_name, role: editForm.role,
+        display_name: editForm.display_name, role_id: editForm.role_id || null,
       });
       toast.success("User updated");
       setEditDialog(false);
@@ -227,9 +255,14 @@ export default function VenueSettings() {
 
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
-  const roleOptions = isOwner
-    ? [{ value: "owner", label: "Owner" }, { value: "manager", label: "Manager" }, { value: "staff", label: "Staff" }]
-    : [{ value: "staff", label: "Staff" }];
+  // Role display helper for the staff table — looks up the custom role name when available, else falls back to legacy enum role.
+  const getRoleLabel = (s: StaffMember) => {
+    if (s.role_id) {
+      const match = venueRoles.find((r) => r.id === s.role_id);
+      if (match) return match.name;
+    }
+    return s.role || "—";
+  };
 
   return (
     <div className="space-y-6">
@@ -353,17 +386,17 @@ export default function VenueSettings() {
                     </div>
                     <div>
                       <Label>Role</Label>
-                      <Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v })}>
-                        <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <Select value={newUser.role_id} onValueChange={(v) => setNewUser({ ...newUser, role_id: v })}>
+                        <SelectTrigger className="mt-1"><SelectValue placeholder="Select a role" /></SelectTrigger>
                         <SelectContent>
-                          {roleOptions.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                          {venueRoles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}{r.is_system ? "" : " (custom)"}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground mt-1">
-                        <strong>Owner:</strong> Full access. <strong>Manager:</strong> Manage menu, staff, settings. <strong>Staff:</strong> View orders, tables.
+                        Roles control sidebar access and permissions. Manage them in the Roles section above.
                       </p>
                     </div>
-                    <Button onClick={createUser} disabled={!newUser.email || !newUser.password || newUser.password.length < 8 || creatingUser} className="w-full">
+                    <Button onClick={createUser} disabled={!newUser.email || !newUser.password || newUser.password.length < 8 || !newUser.role_id || creatingUser} className="w-full">
                       {creatingUser ? "Creating..." : "Create User"}
                     </Button>
                   </div>
@@ -402,7 +435,7 @@ export default function VenueSettings() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="capitalize">{s.role}</Badge>
+                            <Badge variant="outline" className="capitalize">{getRoleLabel(s)}</Badge>
                           </TableCell>
                           <TableCell>
                             {s.is_active ? (
@@ -473,14 +506,14 @@ export default function VenueSettings() {
                   </div>
                   <div>
                     <Label>Role</Label>
-                    <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                    <Select value={editForm.role_id} onValueChange={(v) => setEditForm({ ...editForm, role_id: v })}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select a role" /></SelectTrigger>
                       <SelectContent>
-                        {roleOptions.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                        {venueRoles.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}{r.is_system ? "" : " (custom)"}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      <strong>Owner:</strong> Full access including user management. <strong>Manager:</strong> Manage menu, settings, and staff. <strong>Staff:</strong> View-only for orders and tables.
+                      Roles control sidebar access and permissions. Manage them in the Roles section above.
                     </p>
                   </div>
                 </div>
