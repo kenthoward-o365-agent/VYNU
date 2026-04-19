@@ -262,20 +262,56 @@ export default function KnowledgeBase() {
 
         {/* Orders */}
         <Section id="orders" title="Orders" icon={ClipboardList}>
-          <SubSection title="Order Lifecycle">
-            <p>Orders flow through these statuses:</p>
+          <SubSection title="Default Order Lifecycle">
+            <p>New venues start with these statuses (you can rename, recolour, reorder, add, or remove them in Order Display System):</p>
             <ol className="list-decimal list-inside space-y-1 pl-1">
               <li><strong>Received</strong> — Order placed by diner.</li>
               <li><strong>Preparing</strong> — Kitchen is working on it.</li>
               <li><strong>Ready</strong> — Food is ready for service.</li>
               <li><strong>Served</strong> — Delivered to the table.</li>
-              <li><strong>Paid</strong> — Payment completed.</li>
-              <li><strong>Cancelled</strong> — Order was cancelled.</li>
+              <li><strong>Paid</strong> — Payment completed (terminal).</li>
+              <li><strong>Cancelled</strong> — Order was cancelled (terminal).</li>
             </ol>
           </SubSection>
-          <SubSection title="Managing Orders">
-            <p>Click on any order to view full details including items, modifiers, customer notes, and table number. Use the status buttons to advance orders through the workflow.</p>
+          <SubSection title="The Order Card — Status Buttons">
+            <p>Each order card shows up to <strong>5 status buttons</strong> across the bottom, drawn from your venue's custom statuses (sorted by display order). One tap advances the order; the diner's mobile view updates instantly via realtime.</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>The <strong>current</strong> status is highlighted in its configured colour.</li>
+              <li>Earlier statuses are dimmed but still tappable — useful for correcting a misclick or stepping back.</li>
+              <li>The button row only appears for users whose role has <strong>Update Order Status</strong> permission.</li>
+              <li>If you define more than 5 statuses, only the first 5 (by display order) appear as buttons. The rest are reachable via Re-open & Refund.</li>
+            </ul>
           </SubSection>
+          <SubSection title="Active vs All filter">
+            <p>The Active / All dropdown in the upper-right of the Orders page is driven by the <strong>"Show in Active filter"</strong> toggle on each status. Statuses with this toggle on appear in the <strong>Active</strong> view; everything else only shows under <strong>All</strong>.</p>
+            <p>Defaults: Received, Preparing, and Ready are flagged Active. Toggle Served on too if servers should keep working it after delivery, or off so completed plates fall off the live board.</p>
+          </SubSection>
+          <SubSection title="Order Display System (status setup)">
+            <p>Settings for statuses live under <strong>Orders → Order Display System</strong>. For each status you can configure:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Name & Label</strong> — internal name and the label shown on the card button.</li>
+              <li><strong>Colour</strong> — used as the background of the highlighted current-status button.</li>
+              <li><strong>Display Order</strong> — controls left-to-right button order on the card.</li>
+              <li><strong>Show in Active filter</strong> — drives the Active/All dropdown.</li>
+              <li><strong>Terminal</strong> — marks the status as a final state (e.g. Paid, Cancelled, Refunded). Terminal orders show the Re-open & Refund action instead of advancing further.</li>
+              <li><strong>Default</strong> — the status applied to brand-new orders (typically Received).</li>
+            </ul>
+          </SubSection>
+          <SubSection title="Re-open & Refund">
+            <p>Orders in a terminal status (Paid, Cancelled, Refunded) show a <strong>Re-open & Refund</strong> button. This is gated by the role permission of the same name. The flow:</p>
+            <StepList steps={[
+              "Open the order card and click Re-open & Refund.",
+              "Enter the refund amount (full or partial) and a reason.",
+              "OrdrPay processes the refund against the original payment.",
+              "The order is reopened back to a working status; the refund is logged on the card.",
+              "If the cumulative refunds equal the order total, the order automatically flips to Refunded.",
+            ]} />
+          </SubSection>
+          <SubSection title="Display Areas (kitchen/bar routing)">
+            <p>Display Areas let you split the menu across multiple stations — e.g. Fry Side, Grill, Bar, Expo. Each menu category and each menu item can route to <strong>up to 3 areas</strong> simultaneously. Items inherit their category's areas by default; override on an item to send it to a different combination.</p>
+            <p>This sets the foundation for per-station Kitchen Display screens (coming next) — a single order line can fan out to multiple station views (e.g. "Loaded Fries" appears on both Fry Side and Expo).</p>
+          </SubSection>
+          <Tip>The diner's mobile view subscribes to live updates — the moment you tap a status button, their phone reflects the new status within ~1 second.</Tip>
         </Section>
 
         {/* Analytics */}
