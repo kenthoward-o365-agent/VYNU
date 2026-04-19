@@ -1399,6 +1399,62 @@ export type Database = {
         }
         Relationships: []
       }
+      venue_order_statuses: {
+        Row: {
+          color: string
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          is_default: boolean
+          is_terminal: boolean
+          label: string
+          maps_to_system_status: string | null
+          name: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          is_terminal?: boolean
+          label: string
+          maps_to_system_status?: string | null
+          name: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          is_terminal?: boolean
+          label?: string
+          maps_to_system_status?: string | null
+          name?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_order_statuses_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_payment_config: {
         Row: {
           api_key_live: string | null

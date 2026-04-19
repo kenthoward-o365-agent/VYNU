@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import {
-  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug
+  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug, Monitor
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -124,17 +124,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {showVenueNav && venueNavItems.map((item) => {
-            const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners")) || (item.path === "/pricing" && location.pathname === "/menu-times") || (item.path === "/reporting" && location.pathname.startsWith("/reporting"));
+            const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners")) || (item.path === "/pricing" && location.pathname === "/menu-times") || (item.path === "/reporting" && location.pathname.startsWith("/reporting")) || (item.path === "/orders" && location.pathname.startsWith("/orders"));
             const isMenuBuilder = item.path === "/menu";
             const isDiners = item.path === "/diners";
             const isSettings = item.path === "/settings";
             const isPricing = item.path === "/pricing";
             const isDayEnd = item.path === "/reporting";
-            const hasSub = isMenuBuilder || isDiners || isSettings || isPricing || isDayEnd;
+            const isOrders = item.path === "/orders";
+            const hasSub = isMenuBuilder || isDiners || isSettings || isPricing || isDayEnd || isOrders;
             return (
               <Collapsible key={item.path} defaultOpen={
                 (isDiners && location.pathname.startsWith("/diners/")) ||
                 (isSettings && location.pathname === "/settings") ||
+                (isOrders && location.pathname.startsWith("/orders/")) ||
                 false
               }>
                 <div className="flex items-center">
@@ -176,6 +178,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     <Link to="/modifiers" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
                       <SlidersHorizontal className="h-3 w-3" />
                       Modifiers
+                    </Link>
+                  </CollapsibleContent>
+                )}
+                {isOrders && (
+                  <CollapsibleContent className="pl-10 space-y-0.5">
+                    <Link to="/orders/statuses" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/orders/statuses" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
+                      <Monitor className="h-3 w-3" />
+                      Order Display System
                     </Link>
                   </CollapsibleContent>
                 )}
@@ -329,7 +339,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Menu className="h-5 w-5 text-foreground" />
           </button>
           <h1 className="text-lg font-semibold text-foreground">
-            {location.pathname === "/knowledge-base" ? "Knowledge Base" : allNavItems.find((i) => i.path === location.pathname)?.label || "OrdrUp"}
+            {location.pathname === "/knowledge-base" ? "Knowledge Base" : location.pathname === "/orders/statuses" ? "Order Display System" : allNavItems.find((i) => i.path === location.pathname)?.label || "OrdrUp"}
           </h1>
           <div className="ml-auto">
             <Link to="/knowledge-base" className="inline-flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors" title="Knowledge Base">

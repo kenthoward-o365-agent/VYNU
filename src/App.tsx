@@ -35,6 +35,7 @@ import Modifiers from "@/pages/Modifiers";
 import DinerPreferences from "@/pages/DinerPreferences";
 import KnowledgeBase from "@/pages/KnowledgeBase";
 import Reporting from "@/pages/Reporting";
+import OrderStatuses from "@/pages/OrderStatuses";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ function AppRoutes() {
         <Route path="/modifiers" element={<Modifiers />} />
         <Route path="/tables" element={<Tables />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/orders/statuses" element={<OrderStatuses />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/rule-types" element={<RuleTypes />} />
         <Route path="/analytics" element={<Analytics />} />
