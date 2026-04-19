@@ -540,17 +540,54 @@ export default function MenuBuilder() {
             })()}
             {categories.map((cat) => {
               const catItems = filterByDietary(items.filter((i) => i.category_id === cat.id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              const catAreaIds = categoryAreas[cat.id] || [];
+              const catAreaObjs = catAreaIds.map(id => displayAreas.find(a => a.id === id)).filter(Boolean) as DisplayAreaOption[];
               return (
                 <div key={cat.id}>
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">{cat.name}</h3>
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{cat.name}</h3>
+                    {catAreaObjs.map(a => (
+                      <span
+                        key={a.id}
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium border"
+                        style={{ backgroundColor: `${a.color}22`, borderColor: `${a.color}66` }}
+                        title={`Category routes to ${a.name}`}
+                      >
+                        <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: a.color }} />
+                        {a.name}
+                      </span>
+                    ))}
+                    {!isPosMode && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openCatEdit(cat)} aria-label="Edit category">
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
                   {catItems.length === 0 ? (
                     <p className="text-sm text-muted-foreground italic">No items in this category</p>
                   ) : (
                     <SortableContext items={catItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                       <div className="grid gap-3">
-                        {catItems.map((item) => (
-                          <SortableItemCard key={item.id} item={item} taxes={venueTaxes} onEdit={openEdit} onDelete={handleDelete} onToggle={toggleAvailable} readOnly={isPosMode} />
-                        ))}
+                        {catItems.map((item) => {
+                          const overrideIds = itemAreas[item.id] || [];
+                          const effectiveIds = overrideIds.length > 0 ? overrideIds : catAreaIds;
+                          const effectiveAreas = effectiveIds
+                            .map(id => displayAreas.find(a => a.id === id))
+                            .filter(Boolean) as DisplayAreaOption[];
+                          return (
+                            <SortableItemCard
+                              key={item.id}
+                              item={item}
+                              taxes={venueTaxes}
+                              onEdit={openEdit}
+                              onDelete={handleDelete}
+                              onToggle={toggleAvailable}
+                              readOnly={isPosMode}
+                              effectiveAreas={effectiveAreas}
+                              isOverride={overrideIds.length > 0}
+                            />
+                          );
+                        })}
                       </div>
                     </SortableContext>
                   )}
