@@ -439,6 +439,81 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    // ═══ REFUND ═══
+    // Re-open & refund a (partially) closed order via OrdrPay.
+    // Body: { venue_id, order_id, amount, reason? }
+    if (action === "refund") {
+      const { order_id, amount, reason } = body;
+      if (!order_id || !amount || amount <= 0) {
+        return json({ error: "order_id and positive amount are required" }, 400);
+      }
+      if (!userId) {
+        return json({ error: "Authentication required" }, 401);
+      }
+
+      // Look up the original payment reference
+      const { data: order } = await adminClient
+        .from("orders")
+        .select("id, total, payment_psp_reference, venue_id")
+        .eq("id", order_id)
+        .eq("venue_id", venue_id)
+        .maybeSingle();
+
+      if (!order) return json({ error: "Order not found" }, 404);
+
+      // Mock mode — instant success
+      if (isMock) {
+        return json({
+          pspReference: `MOCK_REFUND_${Date.now()}`,
+          status: "received",
+          amount,
+          reason: reason || null,
+        });
+      }
+
+      if (!order.payment_psp_reference) {
+        return json({
+          error: "This order has no recorded OrdrPay payment reference and cannot be refunded automatically. Please process this refund manually.",
+        }, 400);
+      }
+
+      if (!apiKey || !merchantAccount) {
+        return json({ error: "OrdrPay not configured for this venue" }, 400);
+      }
+
+      const refundResp = await fetch(
+        `${baseUrl}/payments/${order.payment_psp_reference}/refunds`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+          body: JSON.stringify({
+            merchantAccount,
+            amount: {
+              value: Math.round(Number(amount) * 100),
+              currency: config.default_currency || "AUD",
+            },
+            reference: `REFUND_${order_id}_${Date.now()}`,
+            merchantRefundReason: reason || "Requested by venue",
+          }),
+        },
+      );
+
+      const refundResult = await refundResp.json();
+      if (!refundResp.ok) {
+        return json({
+          error: refundResult?.message || "OrdrPay refund failed",
+          details: refundResult,
+        }, 400);
+      }
+
+      return json({
+        pspReference: refundResult.pspReference,
+        status: refundResult.status || "received",
+        amount,
+        reason: reason || null,
+      });
+    }
+
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err: any) {
     console.error("ordrpay error:", err);
