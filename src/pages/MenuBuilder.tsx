@@ -166,6 +166,8 @@ export default function MenuBuilder() {
     setEditingItem(null);
     setForm({ name: "", description: "", price: "", prep_time_minutes: "", allergens: [], dietary_tags: [], category_id: "", food_cost: "", is_available: true, image_url: "", plu: "", pos_id: "" });
     setSelectedTimeFrames([]);
+    setItemAreaMode("inherit");
+    setItemAreaIds([]);
     setDialogOpen(true);
   };
 
@@ -182,7 +184,52 @@ export default function MenuBuilder() {
     // Load existing time frame assignments
     const { data } = await supabase.from("menu_item_time_frames").select("time_frame_id").eq("menu_item_id", item.id);
     setSelectedTimeFrames((data || []).map((r: any) => r.time_frame_id));
+    // Display areas: if item has any rows it's an OVERRIDE; otherwise inherit from category
+    const existing = itemAreas[item.id] || [];
+    setItemAreaMode(existing.length > 0 ? "override" : "inherit");
+    setItemAreaIds(existing);
     setDialogOpen(true);
+  };
+
+  const openCatEdit = (cat: Category) => {
+    setCatEditing(cat);
+    setCatEditName(cat.name);
+    setCatEditAreaIds(categoryAreas[cat.id] || []);
+    setCatEditOpen(true);
+  };
+
+  const saveCatEdit = async () => {
+    if (!catEditing || !venue) return;
+    if (!catEditName.trim()) { toast.error("Category name is required"); return; }
+    const { error } = await supabase
+      .from("menu_categories")
+      .update({ name: catEditName.trim() })
+      .eq("id", catEditing.id);
+    if (error) { toast.error(error.message); return; }
+
+    // Sync display areas (delete-all then re-insert)
+    await supabase.from("menu_category_display_areas" as any)
+      .delete().eq("category_id", catEditing.id);
+    if (catEditAreaIds.length > 0) {
+      const { error: insErr } = await supabase.from("menu_category_display_areas" as any).insert(
+        catEditAreaIds.map(aid => ({ category_id: catEditing.id, display_area_id: aid }))
+      );
+      if (insErr) { toast.error(insErr.message); return; }
+    }
+    toast.success("Category updated");
+    setCatEditOpen(false);
+    setCatEditing(null);
+    fetchData();
+  };
+
+  const deleteCategory = async (cat: Category) => {
+    if (!confirm(`Delete category "${cat.name}"? Items in it will become uncategorized.`)) return;
+    const { error } = await supabase.from("menu_categories").delete().eq("id", cat.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Category deleted");
+    setCatEditOpen(false);
+    setCatEditing(null);
+    fetchData();
   };
 
   const handleSave = async () => {
