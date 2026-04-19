@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
 
     // ── UPDATE STAFF ──
     if (action === "update") {
-      const { staff_id, venue_id, display_name, role } = body;
+      const { staff_id, venue_id, display_name, role, role_id } = body;
       if (!staff_id || !venue_id) return json({ error: "staff_id and venue_id are required" }, 400);
       if (!(await isVenueManager(venue_id))) return json({ error: "Forbidden" }, 403);
 
@@ -188,6 +188,24 @@ Deno.serve(async (req) => {
       if (role) {
         const validRoles = ["owner", "manager", "staff"];
         if (validRoles.includes(role)) updates.role = role;
+      }
+      if (role_id !== undefined) {
+        // Validate role_id belongs to this venue (or null to clear)
+        if (role_id === null) {
+          updates.role_id = null;
+        } else {
+          const { data: roleRow } = await adminClient
+            .from("venue_roles")
+            .select("id, name")
+            .eq("id", role_id)
+            .eq("venue_id", venue_id)
+            .maybeSingle();
+          if (!roleRow) return json({ error: "Invalid role for this venue" }, 400);
+          updates.role_id = role_id;
+          // Sync legacy enum role from custom role name when it matches a system role
+          const lower = (roleRow.name || "").toLowerCase();
+          if (["owner", "manager", "staff"].includes(lower)) updates.role = lower;
+        }
       }
 
       const { error } = await adminClient
