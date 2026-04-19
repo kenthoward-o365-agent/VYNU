@@ -435,7 +435,7 @@ export default function VenueSettings() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="capitalize">{s.role}</Badge>
+                            <Badge variant="outline" className="capitalize">{getRoleLabel(s)}</Badge>
                           </TableCell>
                           <TableCell>
                             {s.is_active ? (
