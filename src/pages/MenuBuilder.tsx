@@ -947,6 +947,8 @@ type ItemCardProps = {
   onDelete: (id: string) => void;
   onToggle: (id: string, current: boolean) => void;
   readOnly?: boolean;
+  effectiveAreas?: DisplayAreaOption[];
+  isOverride?: boolean;
 };
 
 function SortableItemCard(props: ItemCardProps) {
@@ -964,7 +966,7 @@ function SortableItemCard(props: ItemCardProps) {
   );
 }
 
-function ItemCard({ item, taxes, onEdit, onDelete, onToggle, readOnly, dragHandleProps }: ItemCardProps & { dragHandleProps?: Record<string, any> }) {
+function ItemCard({ item, taxes, onEdit, onDelete, onToggle, readOnly, effectiveAreas, isOverride, dragHandleProps }: ItemCardProps & { dragHandleProps?: Record<string, any> }) {
   const taxBreakdown = taxes.length > 0 ? formatItemTaxBreakdown(Number(item.price), taxes) : "";
   return (
     <Card className={!item.is_available ? "opacity-60" : ""}>
@@ -984,12 +986,24 @@ function ItemCard({ item, taxes, onEdit, onDelete, onToggle, readOnly, dragHandl
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-foreground truncate">{item.name}</span>
             {!item.is_available && <Badge variant="secondary" className="text-xs">86'd</Badge>}
             {readOnly && item.plu && (
               <Badge variant="outline" className="text-xs font-mono">PLU: {item.plu}</Badge>
             )}
+            {effectiveAreas?.map(a => (
+              <span
+                key={a.id}
+                className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium border"
+                style={{ backgroundColor: `${a.color}22`, borderColor: `${a.color}66` }}
+                title={isOverride ? `Override → ${a.name}` : `Inherited from category → ${a.name}`}
+              >
+                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: a.color }} />
+                {a.name}
+                {isOverride && <span className="opacity-60 ml-0.5">★</span>}
+              </span>
+            ))}
           </div>
           {item.description && <p className="text-sm text-muted-foreground truncate">{item.description}</p>}
           <div className="flex gap-1.5 mt-1 flex-wrap">
@@ -1020,4 +1034,5 @@ function ItemCard({ item, taxes, onEdit, onDelete, onToggle, readOnly, dragHandl
     </Card>
   );
 }
+
 
