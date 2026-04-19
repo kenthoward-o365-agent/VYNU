@@ -5,14 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Clock, ChefHat, CheckCircle, DollarSign, ShoppingCart, XCircle } from "lucide-react";
+import { ClipboardList, Clock, ChefHat, CheckCircle, DollarSign, ShoppingCart, XCircle, RotateCcw, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
 import OrderAgeBadge from "@/components/orders/OrderAgeBadge";
+import RefundDialog from "@/components/orders/RefundDialog";
+import { usePermissions } from "@/hooks/use-permissions";
 
-const TERMINAL_STATUSES: OrderStatus[] = ["served", "paid", "cancelled"];
+type OrderStatus = "received" | "preparing" | "ready" | "served" | "paid" | "cancelled" | "refunded";
 
-type OrderStatus = "received" | "preparing" | "ready" | "served" | "paid" | "cancelled";
+const TERMINAL_STATUSES: OrderStatus[] = ["served", "paid", "cancelled", "refunded"];
+const REFUNDABLE_STATUSES: OrderStatus[] = ["paid", "served", "cancelled"];
 
 interface OrderItem {
   id: string;
@@ -20,6 +23,15 @@ interface OrderItem {
   unit_price: number;
   notes: string | null;
   menu_item: { name: string } | null;
+}
+
+interface RefundRow {
+  id: string;
+  order_id: string;
+  amount: number;
+  reason: string | null;
+  created_at: string;
+  status: string;
 }
 
 interface Order {
@@ -40,6 +52,7 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; icon: an
   served: { label: "Served", color: "bg-purple-100 text-purple-800", icon: CheckCircle },
   paid: { label: "Paid", color: "bg-emerald-100 text-emerald-800", icon: DollarSign },
   cancelled: { label: "Cancelled", color: "bg-red-100 text-red-800", icon: Clock },
+  refunded: { label: "Refunded", color: "bg-orange-100 text-orange-800", icon: Undo2 },
 };
 
 const nextStatus: Partial<Record<OrderStatus, OrderStatus>> = {
@@ -51,9 +64,12 @@ const nextStatus: Partial<Record<OrderStatus, OrderStatus>> = {
 
 export default function Orders() {
   const { venue } = useVenue();
+  const { canUpdateOrderStatus, canReopenAndRefund } = usePermissions();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [refundsByOrder, setRefundsByOrder] = useState<Record<string, RefundRow[]>>({});
   const [filter, setFilter] = useState<string>("active");
   const [auditDate, setAuditDate] = useState<DateRange>(getDefaultAuditDate);
+  const [refundOrder, setRefundOrder] = useState<Order | null>(null);
 
   const fetchOrders = async () => {
     if (!venue) return;
@@ -68,7 +84,25 @@ export default function Orders() {
       query = query.in("status", ["received", "preparing", "ready"]);
     }
     const { data } = await query;
-    setOrders((data as unknown as Order[]) || []);
+    const list = (data as unknown as Order[]) || [];
+    setOrders(list);
+
+    // Pull refund rows for these orders
+    if (list.length > 0) {
+      const ids = list.map((o) => o.id);
+      const { data: refundData } = await supabase
+        .from("order_refunds")
+        .select("id, order_id, amount, reason, created_at, status")
+        .in("order_id", ids)
+        .order("created_at", { ascending: false });
+      const map: Record<string, RefundRow[]> = {};
+      (refundData || []).forEach((r: any) => {
+        (map[r.order_id] = map[r.order_id] || []).push(r);
+      });
+      setRefundsByOrder(map);
+    } else {
+      setRefundsByOrder({});
+    }
   };
 
   useEffect(() => { fetchOrders(); }, [venue, filter, auditDate]);
@@ -170,6 +204,9 @@ export default function Orders() {
           {orders.map((order) => {
             const config = statusConfig[order.status];
             const next = nextStatus[order.status];
+            const refunds = refundsByOrder[order.id] || [];
+            const totalRefunded = refunds.reduce((sum, r) => sum + Number(r.amount), 0);
+            const showRefundButton = canReopenAndRefund && REFUNDABLE_STATUSES.includes(order.status) && totalRefunded < Number(order.total);
             return (
               <Card key={order.id} className="flex flex-col">
                 <CardHeader className="pb-2">
@@ -220,9 +257,33 @@ export default function Orders() {
                     <span className="font-bold text-foreground">${Number(order.total).toFixed(2)}</span>
                   </div>
 
-                  {next && (
+                  {/* Refund summary */}
+                  {refunds.length > 0 && (
+                    <div className="rounded-md bg-muted/40 p-2 space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Refunds ({refunds.length})</p>
+                      {refunds.map((r) => (
+                        <div key={r.id} className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">{new Date(r.created_at).toLocaleString()}</span>
+                          <span className="font-medium text-foreground">−${Number(r.amount).toFixed(2)}</span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between text-xs font-medium border-t border-border pt-1 mt-1">
+                        <span>Total refunded</span>
+                        <span>−${totalRefunded.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {next && canUpdateOrderStatus && (
                     <Button className="w-full" size="sm" onClick={() => updateStatus(order.id, next)}>
                       Move to {statusConfig[next].label}
+                    </Button>
+                  )}
+
+                  {showRefundButton && (
+                    <Button className="w-full" size="sm" variant="outline" onClick={() => setRefundOrder(order)}>
+                      <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                      Re-open & Refund
                     </Button>
                   )}
                 </CardContent>
@@ -230,6 +291,18 @@ export default function Orders() {
             );
           })}
         </div>
+      )}
+
+      {refundOrder && venue && (
+        <RefundDialog
+          open={!!refundOrder}
+          onOpenChange={(o) => { if (!o) setRefundOrder(null); }}
+          orderId={refundOrder.id}
+          venueId={venue.id}
+          orderTotal={Number(refundOrder.total)}
+          alreadyRefunded={(refundsByOrder[refundOrder.id] || []).reduce((s, r) => s + Number(r.amount), 0)}
+          onComplete={fetchOrders}
+        />
       )}
     </div>
   );

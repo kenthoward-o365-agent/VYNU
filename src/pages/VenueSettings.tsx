@@ -22,6 +22,7 @@ import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
 import TaxSettingsTab from "@/components/venue/TaxSettingsTab";
 import SurchargeSettingsTab from "@/components/venue/SurchargeSettingsTab";
 import IntegrationsSettingsTab from "@/components/venue/IntegrationsSettingsTab";
+import RolesManager from "@/components/venue/RolesManager";
 
 const venueTypes = [
   { value: "restaurant", label: "Restaurant" },
@@ -307,8 +308,12 @@ export default function VenueSettings() {
         </TabsContent>
 
         {/* ── USERS TAB ── */}
-        {isManager && (
+        {isManager && venue && (
           <TabsContent value="users" className="space-y-6">
+            {/* Section A — Roles */}
+            <RolesManager venueId={venue.id} />
+
+            {/* Section B — Users */}
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-foreground">Staff & Users</h3>
