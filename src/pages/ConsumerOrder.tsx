@@ -564,6 +564,19 @@ const ConsumerOrder = () => {
         </>
       )}
 
+      {/* One-tap loyalty join for signed-in Ordrup ID holders (on session start, when no active/paid order is showing) */}
+      {dinerId && venue && !activeOrder && (
+        <LoyaltyJoinPrompt
+          venueId={venue.id}
+          groupId={venue.group_id}
+          show={showOneTapLoyalty}
+          dinerId={dinerId}
+          onJoin={() => {}}
+          onDismiss={() => setShowOneTapLoyalty(false)}
+          onJoined={() => setShowOneTapLoyalty(false)}
+        />
+      )}
+
       {/* Active Order Status */}
       {activeOrder && OPEN_ORDER_STATUSES.includes(activeOrder.status) && activeOrder.status !== "refunded" && (
         <OrderStatus
