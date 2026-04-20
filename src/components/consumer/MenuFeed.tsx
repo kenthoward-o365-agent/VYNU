@@ -30,6 +30,8 @@ interface MenuFeedProps {
   tableNumber?: string;
   sessionMode?: "solo" | "group";
   pricingIndex?: RuleIndex | null;
+  /** Allergen tags to auto-apply on first render (from signed-in diner's Ordrup ID profile). */
+  defaultAllergens?: string[];
 }
 
 const CategoryChips = ({
@@ -186,9 +188,14 @@ const MenuFeed = ({
   tableNumber,
   sessionMode = "solo",
   pricingIndex,
+  defaultAllergens,
 }: MenuFeedProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
+  const [activeAllergenAvoid, setActiveAllergenAvoid] = useState<string[]>(defaultAllergens ?? []);
+  const [allergensFromProfile, setAllergensFromProfile] = useState<boolean>(
+    !!(defaultAllergens && defaultAllergens.length > 0),
+  );
 
   const allDietaryTags = Array.from(
     new Set(items.flatMap((item) => item.dietary_tags || [])),
