@@ -34,7 +34,7 @@ const OrderStatus = ({ status, total, createdAt, extraWaitMinutes = 0 }: OrderSt
               {new Date(createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </p>
             {extraWaitMinutes > 0 && (
-              <p className="text-amber-600 text-xs mt-1">
+              <p className="text-warning text-xs mt-1">
                 Kitchen is busy — extra ~{extraWaitMinutes}m wait
               </p>
             )}
