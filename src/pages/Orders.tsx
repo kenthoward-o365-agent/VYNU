@@ -13,6 +13,7 @@ import RefundDialog from "@/components/orders/RefundDialog";
 import ReopenStatusDialog from "@/components/orders/ReopenStatusDialog";
 import PairTerminalDialog from "@/components/orders/PairTerminalDialog";
 import ThrottleStatusBar from "@/components/orders/ThrottleStatusBar";
+import SessionFireBar, { type SessionInfo } from "@/components/orders/SessionFireBar";
 import { usePermissions } from "@/hooks/use-permissions";
 
 type OrderStatus = string;
@@ -50,6 +51,22 @@ interface Order {
   order_items: OrderItem[];
   throttled_until: string | null;
   extra_wait_minutes: number;
+  session_id: string | null;
+  session_mode: string | null;
+  fired_at: string | null;
+}
+
+interface SessionRow {
+  id: string;
+  venue_id: string;
+  table_id: string | null;
+  status: string;
+  display_name: string | null;
+  diner_count: number;
+  fire_strategy: string;
+  fired_at: string | null;
+  opened_at: string;
+  table: { table_number: string } | null;
 }
 
 interface VenueStatus {
