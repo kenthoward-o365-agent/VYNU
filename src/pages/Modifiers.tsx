@@ -12,9 +12,12 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Sparkles, Plus, Trash2, Pencil, Check, X, Loader2, GripVertical
 } from "lucide-react";
+
+type SelectionType = "addon" | "removal" | "choice";
 
 type ModifierCategory = {
   id: string;
@@ -22,6 +25,9 @@ type ModifierCategory = {
   name: string;
   display_order: number;
   is_active: boolean;
+  selection_type: SelectionType;
+  min_selection: number;
+  max_selection: number;
 };
 
 type Modifier = {
