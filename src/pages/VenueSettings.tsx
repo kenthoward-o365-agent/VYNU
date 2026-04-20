@@ -42,12 +42,16 @@ interface StaffMember {
   role_id: string | null;
   display_name: string | null;
   is_active: boolean;
+  can_update_order_status: boolean;
+  can_reopen_closed_orders: boolean;
+  can_process_refunds: boolean;
 }
 
 interface VenueRoleOption {
   id: string;
   name: string;
   is_system: boolean;
+  nav_keys?: string[];
 }
 
 export default function VenueSettings() {
@@ -80,7 +84,13 @@ export default function VenueSettings() {
   // Edit user dialog
   const [editDialog, setEditDialog] = useState(false);
   const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
-  const [editForm, setEditForm] = useState({ display_name: "", role_id: "" });
+  const [editForm, setEditForm] = useState({
+    display_name: "",
+    role_id: "",
+    can_update_order_status: false,
+    can_reopen_closed_orders: false,
+    can_process_refunds: false,
+  });
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
@@ -106,12 +116,24 @@ export default function VenueSettings() {
 
   const fetchVenueRoles = async () => {
     if (!venue) return;
-    const { data } = await supabase
+    const { data: roleRows } = await supabase
       .from("venue_roles")
       .select("id, name, is_system")
       .eq("venue_id", venue.id)
       .order("display_order");
-    setVenueRoles(data || []);
+    const list = roleRows || [];
+    // Pull nav_keys for each role so we can decide whether to show order toggles
+    if (list.length > 0) {
+      const { data: permRows } = await supabase
+        .from("venue_role_permissions")
+        .select("role_id, nav_keys")
+        .in("role_id", list.map((r) => r.id));
+      const navMap: Record<string, string[]> = {};
+      (permRows || []).forEach((p: any) => { navMap[p.role_id] = p.nav_keys || []; });
+      setVenueRoles(list.map((r) => ({ ...r, nav_keys: navMap[r.id] || [] })));
+    } else {
+      setVenueRoles([]);
+    }
   };
 
   const fetchStaff = async () => {
@@ -206,7 +228,13 @@ export default function VenueSettings() {
       const match = venueRoles.find((r) => r.name.toLowerCase() === s.role.toLowerCase());
       if (match) resolvedRoleId = match.id;
     }
-    setEditForm({ display_name: s.display_name || "", role_id: resolvedRoleId });
+    setEditForm({
+      display_name: s.display_name || "",
+      role_id: resolvedRoleId,
+      can_update_order_status: !!s.can_update_order_status,
+      can_reopen_closed_orders: !!s.can_reopen_closed_orders,
+      can_process_refunds: !!s.can_process_refunds,
+    });
     setEditDialog(true);
   };
 
@@ -215,8 +243,14 @@ export default function VenueSettings() {
     setSavingEdit(true);
     try {
       await invokeUserFn({
-        action: "update", staff_id: editStaff.id, venue_id: venue.id,
-        display_name: editForm.display_name, role_id: editForm.role_id || null,
+        action: "update",
+        staff_id: editStaff.id,
+        venue_id: venue.id,
+        display_name: editForm.display_name,
+        role_id: editForm.role_id || null,
+        can_update_order_status: editForm.can_update_order_status,
+        can_reopen_closed_orders: editForm.can_reopen_closed_orders,
+        can_process_refunds: editForm.can_process_refunds,
       });
       toast.success("User updated");
       setEditDialog(false);
@@ -497,7 +531,7 @@ export default function VenueSettings() {
 
             {/* Edit User Dialog */}
             <Dialog open={editDialog} onOpenChange={setEditDialog}>
-              <DialogContent>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader><DialogTitle>Edit User</DialogTitle></DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -513,9 +547,49 @@ export default function VenueSettings() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Roles control sidebar access and permissions. Manage them in the Roles section above.
+                      Roles control which sidebar areas this user can see. Manage roles in the Roles section above.
                     </p>
                   </div>
+
+                  {/* Per-user order action permissions — only show when role grants Orders access */}
+                  {(() => {
+                    const role = venueRoles.find((r) => r.id === editForm.role_id);
+                    const hasOrders = role && (role.nav_keys || []).includes("orders");
+                    const isOwnerRow = editStaff?.role === "owner";
+                    if (!hasOrders && !isOwnerRow) return null;
+                    return (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Order action permissions</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Fine-grained control for what this user can do inside the Orders page.
+                          {isOwnerRow && " Owners always have all order permissions."}
+                        </p>
+                        <div className="rounded-md border border-border divide-y divide-border">
+                          <UserPermRow
+                            title="Update Order Status"
+                            description="Move orders through the workflow (Received → Preparing → …)"
+                            checked={isOwnerRow ? true : editForm.can_update_order_status}
+                            disabled={isOwnerRow}
+                            onChange={(v) => setEditForm({ ...editForm, can_update_order_status: v })}
+                          />
+                          <UserPermRow
+                            title="Re-open Closed Orders"
+                            description="Move a closed order (Paid / Served / Cancelled) back to an active status. No refund processed."
+                            checked={isOwnerRow ? true : editForm.can_reopen_closed_orders}
+                            disabled={isOwnerRow}
+                            onChange={(v) => setEditForm({ ...editForm, can_reopen_closed_orders: v })}
+                          />
+                          <UserPermRow
+                            title="Process Refunds"
+                            description="Re-open a closed order AND process a refund through the payment provider."
+                            checked={isOwnerRow ? true : editForm.can_process_refunds}
+                            disabled={isOwnerRow}
+                            onChange={(v) => setEditForm({ ...editForm, can_process_refunds: v })}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setEditDialog(false)}>Cancel</Button>
@@ -558,6 +632,30 @@ export default function VenueSettings() {
           </>
         )}
       </Tabs>
+    </div>
+  );
+}
+
+function UserPermRow({
+  title,
+  description,
+  checked,
+  disabled,
+  onChange,
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 p-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
 import OrderAgeBadge from "@/components/orders/OrderAgeBadge";
 import RefundDialog from "@/components/orders/RefundDialog";
+import ReopenStatusDialog from "@/components/orders/ReopenStatusDialog";
 import PairTerminalDialog from "@/components/orders/PairTerminalDialog";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -78,12 +79,13 @@ interface TerminalBinding {
 
 export default function Orders() {
   const { venue } = useVenue();
-  const { canUpdateOrderStatus, canReopenAndRefund } = usePermissions();
+  const { canUpdateOrderStatus, canReopenClosedOrders, canProcessRefunds } = usePermissions();
   const [orders, setOrders] = useState<Order[]>([]);
   const [refundsByOrder, setRefundsByOrder] = useState<Record<string, RefundRow[]>>({});
   const [filter, setFilter] = useState<string>("active");
   const [auditDate, setAuditDate] = useState<DateRange>(getDefaultAuditDate);
   const [refundOrder, setRefundOrder] = useState<Order | null>(null);
+  const [reopenOrder, setReopenOrder] = useState<Order | null>(null);
   const [venueStatuses, setVenueStatuses] = useState<VenueStatus[]>([]);
   const [terminal, setTerminal] = useState<TerminalBinding | null>(null);
   const [pairOpen, setPairOpen] = useState(false);
@@ -354,7 +356,9 @@ export default function Orders() {
             const config = statusByName(order.status);
             const refunds = refundsByOrder[order.id] || [];
             const totalRefunded = refunds.reduce((sum, r) => sum + Number(r.amount), 0);
-            const showRefundButton = canReopenAndRefund && REFUNDABLE_STATUSES.includes(order.status) && totalRefunded < Number(order.total);
+            const isRefundable = REFUNDABLE_STATUSES.includes(order.status) && totalRefunded < Number(order.total);
+            const showRefundButton = canProcessRefunds && isRefundable;
+            const showReopenButton = canReopenClosedOrders && TERMINAL_STATUSES.includes(order.status);
             const buttonStatuses = venueStatuses.slice(0, 5);
             const currentIdx = buttonStatuses.findIndex((s) => s.name === order.status);
             return (
@@ -457,11 +461,21 @@ export default function Orders() {
                     </div>
                   )}
 
-                  {showRefundButton && (
-                    <Button className="w-full" size="sm" variant="outline" onClick={() => setRefundOrder(order)}>
-                      <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                      Re-open & Refund
-                    </Button>
+                  {(showReopenButton || showRefundButton) && (
+                    <div className="flex flex-col gap-1.5">
+                      {showReopenButton && (
+                        <Button className="w-full" size="sm" variant="outline" onClick={() => setReopenOrder(order)}>
+                          <Undo2 className="h-3.5 w-3.5 mr-1" />
+                          Re-open
+                        </Button>
+                      )}
+                      {showRefundButton && (
+                        <Button className="w-full" size="sm" variant="outline" onClick={() => setRefundOrder(order)}>
+                          <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                          Re-open & Refund
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -478,6 +492,17 @@ export default function Orders() {
           venueId={venue.id}
           orderTotal={Number(refundOrder.total)}
           alreadyRefunded={(refundsByOrder[refundOrder.id] || []).reduce((s, r) => s + Number(r.amount), 0)}
+          onComplete={fetchOrders}
+        />
+      )}
+
+      {reopenOrder && venue && (
+        <ReopenStatusDialog
+          open={!!reopenOrder}
+          onOpenChange={(o) => { if (!o) setReopenOrder(null); }}
+          orderId={reopenOrder.id}
+          venueId={venue.id}
+          statuses={venueStatuses}
           onComplete={fetchOrders}
         />
       )}

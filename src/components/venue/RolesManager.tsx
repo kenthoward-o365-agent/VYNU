@@ -25,8 +25,6 @@ interface RoleRow {
 interface PermissionsRow {
   role_id: string;
   nav_keys: string[];
-  can_update_order_status: boolean;
-  can_reopen_and_refund_orders: boolean;
   can_manage_roles: boolean;
   can_manage_settings: boolean;
 }
@@ -36,8 +34,6 @@ interface RoleFormState {
   name: string;
   description: string;
   navKeys: Set<string>;
-  canUpdateOrderStatus: boolean;
-  canReopenAndRefund: boolean;
   canManageRoles: boolean;
   canManageSettings: boolean;
 }
@@ -46,8 +42,6 @@ const blankForm = (): RoleFormState => ({
   name: "",
   description: "",
   navKeys: new Set(["dashboard", "orders"]),
-  canUpdateOrderStatus: true,
-  canReopenAndRefund: false,
   canManageRoles: false,
   canManageSettings: false,
 });
@@ -106,8 +100,6 @@ export default function RolesManager({ venueId }: { venueId: string }) {
       name: role.name,
       description: role.description || "",
       navKeys: new Set(p?.nav_keys || []),
-      canUpdateOrderStatus: !!p?.can_update_order_status,
-      canReopenAndRefund: !!p?.can_reopen_and_refund_orders,
       canManageRoles: !!p?.can_manage_roles,
       canManageSettings: !!p?.can_manage_settings,
     });
@@ -152,8 +144,6 @@ export default function RolesManager({ venueId }: { venueId: string }) {
       const permPayload = {
         role_id: roleId!,
         nav_keys: Array.from(form.navKeys),
-        can_update_order_status: form.canUpdateOrderStatus,
-        can_reopen_and_refund_orders: form.canReopenAndRefund,
         can_manage_roles: form.canManageRoles,
         can_manage_settings: form.canManageSettings,
       };
@@ -222,20 +212,11 @@ export default function RolesManager({ venueId }: { venueId: string }) {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">Order management permissions</Label>
+                <Label className="text-sm font-semibold">Admin permissions</Label>
+                <p className="text-xs text-muted-foreground">
+                  Order-action permissions (status, re-open, refunds) are now set per-user in the Staff &amp; Users list below.
+                </p>
                 <div className="rounded-md border border-border divide-y divide-border">
-                  <PermRow
-                    title="Update Order Status"
-                    description="Move orders through the workflow (Received → Preparing → …)"
-                    checked={form.canUpdateOrderStatus}
-                    onChange={(v) => setForm({ ...form, canUpdateOrderStatus: v })}
-                  />
-                  <PermRow
-                    title="Re-open & Refund Closed Orders"
-                    description="Process refunds via OrdrPay and re-open paid/served/cancelled orders"
-                    checked={form.canReopenAndRefund}
-                    onChange={(v) => setForm({ ...form, canReopenAndRefund: v })}
-                  />
                   <PermRow
                     title="Manage Roles & Permissions"
                     description="Create and edit roles for this venue"
@@ -280,8 +261,7 @@ export default function RolesManager({ venueId }: { venueId: string }) {
                         const label = TOP_LEVEL_NAV.find((n) => n.key === k)?.label || k;
                         return <Badge key={k} variant="outline" className="text-[10px]">{label}</Badge>;
                       })}
-                      {p?.can_update_order_status && <Badge className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/30" variant="outline">Status</Badge>}
-                      {p?.can_reopen_and_refund_orders && <Badge className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/30" variant="outline">Refund</Badge>}
+                      {p?.can_manage_roles && <Badge className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/30" variant="outline">Manage Roles</Badge>}
                       {p?.can_manage_settings && <Badge className="text-[10px] bg-purple-500/10 text-purple-600 border-purple-500/30" variant="outline">Settings</Badge>}
                     </div>
                   </div>
