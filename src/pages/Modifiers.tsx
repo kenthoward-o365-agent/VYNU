@@ -214,7 +214,16 @@ export default function Modifiers() {
     if (existing) {
       await supabase.from("menu_item_modifiers").delete().eq("id", existing.id);
     } else {
-      await supabase.from("menu_item_modifiers").insert({ menu_item_id: menuItemId, modifier_category_id: catId, is_required: false });
+      const itemAssignments = assignments.filter(a => a.menu_item_id === menuItemId);
+      const nextOrder = itemAssignments.length > 0
+        ? Math.max(...itemAssignments.map(a => a.display_order ?? 0)) + 1
+        : 0;
+      await supabase.from("menu_item_modifiers").insert({
+        menu_item_id: menuItemId,
+        modifier_category_id: catId,
+        is_required: false,
+        display_order: nextOrder,
+      });
     }
     fetchData();
   };
