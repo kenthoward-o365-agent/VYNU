@@ -636,6 +636,30 @@ export default function VenueSettings() {
   );
 }
 
+function UserPermRow({
+  title,
+  description,
+  checked,
+  disabled,
+  onChange,
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 p-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════
    GRATUITIES TAB
    ═══════════════════════════════════════════ */
