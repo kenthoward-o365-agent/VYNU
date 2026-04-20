@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   BookOpen, LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
   TrendingUp, Users, Settings, BarChart3, ChevronRight, Rocket, Sparkles,
-  SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X
+  SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X, Monitor
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +23,7 @@ const tocItems: TocItem[] = [
   { id: "pricing", label: "Pricing", icon: Tag },
   { id: "tables-qr", label: "Tables & QR", icon: QrCode },
   { id: "orders", label: "Orders", icon: ClipboardList },
+  { id: "display-terminals", label: "Display Terminals", icon: Monitor },
   { id: "analytics", label: "Analytics", icon: TrendingUp },
   { id: "diners", label: "Diners", icon: Users },
   { id: "settings", label: "Settings", icon: Settings },
