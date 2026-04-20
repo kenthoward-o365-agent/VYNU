@@ -5,7 +5,15 @@ import { useVenue } from "@/contexts/VenueContext";
 
 export interface Permissions {
   navKeys: Set<string>;
+  /** User-level: can advance order status. */
   canUpdateOrderStatus: boolean;
+  /** User-level: can re-open a closed/terminal order back to an active status (no refund). */
+  canReopenClosedOrders: boolean;
+  /** User-level: can process refunds (which also re-opens the order). */
+  canProcessRefunds: boolean;
+  /**
+   * @deprecated kept for backwards compatibility — equals `canProcessRefunds`.
+   */
   canReopenAndRefund: boolean;
   canManageRoles: boolean;
   canManageSettings: boolean;
@@ -17,6 +25,8 @@ export interface Permissions {
 const ALL_ACCESS: Omit<Permissions, "can"> = {
   navKeys: new Set<string>(),
   canUpdateOrderStatus: true,
+  canReopenClosedOrders: true,
+  canProcessRefunds: true,
   canReopenAndRefund: true,
   canManageRoles: true,
   canManageSettings: true,
@@ -24,12 +34,14 @@ const ALL_ACCESS: Omit<Permissions, "can"> = {
 };
 
 /**
- * Loads the active venue's role permissions for the current user.
+ * Loads permissions for the current user at the active venue.
  *
  * - tabless_admin and venue Owner role always get full access.
- * - Otherwise we look up venue_staff.role_id -> venue_role_permissions.
- * - If no role_id is set yet (legacy users), we fall back to the legacy
- *   enum role on venue_staff (owner/manager/staff).
+ * - Sidebar nav + manage-roles + manage-settings come from the user's role
+ *   (`venue_role_permissions`).
+ * - Order-action permissions (update status / re-open / refund) come from
+ *   the per-user row in `venue_staff` so different users with the same role
+ *   can have different in-Orders capabilities.
  */
 export function usePermissions(): Permissions {
   const { user } = useAuth();
@@ -37,6 +49,8 @@ export function usePermissions(): Permissions {
   const [perms, setPerms] = useState<Omit<Permissions, "can">>({
     navKeys: new Set(),
     canUpdateOrderStatus: false,
+    canReopenClosedOrders: false,
+    canProcessRefunds: false,
     canReopenAndRefund: false,
     canManageRoles: false,
     canManageSettings: false,
@@ -58,10 +72,12 @@ export function usePermissions(): Permissions {
         return;
       }
 
-      // 1. Look up the staff row for this user/venue
+      // 1. Look up the staff row for this user/venue (incl. per-user order flags)
       const { data: staffRow } = await supabase
         .from("venue_staff")
-        .select("role_id, role")
+        .select(
+          "role_id, role, can_update_order_status, can_reopen_closed_orders, can_process_refunds",
+        )
         .eq("user_id", user.id)
         .eq("venue_id", venue.id)
         .maybeSingle();
@@ -81,30 +97,42 @@ export function usePermissions(): Permissions {
         roleId = legacyRole?.id;
       }
 
+      // Per-user order flags (work even if no role yet)
+      const canUpdateOrderStatus = !!staffRow?.can_update_order_status;
+      const canReopenClosedOrders = !!staffRow?.can_reopen_closed_orders;
+      const canProcessRefunds = !!staffRow?.can_process_refunds;
+
       if (!roleId) {
-        if (!cancelled) setPerms((p) => ({ ...p, isLoading: false }));
+        if (!cancelled)
+          setPerms({
+            navKeys: new Set(),
+            canUpdateOrderStatus,
+            canReopenClosedOrders,
+            canProcessRefunds,
+            canReopenAndRefund: canProcessRefunds,
+            canManageRoles: false,
+            canManageSettings: false,
+            isLoading: false,
+          });
         return;
       }
 
       const { data: rp } = await supabase
         .from("venue_role_permissions")
-        .select("*")
+        .select("nav_keys, can_manage_roles, can_manage_settings")
         .eq("role_id", roleId)
         .maybeSingle();
 
       if (cancelled) return;
 
-      if (!rp) {
-        setPerms((p) => ({ ...p, isLoading: false }));
-        return;
-      }
-
       setPerms({
-        navKeys: new Set((rp.nav_keys as string[]) || []),
-        canUpdateOrderStatus: !!rp.can_update_order_status,
-        canReopenAndRefund: !!rp.can_reopen_and_refund_orders,
-        canManageRoles: !!rp.can_manage_roles,
-        canManageSettings: !!rp.can_manage_settings,
+        navKeys: new Set((rp?.nav_keys as string[]) || []),
+        canUpdateOrderStatus,
+        canReopenClosedOrders,
+        canProcessRefunds,
+        canReopenAndRefund: canProcessRefunds,
+        canManageRoles: !!rp?.can_manage_roles,
+        canManageSettings: !!rp?.can_manage_settings,
         isLoading: false,
       });
     };
