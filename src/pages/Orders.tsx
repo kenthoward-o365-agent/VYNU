@@ -12,6 +12,7 @@ import OrderAgeBadge from "@/components/orders/OrderAgeBadge";
 import RefundDialog from "@/components/orders/RefundDialog";
 import ReopenStatusDialog from "@/components/orders/ReopenStatusDialog";
 import PairTerminalDialog from "@/components/orders/PairTerminalDialog";
+import ThrottleStatusBar from "@/components/orders/ThrottleStatusBar";
 import { usePermissions } from "@/hooks/use-permissions";
 
 type OrderStatus = string;
