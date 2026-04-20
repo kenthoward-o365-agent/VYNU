@@ -1,4 +1,4 @@
-import { Minus, Plus, Trash2, ShoppingCart } from "lucide-react";
+import { Minus, Plus, Trash2, ShoppingCart, Users, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CartSuggestions from "./CartSuggestions";
 
@@ -21,9 +21,29 @@ interface CartPanelProps {
   dismissedSuggestions?: Set<string>;
   onAddToCart?: (item: { id: string; name: string; price: number }) => void;
   onDismissSuggestion?: (itemId: string) => void;
+  sessionMode?: "solo" | "group";
+  groupDisplayName?: string | null;
+  groupDinerCount?: number;
+  onSwitchMode?: () => void;
 }
 
-const CartPanel = ({ items, onUpdateQuantity, onRemove, onPlaceOrder, loading, venueId, venueName, menuItems, dismissedSuggestions, onAddToCart, onDismissSuggestion }: CartPanelProps) => {
+const CartPanel = ({
+  items,
+  onUpdateQuantity,
+  onRemove,
+  onPlaceOrder,
+  loading,
+  venueId,
+  venueName,
+  menuItems,
+  dismissedSuggestions,
+  onAddToCart,
+  onDismissSuggestion,
+  sessionMode = "solo",
+  groupDisplayName = null,
+  groupDinerCount = 1,
+  onSwitchMode,
+}: CartPanelProps) => {
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   if (items.length === 0) {
@@ -41,6 +61,23 @@ const CartPanel = ({ items, onUpdateQuantity, onRemove, onPlaceOrder, loading, v
       <div className="px-5 pt-5 pb-2">
         <h2 className="text-xl font-bold">Your Order</h2>
         <p className="text-muted-foreground text-sm">{items.length} item{items.length !== 1 ? "s" : ""}</p>
+
+        <button
+          type="button"
+          onClick={onSwitchMode}
+          disabled={!onSwitchMode}
+          className={
+            sessionMode === "group"
+              ? "mt-3 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/15 transition-colors disabled:cursor-default"
+              : "mt-3 inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted transition-colors disabled:cursor-default"
+          }
+        >
+          {sessionMode === "group" ? <Users className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
+          {sessionMode === "group"
+            ? `Group order${groupDisplayName ? ` · ${groupDisplayName}` : ""}${groupDinerCount > 1 ? ` · ${groupDinerCount} people` : ""}`
+            : "Solo order"}
+          {onSwitchMode && items.length === 0 && <span className="opacity-60">· change</span>}
+        </button>
       </div>
 
       <div className="flex-1 overflow-auto px-5 pb-4 space-y-3">
