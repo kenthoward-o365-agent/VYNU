@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Sparkles, Plus, Trash2, Pencil, Check, X, Loader2, GripVertical
+  Sparkles, Plus, Trash2, Pencil, Check, X, Loader2, GripVertical, Settings2
 } from "lucide-react";
 
 type SelectionType = "addon" | "removal" | "choice";
