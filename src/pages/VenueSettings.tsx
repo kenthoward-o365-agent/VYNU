@@ -23,6 +23,7 @@ import TaxSettingsTab from "@/components/venue/TaxSettingsTab";
 import SurchargeSettingsTab from "@/components/venue/SurchargeSettingsTab";
 import IntegrationsSettingsTab from "@/components/venue/IntegrationsSettingsTab";
 import RolesManager from "@/components/venue/RolesManager";
+import TableSessionsSettingsTab from "@/components/venue/TableSessionsSettingsTab";
 
 const venueTypes = [
   { value: "restaurant", label: "Restaurant" },
@@ -628,6 +629,9 @@ export default function VenueSettings() {
             </TabsContent>
             <TabsContent value="integrations" className="space-y-6">
               <IntegrationsSettingsTab venueId={venue.id} />
+            </TabsContent>
+            <TabsContent value="table-sessions" className="space-y-6">
+              <TableSessionsSettingsTab venueId={venue.id} />
             </TabsContent>
           </>
         )}
