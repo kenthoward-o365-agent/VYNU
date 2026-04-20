@@ -315,6 +315,141 @@ export default function KnowledgeBase() {
           <Tip>The diner's mobile view subscribes to live updates — the moment you tap a status button, their phone reflects the new status within ~1 second.</Tip>
         </Section>
 
+        {/* Display Terminals */}
+        <Section id="display-terminals" title="Display Terminals" icon={Monitor}>
+          <SubSection title="What is a Display Terminal?">
+            <p>
+              A <strong>Display Terminal</strong> is a specific physical device — a Mac mini wired to a kitchen TV, an iPad on the bar, an Intel NUC behind the expo screen — running OrdrUp in a browser at a fixed station. Once you "pair" a terminal, that browser only shows the orders routed to its assigned Display Areas, regardless of which staff member is signed in.
+            </p>
+            <p>It's important to keep three concepts separate in your head:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>User</strong> — a human with a login (Owner, Manager, Staff). Users can be signed into many devices at once.</li>
+              <li><strong>Display Area</strong> — a logical routing target like Kitchen, Bar, or Expo. Each menu category and item routes to up to 3 areas.</li>
+              <li><strong>Display Terminal</strong> — a specific browser on a specific physical device, bound to one or more Display Areas.</li>
+            </ul>
+            <pre className="font-mono text-xs bg-muted p-3 rounded leading-relaxed whitespace-pre overflow-x-auto">
+{`Order placed
+   │
+   ▼
+[Order items] ──route via──▶ [Display Areas]
+                                   │
+                                   ▼
+                          [Display Terminals]
+                          (the screens that
+                           show this order)`}
+            </pre>
+          </SubSection>
+
+          <SubSection title="Why we don't use the device's MAC address">
+            <p>A common question: "Why can't OrdrUp just identify the kitchen iPad by its MAC address?"</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Modern browsers can't read MAC addresses — they're blocked by the OS privacy sandbox.</li>
+              <li>Even native apps on macOS, iOS, Windows, and Android receive a randomised per-app identifier, not the real hardware MAC.</li>
+              <li>So instead, OrdrUp issues a <strong>device token</strong> (a UUID) when you pair a terminal. The token is stored in that browser's <code>localStorage</code> and acts as the device's identity.</li>
+            </ul>
+            <p>Implications you should know:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Clearing the browser's site data un-pairs the terminal — you'll need to re-pair with a fresh code.</li>
+              <li>Incognito / Private mode does NOT persist the binding between sessions — never run a station in incognito.</li>
+              <li>Each browser profile is a separate potential terminal. Chrome and Safari on the same Mac count as two devices.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="First-time setup (manager)">
+            <StepList steps={[
+              "Create your Display Areas (Kitchen, Bar, Expo, etc.) in Order Display System → Display Areas.",
+              "Assign Display Areas to your menu categories and items in Menu Builder. Items inherit category areas by default.",
+              "Go to Order Display System → Display Terminals → click Add Terminal.",
+              "Name it descriptively, e.g. \"Kitchen Mac mini — line cook station\".",
+              "Pick the Display Areas this terminal should show (one or many).",
+              "Save — copy the 6-character pairing code (e.g. K7-9F2). It's valid for 10 minutes.",
+            ]} />
+          </SubSection>
+
+          <SubSection title="Pairing the physical device">
+            <StepList steps={[
+              "On the kitchen Mac mini (or whichever device), open Chrome / Safari / Edge and navigate to your OrdrUp URL.",
+              "Sign in with any staff account that has Orders access.",
+              "In the Orders page header click \"Pair this Terminal\".",
+              "Enter the 6-character code → tap Pair.",
+              "The page reloads — the header now shows a 🖥 badge with the terminal name and assigned areas, and only relevant orders appear.",
+            ]} />
+            <Tip>Once paired, signing out the user does NOT un-pair the device. The next staff member to sign in on that browser sees the same station view automatically.</Tip>
+          </SubSection>
+
+          <SubSection title="Day-to-day operation">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Heartbeat</strong> — every 60 seconds the terminal pings the cloud while Orders is open. The dashboard shows that terminal as <strong>● Online</strong>.</li>
+              <li><strong>Going offline</strong> — if the tab is closed, sleeps, or loses internet, status flips to <strong>Offline</strong> after ~2 minutes. Other terminals keep working.</li>
+              <li><strong>User changes</strong> — sign-out / sign-in does not affect the terminal binding. The browser stays bound until a manager unpairs it or the browser data is cleared.</li>
+              <li><strong>"Show all (override)"</strong> — a small toggle next to the terminal badge lets a manager temporarily see the full unfiltered order list without un-pairing. Click it again to return to the filtered view.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Managing terminals (manager actions)">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Rename</strong> — change the name at any time without disturbing the device.</li>
+              <li><strong>Change assigned Display Areas</strong> — takes effect on the next page load on that terminal.</li>
+              <li><strong>Regenerate pairing code</strong> — issues a new 10-minute code if the previous one expired before the device was paired.</li>
+              <li><strong>Unpair / revoke</strong> — invalidates the device token immediately. Use this when a device is lost or stolen, when you swap hardware, or when you decommission a station. The browser falls back to the unpaired Orders view on next reload.</li>
+              <li><strong>Deactivate</strong> — keeps the terminal configuration but stops it from receiving orders. Useful for a station that's temporarily out of service.</li>
+              <li><strong>Delete</strong> — permanent removal. The device's token is invalidated and the configuration is gone.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Multi-terminal patterns (worked examples)">
+            <ul className="list-disc list-inside space-y-2 pl-1">
+              <li><strong>Small café</strong> — one terminal showing all areas. Functionally identical to no terminal binding, but you get "Online" monitoring and a clear record of which device is the order screen.</li>
+              <li><strong>Pub with separate kitchen + bar</strong> — Kitchen terminal bound to the Kitchen area; Bar terminal bound to the Bar area. Food tickets and drink tickets fan out to the right station automatically.</li>
+              <li><strong>Restaurant brigade</strong> — Fry Side terminal → Fry; Grill terminal → Grill; Expo terminal → all three (Fry + Grill + Cold) so the expediter sees everything coming together for the pass.</li>
+              <li><strong>Front-of-house tablet</strong> — a roaming iPad bound to all areas with "Show all (override)" toggled on by default — servers use it to chase orders across the floor without needing the manager view.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Troubleshooting">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-border text-foreground">
+                    <th className="text-left py-2 pr-3 font-medium">Symptom</th>
+                    <th className="text-left py-2 pr-3 font-medium">Cause</th>
+                    <th className="text-left py-2 font-medium">Fix</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  <tr><td className="py-2 pr-3">"Invalid pairing code"</td><td className="py-2 pr-3">Code expired (&gt;10 min) or already used</td><td className="py-2">Regenerate from the dashboard</td></tr>
+                  <tr><td className="py-2 pr-3">Terminal shows Offline but screen is on</td><td className="py-2 pr-3">Browser tab in background or device asleep</td><td className="py-2">Bring tab to foreground; disable display sleep</td></tr>
+                  <tr><td className="py-2 pr-3">Wrong orders appearing</td><td className="py-2 pr-3">Bound to the wrong Display Areas</td><td className="py-2">Edit terminal, fix areas, reload the device</td></tr>
+                  <tr><td className="py-2 pr-3">Lost identity after browser update</td><td className="py-2 pr-3">localStorage was cleared</td><td className="py-2">Re-pair with a fresh code</td></tr>
+                  <tr><td className="py-2 pr-3">Same device shows as two terminals</td><td className="py-2 pr-3">Used both Chrome and Safari on the same Mac</td><td className="py-2">Standardise on one browser per station</td></tr>
+                  <tr><td className="py-2 pr-3">"Pair this Terminal" link missing</td><td className="py-2 pr-3">User's role lacks Orders nav permission</td><td className="py-2">Grant orders nav in the role permissions</td></tr>
+                  <tr><td className="py-2 pr-3">No orders on a paired terminal</td><td className="py-2 pr-3">No items route to that terminal's areas</td><td className="py-2">Assign Display Areas to categories / items in Menu Builder</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </SubSection>
+
+          <SubSection title="Security">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Device tokens are venue-scoped — a token from Venue A cannot view Venue B's orders even if pasted in.</li>
+              <li>Tokens never appear in URLs or logs and aren't visible in the dashboard.</li>
+              <li>Unpair immediately if a device is lost, stolen, or moved off-site.</li>
+              <li>The heartbeat lets you spot a critical station that's been offline for hours — a future enhancement will email an alert when it does.</li>
+              <li>All pairing requires an authenticated venue staff session — codes alone don't grant access.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Hardware recommendations">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Kitchen</strong> — Mac mini + 27" wall-mounted monitor in landscape, OR an iPad Pro 12.9" in a kitchen-grade splash-proof case.</li>
+              <li><strong>Bar</strong> — iPad 10.9" in a counter mount with a charging cable run.</li>
+              <li><strong>Expo / pass</strong> — a large TV (43"+) driven by an Intel NUC or Mac mini, browser launched in fullscreen kiosk mode.</li>
+              <li><strong>For all stations</strong> — disable display sleep in the OS, set the browser to auto-launch on reboot, and bookmark the OrdrUp URL on the home screen.</li>
+            </ul>
+            <Tip>iPads in kitchens take a beating. Always pair a device with a code — never share the URL alone — and keep a printed list of active terminals near the manager's office for quick "is everything online?" checks.</Tip>
+          </SubSection>
+        </Section>
+
         {/* Analytics */}
         <Section id="analytics" title="Analytics" icon={TrendingUp}>
           <SubSection title="Revenue & Performance">
