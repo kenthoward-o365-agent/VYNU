@@ -28,6 +28,7 @@ const tocItems: TocItem[] = [
   { id: "analytics", label: "Analytics", icon: TrendingUp },
   { id: "diners", label: "Diners", icon: Users },
   { id: "settings", label: "Settings", icon: Settings },
+  { id: "test-cards", label: "Test Cards", icon: CreditCard },
 ];
 
 function scrollTo(id: string) {
