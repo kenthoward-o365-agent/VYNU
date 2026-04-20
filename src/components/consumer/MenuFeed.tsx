@@ -84,7 +84,7 @@ const MenuItemRow = ({
   dimmed?: boolean;
   pricingIndex?: RuleIndex | null;
 }) => {
-  const isAvailable = (item.is_available ?? true) && !dimmed;
+  const isAvailable = item.is_available ?? true;
   const resolved = resolvePrice(item.id, item.price, pricingIndex ?? null);
 
   return (
