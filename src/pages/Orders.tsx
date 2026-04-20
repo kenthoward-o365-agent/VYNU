@@ -481,6 +481,12 @@ export default function Orders() {
           onComplete={fetchOrders}
         />
       )}
+
+      <PairTerminalDialog
+        open={pairOpen}
+        onOpenChange={setPairOpen}
+        onPaired={() => window.location.reload()}
+      />
     </div>
   );
 }
