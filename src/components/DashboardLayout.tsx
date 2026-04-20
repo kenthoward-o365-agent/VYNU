@@ -191,6 +191,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       <Monitor className="h-3 w-3" />
                       Order Display System
                     </Link>
+                    <Link to="/orders/throttling" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/orders/throttling" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
+                      <Sliders className="h-3 w-3" />
+                      Operational Throttling
+                    </Link>
                   </CollapsibleContent>
                 )}
                 {isPricing && (
