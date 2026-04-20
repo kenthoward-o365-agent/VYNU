@@ -6,8 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { User, Receipt, Star, MapPin, Pencil, Check, X, LogOut } from "lucide-react";
+import { User, Receipt, Star, MapPin, Pencil, Check, X, LogOut, Sparkles, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+
+const COMMON_ALLERGENS = [
+  "Gluten", "Dairy", "Eggs", "Soy", "Peanuts", "Tree Nuts",
+  "Fish", "Shellfish", "Sesame", "Sulphites",
+];
 
 interface DinerProfileProps {
   venueId: string;
@@ -22,6 +27,7 @@ interface Profile {
   phone: string | null;
   display_name: string | null;
   allergens: string[] | null;
+  created_at?: string;
 }
 
 interface OrderHistory {
@@ -54,8 +60,9 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
   const [loyalty, setLoyalty] = useState<LoyaltyInfo[]>([]);
   const [venues, setVenues] = useState<LoyaltyVenue[]>([]);
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "" });
+  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "", allergens: [] as string[] });
   const [saving, setSaving] = useState(false);
+  const [visitCount, setVisitCount] = useState<number>(0);
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -79,7 +86,7 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
     // Fetch profile
     const { data: prof } = await supabase
       .from("diner_profiles")
-      .select("id, first_name, last_name, email, phone, display_name, allergens")
+      .select("id, first_name, last_name, email, phone, display_name, allergens, created_at")
       .eq("user_id", session.user.id)
       .maybeSingle();
 
@@ -89,7 +96,15 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
         first_name: prof.first_name || "",
         last_name: prof.last_name || "",
         phone: prof.phone || "",
+        allergens: prof.allergens || [],
       });
+
+      // Fetch total visit count across all venues
+      const { count } = await supabase
+        .from("diner_visits")
+        .select("id", { count: "exact", head: true })
+        .eq("diner_id", prof.id);
+      setVisitCount(count || 0);
 
       // Fetch orders (last 20)
       const { data: orderData } = await supabase
@@ -193,13 +208,21 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
         last_name: editForm.last_name.trim() || null,
         phone: editForm.phone.trim() || null,
         display_name: `${editForm.first_name.trim()} ${editForm.last_name.trim()}`.trim() || null,
+        allergens: editForm.allergens,
       })
       .eq("id", profile.id);
     setSaving(false);
     if (error) { toast.error("Failed to update profile"); return; }
-    toast.success("Profile updated");
+    toast.success("Ordrup ID updated");
     setEditing(false);
     fetchAll();
+  };
+
+  const toggleAllergen = (a: string) => {
+    setEditForm((f) => ({
+      ...f,
+      allergens: f.allergens.includes(a) ? f.allergens.filter((x) => x !== a) : [...f.allergens, a],
+    }));
   };
 
   const handleSignOut = async () => {
