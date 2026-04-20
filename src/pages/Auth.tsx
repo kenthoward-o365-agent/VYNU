@@ -112,7 +112,7 @@ export default function Auth() {
           <img src={logoSrc} alt="OrdrUp" className="h-16 w-16 mx-auto" />
           <div className="space-y-1">
             <h1 className="text-3xl font-bold text-foreground">OrdrUp</h1>
-            <p className="text-muted-foreground">The world's first agentic dining platform</p>
+            <p className="text-muted-foreground">The world's first agentic Ordering Platform</p>
           </div>
         </div>
         <Card>
@@ -134,7 +134,7 @@ export default function Auth() {
                   id="site-id"
                   name="organization"
                   autoComplete="organization"
-                  placeholder="Venue ID (e.g. 1000) — leave blank for OrdrUp staff"
+                  placeholder="Venue ID (e.g. 1000)"
                   value={siteId}
                   onChange={(e) => setSiteId(e.target.value)}
                   className="font-mono tracking-wider"
