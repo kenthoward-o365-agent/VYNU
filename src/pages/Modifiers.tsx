@@ -100,7 +100,7 @@ export default function Modifiers() {
       supabase.from("menu_item_modifiers").select("*"),
       supabase.from("menu_items").select("id, name, category_id").eq("venue_id", venue.id).order("name"),
     ]);
-    setCategories(catsRes.data || []);
+    setCategories((catsRes.data as any) || []);
     setModifiers(modsRes.data || []);
     setAssignments(assignRes.data || []);
     setMenuItems(itemsRes.data || []);
