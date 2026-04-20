@@ -264,11 +264,11 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
           <button onClick={onBack} className="p-1 -ml-1">
             <ArrowLeft className="h-5 w-5 text-muted-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">Welcome Back</h1>
+          <h1 className="text-xl font-bold text-foreground">Welcome back to Ordrup</h1>
         </div>
 
         <p className="text-sm text-muted-foreground mb-6">
-          Sign in to access your rewards, saved preferences, and order history.
+          Sign in to your <span className="font-medium text-foreground">Ordrup ID</span> to use your saved preferences, wallet, and rewards at every Ordrup venue.
         </p>
 
         {error && (
@@ -352,11 +352,11 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
         <button onClick={onBack} className="p-1 -ml-1">
           <ArrowLeft className="h-5 w-5 text-muted-foreground" />
         </button>
-        <h1 className="text-xl font-bold text-foreground">Create Account</h1>
+        <h1 className="text-xl font-bold text-foreground">Create your Ordrup ID</h1>
       </div>
 
       <p className="text-sm text-muted-foreground mb-6">
-        Sign up to earn rewards, save favourites, and speed up future orders.
+        One profile. Every Ordrup venue. Earn rewards, save your wallet, and skip the signup form everywhere you go.
       </p>
 
       {error && (
@@ -485,7 +485,7 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
         </div>
 
         <Button onClick={handleSubmit} disabled={!isSignupValid || submitting} className="w-full h-12 text-base rounded-xl mt-2">
-          {submitting ? "Creating account..." : "Create Account"}
+          {submitting ? "Creating your Ordrup ID..." : "Create my Ordrup ID"}
         </Button>
 
         <p className="text-sm text-center text-muted-foreground">

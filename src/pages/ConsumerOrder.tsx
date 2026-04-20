@@ -85,6 +85,8 @@ const ConsumerOrder = () => {
   const [resolvedTableId, setResolvedTableId] = useState<string | null>(null);
   const [dinerId, setDinerId] = useState<string | null>(null);
   const [dinerInfo, setDinerInfo] = useState<{ first_name: string | null; last_name: string | null; email: string | null; phone: string | null } | null>(null);
+  const [dinerAllergens, setDinerAllergens] = useState<string[]>([]);
+  const [showOneTapLoyalty, setShowOneTapLoyalty] = useState(false);
   const [lastOrderItems, setLastOrderItems] = useState<{ id: string; name: string; quantity: number }[]>([]);
   const chatSessionIdRef = useRef<string | null>(null);
 
@@ -212,23 +214,37 @@ const ConsumerOrder = () => {
     fetchData();
   }, [venueId, tableId]);
 
-  // Check for diner profile
+  // Check for diner profile (Ordrup ID) — silently log visit + sync prefs
   useEffect(() => {
     const fetchDinerProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         const { data } = await supabase
           .from("diner_profiles")
-          .select("id, first_name, last_name, email, phone")
+          .select("id, first_name, last_name, email, phone, allergens")
           .eq("user_id", session.user.id)
           .maybeSingle();
         if (data) {
           setDinerId(data.id);
           setDinerInfo({ first_name: data.first_name, last_name: data.last_name, email: data.email, phone: data.phone });
+          setDinerAllergens(data.allergens || []);
           setStarted(true);
 
-          // Fetch last order items for "another round"
+          // Silent visit log for cross-venue recognition (one per page load)
           if (venueId) {
+            const visitKey = `ordrup_visit_logged_${venueId}_${data.id}`;
+            const today = new Date().toISOString().slice(0, 10);
+            if (sessionStorage.getItem(visitKey) !== today) {
+              await supabase
+                .from("diner_visits")
+                .insert({ diner_id: data.id, venue_id: venueId } as any);
+              sessionStorage.setItem(visitKey, today);
+            }
+
+            // Trigger one-tap loyalty prompt if not already enrolled at this venue/group
+            setShowOneTapLoyalty(true);
+
+            // Fetch last order items for "another round"
             const { data: lastOrder } = await supabase
               .from("orders")
               .select("id")
@@ -257,7 +273,7 @@ const ConsumerOrder = () => {
       }
     };
     fetchDinerProfile();
-  }, [started, showSignup]);
+  }, [started, showSignup, venueId]);
 
   useEffect(() => {
     const fetchOpenOrder = async () => {
@@ -548,6 +564,19 @@ const ConsumerOrder = () => {
         </>
       )}
 
+      {/* One-tap loyalty join for signed-in Ordrup ID holders (on session start, when no active/paid order is showing) */}
+      {dinerId && venue && !activeOrder && (
+        <LoyaltyJoinPrompt
+          venueId={venue.id}
+          groupId={venue.group_id}
+          show={showOneTapLoyalty}
+          dinerId={dinerId}
+          onJoin={() => {}}
+          onDismiss={() => setShowOneTapLoyalty(false)}
+          onJoined={() => setShowOneTapLoyalty(false)}
+        />
+      )}
+
       {/* Active Order Status */}
       {activeOrder && OPEN_ORDER_STATUSES.includes(activeOrder.status) && activeOrder.status !== "refunded" && (
         <OrderStatus
@@ -568,6 +597,7 @@ const ConsumerOrder = () => {
           tableNumber={tableNumber || undefined}
           sessionMode={sessionMode ?? "solo"}
           pricingIndex={pricingIndex}
+          defaultAllergens={dinerAllergens}
         />
       )}
       {tab === "feed" && chatMode === "chat_only" && !showChat && (

@@ -631,7 +631,10 @@ const CheckoutPanel = ({
             {/* Stored Cards (signed-in diners) — render above Drop-in */}
             {storedCards.length > 0 && (
               <div className="space-y-3">
-                <Label className="text-sm font-semibold">Saved Cards</Label>
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-semibold">Your Ordrup wallet</Label>
+                  <p className="text-[11px] text-muted-foreground">Cards you've saved travel with your Ordrup ID — usable at every Ordrup venue.</p>
+                </div>
                 {storedCards.map((sc) => (
                   <div
                     key={sc.id}
