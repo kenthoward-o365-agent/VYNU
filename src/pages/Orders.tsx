@@ -251,16 +251,20 @@ export default function Orders() {
     })();
   }, [terminal?.terminal_id, terminalOverride, JSON.stringify(terminal?.area_ids)]);
 
-  useEffect(() => { fetchVenueStatuses(); }, [venue?.id]);
-  useEffect(() => { fetchOrders(); }, [venue, filter, auditDate, venueStatuses]);
+  useEffect(() => { fetchVenueStatuses(); fetchVenueSettings(); }, [venue?.id]);
+  useEffect(() => { fetchOrders(); fetchSessions(); }, [venue, filter, auditDate, venueStatuses]);
 
-  // Realtime subscription
+  // Realtime subscription — orders + sessions
   useEffect(() => {
     if (!venue) return;
     const channel = supabase
       .channel("orders-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `venue_id=eq.${venue.id}` }, () => {
         fetchOrders();
+        fetchSessions();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "table_sessions", filter: `venue_id=eq.${venue.id}` }, () => {
+        fetchSessions();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -272,17 +276,38 @@ export default function Orders() {
     toast.success("This browser is no longer bound to a terminal");
   };
 
-  // Filter orders by terminal area routing AND throttling visibility
+  // Filter orders by terminal area routing, throttling, AND group-session firing.
+  // Group-session orders only become visible to kitchen once the session has fired.
   const visibleOrders = useMemo(() => {
     const nowMs = Date.now();
     const released = orders.filter(
       (o) => !o.throttled_until || new Date(o.throttled_until).getTime() <= nowMs,
     );
-    if (!terminal || terminalOverride || !terminalAreaItemIds) return released;
-    return released.filter((o) =>
+    // Hide group-session orders that haven't fired yet (only relevant on terminal views)
+    const sessionFiltered = (terminal && !terminalOverride)
+      ? released.filter((o) => !o.session_id || o.fired_at !== null)
+      : released;
+    if (!terminal || terminalOverride || !terminalAreaItemIds) return sessionFiltered;
+    return sessionFiltered.filter((o) =>
       (o.order_items || []).some((it) => terminalAreaItemIds.has((it as any).menu_item_id || (it.menu_item as any)?.id))
     );
   }, [orders, terminal, terminalOverride, terminalAreaItemIds]);
+
+  // Group visible orders by session_id (null = solo bucket)
+  const { soloOrders, sessionGroups } = useMemo(() => {
+    const groups = new Map<string, Order[]>();
+    const solo: Order[] = [];
+    for (const o of visibleOrders) {
+      if (o.session_id) {
+        const list = groups.get(o.session_id) || [];
+        list.push(o);
+        groups.set(o.session_id, list);
+      } else {
+        solo.push(o);
+      }
+    }
+    return { soloOrders: solo, sessionGroups: groups };
+  }, [visibleOrders]);
 
   const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
     const { error } = await supabase.from("orders").update({ status: newStatus as any }).eq("id", orderId);
