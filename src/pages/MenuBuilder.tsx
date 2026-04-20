@@ -1000,6 +1000,48 @@ export default function MenuBuilder() {
           onComplete={fetchData}
         />
       )}
+
+      {/* Edit Category Dialog */}
+      <Dialog open={catEditOpen} onOpenChange={setCatEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Category</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Category name</Label>
+              <Input
+                placeholder="Category name"
+                value={catEditName}
+                onChange={(e) => setCatEditName(e.target.value)}
+              />
+            </div>
+            {displayAreas.length > 0 && (
+              <div className="space-y-2">
+                <Label>Display areas</Label>
+                <p className="text-xs text-muted-foreground">
+                  Choose up to 3 areas where items in this category should appear (e.g. Kitchen, Bar).
+                </p>
+                <DisplayAreaPicker
+                  available={displayAreas}
+                  selectedIds={catEditAreaIds}
+                  onChange={setCatEditAreaIds}
+                />
+              </div>
+            )}
+            <div className="flex justify-between gap-2 pt-2">
+              <Button
+                variant="destructive"
+                onClick={() => catEditing && deleteCategory(catEditing)}
+              >
+                <Trash2 className="h-4 w-4 mr-1" /> Delete
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setCatEditOpen(false)}>Cancel</Button>
+                <Button onClick={saveCatEdit}>Save</Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
