@@ -84,7 +84,7 @@ const MenuItemRow = ({
   dimmed?: boolean;
   pricingIndex?: RuleIndex | null;
 }) => {
-  const isAvailable = (item.is_available ?? true) && !dimmed;
+  const isAvailable = item.is_available ?? true;
   const resolved = resolvePrice(item.id, item.price, pricingIndex ?? null);
 
   return (
@@ -94,7 +94,7 @@ const MenuItemRow = ({
       className={cn(
         "group w-full flex items-center gap-3 p-3 rounded-2xl border transition-all text-left overflow-hidden",
         "bg-card border-border hover:border-primary/40 hover:shadow-sm active:scale-[0.99]",
-        !isAvailable && "opacity-50",
+        (!isAvailable || dimmed) && "opacity-50",
       )}
     >
       {/* Image */}
@@ -129,8 +129,8 @@ const MenuItemRow = ({
         )}
         <div className="flex flex-wrap gap-1 mt-1.5 overflow-hidden">
           {!isAvailable && (
-            <Badge variant="destructive" className="text-[9px] gap-0.5 px-1.5 py-0">
-              <Ban className="h-2 w-2" /> 86'd
+            <Badge variant="destructive" className="text-[9px] gap-1 px-1.5 py-0 whitespace-nowrap">
+              <Ban className="h-2 w-2" /> Temporarily Not Available
             </Badge>
           )}
           {item.dietary_tags?.slice(0, 3).map((tag) => (
