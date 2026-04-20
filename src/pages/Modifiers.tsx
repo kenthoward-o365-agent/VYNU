@@ -46,6 +46,7 @@ type MenuItemModifier = {
   menu_item_id: string;
   modifier_category_id: string;
   is_required: boolean;
+  display_order: number;
 };
 
 type MenuItem = {
@@ -90,6 +91,10 @@ export default function Modifiers() {
   const [settingsType, setSettingsType] = useState<SelectionType>("addon");
   const [settingsMin, setSettingsMin] = useState("0");
   const [settingsMax, setSettingsMax] = useState("0");
+
+  // Per-item reorder dialog
+  const [reorderItemId, setReorderItemId] = useState<string | null>(null);
+  const [reorderItemName, setReorderItemName] = useState("");
 
   const openCategorySettings = (cat: ModifierCategory) => {
     setSettingsCatId(cat.id);
