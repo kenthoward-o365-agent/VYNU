@@ -1084,10 +1084,13 @@ export type Database = {
           customer_id: string | null
           customer_notes: string | null
           extra_wait_minutes: number
+          fired_at: string | null
           gratuity_amount: number
           id: string
           payment_psp_reference: string | null
           pos_order_id: string | null
+          session_id: string | null
+          session_mode: string | null
           status: Database["public"]["Enums"]["order_status"]
           table_id: string | null
           throttled_until: string | null
@@ -1101,10 +1104,13 @@ export type Database = {
           customer_id?: string | null
           customer_notes?: string | null
           extra_wait_minutes?: number
+          fired_at?: string | null
           gratuity_amount?: number
           id?: string
           payment_psp_reference?: string | null
           pos_order_id?: string | null
+          session_id?: string | null
+          session_mode?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string | null
           throttled_until?: string | null
@@ -1118,10 +1124,13 @@ export type Database = {
           customer_id?: string | null
           customer_notes?: string | null
           extra_wait_minutes?: number
+          fired_at?: string | null
           gratuity_amount?: number
           id?: string
           payment_psp_reference?: string | null
           pos_order_id?: string | null
+          session_id?: string | null
+          session_mode?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string | null
           throttled_until?: string | null
@@ -1130,6 +1139,13 @@ export type Database = {
           venue_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "table_sessions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_table_id_fkey"
             columns: ["table_id"]
@@ -1383,6 +1399,85 @@ export type Database = {
           },
           {
             foreignKeyName: "staff_alerts_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      table_sessions: {
+        Row: {
+          auto_close_at: string
+          closed_at: string | null
+          created_at: string
+          diner_count: number
+          display_name: string | null
+          fire_strategy: string
+          fired_at: string | null
+          fired_by: string | null
+          host_diner_id: string | null
+          id: string
+          is_discoverable: boolean
+          opened_at: string
+          status: string
+          table_id: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          auto_close_at?: string
+          closed_at?: string | null
+          created_at?: string
+          diner_count?: number
+          display_name?: string | null
+          fire_strategy?: string
+          fired_at?: string | null
+          fired_by?: string | null
+          host_diner_id?: string | null
+          id?: string
+          is_discoverable?: boolean
+          opened_at?: string
+          status?: string
+          table_id: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          auto_close_at?: string
+          closed_at?: string | null
+          created_at?: string
+          diner_count?: number
+          display_name?: string | null
+          fire_strategy?: string
+          fired_at?: string | null
+          fired_by?: string | null
+          host_diner_id?: string | null
+          id?: string
+          is_discoverable?: boolean
+          opened_at?: string
+          status?: string
+          table_id?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_sessions_host_diner_id_fkey"
+            columns: ["host_diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_sessions_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_sessions_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
@@ -2248,6 +2343,7 @@ export type Database = {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
       }
+      close_table_session: { Args: { _session_id: string }; Returns: boolean }
       create_venue_with_owner: {
         Args: {
           _address?: string
@@ -2262,6 +2358,18 @@ export type Database = {
         }
         Returns: string
       }
+      find_or_create_table_session: {
+        Args: {
+          _display_name?: string
+          _fire_strategy?: string
+          _host_diner_id?: string
+          _join_existing_id?: string
+          _table_id: string
+          _venue_id: string
+        }
+        Returns: string
+      }
+      fire_table_session: { Args: { _session_id: string }; Returns: boolean }
       generate_site_id: { Args: never; Returns: string }
       get_terminal_by_token: {
         Args: { _token: string }
@@ -2325,6 +2433,17 @@ export type Database = {
       is_venue_staff: {
         Args: { _user_id: string; _venue_id: string }
         Returns: boolean
+      }
+      list_open_sessions_at_table: {
+        Args: { _table_id: string; _venue_id: string }
+        Returns: {
+          diner_count: number
+          display_name: string
+          fire_strategy: string
+          host_first_name: string
+          id: string
+          opened_at: string
+        }[]
       }
       lookup_venue_by_site_id: {
         Args: { _site_id: string }
