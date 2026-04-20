@@ -22,6 +22,14 @@ const TERMINAL_STATUSES: OrderStatus[] = ["served", "paid", "cancelled", "refund
 const REFUNDABLE_STATUSES: OrderStatus[] = ["paid", "served", "cancelled"];
 const FALLBACK_ACTIVE: OrderStatus[] = ["received", "preparing", "ready"];
 
+interface OrderItemModifier {
+  modifier_id?: string;
+  category_id?: string;
+  name: string;
+  price: number;
+  type: "addon" | "removal" | "choice";
+}
+
 interface OrderItem {
   id: string;
   quantity: number;
@@ -29,6 +37,7 @@ interface OrderItem {
   notes: string | null;
   menu_item_id: string;
   menu_item: { name: string } | null;
+  modifiers: OrderItemModifier[] | null;
 }
 
 interface RefundRow {
@@ -136,7 +145,7 @@ export default function Orders() {
     if (!venue) return;
     let query = supabase
       .from("orders")
-      .select("*, table:tables(table_number), order_items(id, quantity, unit_price, notes, menu_item_id, menu_item:menu_items(name))")
+      .select("*, table:tables(table_number), order_items(id, quantity, unit_price, notes, menu_item_id, modifiers, menu_item:menu_items(name))")
       .eq("venue_id", venue.id)
       .gte("created_at", auditDate.from.toISOString())
       .lte("created_at", auditDate.to.toISOString())
@@ -357,15 +366,26 @@ export default function Orders() {
         </CardHeader>
         <CardContent className="space-y-3 flex-1">
           <div className="divide-y divide-border">
-            {order.order_items?.map((item) => (
-              <div key={item.id} className="flex justify-between py-1.5 text-sm">
-                <div className="flex-1">
-                  <span className="font-medium text-foreground">{item.quantity}× {item.menu_item?.name ?? "Unknown item"}</span>
-                  {item.notes && <p className="text-xs text-muted-foreground mt-0.5">⤷ {item.notes}</p>}
+            {order.order_items?.map((item) => {
+              const mods = Array.isArray(item.modifiers) ? item.modifiers : [];
+              const addons = mods.filter((m) => m.type === "addon" || m.type === "choice");
+              const removals = mods.filter((m) => m.type === "removal");
+              return (
+                <div key={item.id} className="flex justify-between py-1.5 text-sm">
+                  <div className="flex-1">
+                    <span className="font-medium text-foreground">{item.quantity}× {item.menu_item?.name ?? "Unknown item"}</span>
+                    {addons.map((m, i) => (
+                      <p key={`a-${i}`} className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">+ {m.name}{Number(m.price) > 0 ? ` (+$${Number(m.price).toFixed(2)})` : ""}</p>
+                    ))}
+                    {removals.map((m, i) => (
+                      <p key={`r-${i}`} className="text-xs text-destructive mt-0.5">✕ {m.name}</p>
+                    ))}
+                    {item.notes && <p className="text-xs text-muted-foreground italic mt-0.5">⤷ {item.notes}</p>}
+                  </div>
+                  <span className="text-muted-foreground ml-2">${(item.quantity * Number(item.unit_price)).toFixed(2)}</span>
                 </div>
-                <span className="text-muted-foreground ml-2">${(item.quantity * Number(item.unit_price)).toFixed(2)}</span>
-              </div>
-            ))}
+              );
+            })}
             {(!order.order_items || order.order_items.length === 0) && (
               <p className="text-xs text-muted-foreground py-1">No items</p>
             )}

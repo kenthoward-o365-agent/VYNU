@@ -793,8 +793,12 @@ export type Database = {
           display_order: number | null
           id: string
           is_active: boolean | null
+          max_selection: number
+          min_selection: number
           name: string
           pos_id: string | null
+          selection_type: string
+          show_on_receipt_when_free: boolean
           updated_at: string
           venue_id: string
         }
@@ -803,8 +807,12 @@ export type Database = {
           display_order?: number | null
           id?: string
           is_active?: boolean | null
+          max_selection?: number
+          min_selection?: number
           name: string
           pos_id?: string | null
+          selection_type?: string
+          show_on_receipt_when_free?: boolean
           updated_at?: string
           venue_id: string
         }
@@ -813,8 +821,12 @@ export type Database = {
           display_order?: number | null
           id?: string
           is_active?: boolean | null
+          max_selection?: number
+          min_selection?: number
           name?: string
           pos_id?: string | null
+          selection_type?: string
+          show_on_receipt_when_free?: boolean
           updated_at?: string
           venue_id?: string
         }

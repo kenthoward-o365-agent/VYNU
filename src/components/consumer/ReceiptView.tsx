@@ -5,12 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Download, CheckCircle2 } from "lucide-react";
 
+interface OrderItemModifier {
+  modifier_id?: string;
+  category_id?: string;
+  name: string;
+  price: number;
+  type: "addon" | "removal" | "choice";
+}
+
 interface OrderItem {
   id: string;
   menu_item_id: string;
   quantity: number;
   unit_price: number;
   menu_item_name?: string;
+  modifiers?: OrderItemModifier[] | null;
 }
 
 interface VenueInfo {
@@ -58,7 +67,7 @@ const ReceiptView = ({
       const [itemsRes, taxesRes] = await Promise.all([
         supabase
           .from("order_items")
-          .select("id, menu_item_id, quantity, unit_price")
+          .select("id, menu_item_id, quantity, unit_price, modifiers")
           .eq("order_id", orderId),
         supabase
           .from("venue_taxes")
@@ -174,16 +183,28 @@ const ReceiptView = ({
             Your Order
           </h4>
           <div className="space-y-2">
-            {orderItems.map((item) => (
-              <div key={item.id} className="flex justify-between text-sm">
-                <span>
-                  {item.quantity}× {item.menu_item_name}
-                </span>
-                <span className="font-medium">
-                  ${(item.unit_price * item.quantity).toFixed(2)}
-                </span>
-              </div>
-            ))}
+            {orderItems.map((item) => {
+              const paidMods = (item.modifiers || []).filter((m) => Number(m.price) > 0);
+              const lineTotal =
+                (Number(item.unit_price) + paidMods.reduce((s, m) => s + Number(m.price), 0)) *
+                item.quantity;
+              return (
+                <div key={item.id} className="space-y-0.5">
+                  <div className="flex justify-between text-sm">
+                    <span>
+                      {item.quantity}× {item.menu_item_name}
+                    </span>
+                    <span className="font-medium">${lineTotal.toFixed(2)}</span>
+                  </div>
+                  {paidMods.map((m, i) => (
+                    <div key={i} className="flex justify-between text-[11px] text-muted-foreground pl-4">
+                      <span>+ {m.name}</span>
+                      <span>+${(Number(m.price) * item.quantity).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </div>
 
