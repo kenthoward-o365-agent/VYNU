@@ -437,12 +437,16 @@ export default function Modifiers() {
             <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">Create modifier categories first, then assign them to menu items.</CardContent></Card>
           ) : (
             <Card>
-              <CardContent className="pt-6">
+              <CardContent className="pt-6 space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Tick to assign a category. Toggle to mark Required. Use the reorder button on each row to set the order optional categories appear to diners.
+                </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Menu Item</th>
+                        <th className="text-center py-2 px-2 font-medium text-muted-foreground w-12">Order</th>
                         {categories.map(cat => (
                           <th key={cat.id} className="text-center py-2 px-2 font-medium text-muted-foreground min-w-[120px]">
                             <div className="text-xs">{cat.name}</div>
@@ -451,9 +455,23 @@ export default function Modifiers() {
                       </tr>
                     </thead>
                     <tbody>
-                      {menuItems.map(item => (
+                      {menuItems.map(item => {
+                        const itemAssignmentCount = assignments.filter(a => a.menu_item_id === item.id).length;
+                        return (
                         <tr key={item.id} className="border-b last:border-0 hover:bg-muted/50">
                           <td className="py-2 pr-4 font-medium">{item.name}</td>
+                          <td className="text-center py-2 px-2">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              disabled={itemAssignmentCount === 0}
+                              onClick={() => { setReorderItemId(item.id); setReorderItemName(item.name); }}
+                              title="Reorder modifier categories for this item"
+                            >
+                              <ListOrdered className="h-4 w-4" />
+                            </Button>
+                          </td>
                           {categories.map(cat => {
                             const assignment = assignments.find(a => a.menu_item_id === item.id && a.modifier_category_id === cat.id);
                             return (
@@ -478,7 +496,8 @@ export default function Modifiers() {
                             );
                           })}
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -487,6 +506,14 @@ export default function Modifiers() {
           )}
         </TabsContent>
       </Tabs>
+
+      <ReorderCategoriesDialog
+        open={!!reorderItemId}
+        onOpenChange={(o) => { if (!o) setReorderItemId(null); }}
+        menuItemId={reorderItemId}
+        menuItemName={reorderItemName}
+        onSaved={fetchData}
+      />
 
       {/* AI Review Dialog */}
       <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
