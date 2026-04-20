@@ -584,6 +584,7 @@ const ConsumerOrder = () => {
           tableNumber={tableNumber || undefined}
           sessionMode={sessionMode ?? "solo"}
           pricingIndex={pricingIndex}
+          defaultAllergens={dinerAllergens}
         />
       )}
       {tab === "feed" && chatMode === "chat_only" && !showChat && (
