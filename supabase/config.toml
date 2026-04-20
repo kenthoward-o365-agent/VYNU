@@ -1,1 +1,4 @@
 project_id = "jsbxivkgfekcgvtyqnek"
+
+[functions.session-tick]
+verify_jwt = false
