@@ -2,118 +2,89 @@
 
 ## Goal
 
-Build **Operational Throttling** — per-Display-Area flood control that prevents the kitchen, bar, or any station from being overwhelmed during a rush. Mirrors Chewzie's "Smart Docket Queue" but built on our existing **Display Areas** (Kitchen, Bar, Take Away, Expo) instead of physical printers.
+Add an explicit **diner-side choice** at the start of the flow: order **solo** (private ticket, fires immediately as today), or **join the table's group order** (bundles with everyone else at this QR for one kitchen ticket). This sits in front of the Table Sessions backend from the previous plan — backend bundling only kicks in for diners who explicitly opt in.
 
-## What Chewzie does (the model we're copying)
+## Updated diner workflow
 
-Each printer/station has a queue with three modes:
-- **Open** — orders flow straight through (normal trade)
-- **Auto** — system holds new orders back when the station is at capacity, releases them at a configured rate (e.g. "5 orders per 10 minutes" = one every 2 minutes)
-- **Block** — manual hold, dockets queue up but nothing releases until staff unblocks (auto-falls back to Auto after a timeout)
+```text
+1. Diner scans QR for Table 12
+2. VenueLanding loads
+3. We check: is there an OPEN group session at Table 12 right now?
+       NO  → show two options:    [Order on my own]   [Start a group order at this table]
+       YES → show three options:  [Join Alice + Bob's group order (2 people)]
+                                  [Order on my own anyway]
+                                  [Start a fresh group]   ← rare, behind "more"
+4. Diner picks → continues to landing CTAs (guest / signup / signin) → menu
+5. Their choice is held in app state + persisted to localStorage keyed by venue+table
+   so a refresh doesn't lose it
+6. CheckoutPanel reads the choice:
+       solo  → existing flow, no session_id stamped
+       group → calls find_or_create_table_session, stamps session_id,
+               CTA reads "Send to table" + shows "Holds with table for ~90s" pill
+```
 
-The queue auto-switches Open ↔ Auto based on current load. Wait time shown to the diner is automatically extended by `(queue_size × avg_per_order)` so the customer sees a realistic ETA. Wait times can also be manually overridden, and there's a **Test Mode** for safe tuning.
+## Key UX rules
 
-## How it maps to OrdrUp
+- **Default is solo.** Group is opt-in — never auto-join, even if a session exists. Avoids the "I just wanted a quick coffee and now I'm waiting for strangers" failure mode.
+- **Switchable mid-session.** Add a small "Ordering mode" pill in the header that opens a sheet to switch modes — but only **before** their first order. After first order, mode is locked for that visit (changing it would orphan items).
+- **Visual identity.** Group sessions get a colored stripe + a host avatar list at the top of the menu/cart so diners always know which mode they're in.
+- **Host vs joiner.** First diner to start a group becomes the **host** (cosmetic only — gets a small badge, can rename the session e.g. "Sarah's birthday"). Anyone can fire.
+- **Empty group safety.** If a host starts a group and nobody else joins within 5 min and they place an order, we silently downgrade to solo at checkout — no point bundling a party of one.
 
-| Chewzie | OrdrUp equivalent |
-|---|---|
-| Printer | **Display Area** (`venue_display_areas`) — already exists |
-| Smart Docket Queue per printer | **Throttling config per Display Area** (new) |
-| Docket released to printer | Order becomes **visible on the Display Terminal** for that area |
-| Held in queue | Stays in `received` status, hidden from terminals until released |
-| Customer sees +20m wait | Diner's `OrderStatus` view shows extended ETA |
+## Schema add-on (small delta to previous plan)
 
-We do NOT delay the order being placed or charged — we delay when it appears on the kitchen/bar Display Terminal. Diners see a realistic ETA up front.
+`table_sessions` already exists from the prior plan. Add:
+- `host_diner_id uuid` — first joiner, may be null for anonymous guests
+- `display_name text` — optional, set by host ("Sarah's birthday")
+- `is_discoverable boolean default true` — hosts can mark a group "private" so new scanners don't see "join" prompt
 
-## Schema (1 migration)
+`orders.session_mode text` — `'solo' | 'group'` — denormalised for analytics + audit even though it's derivable from `session_id IS NULL`.
 
-**`venue_display_areas`** — add throttling columns:
-- `throttle_enabled bool default false`
-- `throttle_mode text default 'open'` — `open` | `auto` | `block` | `test`
-- `throttle_max_orders int default 5` — max orders per window in Auto
-- `throttle_window_minutes int default 10` — the window length
-- `throttle_block_timeout_minutes int default 15` — auto-revert from Block to Auto
-- `throttle_block_until timestamptz` — set when manually blocked
-- `throttle_show_wait_to_diner bool default true` — auto-adjust prep time
-- `base_prep_time_minutes int default 15` — venue's normal completion time for this station
-
-**`order_throttle_log`** — per-order audit (new table)
-- `id`, `order_id`, `display_area_id`, `event` (`queued` | `released` | `blocked` | `bumped`), `queue_size_at_event int`, `wait_added_minutes int`, `created_at`
-
-**`orders`** — add:
-- `throttled_until timestamptz` — when this order should be released (NULL = released now). Used for filtering.
-- `extra_wait_minutes int default 0` — adds to the diner-facing ETA
-
-**Realtime**: Add `venue_display_areas` and `orders` to `supabase_realtime` publication so dashboard reflects mode changes instantly.
-
-## Backend logic
-
-### Edge function `throttle-tick` (cron, every 30s)
-For each area where `throttle_enabled = true`:
-1. Count orders currently routed to this area where `throttled_until > now()`
-2. Auto-switch mode:
-   - `open` → `auto` if queue size > `throttle_max_orders`
-   - `auto` → `open` if queue empty for >2 min
-   - `block` → `auto` if `throttle_block_until < now()`
-3. For `auto` mode: release the next `throttle_max_orders / throttle_window_minutes` orders/minute by clearing their `throttled_until`
-4. Recalculate `extra_wait_minutes` for each queued order = `position_in_queue × (window / max)`
-
-### Trigger `apply_throttle_on_order_insert`
-When an order is inserted, for each area its items route to:
-- If area is `block`: set `throttled_until = throttle_block_until`, log `blocked`
-- If area is `auto`: compute position in queue, set `throttled_until = now() + position × per_order_minutes`, log `queued`
-- If area is `open`/`test` or throttle disabled: leave `throttled_until = null`, log nothing
-- Pick the **latest** `throttled_until` across all routed areas (an order isn't "ready for kitchen" until all its stations can take it)
-- Pick the **highest** `extra_wait_minutes` for diner display
-
-### Test mode
-`test`: behaves like `auto` for logging + `extra_wait_minutes` calculation, but `throttled_until` is always cleared so orders flow through immediately. Lets the manager observe behaviour without affecting service.
+New RPC `list_open_sessions_at_table(venue_id, table_id)` → returns open, discoverable sessions with diner count + host display name, for the landing chooser.
 
 ## UI changes
 
-### New page `src/pages/OrderThrottling.tsx` (under "Order Display System")
-For each Display Area, a card showing:
-- Current mode pill (Open / Auto / Block / Test) with live queue count
-- Mode toggle buttons: **Open**, **Auto**, **Block** (with timeout countdown), **Test**
-- Inputs: max orders, window minutes, base prep time, "show wait to diner" switch
-- Sparkline of last hour's queue size (from `order_throttle_log`)
-- "Bump next" button — manually release the oldest queued order
+- **`src/components/consumer/SessionModeChooser.tsx`** (new) — the three-option chooser screen. Shows live "2 people ordering together" badges by polling/subscribing to `table_sessions` realtime.
+- **`src/components/consumer/VenueLanding.tsx`** — render `SessionModeChooser` *after* hero, *before* the existing guest/signup/signin actions. Pass selection up via new `onModeSelect(mode, sessionId?)` callback.
+- **`src/pages/ConsumerOrder.tsx`** — new state `sessionMode: 'solo' | 'group' | null` and `joinedSessionId`. Persist to `localStorage` key `ordrup:session:{venueId}:{tableId}`. Pass to `CheckoutPanel`.
+- **`src/components/consumer/CheckoutPanel.tsx`** — when `sessionMode === 'group'`, call `find_or_create_table_session` RPC, stamp `session_id` + `session_mode='group'` on order, change CTA to "Send to table" and add the "holds for 90s" pill from previous plan.
+- **`src/components/consumer/CartPanel.tsx`** — show mode pill at top: "Solo order" or "Group order with 3 others — Sarah's birthday".
+- **`src/components/consumer/ModeSwitchSheet.tsx`** (new) — small bottom sheet to switch mode pre-first-order, opens from the pill.
+- **`src/components/consumer/MenuFeed.tsx`** — pass mode through; group mode adds a thin colored top stripe so the diner can tell at a glance.
 
-### `src/components/orders/ThrottleStatusBar.tsx` (top of Orders page)
-Shows a horizontal strip with each area's current mode + queue size, color-coded. Click an area → opens the throttle config drawer. Manager-only (gated by `canManageSettings`).
+## Operator side (unchanged from prior plan)
 
-### `src/pages/Orders.tsx`
-Filter visible orders by `throttled_until is null OR throttled_until <= now()` (so kitchen only sees what's been released). Show a small "+12m delay applied" badge on cards where `extra_wait_minutes > 0`.
+Operator UI (`Orders.tsx` grouping, `SessionFireBar`, settings tab, knowledge base) is identical to the prior plan — it just receives a cleaner data model where `session_id IS NOT NULL` always means "diner explicitly chose group."
 
-### `src/components/consumer/OrderStatus.tsx`
-Add `extra_wait_minutes` to the displayed ETA. Subtle "Kitchen is busy — extra ~12m wait" line if non-zero.
+## Edge cases handled
 
-### `src/pages/KnowledgeBase.tsx`
-New "Operational Throttling" section explaining the three modes, when to use Block (e.g. coffee machine breakdown), Test mode tuning, and how the diner ETA reflects load.
+- **Refresh / reopen QR:** localStorage restores mode + sessionId. If session was closed in the meantime, fall back to chooser.
+- **Diner accidentally joins wrong table's group:** the `list_open_sessions_at_table` RPC is scoped to `(venue_id, table_id)` so cross-table joins are impossible.
+- **Solo orderer at a table with active group:** they still see the group's open ticket on the operator view, but their order is unbundled — kitchen sees two cards: "Table 12 (group, 3 diners)" + "Table 12 (solo)" so expo can sequence delivery.
+- **Diner abandons after starting group:** `idle_close_minutes` (from prior plan) auto-closes the session; no orphan tickets.
 
-## Files touched
+## Files to add or change
 
-- `supabase/migrations/<ts>_operational_throttling.sql` — schema, trigger, realtime
-- `supabase/functions/throttle-tick/index.ts` — new cron function
-- `supabase/config.toml` — register cron schedule for `throttle-tick`
-- `src/pages/OrderThrottling.tsx` — new manager page
-- `src/components/orders/ThrottleStatusBar.tsx` — new
-- `src/pages/Orders.tsx` — visibility filter + delay badge
-- `src/pages/OrderStatuses.tsx` — add "Throttling" tab/link
-- `src/components/consumer/OrderStatus.tsx` — extended ETA
-- `src/pages/KnowledgeBase.tsx` — new section
-- `src/integrations/supabase/types.ts` — auto-regenerated
+- `supabase/migrations/<ts>_session_mode_and_host.sql` — add columns + new RPC `list_open_sessions_at_table`
+- `src/components/consumer/SessionModeChooser.tsx` — new
+- `src/components/consumer/ModeSwitchSheet.tsx` — new
+- `src/components/consumer/VenueLanding.tsx` — inject chooser
+- `src/components/consumer/CartPanel.tsx` — mode pill
+- `src/components/consumer/MenuFeed.tsx` — top stripe in group mode
+- `src/components/consumer/CheckoutPanel.tsx` — branch on mode at order create
+- `src/pages/ConsumerOrder.tsx` — mode state + persistence + threading
+- `src/pages/KnowledgeBase.tsx` — extend the Table Sessions doc with the solo/group choice + host concept
 
-## Out of scope (later)
+## Order of implementation
 
-- Per-item priority lanes (e.g. "kids meals always pass through")
-- ML-based auto-tuning of `max_orders` / `window`
-- SMS/email "your order is delayed" diner notifications
-- Weekly throttle report PDF (Chewzie has this — easy follow-up)
+1. Schema delta (`session_mode`, `host_diner_id`, `display_name`, `is_discoverable`, `list_open_sessions_at_table` RPC) — together with the prior Table Sessions migration as one combined migration.
+2. `SessionModeChooser` + landing wiring (works in solo mode immediately, group mode falls through to existing single-order behaviour until the prior plan's session backend is in).
+3. Plug `session_id` stamping into `CheckoutPanel` once the prior plan's RPC + cron are deployed.
+4. Operator-side grouping + settings + KB last.
 
 ## Expected result
 
-- Friday 7pm rush: Kitchen area auto-flips to **Auto** at 6 queued orders → next diner sees "ETA 35 min" instead of 15 → kitchen receives one new order every ~2 min, never floods.
-- Coffee machine breaks: barista taps **Block** on Bar area → all new drink orders queue, diner sees "Kitchen busy" → 15 min later auto-reverts to Auto and clears the backlog at controlled pace.
-- Manager runs **Test Mode** for a week → reviews queue history → tunes `max_orders` from 5 → 7 based on real data.
+- Quick-coffee diner: scans → sees "Order on my own" highlighted → taps → menu → checks out → ticket fires immediately. Indistinguishable from today.
+- Birthday party: Sarah scans first → "Start a group order" → names it "Sarah's birthday" → menu. Friends scan after → see "Join Sarah's birthday (1 person)" → tap → all five order independently → tickets bundle → kitchen fires once → all mains land together.
+- Mixed table: 3 friends in a group + 1 stranger ordering solo at the same table → kitchen sees one bundled ticket for the trio + one solo card for the stranger.
 
