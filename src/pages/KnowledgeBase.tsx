@@ -134,14 +134,14 @@ export default function KnowledgeBase() {
         {/* Getting Started */}
         <Section id="getting-started" title="Getting Started" icon={Rocket}>
           <SubSection title="Welcome to OrdrUp">
-            <p>OrdrUp replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue's AI assistant, and place orders — no app download required.</p>
+            <p>OrdrUp replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue&apos;s AI assistant, and place orders — no app download required.</p>
           </SubSection>
           <SubSection title="First-Time Setup Checklist">
             <StepList steps={[
               "Complete your venue details (name, address, operating hours) in Settings → Details.",
               "Build your menu: create categories, add items with descriptions and prices.",
               "Use AI Import to upload an existing menu (PDF or photo) and auto-populate items.",
-              "Set up your tables and generate QR codes in Tables & QR.",
+              "Set up your tables and generate QR codes in Tables &amp; QR.",
               "Set up OrdrPay payments in Settings → Payments.",
               "Set up tax rules in Settings → Taxes.",
               "Customise your OrdrUp AI agent personality in Settings → OrdrUp AI.",
@@ -154,7 +154,7 @@ export default function KnowledgeBase() {
         {/* Dashboard */}
         <Section id="dashboard" title="Dashboard" icon={LayoutDashboard}>
           <SubSection title="Understanding Your Metrics">
-            <p>Your dashboard gives you a real-time snapshot of today's performance:</p>
+            <p>Your dashboard gives you a real-time snapshot of today&apos;s performance:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Revenue</strong> — Total sales for the selected period.</li>
               <li><strong>Orders</strong> — Number of completed orders.</li>
@@ -162,7 +162,7 @@ export default function KnowledgeBase() {
               <li><strong>Ticket Times</strong> — How long orders take from received to served.</li>
             </ul>
           </SubSection>
-          <SubSection title="Charts & Insights">
+          <SubSection title="Charts &amp; Insights">
             <p><strong>Revenue by Hour</strong> shows when your peak trading periods are. <strong>Table Utilisation</strong> highlights which tables generate the most revenue. <strong>Top Items</strong> shows your best sellers by quantity and revenue.</p>
           </SubSection>
           <Tip>Use the date picker in the top-right to compare different time periods.</Tip>
@@ -180,13 +180,13 @@ export default function KnowledgeBase() {
             </ul>
           </SubSection>
           <SubSection title="Reading the Insights">
-            <p>A high conversion rate means your AI personality and menu descriptions are working well. If diners are chatting a lot but not ordering, consider simplifying your menu descriptions or adjusting the AI's tone in Settings → OrdrUp AI.</p>
+            <p>A high conversion rate means your AI personality and menu descriptions are working well. If diners are chatting a lot but not ordering, consider simplifying your menu descriptions or adjusting the AI&apos;s tone in Settings → OrdrUp AI.</p>
           </SubSection>
         </Section>
 
         {/* Menu Builder */}
         <Section id="menu-builder" title="Menu Builder" icon={UtensilsCrossed}>
-          <SubSection title="Categories & Items">
+          <SubSection title="Categories &amp; Items">
             <StepList steps={[
               "Click 'Add Category' to create a section (e.g. Starters, Mains, Drinks).",
               "Within each category, click 'Add Item' to create menu items.",
@@ -196,7 +196,7 @@ export default function KnowledgeBase() {
             ]} />
           </SubSection>
           <SubSection title="AI Import">
-            <p>Upload a photo or PDF of your existing menu. OrdrUp's AI will read it and create categories and items automatically. Review and adjust before saving.</p>
+            <p>Upload a photo or PDF of your existing menu. OrdrUp&apos;s AI will read it and create categories and items automatically. Review and adjust before saving.</p>
             <StepList steps={[
               "Go to Menu Builder → Settings → AI Features → Import.",
               "Upload your menu file (PDF, JPG, PNG).",
@@ -204,12 +204,12 @@ export default function KnowledgeBase() {
               "Click 'Import All' to add them to your menu.",
             ]} />
           </SubSection>
-          <SubSection title="Enhance & Generate Images">
+          <SubSection title="Enhance &amp; Generate Images">
             <p><strong>Enhance Images</strong> uses AI to improve the quality of your existing food photos — better lighting, colour, and composition.</p>
             <p><strong>Generate Images</strong> creates professional food photos from your item descriptions when you don't have photos available.</p>
           </SubSection>
           <SubSection title="Modifiers">
-            <p>Modifiers let diners customise their orders (e.g. "Extra cheese", "No onion", "Medium rare").</p>
+            <p>Modifiers let diners customise their orders (e.g. &quot;Extra cheese&quot;, &quot;No onion&quot;, &quot;Medium rare&quot;).</p>
             <StepList steps={[
               "Go to Menu Builder → Settings → Modifiers.",
               "Create modifier categories (e.g. 'Cooking Temperature', 'Add-ons').",
@@ -217,18 +217,18 @@ export default function KnowledgeBase() {
               "Assign modifier categories to menu items.",
             ]} />
           </SubSection>
-          <SubSection title="Item Detail Flow & Modifier Limits">
-            <p>When a diner taps a menu item, a dedicated <strong>Item Detail screen</strong> opens with a larger image, quantity selector, modifier groups, AI upsell suggestions, and a sticky "Add to Order" button. After adding, they return to the menu feed.</p>
+          <SubSection title="Item Detail Flow &amp; Modifier Limits">
+            <p>When a diner taps a menu item, a dedicated <strong>Item Detail screen</strong> opens with a larger image, quantity selector, modifier groups, AI upsell suggestions, and a sticky &quot;Add to Order&quot; button. After adding, they return to the menu feed.</p>
             <p>Each modifier category has three configurable settings (cog icon next to the category name):</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Selection type</strong> — <em>Add-on</em> (paid extras), <em>No/Hold</em> (free removals like "no onion"), or <em>Choice</em> (size, doneness).</li>
+              <li><strong>Selection type</strong> — <em>Add-on</em> (paid extras), <em>No/Hold</em> (free removals like &quot;no onion&quot;), or <em>Choice</em> (size, doneness).</li>
               <li><strong>Min selection</strong> — required minimum picks. Set to 1+ to make a category mandatory (the Add to Order button stays disabled until met).</li>
               <li><strong>Max selection</strong> — caps how many options a diner can pick. <code>0</code> means unlimited.</li>
             </ul>
-            <p><strong>Receipt vs kitchen display:</strong> the kitchen / expo display shows <em>every</em> chosen modifier (including free ones like "no onion", in red). The diner receipt shows <em>only</em> modifiers with a positive price — free notes are silently omitted to keep the bill clean.</p>
-            <p><strong>Cart behaviour:</strong> two adds of "Burger + Bacon + No onion" merge into qty 2; "Burger + Bacon" and "Burger + Avocado" stay as separate lines so the kitchen sees them correctly.</p>
+            <p><strong>Receipt vs kitchen display:</strong> the kitchen / expo display shows <em>every</em> chosen modifier (including free ones like &quot;no onion&quot;, in red). The diner receipt shows <em>only</em> modifiers with a positive price — free notes are silently omitted to keep the bill clean.</p>
+            <p><strong>Cart behaviour:</strong> two adds of &quot;Burger + Bacon + No onion&quot; merge into qty 2; &quot;Burger + Bacon&quot; and &quot;Burger + Avocado&quot; stay as separate lines so the kitchen sees them correctly.</p>
           </SubSection>
-          <Tip>The AI assistant automatically presents relevant modifiers to diners during conversation. Existing categories default to "Add-on" type with no limits — nothing breaks for venues already using modifiers.</Tip>
+          <Tip>The AI assistant automatically presents relevant modifiers to diners during conversation. Existing categories default to &quot;Add-on&quot; type with no limits — nothing breaks for venues already using modifiers.</Tip>
         </Section>
 
         {/* Pricing */}
@@ -255,7 +255,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Tables & QR */}
-        <Section id="tables-qr" title="Tables & QR" icon={QrCode}>
+        <Section id="tables-qr" title="Tables &amp; QR" icon={QrCode}>
           <SubSection title="Creating Tables">
             <StepList steps={[
               "Click 'Add Table' and enter the table number.",
@@ -264,14 +264,14 @@ export default function KnowledgeBase() {
             ]} />
           </SubSection>
           <SubSection title="QR Codes">
-            <p>Each table gets a unique QR code. When scanned, it takes the diner directly to your venue's AI ordering experience for that specific table.</p>
+            <p>Each table gets a unique QR code. When scanned, it takes the diner directly to your venue&apos;s AI ordering experience for that specific table.</p>
             <StepList steps={[
               "Click the QR icon on any table row to view the code.",
               "Download or print the QR code.",
               "Place it on the table as a sticker or tent card.",
             ]} />
           </SubSection>
-          <Tip>QR codes are permanent and tied to the table's unique ID. They never expire — print them once and they work forever.</Tip>
+          <Tip>QR codes are permanent and tied to the table&apos;s unique ID. They never expire — print them once and they work forever.</Tip>
         </Section>
 
         {/* Orders */}
@@ -288,174 +288,99 @@ export default function KnowledgeBase() {
             </ol>
           </SubSection>
           <SubSection title="The Order Card — Status Buttons">
-            <p>Each order card shows up to <strong>5 status buttons</strong> across the bottom, drawn from your venue's custom statuses (sorted by display order). One tap advances the order; the diner's mobile view updates instantly via realtime.</p>
+            <p>Each order card shows up to <strong>5 status buttons</strong> across the bottom, drawn from your venue&apos;s custom statuses (sorted by display order). One tap advances the order; the diner&apos;s mobile view updates instantly via realtime.</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li>The <strong>current</strong> status is highlighted in its configured colour.</li>
               <li>Earlier statuses are dimmed but still tappable — useful for correcting a misclick or stepping back.</li>
               <li>The button row only appears for users whose role has <strong>Update Order Status</strong> permission.</li>
-              <li>If you define more than 5 statuses, only the first 5 (by display order) appear as buttons. The rest are reachable via Re-open & Refund.</li>
+              <li>If you define more than 5 statuses, only the first 5 (by display order) appear as buttons. The rest are reachable via Re-open &amp; Refund.</li>
             </ul>
           </SubSection>
           <SubSection title="Active vs All filter">
-            <p>The Active / All dropdown in the upper-right of the Orders page is driven by the <strong>"Show in Active filter"</strong> toggle on each status. Statuses with this toggle on appear in the <strong>Active</strong> view; everything else only shows under <strong>All</strong>.</p>
+            <p>The Active / All dropdown in the upper-right of the Orders page is driven by the <strong>&quot;Show in Active filter&quot;</strong> toggle on each status. Statuses with this toggle on appear in the <strong>Active</strong> view; everything else only shows under <strong>All</strong>.</p>
             <p>Defaults: Received, Preparing, and Ready are flagged Active. Toggle Served on too if servers should keep working it after delivery, or off so completed plates fall off the live board.</p>
           </SubSection>
           <SubSection title="Order Display System (status setup)">
             <p>Settings for statuses live under <strong>Orders → Order Display System</strong>. For each status you can configure:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Name & Label</strong> — internal name and the label shown on the card button.</li>
+              <li><strong>Name &amp; Label</strong> — internal name and the label shown on the card button.</li>
               <li><strong>Colour</strong> — used as the background of the highlighted current-status button.</li>
               <li><strong>Display Order</strong> — controls left-to-right button order on the card.</li>
               <li><strong>Show in Active filter</strong> — drives the Active/All dropdown.</li>
-              <li><strong>Terminal</strong> — marks the status as a final state (e.g. Paid, Cancelled, Refunded). Terminal orders show the Re-open & Refund action instead of advancing further.</li>
+              <li><strong>Terminal</strong> — marks the status as a final state (e.g. Paid, Cancelled, Refunded). Terminal orders show the Re-open &amp; Refund action instead of advancing further.</li>
               <li><strong>Default</strong> — the status applied to brand-new orders (typically Received).</li>
             </ul>
           </SubSection>
-          <SubSection title="Re-open & Refund">
-            <p>Orders in a terminal status (Paid, Cancelled, Refunded) show a <strong>Re-open & Refund</strong> button. This is gated by the role permission of the same name. The flow:</p>
-            <StepList steps={[
-              "Open the order card and click Re-open & Refund.",
-              "Enter the refund amount (full or partial) and a reason.",
-              "OrdrPay processes the refund against the original payment.",
-              "The order is reopened back to a working status; the refund is logged on the card.",
-              "If the cumulative refunds equal the order total, the order automatically flips to Refunded.",
-            ]} />
+          <SubSection title="Re-open &amp; Refund">
+            <p>On finished orders (terminal statuses), operators with permission see <strong>&quot;Re-open &amp; Refund&quot;</strong>. This:</p>
+            <ol className="list-decimal list-inside space-y-1 pl-1">
+              <li>Moves the order back to a working status (Selected → Re-opened).</li>
+              <li>Processes a full or partial refund through OrdrPay.</li>
+            </ol>
+            <p>Use this workflow when a diner changes their mind after paying or something was wrong with the order. If you just need to move the order back in the kitchen flow without money changing hands, use the dimmed status button to step back to a non-terminal status.</p>
           </SubSection>
-          <SubSection title="Display Areas (kitchen/bar routing)">
-            <p>Display Areas let you split the menu across multiple stations — e.g. Fry Side, Grill, Bar, Expo. Each menu category and each menu item can route to <strong>up to 3 areas</strong> simultaneously. Items inherit their category's areas by default; override on an item to send it to a different combination.</p>
-            <p>This sets the foundation for per-station Kitchen Display screens (coming next) — a single order line can fan out to multiple station views (e.g. "Loaded Fries" appears on both Fry Side and Expo).</p>
+          <SubSection title="Order Status Log">
+            <p>Every status change is logged with timestamp and staff member. View the full history on any order by clicking &quot;View History&quot; in the action menu.</p>
           </SubSection>
-          <Tip>The diner's mobile view subscribes to live updates — the moment you tap a status button, their phone reflects the new status within ~1 second.</Tip>
 
-          <SubSection title="Table Sessions & Group Ordering">
-            <p>Multiple diners at the same table can choose to <strong>bundle</strong> their separate orders into one kitchen ticket so the food fires together. This is opt-in — the default is always solo.</p>
-            <p><strong>What the diner sees</strong> when scanning the QR:</p>
-            <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>No active group at the table</strong> → "Order on my own" or "Start a group order".</li>
-              <li><strong>Active group exists</strong> → "Join Sarah's group (2 people)", "Order on my own anyway", or "Start a fresh group" (hidden behind "more").</li>
-              <li>The first joiner becomes the <strong>host</strong> (cosmetic badge — anyone in the group can fire).</li>
-              <li>Mode is locked once their first order is placed.</li>
-            </ul>
-            <p><strong>What the kitchen sees:</strong></p>
-            <ul className="list-disc list-inside space-y-1 pl-1">
-              <li>Solo orders fire immediately, exactly as today.</li>
-              <li>Group orders are <strong>held</strong> from the kitchen view until the session fires — either when staff taps <strong>Fire now</strong> on the session bar, or after the configured grace period (default 90s after the last order in the group).</li>
-              <li>Once fired, all bundled orders appear together with a session header showing the table, party size, and order count.</li>
-              <li>A mixed table (3 in a group + 1 solo) shows two distinct cards on the kitchen screen so expo can sequence delivery.</li>
-            </ul>
-            <p><strong>Configure</strong> the join window, idle close, max session length, fire grace seconds, and default fire strategy under <strong>Settings → Table Sessions</strong>. Sessions auto-close after the idle window or once the hard ceiling is hit, so no orphan tickets.</p>
+          <SubSection title="Order Throttling">
+            <p><strong>Coming soon:</strong> per-station queue management that holds tickets until the kitchen/bar can actually take them — with diner-visible ETA updates.</p>
           </SubSection>
         </Section>
 
         {/* Display Terminals */}
         <Section id="display-terminals" title="Display Terminals" icon={Monitor}>
-          <SubSection title="What is a Display Terminal?">
-            <p>
-              A <strong>Display Terminal</strong> is a specific physical device — a Mac mini wired to a kitchen TV, an iPad on the bar, an Intel NUC behind the expo screen — running OrdrUp in a browser at a fixed station. Once you "pair" a terminal, that browser only shows the orders routed to its assigned Display Areas, regardless of which staff member is signed in.
-            </p>
-            <p>It's important to keep three concepts separate in your head:</p>
-            <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>User</strong> — a human with a login (Owner, Manager, Staff). Users can be signed into many devices at once.</li>
-              <li><strong>Display Area</strong> — a logical routing target like Kitchen, Bar, or Expo. Each menu category and item routes to up to 3 areas.</li>
-              <li><strong>Display Terminal</strong> — a specific browser on a specific physical device, bound to one or more Display Areas.</li>
-            </ul>
-            <pre className="font-mono text-xs bg-muted p-3 rounded leading-relaxed whitespace-pre overflow-x-auto">
-{`Order placed
-   │
-   ▼
-[Order items] ──route via──▶ [Display Areas]
-                                   │
-                                   ▼
-                          [Display Terminals]
-                          (the screens that
-                           show this order)`}
-            </pre>
+          <SubSection title="What they are">
+            <p>Display Terminals are a lightweight way to show orders on any screen — kitchen, bar, expo, coffee station — without buying dedicated hardware or installing software. Any device with a browser can become a terminal in under a minute.</p>
+            <p>Key point — these are <em>display</em> terminals, not <em>ordering</em> terminals. Diners cannot order from them. Staff cannot mark orders ready from them. They simply show the orders assigned to specific <strong>Display Areas</strong> in real time, so the right station sees what they need to make.</p>
           </SubSection>
 
-          <SubSection title="Why we don't use the device's MAC address">
-            <p>A common question: "Why can't OrdrUp just identify the kitchen iPad by its MAC address?"</p>
+          <SubSection title="How it works">
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li>Modern browsers can't read MAC addresses — they're blocked by the OS privacy sandbox.</li>
-              <li>Even native apps on macOS, iOS, Windows, and Android receive a randomised per-app identifier, not the real hardware MAC.</li>
-              <li>So instead, OrdrUp issues a <strong>device token</strong> (a UUID) when you pair a terminal. The token is stored in that browser's <code>localStorage</code> and acts as the device's identity.</li>
-            </ul>
-            <p>Implications you should know:</p>
-            <ul className="list-disc list-inside space-y-1 pl-1">
-              <li>Clearing the browser's site data un-pairs the terminal — you'll need to re-pair with a fresh code.</li>
-              <li>Incognito / Private mode does NOT persist the binding between sessions — never run a station in incognito.</li>
-              <li>Each browser profile is a separate potential terminal. Chrome and Safari on the same Mac count as two devices.</li>
+              <li>Venue staff create terminals in Orders → Display Terminals and bind each to one or more Display Areas.</li>
+              <li>A unique pairing code is generated and shown.</li>
+              <li>Staff open a browser on the target device (kitchen iPad, wall-mounted TV, old phone) and visit the pairing URL.</li>
+              <li>Enter the code; the device pairs and immediately starts showing live orders.</li>
+              <li>The device sends a heartbeat every 30 seconds so you can see which terminals are online.</li>
             </ul>
           </SubSection>
 
-          <SubSection title="First-time setup (manager)">
+          <SubSection title="The pairing flow">
             <StepList steps={[
-              "Create your Display Areas (Kitchen, Bar, Expo, etc.) in Order Display System → Display Areas.",
-              "Assign Display Areas to your menu categories and items in Menu Builder. Items inherit category areas by default.",
-              "Go to Order Display System → Display Terminals → click Add Terminal.",
-              "Name it descriptively, e.g. \"Kitchen Mac mini — line cook station\".",
-              "Pick the Display Areas this terminal should show (one or many).",
-              "Save — copy the 6-character pairing code (e.g. K7-9F2). It's valid for 10 minutes.",
+              "Go to Orders → Display Terminals and click 'Add Terminal'.",
+              "Give it a name (e.g. 'Kitchen 1', 'Bar iPad').",
+              "Select which Display Areas this terminal should show (Kitchen, Bar, etc.).",
+              "A pairing code appears — write it down or show it on the device you're pairing.",
+              "On the target device, open a browser and go to the pairing URL shown.",
+              "Enter the code and tap Pair.",
+              "The terminal immediately shows live orders for those areas.",
             ]} />
+            <p>Codes expire after 10 minutes and can only be used once. If pairing fails, regenerate the code.</p>
           </SubSection>
 
-          <SubSection title="Pairing the physical device">
-            <StepList steps={[
-              "On the kitchen Mac mini (or whichever device), open Chrome / Safari / Edge and navigate to your OrdrUp URL.",
-              "Sign in with any staff account that has Orders access.",
-              "In the Orders page header click \"Pair this Terminal\".",
-              "Enter the 6-character code → tap Pair.",
-              "The page reloads — the header now shows a 🖥 badge with the terminal name and assigned areas, and only relevant orders appear.",
-            ]} />
-            <Tip>Once paired, signing out the user does NOT un-pair the device. The next staff member to sign in on that browser sees the same station view automatically.</Tip>
-          </SubSection>
-
-          <SubSection title="Day-to-day operation">
-            <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Heartbeat</strong> — every 60 seconds the terminal pings the cloud while Orders is open. The dashboard shows that terminal as <strong>● Online</strong>.</li>
-              <li><strong>Going offline</strong> — if the tab is closed, sleeps, or loses internet, status flips to <strong>Offline</strong> after ~2 minutes. Other terminals keep working.</li>
-              <li><strong>User changes</strong> — sign-out / sign-in does not affect the terminal binding. The browser stays bound until a manager unpairs it or the browser data is cleared.</li>
-              <li><strong>"Show all (override)"</strong> — a small toggle next to the terminal badge lets a manager temporarily see the full unfiltered order list without un-pairing. Click it again to return to the filtered view.</li>
-            </ul>
-          </SubSection>
-
-          <SubSection title="Managing terminals (manager actions)">
-            <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Rename</strong> — change the name at any time without disturbing the device.</li>
-              <li><strong>Change assigned Display Areas</strong> — takes effect on the next page load on that terminal.</li>
-              <li><strong>Regenerate pairing code</strong> — issues a new 10-minute code if the previous one expired before the device was paired.</li>
-              <li><strong>Unpair / revoke</strong> — invalidates the device token immediately. Use this when a device is lost or stolen, when you swap hardware, or when you decommission a station. The browser falls back to the unpaired Orders view on next reload.</li>
-              <li><strong>Deactivate</strong> — keeps the terminal configuration but stops it from receiving orders. Useful for a station that's temporarily out of service.</li>
-              <li><strong>Delete</strong> — permanent removal. The device's token is invalidated and the configuration is gone.</li>
-            </ul>
-          </SubSection>
-
-          <SubSection title="Multi-terminal patterns (worked examples)">
-            <ul className="list-disc list-inside space-y-2 pl-1">
-              <li><strong>Small café</strong> — one terminal showing all areas. Functionally identical to no terminal binding, but you get "Online" monitoring and a clear record of which device is the order screen.</li>
-              <li><strong>Pub with separate kitchen + bar</strong> — Kitchen terminal bound to the Kitchen area; Bar terminal bound to the Bar area. Food tickets and drink tickets fan out to the right station automatically.</li>
-              <li><strong>Restaurant brigade</strong> — Fry Side terminal → Fry; Grill terminal → Grill; Expo terminal → all three (Fry + Grill + Cold) so the expediter sees everything coming together for the pass.</li>
-              <li><strong>Front-of-house tablet</strong> — a roaming iPad bound to all areas with "Show all (override)" toggled on by default — servers use it to chase orders across the floor without needing the manager view.</li>
-            </ul>
+          <SubSection title="Unpairing and re-pairing">
+            <p>Click Unpair on any terminal row to immediately disconnect the device. The terminal will show an offline message and the device can be paired again with a fresh code if needed.</p>
+            <p>Identity is stored in the browser&apos;s localStorage — if the browser is cleared, the terminal will need re-pairing.</p>
           </SubSection>
 
           <SubSection title="Troubleshooting">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-border text-foreground">
-                    <th className="text-left py-2 pr-3 font-medium">Symptom</th>
-                    <th className="text-left py-2 pr-3 font-medium">Cause</th>
-                    <th className="text-left py-2 font-medium">Fix</th>
+            <div className="rounded-lg border overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/50">
+                  <tr className="text-left">
+                    <th className="py-2 pr-3 pl-3 font-medium">Symptom</th>
+                    <th className="py-2 pr-3 font-medium">Cause</th>
+                    <th className="py-2 font-medium">Fix</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  <tr><td className="py-2 pr-3">"Invalid pairing code"</td><td className="py-2 pr-3">Code expired (&gt;10 min) or already used</td><td className="py-2">Regenerate from the dashboard</td></tr>
+                  <tr><td className="py-2 pr-3">&quot;Invalid pairing code&quot;</td><td className="py-2 pr-3">Code expired (&gt;10 min) or already used</td><td className="py-2">Regenerate from the dashboard</td></tr>
                   <tr><td className="py-2 pr-3">Terminal shows Offline but screen is on</td><td className="py-2 pr-3">Browser tab in background or device asleep</td><td className="py-2">Bring tab to foreground; disable display sleep</td></tr>
                   <tr><td className="py-2 pr-3">Wrong orders appearing</td><td className="py-2 pr-3">Bound to the wrong Display Areas</td><td className="py-2">Edit terminal, fix areas, reload the device</td></tr>
                   <tr><td className="py-2 pr-3">Lost identity after browser update</td><td className="py-2 pr-3">localStorage was cleared</td><td className="py-2">Re-pair with a fresh code</td></tr>
                   <tr><td className="py-2 pr-3">Same device shows as two terminals</td><td className="py-2 pr-3">Used both Chrome and Safari on the same Mac</td><td className="py-2">Standardise on one browser per station</td></tr>
-                  <tr><td className="py-2 pr-3">"Pair this Terminal" link missing</td><td className="py-2 pr-3">User's role lacks Orders nav permission</td><td className="py-2">Grant orders nav in the role permissions</td></tr>
-                  <tr><td className="py-2 pr-3">No orders on a paired terminal</td><td className="py-2 pr-3">No items route to that terminal's areas</td><td className="py-2">Assign Display Areas to categories / items in Menu Builder</td></tr>
+                  <tr><td className="py-2 pr-3">&quot;Pair this Terminal&quot; link missing</td><td className="py-2 pr-3">User&apos;s role lacks Orders nav permission</td><td className="py-2">Grant orders nav in the role permissions</td></tr>
+                  <tr><td className="py-2 pr-3">No orders on a paired terminal</td><td className="py-2 pr-3">No items route to that terminal&apos;s areas</td><td className="py-2">Assign Display Areas to categories / items in Menu Builder</td></tr>
                 </tbody>
               </table>
             </div>
@@ -463,22 +388,22 @@ export default function KnowledgeBase() {
 
           <SubSection title="Security">
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li>Device tokens are venue-scoped — a token from Venue A cannot view Venue B's orders even if pasted in.</li>
-              <li>Tokens never appear in URLs or logs and aren't visible in the dashboard.</li>
+              <li>Device tokens are venue-scoped — a token from Venue A cannot view Venue B&apos;s orders even if pasted in.</li>
+              <li>Tokens never appear in URLs or logs and aren&apos;t visible in the dashboard.</li>
               <li>Unpair immediately if a device is lost, stolen, or moved off-site.</li>
-              <li>The heartbeat lets you spot a critical station that's been offline for hours — a future enhancement will email an alert when it does.</li>
-              <li>All pairing requires an authenticated venue staff session — codes alone don't grant access.</li>
+              <li>The heartbeat lets you spot a critical station that&apos;s been offline for hours — a future enhancement will email an alert when it does.</li>
+              <li>All pairing requires an authenticated venue staff session — codes alone don&apos;t grant access.</li>
             </ul>
           </SubSection>
 
           <SubSection title="Hardware recommendations">
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Kitchen</strong> — Mac mini + 27" wall-mounted monitor in landscape, OR an iPad Pro 12.9" in a kitchen-grade splash-proof case.</li>
-              <li><strong>Bar</strong> — iPad 10.9" in a counter mount with a charging cable run.</li>
-              <li><strong>Expo / pass</strong> — a large TV (43"+) driven by an Intel NUC or Mac mini, browser launched in fullscreen kiosk mode.</li>
+              <li><strong>Kitchen</strong> — Mac mini + 27&quot; wall-mounted monitor in landscape, OR an iPad Pro 12.9&quot; in a kitchen-grade splash-proof case.</li>
+              <li><strong>Bar</strong> — iPad 10.9&quot; in a counter mount with a charging cable run.</li>
+              <li><strong>Expo / pass</strong> — a large TV (43&quot;+) driven by an Intel NUC or Mac mini, browser launched in fullscreen kiosk mode.</li>
               <li><strong>For all stations</strong> — disable display sleep in the OS, set the browser to auto-launch on reboot, and bookmark the OrdrUp URL on the home screen.</li>
             </ul>
-            <Tip>iPads in kitchens take a beating. Always pair a device with a code — never share the URL alone — and keep a printed list of active terminals near the manager's office for quick "is everything online?" checks.</Tip>
+            <Tip>iPads in kitchens take a beating. Always pair a device with a code — never share the URL alone — and keep a printed list of active terminals near the manager&apos;s office for quick &quot;is everything online?&quot; checks.</Tip>
           </SubSection>
         </Section>
 
@@ -489,16 +414,16 @@ export default function KnowledgeBase() {
               Operational Throttling is per-station flood control. Every Display Area (Kitchen, Bar, Expo, Take Away, Coffee, Dessert, etc.) has its own queue with its own capacity settings and its own mode. When a rush hits, throttling holds new tickets back and releases them at a rate the station can actually keep up with — instead of dumping 25 dockets on the kitchen at once.
             </p>
             <p>
-              The order is still <strong>placed and charged immediately</strong>. We do not delay the diner's checkout. What we delay is the moment the ticket appears on the kitchen's Display Terminal. The diner sees a realistic ETA up front (e.g. "35 min" instead of the usual 15) and the kitchen sees a steady, manageable flow of dockets.
+              The order is still <strong>placed and charged immediately</strong>. We do not delay the diner&apos;s checkout. What we delay is the moment the ticket appears on the kitchen&apos;s Display Terminal. The diner sees a realistic ETA up front (e.g. &quot;35 min&quot; instead of the usual 15) and the kitchen sees a steady, manageable flow of dockets.
             </p>
             <p>
-              This is the equivalent of Chewzie's "Smart Docket Queue" but built on our existing Display Areas — no extra hardware, no per-printer config, just a setting on each station you've already created.
+              This is the equivalent of Chewzie&apos;s &quot;Smart Docket Queue&quot; but built on our existing Display Areas — no extra hardware, no per-printer config, just a setting on each station you&apos;ve already created.
             </p>
           </SubSection>
 
           <SubSection title="Where to find it">
             <p>
-              <strong>Orders → Operational Throttling</strong> in the sidebar. The status strip at the top of the main Orders page also shows each station's current mode and queue size at a glance — click any station to jump to its config.
+              <strong>Orders → Operational Throttling</strong> in the sidebar. The status strip at the top of the main Orders page also shows each station&apos;s current mode and queue size at a glance — click any station to jump to its config.
             </p>
             <p>
               Only users with <em>Manage Settings</em> permission can change throttle modes or capacity. Everyone else sees the status strip read-only.
@@ -511,10 +436,10 @@ export default function KnowledgeBase() {
                 <strong>Open</strong> (green) — orders flow straight through with no delay. This is the default and what every station sits in during normal trade. Throttling is effectively off.
               </li>
               <li>
-                <strong>Auto</strong> (amber) — the system holds new tickets back when the queue exceeds your configured capacity and releases them at the rate you set. For example, "5 orders per 10 minutes" releases one ticket every 2 minutes regardless of how many are queued behind it. Auto is self-managing: <em>Open auto-flips to Auto</em> when the queue spikes past capacity, and <em>Auto auto-flips back to Open</em> once the queue is empty for 2+ minutes. You usually don't need to touch this — just leave the station in Auto as the standby mode.
+                <strong>Auto</strong> (amber) — the system holds new tickets back when the queue exceeds your configured capacity and releases them at the rate you set. For example, &quot;5 orders per 10 minutes&quot; releases one ticket every 2 minutes regardless of how many are queued behind it. Auto is self-managing: <em>Open auto-flips to Auto</em> when the queue spikes past capacity, and <em>Auto auto-flips back to Open</em> once the queue is empty for 2+ minutes. You usually don't need to touch this — just leave the station in Auto as the standby mode.
               </li>
               <li>
-                <strong>Block</strong> (red) — a hard manual hold. Nothing releases until you unblock or the configured timeout expires (default 15 minutes, then auto-reverts to Auto). Use this when something has actually broken: coffee machine down, fryer overheated, chef stepped away. Diners' orders are still accepted and charged, but the ticket is held with an extended ETA.
+                <strong>Block</strong> (red) — a hard manual hold. Nothing releases until you unblock or the configured timeout expires (default 15 minutes, then auto-reverts to Auto). Use this when something has actually broken: coffee machine down, fryer overheated, chef stepped away. Diners&apos; orders are still accepted and charged, but the ticket is held with an extended ETA.
               </li>
               <li>
                 <strong>Test</strong> (blue) — observation mode. The system logs queue behaviour and shows diners the would-be extended ETA, but always releases the ticket immediately to the kitchen. Use this for a week or two before going live in Auto so you can tune capacity numbers against real service data without affecting the kitchen.
@@ -532,13 +457,13 @@ export default function KnowledgeBase() {
               <li>If the station is in <strong>Auto</strong> and the queue has been empty for ~2 min → flips back to <strong>Open</strong>.</li>
               <li>If the station is in <strong>Block</strong> and the block timeout has passed → flips to <strong>Auto</strong> (so the backlog releases at a controlled pace, not all at once).</li>
               <li>For stations in Auto, releases the next batch of tickets by clearing their <code>throttled_until</code> — they then appear on the kitchen Display Terminal.</li>
-              <li>Recalculates each remaining queued order's diner-facing wait so the ETA stays accurate as the queue moves.</li>
+              <li>Recalculates each remaining queued order&apos;s diner-facing wait so the ETA stays accurate as the queue moves.</li>
             </ul>
           </SubSection>
 
           <SubSection title="Tuning capacity (Max orders / per minutes)">
             <p>
-              Two numbers define each station's throughput:
+              Two numbers define each station&apos;s throughput:
             </p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Max orders</strong> — how many tickets the station can comfortably handle within the window.</li>
@@ -555,7 +480,7 @@ export default function KnowledgeBase() {
               <li><strong>Take-away pickup window</strong> → usually high throughput, <em>10 / 10</em> or higher.</li>
             </ul>
             <p>
-              <strong>Base prep time</strong> is the venue's normal completion time for that station when there's no queue (e.g. 15 min for kitchen, 4 min for bar). It seeds the diner-facing ETA before any throttle delay is added.
+              <strong>Base prep time</strong> is the venue&apos;s normal completion time for that station when there&apos;s no queue (e.g. 15 min for kitchen, 4 min for bar). It seeds the diner-facing ETA before any throttle delay is added.
             </p>
             <Tip>
               Always run <strong>Test mode</strong> for at least a week before going live in Auto. The Throttling page shows queue history so you can see what <em>would have</em> been queued and adjust Max orders / window before any diners actually wait.
@@ -564,14 +489,14 @@ export default function KnowledgeBase() {
 
           <SubSection title="What the diner sees">
             <p>
-              The diner's order screen shows the headline ETA <em>plus</em> any extra wait the queue has added. If their order picked up 12 min of throttle delay, they see:
+              The diner&apos;s order screen shows the headline ETA <em>plus</em> any extra wait the queue has added. If their order picked up 12 min of throttle delay, they see:
             </p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li>The headline ETA is automatically extended (e.g. "35 min" instead of "15 min").</li>
-              <li>A subtle line underneath: <em>"Kitchen is busy — extra ~12m wait"</em>.</li>
+              <li>The headline ETA is automatically extended (e.g. &quot;35 min&quot; instead of &quot;15 min&quot;).</li>
+              <li>A subtle line underneath: <em>&quot;Kitchen is busy — extra ~12m wait&quot;</em>.</li>
             </ul>
             <p>
-              You can disable the explanation line per-station with the <strong>Show wait to diner</strong> toggle if you'd rather absorb the delay silently — the headline ETA still adjusts, but the "kitchen is busy" message is hidden.
+              You can disable the explanation line per-station with the <strong>Show wait to diner</strong> toggle if you&apos;d rather absorb the delay silently — the headline ETA still adjusts, but the &quot;kitchen is busy&quot; message is hidden.
             </p>
             <p>
               Diners are <em>never</em> blocked from ordering by throttling. The cart still checks out, payment still processes, the order still gets placed. The only thing that changes is when the kitchen sees it and what ETA the diner is shown.
@@ -583,13 +508,13 @@ export default function KnowledgeBase() {
               The Display Terminal for that area only shows tickets that have been released — i.e. <code>throttled_until</code> is null or in the past. Queued tickets are invisible to the kitchen, which is the whole point: chefs only see what they should be cooking right now.
             </p>
             <p>
-              On the manager's Orders page, queued orders show with a small "<strong>+12m delay applied</strong>" badge so you can see at a glance what's been throttled and by how much.
+              On the manager&apos;s Orders page, queued orders show with a small &quot;<strong>+12m delay applied</strong>&quot; badge so you can see at a glance what&apos;s been throttled and by how much.
             </p>
           </SubSection>
 
           <SubSection title="Multi-station orders">
             <p>
-              An order with items routing to multiple stations (e.g. a burger from Kitchen + a beer from Bar) takes the <strong>latest release time</strong> across all its stations. The order isn't "ready for the floor" until every station can take it. The diner-facing ETA uses the <strong>highest extra wait</strong> from any single station so they're never under-quoted.
+              An order with items routing to multiple stations (e.g. a burger from Kitchen + a beer from Bar) takes the <strong>latest release time</strong> across all its stations. The order isn&apos;t &quot;ready for the floor&quot; until every station can take it. The diner-facing ETA uses the <strong>highest extra wait</strong> from any single station so they&apos;re never under-quoted.
             </p>
           </SubSection>
 
@@ -599,7 +524,7 @@ export default function KnowledgeBase() {
             </p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li>VIP guests or regulars you want to look after.</li>
-              <li>A kids' meal that should never be made to wait.</li>
+              <li>A kids&apos; meal that should never be made to wait.</li>
               <li>A re-fire after a kitchen mistake.</li>
               <li>An order that was placed before the rush but got caught behind it.</li>
             </ul>
@@ -611,7 +536,7 @@ export default function KnowledgeBase() {
               Every throttle event is recorded in <code>order_throttle_log</code>: <em>queued</em> (held in Auto), <em>blocked</em> (held in Block), <em>released</em> (sent to the kitchen), <em>bumped</em> (manually released early). Each entry captures the queue size at that moment and the wait minutes added. This drives:
             </p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li>The sparkline on each station's card (queue size over the last hour).</li>
+              <li>The sparkline on each station&apos;s card (queue size over the last hour).</li>
               <li>Test-mode tuning data — what <em>would have</em> happened.</li>
               <li>Future weekly throttle reports (planned).</li>
             </ul>
@@ -620,13 +545,13 @@ export default function KnowledgeBase() {
           <SubSection title="Common scenarios">
             <ul className="list-disc list-inside space-y-2 pl-1">
               <li>
-                <strong>Friday 7pm rush.</strong> Kitchen is in Auto with <em>5 / 10</em>. The 6th order arrives → gets queued for 2 min → diner sees "ETA 35 min, kitchen is busy ~10m". Kitchen receives one new ticket every 2 min and stays on top of the line.
+                <strong>Friday 7pm rush.</strong> Kitchen is in Auto with <em>5 / 10</em>. The 6th order arrives → gets queued for 2 min → diner sees &quot;ETA 35 min, kitchen is busy ~10m&quot;. Kitchen receives one new ticket every 2 min and stays on top of the line.
               </li>
               <li>
-                <strong>Coffee machine breaks.</strong> Barista taps <strong>Block</strong> on the Bar station with a 20-min timeout. All new drink orders queue with diners seeing "Bar is busy, ~20m wait". Tech fixes the machine in 15 min, manager taps <strong>Auto</strong>, the queue clears at the controlled rate over the next 5–10 min instead of dumping 30 drinks at once.
+                <strong>Coffee machine breaks.</strong> Barista taps <strong>Block</strong> on the Bar station with a 20-min timeout. All new drink orders queue with diners seeing &quot;Bar is busy, ~20m wait&quot;. Tech fixes the machine in 15 min, manager taps <strong>Auto</strong>, the queue clears at the controlled rate over the next 5–10 min instead of dumping 30 drinks at once.
               </li>
               <li>
-                <strong>Tuning a new station.</strong> You add a Dessert station and don't know its capacity. Set it to <strong>Test</strong> mode at <em>4 / 10</em>. Run Friday and Saturday service. Review the queue sparkline — if Test would have queued 15 desserts at 9pm, the kitchen probably can't actually do 4 / 10. Drop to <em>3 / 10</em> and switch to Auto next weekend.
+                <strong>Tuning a new station.</strong> You add a Dessert station and don&apos;t know its capacity. Set it to <strong>Test</strong> mode at <em>4 / 10</em>. Run Friday and Saturday service. Review the queue sparkline — if Test would have queued 15 desserts at 9pm, the kitchen probably can&apos;t actually do 4 / 10. Drop to <em>3 / 10</em> and switch to Auto next weekend.
               </li>
               <li>
                 <strong>VIP at table 7.</strong> Their burger is queued behind 4 others on the kitchen. Manager taps <strong>Bump next</strong> on the Kitchen card → the burger is released immediately, kitchen sees it on the next refresh, the audit log records the bump.
@@ -647,11 +572,11 @@ export default function KnowledgeBase() {
 
           <SubSection title="Troubleshooting">
             <ul className="list-disc list-inside space-y-2 pl-1">
-              <li><strong>"Orders are queueing but kitchen is empty."</strong> Check that Display Terminals are paired to the right Display Areas — a queued kitchen order won't appear on a terminal that's only watching the Bar area.</li>
-              <li><strong>"Diner sees a long wait but our queue is short."</strong> Multi-station orders take the longest wait across all stations. Check whether the Bar (or another station the order touches) is the bottleneck, not the Kitchen.</li>
-              <li><strong>"Mode keeps flipping Open ↔ Auto every minute."</strong> Your Max orders is too close to your actual ticket rate. Increase Max orders by 1–2, or increase the window slightly.</li>
-              <li><strong>"Blocked station never came back online."</strong> Block always auto-reverts after the timeout (default 15 min). If it's stuck, manually tap Auto or Open. Check that the throttle-tick background job is running (it runs every 30s).</li>
-              <li><strong>"I changed the mode but nothing happened for 30 seconds."</strong> Mode changes apply to <em>new</em> orders immediately, but the queue audit and diner ETAs refresh on the 30-second tick.</li>
+              <li><strong>&quot;Orders are queueing but kitchen is empty.&quot;</strong> Check that Display Terminals are paired to the right Display Areas — a queued kitchen order won&apos;t appear on a terminal that&apos;s only watching the Bar area.</li>
+              <li><strong>&quot;Diner sees a long wait but our queue is short.&quot;</strong> Multi-station orders take the longest wait across all stations. Check whether the Bar (or another station the order touches) is the bottleneck, not the Kitchen.</li>
+              <li><strong>&quot;Mode keeps flipping Open ↔ Auto every minute.&quot;</strong> Your Max orders is too close to your actual ticket rate. Increase Max orders by 1–2, or increase the window slightly.</li>
+              <li><strong>&quot;Blocked station never came back online.&quot;</strong> Block always auto-reverts after the timeout (default 15 min). If it&apos;s stuck, manually tap Auto or Open. Check that the throttle-tick background job is running (it runs every 30s).</li>
+              <li><strong>&quot;I changed the mode but nothing happened for 30 seconds.&quot;</strong> Mode changes apply to <em>new</em> orders immediately, but the queue audit and diner ETAs refresh on the 30-second tick.</li>
             </ul>
           </SubSection>
 
@@ -661,8 +586,8 @@ export default function KnowledgeBase() {
               <li>Always start a new station in <strong>Test</strong> mode for at least a week before going live.</li>
               <li>Review queue history monthly. If Auto kicked in <em>often</em>, your capacity is probably set too low. If it <em>never</em> kicked in even on busy nights, you might be over-provisioned (or staff are heroically keeping up — talk to them).</li>
               <li>Use <strong>Block</strong> sparingly and always with a realistic timeout. A 60-min block on the Kitchen will silently push every order into a long delay.</li>
-              <li>Brief front-of-house staff that the "+12m delay applied" badge means the kitchen won't see that ticket yet — so don't go chasing the chef about it.</li>
-              <li>Keep the diner-facing wait message <strong>on</strong> by default. A clear "kitchen is busy" beats a silent 20-min wait every time.</li>
+              <li>Brief front-of-house staff that the &quot;+12m delay applied&quot; badge means the kitchen won&apos;t see that ticket yet — so don't go chasing the chef about it.</li>
+              <li>Keep the diner-facing wait message <strong>on</strong> by default. A clear &quot;kitchen is busy&quot; beats a silent 20-min wait every time.</li>
             </ul>
             <Tip>The fastest way to validate your setup: pick one station, switch it to Test on a Friday night, look at the queue sparkline on Monday. The numbers don't lie.</Tip>
           </SubSection>
@@ -670,7 +595,7 @@ export default function KnowledgeBase() {
 
         {/* Analytics */}
         <Section id="analytics" title="Analytics" icon={TrendingUp}>
-          <SubSection title="Revenue & Performance">
+          <SubSection title="Revenue &amp; Performance">
             <p>The Analytics page provides deeper insights beyond the dashboard:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li>Revenue trends over time (daily, weekly, monthly).</li>
@@ -694,13 +619,41 @@ export default function KnowledgeBase() {
           <SubSection title="Diner Preferences (Personalisation)">
             <p>Configure how returning diners are treated when they interact with your venue:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Personalised Welcome</strong> — Custom greeting based on loyalty tier with merge fields ({"{name}"}, {"{tier}"}, {"{visits}"}).</li>
-              <li><strong>Predictive Dining</strong> — AI predicts what the diner wants based on time of day, weather, and party size.</li>
-              <li><strong>Order Again</strong> — One-tap reorder from the diner's last 10 orders.</li>
-              <li><strong>Gamification</strong> — Status badges, secret menu unlocks, early access dishes, and exploration trackers.</li>
+              <li><strong>Personalised Welcome</strong> — Custom greeting based on loyalty tier with merge fields (</li>
             </ul>
-            <p>Access these settings via Diners → Diner Preferences in the sidebar.</p>
           </SubSection>
+        </Section>
+
+        {/* Test Cards */}
+        <Section id="test-cards" title="Test Cards" icon={CreditCard}>
+          <SubSection title="Payment Testing">
+            <p>When your venue is in Test mode (Settings → Payments), use these test card numbers to simulate different payment scenarios. No real charges are made in test mode.</p>
+          </SubSection>
+          <SubSection title="Card Numbers">
+            <div className="rounded-lg border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr className="text-left text-xs text-muted-foreground">
+                    <th className="py-2 px-3 font-medium">Card Type</th>
+                    <th className="py-2 px-3 font-medium">Number</th>
+                    <th className="py-2 px-3 font-medium">Expiry</th>
+                    <th className="py-2 px-3 font-medium">CVC</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  <tr><td className="py-2 px-3">Visa</td><td className="py-2 px-3 font-mono">4111 1111 1111 1111</td><td className="py-2 px-3">03/30</td><td className="py-2 px-3">737</td></tr>
+                  <tr><td className="py-2 px-3">Mastercard</td><td className="py-2 px-3 font-mono">5555 3412 4444 1115</td><td className="py-2 px-3">03/30</td><td className="py-2 px-3">737</td></tr>
+                  <tr><td className="py-2 px-3">Amex</td><td className="py-2 px-3 font-mono">3700 0000 0000 002</td><td className="py-2 px-3">03/30</td><td className="py-2 px-3">7373</td></tr>
+                  <tr><td className="py-2 px-3">Visa (3DS2)</td><td className="py-2 px-3 font-mono">4871 0499 9999 0006</td><td className="py-2 px-3">03/30</td><td className="py-2 px-3">737</td></tr>
+                  <tr><td className="py-2 px-3">Declined</td><td className="py-2 px-3 font-mono">4000 0000 0000 0002</td><td className="py-2 px-3">03/30</td><td className="py-2 px-3">737</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Use any future expiry date and valid CVC. The 3DS2 card triggers 3D Secure authentication flow. The Declined card simulates a failed payment.
+            </p>
+          </SubSection>
+          <Tip>Test mode is safe — no real charges are made. Set your venue to Test in Settings → Payments before using these cards.</Tip>
         </Section>
 
         {/* Settings */}
@@ -708,11 +661,11 @@ export default function KnowledgeBase() {
           <SubSection title="Details">
             <p>Update your venue name, type, address, contact information, logo, and operating hours. This information is displayed to diners and used by the AI assistant.</p>
           </SubSection>
-          <SubSection title="Users & Roles">
+          <SubSection title="Users &amp; Roles">
             <p>Permissions in OrdrUp work in <strong>two layers</strong>: a <em>role</em> controls which sidebar areas a user can see, and <em>per-user toggles</em> refine what they can actually do inside Orders.</p>
 
             <p className="font-semibold mt-3">Layer 1 — Roles (sidebar access)</p>
-            <p>Each venue defines its own roles under <strong>Settings → Users → Roles</strong>. Three system roles are seeded automatically and cannot be deleted: <strong>Owner</strong>, <strong>Manager</strong>, and <strong>Staff</strong>. You can create additional roles like "Bar Staff", "Floor Lead", or "Kitchen Only".</p>
+            <p>Each venue defines its own roles under <strong>Settings → Users → Roles</strong>. Three system roles are seeded automatically and cannot be deleted: <strong>Owner</strong>, <strong>Manager</strong>, and <strong>Staff</strong>. You can create additional roles like &quot;Bar Staff&quot;, &quot;Floor Lead&quot;, or &quot;Kitchen Only&quot;.</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Sidebar visibility</strong> — tick which top-level nav items the role can see (Dashboard, Orders, Menu, Pricing, Diners, Loyalty, Analytics, etc.). Sub-items inherit their parent (e.g. Modifiers follows Menu, Order Display System follows Orders).</li>
               <li><strong>Manage Roles</strong> — who can edit roles and permissions.</li>
@@ -729,7 +682,7 @@ export default function KnowledgeBase() {
 
             <p className="mt-3"><strong>Worked examples:</strong></p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><em>Line cook</em> (role: Staff) — Update Status on, both re-open toggles off. Can advance orders through the kitchen workflow but can't touch closed orders.</li>
+              <li><em>Line cook</em> (role: Staff) — Update Status on, both re-open toggles off. Can advance orders through the kitchen workflow but can&apos;t touch closed orders.</li>
               <li><em>Shift supervisor</em> (role: Staff) — Update Status on, Re-open Closed Orders on, Process Refunds off. Can fix up mistakes (e.g. accidentally marked as Paid) without being able to issue money.</li>
               <li><em>Floor manager</em> (role: Manager) — all three on. Full Orders capability including refunds.</li>
             </ul>
@@ -751,17 +704,17 @@ export default function KnowledgeBase() {
               <li><strong>Agent Name</strong> — What your AI introduces itself as.</li>
               <li><strong>Tone</strong> — Casual, professional, or playful.</li>
               <li><strong>Opening Message</strong> — The first thing diners see.</li>
-              <li><strong>Venue Context</strong> — Background info the AI uses to answer questions (e.g. "We're a modern Australian bistro, BYO wine").</li>
+              <li><strong>Venue Context</strong> — Background info the AI uses to answer questions (e.g. &quot;We're a modern Australian bistro, BYO wine&quot;).</li>
               <li><strong>Agent Icon</strong> — Custom avatar for the chat interface.</li>
             </ul>
           </SubSection>
           <SubSection title="Payments — OrdrPay">
-            <p>OrdrPay is OrdrUp's built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don't need a separate processor account or API keys.</p>
+            <p>OrdrPay is OrdrUp&apos;s built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don&apos;t need a separate processor account or API keys.</p>
             <SubSection title="Onboarding flow">
               <ol className="list-decimal list-inside space-y-1 pl-1">
                 <li><strong>Application</strong> — submit your venue and business details.</li>
                 <li><strong>Underwriting</strong> — our risk team reviews your application (usually 1–3 business days).</li>
-                <li><strong>Approval</strong> — once approved, your OrdrPay merchant ID is issued and Settings → Payments shows the "Approved" badge.</li>
+                <li><strong>Approval</strong> — once approved, your OrdrPay merchant ID is issued and Settings → Payments shows the &quot;Approved&quot; badge.</li>
                 <li><strong>Funding</strong> — settled funds land in your nominated bank account on a daily rolling schedule.</li>
               </ol>
             </SubSection>
@@ -770,10 +723,10 @@ export default function KnowledgeBase() {
                 <li><strong>Mode</strong> — Test or Live. Always run end-to-end in Test mode before flipping to Live.</li>
                 <li><strong>Capture mode</strong> — Immediate (charge when the order is placed) or Manual (authorise now, capture later when the order is fulfilled).</li>
                 <li><strong>Statement descriptor</strong> — what your diner sees on their bank statement (max 22 characters).</li>
-                <li><strong>Country & default currency</strong> — used for new payments and wallet configuration.</li>
+                <li><strong>Country &amp; default currency</strong> — used for new payments and wallet configuration.</li>
               </ul>
             </SubSection>
-            <SubSection title="Wallets — Apple Pay & Google Pay">
+            <SubSection title="Wallets — Apple Pay &amp; Google Pay">
               <p>Apple Pay and Google Pay are enabled automatically on your OrdrPay account, including domain verification. Diners on Safari (iPhone/Mac) see Apple Pay; diners on Chrome/Android see Google Pay. Anonymous guests can pay with their wallet too — no account or card entry required.</p>
             </SubSection>
             <Tip>Use the test card numbers shown in Settings → Payments to verify your full ordering and payment flow before going live.</Tip>
@@ -792,4 +745,11 @@ export default function KnowledgeBase() {
           </SubSection>
         </Section>
 
+        <Separator />
+        <p className="text-xs text-muted-foreground text-center pb-8">
+          Need more help? Contact us at support@ordrup.com
+        </p>
+      </div>
+    </div>
+  );
 }
