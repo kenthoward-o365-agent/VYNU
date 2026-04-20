@@ -247,18 +247,46 @@ export default function Orders() {
 
   const isToday = auditDate.label === "Today";
 
-  // Summary stats
-  const allOrders = orders;
+  // Summary stats — based on what's actually visible
+  const allOrders = visibleOrders;
   const activeCount = allOrders.filter((o) => ["received", "preparing", "ready"].includes(o.status)).length;
   const completedCount = allOrders.filter((o) => ["served", "paid"].includes(o.status)).length;
   const cancelledCount = allOrders.filter((o) => o.status === "cancelled").length;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="space-y-2">
           <h2 className="text-2xl font-bold text-foreground">Orders</h2>
           <p className="text-muted-foreground">{venue?.name}</p>
+          {terminal ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="secondary" className="gap-1.5">
+                <Monitor className="h-3 w-3" />
+                {terminal.terminal_name}
+              </Badge>
+              <button
+                onClick={() => setTerminalOverride((v) => !v)}
+                className="text-xs underline text-muted-foreground hover:text-foreground"
+              >
+                {terminalOverride ? "Filter to terminal areas" : "Show all (override)"}
+              </button>
+              <button
+                onClick={unpairThisBrowser}
+                className="text-xs underline text-muted-foreground hover:text-foreground"
+              >
+                Unpair this browser
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setPairOpen(true)}
+              className="text-xs inline-flex items-center gap-1 underline text-muted-foreground hover:text-foreground"
+            >
+              <Link2 className="h-3 w-3" />
+              Pair this Terminal
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <AuditDatePicker value={auditDate} onChange={setAuditDate} />
@@ -306,13 +334,15 @@ export default function Orders() {
         </Card>
       </div>
 
-      {orders.length === 0 ? (
+      {visibleOrders.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No orders</h3>
             <p className="text-muted-foreground">
-              {filter === "active"
+              {terminal && !terminalOverride
+                ? `No orders routed to ${terminal.terminal_name} for this period.`
+                : filter === "active"
                 ? "No active orders for this period. Try switching to 'All' to see completed orders."
                 : "No orders found for the selected date range."}
             </p>
@@ -320,7 +350,7 @@ export default function Orders() {
         </Card>
       ) : (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {orders.map((order) => {
+          {visibleOrders.map((order) => {
             const config = statusByName(order.status);
             const refunds = refundsByOrder[order.id] || [];
             const totalRefunded = refunds.reduce((sum, r) => sum + Number(r.amount), 0);
