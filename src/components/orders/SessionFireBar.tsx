@@ -82,8 +82,8 @@ export default function SessionFireBar({
         </div>
         <div className="flex items-center gap-2">
           {isFired ? (
-            <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">
-              <Flame className="h-3 w-3 mr-1" /> Fired
+            <Badge variant="secondary" className="gap-1">
+              <Flame className="h-3 w-3" /> Fired
             </Badge>
           ) : session.fire_strategy === "wait_for_all" ? (
             <Badge variant="outline" className="gap-1">
