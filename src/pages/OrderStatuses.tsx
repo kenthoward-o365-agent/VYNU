@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 import DisplayAreasCard from "@/components/orders/DisplayAreasCard";
+import DisplayTerminalsManager from "@/components/orders/DisplayTerminalsManager";
 
 interface OrderStatus {
   id: string;
@@ -192,6 +193,8 @@ export default function OrderStatuses() {
       </div>
 
       <DisplayAreasCard venueId={venue.id} />
+
+      <DisplayTerminalsManager venueId={venue.id} />
 
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>

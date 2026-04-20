@@ -277,6 +277,95 @@ export type Database = {
           },
         ]
       }
+      display_terminal_areas: {
+        Row: {
+          created_at: string
+          display_area_id: string
+          terminal_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_area_id: string
+          terminal_id: string
+        }
+        Update: {
+          created_at?: string
+          display_area_id?: string
+          terminal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "display_terminal_areas_display_area_id_fkey"
+            columns: ["display_area_id"]
+            isOneToOne: false
+            referencedRelation: "venue_display_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "display_terminal_areas_terminal_id_fkey"
+            columns: ["terminal_id"]
+            isOneToOne: false
+            referencedRelation: "display_terminals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      display_terminals: {
+        Row: {
+          created_at: string
+          device_token: string | null
+          id: string
+          is_active: boolean
+          last_seen_at: string | null
+          name: string
+          paired_at: string | null
+          paired_by: string | null
+          pairing_code: string | null
+          pairing_code_expires_at: string | null
+          updated_at: string
+          user_agent: string | null
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_token?: string | null
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          name: string
+          paired_at?: string | null
+          paired_by?: string | null
+          pairing_code?: string | null
+          pairing_code_expires_at?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          device_token?: string | null
+          id?: string
+          is_active?: boolean
+          last_seen_at?: string | null
+          name?: string
+          paired_at?: string | null
+          paired_by?: string | null
+          pairing_code?: string | null
+          pairing_code_expires_at?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "display_terminals_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_balances: {
         Row: {
           balance: number
@@ -2076,6 +2165,16 @@ export type Database = {
         Returns: string
       }
       generate_site_id: { Args: never; Returns: string }
+      get_terminal_by_token: {
+        Args: { _token: string }
+        Returns: {
+          area_ids: string[]
+          is_active: boolean
+          terminal_id: string
+          terminal_name: string
+          venue_id: string
+        }[]
+      }
       get_user_diner_profile_id: { Args: never; Returns: string }
       get_venue_audit_date: { Args: { _venue_id: string }; Returns: string }
       get_venue_payment_active: {
@@ -2108,6 +2207,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      heartbeat_display_terminal: { Args: { _token: string }; Returns: boolean }
       initialize_venue_audit_date: {
         Args: { _venue_id: string }
         Returns: string
@@ -2134,6 +2234,19 @@ export type Database = {
           venue_id: string
           venue_name: string
         }[]
+      }
+      pair_display_terminal: {
+        Args: { _code: string; _user_agent?: string }
+        Returns: {
+          area_ids: string[]
+          device_token: string
+          terminal_id: string
+          terminal_name: string
+        }[]
+      }
+      unpair_display_terminal: {
+        Args: { _terminal_id: string }
+        Returns: boolean
       }
     }
     Enums: {

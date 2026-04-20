@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Clock, ChefHat, CheckCircle, DollarSign, ShoppingCart, XCircle, RotateCcw, Undo2 } from "lucide-react";
+import { ClipboardList, Clock, ChefHat, CheckCircle, DollarSign, ShoppingCart, XCircle, RotateCcw, Undo2, Monitor, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
 import OrderAgeBadge from "@/components/orders/OrderAgeBadge";
 import RefundDialog from "@/components/orders/RefundDialog";
+import PairTerminalDialog from "@/components/orders/PairTerminalDialog";
 import { usePermissions } from "@/hooks/use-permissions";
 
 type OrderStatus = string;
@@ -23,6 +24,7 @@ interface OrderItem {
   quantity: number;
   unit_price: number;
   notes: string | null;
+  menu_item_id: string;
   menu_item: { name: string } | null;
 }
 
@@ -66,6 +68,14 @@ const fallbackStatusConfig: Record<string, { label: string; color: string }> = {
   refunded: { label: "Refunded", color: "bg-orange-100 text-orange-800" },
 };
 
+interface TerminalBinding {
+  terminal_id: string;
+  venue_id: string;
+  terminal_name: string;
+  is_active: boolean;
+  area_ids: string[];
+}
+
 export default function Orders() {
   const { venue } = useVenue();
   const { canUpdateOrderStatus, canReopenAndRefund } = usePermissions();
@@ -75,6 +85,10 @@ export default function Orders() {
   const [auditDate, setAuditDate] = useState<DateRange>(getDefaultAuditDate);
   const [refundOrder, setRefundOrder] = useState<Order | null>(null);
   const [venueStatuses, setVenueStatuses] = useState<VenueStatus[]>([]);
+  const [terminal, setTerminal] = useState<TerminalBinding | null>(null);
+  const [pairOpen, setPairOpen] = useState(false);
+  const [terminalOverride, setTerminalOverride] = useState(false);
+  const [terminalAreaItemIds, setTerminalAreaItemIds] = useState<Set<string> | null>(null);
 
   const statusByName = (name: string) => {
     const vs = venueStatuses.find((s) => s.name === name);
@@ -98,7 +112,7 @@ export default function Orders() {
     if (!venue) return;
     let query = supabase
       .from("orders")
-      .select("*, table:tables(table_number), order_items(id, quantity, unit_price, notes, menu_item:menu_items(name))")
+      .select("*, table:tables(table_number), order_items(id, quantity, unit_price, notes, menu_item_id, menu_item:menu_items(name))")
       .eq("venue_id", venue.id)
       .gte("created_at", auditDate.from.toISOString())
       .lte("created_at", auditDate.to.toISOString())
@@ -129,6 +143,72 @@ export default function Orders() {
     }
   };
 
+  // Load terminal binding from localStorage on mount
+  useEffect(() => {
+    const token = localStorage.getItem("ordrup_terminal_token");
+    if (!token) { setTerminal(null); return; }
+    (async () => {
+      const { data, error } = await supabase.rpc("get_terminal_by_token" as any, { _token: token });
+      if (error || !data || (Array.isArray(data) && !data.length)) {
+        // Token invalid (revoked or terminal deleted) — clear it
+        localStorage.removeItem("ordrup_terminal_token");
+        setTerminal(null);
+        return;
+      }
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row.is_active || (venue && row.venue_id !== venue.id)) {
+        setTerminal(null);
+        return;
+      }
+      setTerminal(row as TerminalBinding);
+    })();
+  }, [venue?.id]);
+
+  // Heartbeat while terminal page is open
+  useEffect(() => {
+    if (!terminal) return;
+    const token = localStorage.getItem("ordrup_terminal_token");
+    if (!token) return;
+    const ping = () => { supabase.rpc("heartbeat_display_terminal" as any, { _token: token }); };
+    ping();
+    const i = setInterval(ping, 60000);
+    return () => clearInterval(i);
+  }, [terminal?.terminal_id]);
+
+  // When terminal binding active, fetch the set of menu_item ids that route to its areas
+  useEffect(() => {
+    if (!terminal || terminalOverride || !terminal.area_ids.length) {
+      setTerminalAreaItemIds(null);
+      return;
+    }
+    (async () => {
+      // items directly bound to areas
+      const { data: itemRows } = await supabase
+        .from("menu_item_display_areas")
+        .select("menu_item_id")
+        .in("display_area_id", terminal.area_ids);
+      // categories bound to areas → all items in those categories
+      const { data: catRows } = await supabase
+        .from("menu_category_display_areas")
+        .select("category_id")
+        .in("display_area_id", terminal.area_ids);
+      const catIds = (catRows || []).map((r: any) => r.category_id);
+      let catItemIds: string[] = [];
+      if (catIds.length) {
+        const { data: itemsInCats } = await supabase
+          .from("menu_items")
+          .select("id")
+          .in("category_id", catIds);
+        catItemIds = (itemsInCats || []).map((r: any) => r.id);
+      }
+      const all = new Set<string>([
+        ...((itemRows || []).map((r: any) => r.menu_item_id)),
+        ...catItemIds,
+      ]);
+      setTerminalAreaItemIds(all);
+    })();
+  }, [terminal?.terminal_id, terminalOverride, JSON.stringify(terminal?.area_ids)]);
+
   useEffect(() => { fetchVenueStatuses(); }, [venue?.id]);
   useEffect(() => { fetchOrders(); }, [venue, filter, auditDate, venueStatuses]);
 
@@ -144,6 +224,20 @@ export default function Orders() {
     return () => { supabase.removeChannel(channel); };
   }, [venue, filter, auditDate]);
 
+  const unpairThisBrowser = () => {
+    localStorage.removeItem("ordrup_terminal_token");
+    setTerminal(null);
+    toast.success("This browser is no longer bound to a terminal");
+  };
+
+  // Filter orders by terminal area routing if applicable
+  const visibleOrders = useMemo(() => {
+    if (!terminal || terminalOverride || !terminalAreaItemIds) return orders;
+    return orders.filter((o) =>
+      (o.order_items || []).some((it) => terminalAreaItemIds.has((it as any).menu_item_id || (it.menu_item as any)?.id))
+    );
+  }, [orders, terminal, terminalOverride, terminalAreaItemIds]);
+
   const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
     const { error } = await supabase.from("orders").update({ status: newStatus as any }).eq("id", orderId);
     if (error) { toast.error(error.message); return; }
@@ -153,18 +247,46 @@ export default function Orders() {
 
   const isToday = auditDate.label === "Today";
 
-  // Summary stats
-  const allOrders = orders;
+  // Summary stats — based on what's actually visible
+  const allOrders = visibleOrders;
   const activeCount = allOrders.filter((o) => ["received", "preparing", "ready"].includes(o.status)).length;
   const completedCount = allOrders.filter((o) => ["served", "paid"].includes(o.status)).length;
   const cancelledCount = allOrders.filter((o) => o.status === "cancelled").length;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="space-y-2">
           <h2 className="text-2xl font-bold text-foreground">Orders</h2>
           <p className="text-muted-foreground">{venue?.name}</p>
+          {terminal ? (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="secondary" className="gap-1.5">
+                <Monitor className="h-3 w-3" />
+                {terminal.terminal_name}
+              </Badge>
+              <button
+                onClick={() => setTerminalOverride((v) => !v)}
+                className="text-xs underline text-muted-foreground hover:text-foreground"
+              >
+                {terminalOverride ? "Filter to terminal areas" : "Show all (override)"}
+              </button>
+              <button
+                onClick={unpairThisBrowser}
+                className="text-xs underline text-muted-foreground hover:text-foreground"
+              >
+                Unpair this browser
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setPairOpen(true)}
+              className="text-xs inline-flex items-center gap-1 underline text-muted-foreground hover:text-foreground"
+            >
+              <Link2 className="h-3 w-3" />
+              Pair this Terminal
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <AuditDatePicker value={auditDate} onChange={setAuditDate} />
@@ -212,13 +334,15 @@ export default function Orders() {
         </Card>
       </div>
 
-      {orders.length === 0 ? (
+      {visibleOrders.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No orders</h3>
             <p className="text-muted-foreground">
-              {filter === "active"
+              {terminal && !terminalOverride
+                ? `No orders routed to ${terminal.terminal_name} for this period.`
+                : filter === "active"
                 ? "No active orders for this period. Try switching to 'All' to see completed orders."
                 : "No orders found for the selected date range."}
             </p>
@@ -226,7 +350,7 @@ export default function Orders() {
         </Card>
       ) : (
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {orders.map((order) => {
+          {visibleOrders.map((order) => {
             const config = statusByName(order.status);
             const refunds = refundsByOrder[order.id] || [];
             const totalRefunded = refunds.reduce((sum, r) => sum + Number(r.amount), 0);
@@ -357,6 +481,12 @@ export default function Orders() {
           onComplete={fetchOrders}
         />
       )}
+
+      <PairTerminalDialog
+        open={pairOpen}
+        onOpenChange={setPairOpen}
+        onPaired={() => window.location.reload()}
+      />
     </div>
   );
 }
