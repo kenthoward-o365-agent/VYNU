@@ -24,6 +24,7 @@ interface OrderItem {
   quantity: number;
   unit_price: number;
   notes: string | null;
+  menu_item_id: string;
   menu_item: { name: string } | null;
 }
 
@@ -111,7 +112,7 @@ export default function Orders() {
     if (!venue) return;
     let query = supabase
       .from("orders")
-      .select("*, table:tables(table_number), order_items(id, quantity, unit_price, notes, menu_item:menu_items(name))")
+      .select("*, table:tables(table_number), order_items(id, quantity, unit_price, notes, menu_item_id, menu_item:menu_items(name))")
       .eq("venue_id", venue.id)
       .gte("created_at", auditDate.from.toISOString())
       .lte("created_at", auditDate.to.toISOString())
