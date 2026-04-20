@@ -116,12 +116,24 @@ export default function VenueSettings() {
 
   const fetchVenueRoles = async () => {
     if (!venue) return;
-    const { data } = await supabase
+    const { data: roleRows } = await supabase
       .from("venue_roles")
       .select("id, name, is_system")
       .eq("venue_id", venue.id)
       .order("display_order");
-    setVenueRoles(data || []);
+    const list = roleRows || [];
+    // Pull nav_keys for each role so we can decide whether to show order toggles
+    if (list.length > 0) {
+      const { data: permRows } = await supabase
+        .from("venue_role_permissions")
+        .select("role_id, nav_keys")
+        .in("role_id", list.map((r) => r.id));
+      const navMap: Record<string, string[]> = {};
+      (permRows || []).forEach((p: any) => { navMap[p.role_id] = p.nav_keys || []; });
+      setVenueRoles(list.map((r) => ({ ...r, nav_keys: navMap[r.id] || [] })));
+    } else {
+      setVenueRoles([]);
+    }
   };
 
   const fetchStaff = async () => {
@@ -216,7 +228,13 @@ export default function VenueSettings() {
       const match = venueRoles.find((r) => r.name.toLowerCase() === s.role.toLowerCase());
       if (match) resolvedRoleId = match.id;
     }
-    setEditForm({ display_name: s.display_name || "", role_id: resolvedRoleId });
+    setEditForm({
+      display_name: s.display_name || "",
+      role_id: resolvedRoleId,
+      can_update_order_status: !!s.can_update_order_status,
+      can_reopen_closed_orders: !!s.can_reopen_closed_orders,
+      can_process_refunds: !!s.can_process_refunds,
+    });
     setEditDialog(true);
   };
 
@@ -225,8 +243,14 @@ export default function VenueSettings() {
     setSavingEdit(true);
     try {
       await invokeUserFn({
-        action: "update", staff_id: editStaff.id, venue_id: venue.id,
-        display_name: editForm.display_name, role_id: editForm.role_id || null,
+        action: "update",
+        staff_id: editStaff.id,
+        venue_id: venue.id,
+        display_name: editForm.display_name,
+        role_id: editForm.role_id || null,
+        can_update_order_status: editForm.can_update_order_status,
+        can_reopen_closed_orders: editForm.can_reopen_closed_orders,
+        can_process_refunds: editForm.can_process_refunds,
       });
       toast.success("User updated");
       setEditDialog(false);
