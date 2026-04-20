@@ -1022,18 +1022,75 @@ export type Database = {
           },
         ]
       }
+      order_throttle_log: {
+        Row: {
+          created_at: string
+          display_area_id: string
+          event: string
+          id: string
+          order_id: string
+          queue_size_at_event: number
+          venue_id: string
+          wait_added_minutes: number
+        }
+        Insert: {
+          created_at?: string
+          display_area_id: string
+          event: string
+          id?: string
+          order_id: string
+          queue_size_at_event?: number
+          venue_id: string
+          wait_added_minutes?: number
+        }
+        Update: {
+          created_at?: string
+          display_area_id?: string
+          event?: string
+          id?: string
+          order_id?: string
+          queue_size_at_event?: number
+          venue_id?: string
+          wait_added_minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_throttle_log_display_area_id_fkey"
+            columns: ["display_area_id"]
+            isOneToOne: false
+            referencedRelation: "venue_display_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_throttle_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_throttle_log_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           audit_date: string | null
           created_at: string
           customer_id: string | null
           customer_notes: string | null
+          extra_wait_minutes: number
           gratuity_amount: number
           id: string
           payment_psp_reference: string | null
           pos_order_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           table_id: string | null
+          throttled_until: string | null
           total: number | null
           updated_at: string
           venue_id: string
@@ -1043,12 +1100,14 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           customer_notes?: string | null
+          extra_wait_minutes?: number
           gratuity_amount?: number
           id?: string
           payment_psp_reference?: string | null
           pos_order_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string | null
+          throttled_until?: string | null
           total?: number | null
           updated_at?: string
           venue_id: string
@@ -1058,12 +1117,14 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           customer_notes?: string | null
+          extra_wait_minutes?: number
           gratuity_amount?: number
           id?: string
           payment_psp_reference?: string | null
           pos_order_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           table_id?: string | null
+          throttled_until?: string | null
           total?: number | null
           updated_at?: string
           venue_id?: string
@@ -1557,6 +1618,7 @@ export type Database = {
       }
       venue_display_areas: {
         Row: {
+          base_prep_time_minutes: number
           color: string
           created_at: string
           description: string | null
@@ -1565,10 +1627,18 @@ export type Database = {
           is_active: boolean
           is_default: boolean
           name: string
+          throttle_block_timeout_minutes: number
+          throttle_block_until: string | null
+          throttle_enabled: boolean
+          throttle_max_orders: number
+          throttle_mode: string
+          throttle_show_wait_to_diner: boolean
+          throttle_window_minutes: number
           updated_at: string
           venue_id: string
         }
         Insert: {
+          base_prep_time_minutes?: number
           color?: string
           created_at?: string
           description?: string | null
@@ -1577,10 +1647,18 @@ export type Database = {
           is_active?: boolean
           is_default?: boolean
           name: string
+          throttle_block_timeout_minutes?: number
+          throttle_block_until?: string | null
+          throttle_enabled?: boolean
+          throttle_max_orders?: number
+          throttle_mode?: string
+          throttle_show_wait_to_diner?: boolean
+          throttle_window_minutes?: number
           updated_at?: string
           venue_id: string
         }
         Update: {
+          base_prep_time_minutes?: number
           color?: string
           created_at?: string
           description?: string | null
@@ -1589,6 +1667,13 @@ export type Database = {
           is_active?: boolean
           is_default?: boolean
           name?: string
+          throttle_block_timeout_minutes?: number
+          throttle_block_until?: string | null
+          throttle_enabled?: boolean
+          throttle_max_orders?: number
+          throttle_mode?: string
+          throttle_show_wait_to_diner?: boolean
+          throttle_window_minutes?: number
           updated_at?: string
           venue_id?: string
         }
@@ -2155,6 +2240,10 @@ export type Database = {
     }
     Functions: {
       advance_audit_date: { Args: { _venue_id: string }; Returns: string }
+      apply_throttle_on_order_insert_for: {
+        Args: { _order_id: string; _venue_id: string }
+        Returns: undefined
+      }
       can_manage_loyalty_program_balance: {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
