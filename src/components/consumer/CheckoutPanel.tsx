@@ -58,7 +58,10 @@ const CheckoutPanel = ({
   onBack,
   onOrderPlaced,
 }: CheckoutPanelProps) => {
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  // Per-line total includes base price + sum of modifier prices, all × quantity.
+  const lineUnitPrice = (item: CartItem) =>
+    item.price + item.modifiers.reduce((s, m) => s + (Number(m.price) || 0), 0);
+  const total = items.reduce((sum, item) => sum + lineUnitPrice(item) * item.quantity, 0);
 
   // Legacy raw-card form (used only as fallback in mock mode without an Adyen client key)
   const [card, setCard] = useState({
@@ -273,11 +276,16 @@ const CheckoutPanel = ({
       } as any);
     if (orderError) throw orderError;
 
+    // Persist per-line modifiers (snapshot) and notes so the kitchen ticket
+    // and receipt are immutable even if a modifier is renamed later.
+    // unit_price stays as base price; modifier costs sum at receipt time.
     const orderItems = items.map((item) => ({
       order_id: orderId,
-      menu_item_id: item.id,
+      menu_item_id: item.menu_item_id,
       quantity: item.quantity,
       unit_price: item.price,
+      modifiers: item.modifiers as any,
+      notes: item.notes || null,
     }));
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
     if (itemsError) throw itemsError;
@@ -522,14 +530,26 @@ const CheckoutPanel = ({
       <div className="flex-1 overflow-auto px-5 pb-4 space-y-5">
         {/* Order Summary */}
         <div className="space-y-2">
-          {items.map((item) => (
-            <div key={item.id} className="flex justify-between text-sm">
-              <span>
-                {item.quantity}× {item.name}
-              </span>
-              <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
-            </div>
-          ))}
+          {items.map((item) => {
+            const perUnit = lineUnitPrice(item);
+            const paidMods = item.modifiers.filter((m) => Number(m.price) > 0);
+            return (
+              <div key={item.id} className="space-y-0.5">
+                <div className="flex justify-between text-sm">
+                  <span>
+                    {item.quantity}× {item.name}
+                  </span>
+                  <span className="font-medium">${(perUnit * item.quantity).toFixed(2)}</span>
+                </div>
+                {paidMods.map((m) => (
+                  <div key={m.modifier_id} className="flex justify-between text-[11px] text-muted-foreground pl-4">
+                    <span>+ {m.name}</span>
+                    <span>+${(m.price * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
           {(() => {
             const taxResult = calculateTaxes(total, venueTaxes);
             const hasExclusive = venueTaxes.some((t) => !t.is_inclusive);
