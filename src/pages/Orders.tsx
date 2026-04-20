@@ -12,6 +12,7 @@ import OrderAgeBadge from "@/components/orders/OrderAgeBadge";
 import RefundDialog from "@/components/orders/RefundDialog";
 import ReopenStatusDialog from "@/components/orders/ReopenStatusDialog";
 import PairTerminalDialog from "@/components/orders/PairTerminalDialog";
+import ThrottleStatusBar from "@/components/orders/ThrottleStatusBar";
 import { usePermissions } from "@/hooks/use-permissions";
 
 type OrderStatus = string;
@@ -47,6 +48,8 @@ interface Order {
   table_id: string | null;
   table: { table_number: string } | null;
   order_items: OrderItem[];
+  throttled_until: string | null;
+  extra_wait_minutes: number;
 }
 
 interface VenueStatus {
@@ -232,10 +235,14 @@ export default function Orders() {
     toast.success("This browser is no longer bound to a terminal");
   };
 
-  // Filter orders by terminal area routing if applicable
+  // Filter orders by terminal area routing AND throttling visibility
   const visibleOrders = useMemo(() => {
-    if (!terminal || terminalOverride || !terminalAreaItemIds) return orders;
-    return orders.filter((o) =>
+    const nowMs = Date.now();
+    const released = orders.filter(
+      (o) => !o.throttled_until || new Date(o.throttled_until).getTime() <= nowMs,
+    );
+    if (!terminal || terminalOverride || !terminalAreaItemIds) return released;
+    return released.filter((o) =>
       (o.order_items || []).some((it) => terminalAreaItemIds.has((it as any).menu_item_id || (it.menu_item as any)?.id))
     );
   }, [orders, terminal, terminalOverride, terminalAreaItemIds]);
@@ -301,6 +308,8 @@ export default function Orders() {
           </Select>
         </div>
       </div>
+
+      {venue && <ThrottleStatusBar venueId={venue.id} />}
 
       {/* Order summary cards */}
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
@@ -413,6 +422,13 @@ export default function Orders() {
 
                   {order.customer_notes && (
                     <p className="text-sm text-muted-foreground italic border-l-2 border-primary pl-2">"{order.customer_notes}"</p>
+                  )}
+
+                  {order.extra_wait_minutes > 0 && (
+                    <Badge variant="outline" className="text-[10px] gap-1 w-fit">
+                      <Clock className="h-2.5 w-2.5" />
+                      +{order.extra_wait_minutes}m delay applied
+                    </Badge>
                   )}
 
                   <div className="flex items-center justify-between pt-1 border-t border-border">
