@@ -792,11 +792,4 @@ export default function KnowledgeBase() {
           </SubSection>
         </Section>
 
-        <Separator />
-        <p className="text-xs text-muted-foreground text-center pb-8">
-          Need more help? Contact us at support@ordrup.com
-        </p>
-      </div>
-    </div>
-  );
 }
