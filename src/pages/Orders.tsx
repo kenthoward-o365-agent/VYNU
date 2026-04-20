@@ -324,6 +324,114 @@ export default function Orders() {
   const completedCount = allOrders.filter((o) => ["served", "paid"].includes(o.status)).length;
   const cancelledCount = allOrders.filter((o) => o.status === "cancelled").length;
 
+  const renderOrderCard = (order: Order) => {
+    const config = statusByName(order.status);
+    const refunds = refundsByOrder[order.id] || [];
+    const totalRefunded = refunds.reduce((sum, r) => sum + Number(r.amount), 0);
+    const isRefundable = REFUNDABLE_STATUSES.includes(order.status) && totalRefunded < Number(order.total);
+    const showRefundButton = canProcessRefunds && isRefundable;
+    const showReopenButton = canReopenClosedOrders && TERMINAL_STATUSES.includes(order.status);
+    const buttonStatuses = venueStatuses.slice(0, 5);
+    const currentIdx = buttonStatuses.findIndex((s) => s.name === order.status);
+    return (
+      <Card key={order.id} className="flex flex-col">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <CardTitle className="text-base">#{order.id.slice(0, 8)}</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {new Date(order.created_at).toLocaleTimeString()}
+                {order.table?.table_number && ` · Table ${order.table.table_number}`}
+                {order.session_mode === "group" && " · Group"}
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              {config.vs ? (
+                <Badge style={{ backgroundColor: config.vs.color, color: "#fff" }} className="border-transparent">{config.label}</Badge>
+              ) : (
+                <Badge className={config.color}>{config.label}</Badge>
+              )}
+              <OrderAgeBadge createdAt={order.created_at} frozen={TERMINAL_STATUSES.includes(order.status)} />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 flex-1">
+          <div className="divide-y divide-border">
+            {order.order_items?.map((item) => (
+              <div key={item.id} className="flex justify-between py-1.5 text-sm">
+                <div className="flex-1">
+                  <span className="font-medium text-foreground">{item.quantity}× {item.menu_item?.name ?? "Unknown item"}</span>
+                  {item.notes && <p className="text-xs text-muted-foreground mt-0.5">⤷ {item.notes}</p>}
+                </div>
+                <span className="text-muted-foreground ml-2">${(item.quantity * Number(item.unit_price)).toFixed(2)}</span>
+              </div>
+            ))}
+            {(!order.order_items || order.order_items.length === 0) && (
+              <p className="text-xs text-muted-foreground py-1">No items</p>
+            )}
+          </div>
+          {order.customer_notes && (
+            <p className="text-sm text-muted-foreground italic border-l-2 border-primary pl-2">"{order.customer_notes}"</p>
+          )}
+          {order.extra_wait_minutes > 0 && (
+            <Badge variant="outline" className="text-[10px] gap-1 w-fit">
+              <Clock className="h-2.5 w-2.5" />+{order.extra_wait_minutes}m delay applied
+            </Badge>
+          )}
+          <div className="flex items-center justify-between pt-1 border-t border-border">
+            <span className="text-sm font-medium text-muted-foreground">Total</span>
+            <span className="font-bold text-foreground">${Number(order.total).toFixed(2)}</span>
+          </div>
+          {refunds.length > 0 && (
+            <div className="rounded-md bg-muted/40 p-2 space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Refunds ({refunds.length})</p>
+              {refunds.map((r) => (
+                <div key={r.id} className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">{new Date(r.created_at).toLocaleString()}</span>
+                  <span className="font-medium text-foreground">−${Number(r.amount).toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between text-xs font-medium border-t border-border pt-1 mt-1">
+                <span>Total refunded</span><span>−${totalRefunded.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+          {canUpdateOrderStatus && buttonStatuses.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {buttonStatuses.map((s, i) => {
+                const isCurrent = s.name === order.status;
+                const isPast = currentIdx >= 0 && i < currentIdx;
+                return (
+                  <Button key={s.id} size="sm" variant={isCurrent ? "default" : "outline"} disabled={isCurrent}
+                    onClick={() => updateStatus(order.id, s.name)}
+                    className={`flex-1 min-w-[80px] ${isPast ? "opacity-60" : ""}`}
+                    style={isCurrent ? { backgroundColor: s.color, borderColor: s.color, color: "#fff" } : undefined}
+                    title={s.label}>
+                    <span className="truncate">{s.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+          {(showReopenButton || showRefundButton) && (
+            <div className="flex flex-col gap-1.5">
+              {showReopenButton && (
+                <Button className="w-full" size="sm" variant="outline" onClick={() => setReopenOrder(order)}>
+                  <Undo2 className="h-3.5 w-3.5 mr-1" />Re-open
+                </Button>
+              )}
+              {showRefundButton && (
+                <Button className="w-full" size="sm" variant="outline" onClick={() => setRefundOrder(order)}>
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />Re-open & Refund
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
