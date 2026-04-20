@@ -19,6 +19,7 @@ import UpsellPrompt, { UpsellSuggestion } from "@/components/consumer/UpsellProm
 import LoyaltyJoinPrompt from "@/components/consumer/LoyaltyJoinPrompt";
 import ModeSwitchSheet from "@/components/consumer/ModeSwitchSheet";
 import type { SessionMode } from "@/components/consumer/SessionModeChooser";
+import { buildRuleIndex, resolvePrice, type RuleIndex } from "@/lib/pricing-utils";
 
 interface VenueInfo {
   id: string;
@@ -69,6 +70,7 @@ const ConsumerOrder = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [pricingIndex, setPricingIndex] = useState<RuleIndex | null>(null);
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
   const [tab, setTab] = useState<"feed" | "chat" | "cart" | "profile">("feed");
   const [showChat, setShowChat] = useState(false);
@@ -167,6 +169,24 @@ const ConsumerOrder = () => {
       }
       if (itemsRes.data) setMenuItems(itemsRes.data as MenuItem[]);
       if (catsRes.data) setCategories(catsRes.data);
+
+      // Load active pricing rules + their item assignments so the diner UI
+      // can show the discounted price + rule label across menu / detail / cart.
+      const { data: rulesData } = await supabase
+        .from("pricing_rules")
+        .select("*")
+        .eq("venue_id", venueId)
+        .eq("is_active", true);
+      const rules = (rulesData || []) as any[];
+      let links: { pricing_rule_id: string; menu_item_id: string }[] = [];
+      if (rules.length > 0) {
+        const { data: linkData } = await supabase
+          .from("pricing_rule_items" as any)
+          .select("pricing_rule_id, menu_item_id")
+          .in("pricing_rule_id", rules.map((r) => r.id));
+        links = (linkData || []) as any[];
+      }
+      setPricingIndex(buildRuleIndex(rules as any, links));
 
       // Load OrdrUp AI chat mode
       const { data: aiConfig } = await supabase
@@ -345,6 +365,7 @@ const ConsumerOrder = () => {
       notes: string,
     ) => {
       const lineKey = buildLineKey(item.id, modifiers, notes);
+      const resolved = resolvePrice(item.id, Number(item.price) || 0, pricingIndex);
       setCart((prev) => {
         const existing = prev.find((c) => c.id === lineKey);
         if (existing) {
@@ -358,7 +379,9 @@ const ConsumerOrder = () => {
             id: lineKey,
             menu_item_id: item.id,
             name: item.name,
-            price: Number(item.price) || 0,
+            price: resolved.price,
+            originalPrice: resolved.originalPrice,
+            ruleName: resolved.ruleName,
             quantity,
             modifiers,
             notes,
@@ -368,7 +391,7 @@ const ConsumerOrder = () => {
       toast.success(`Added ${item.name}`, { duration: 1500 });
       fetchUpsell({ id: item.id, name: item.name, price: Number(item.price) || 0 });
     },
-    [fetchUpsell],
+    [fetchUpsell, pricingIndex],
   );
 
   /** Quick-add (used by AI chat / upsell prompts) — no modifiers, no notes. */
@@ -544,6 +567,7 @@ const ConsumerOrder = () => {
           onItemSelect={(it) => setSelectedItem(it)}
           tableNumber={tableNumber || undefined}
           sessionMode={sessionMode ?? "solo"}
+          pricingIndex={pricingIndex}
         />
       )}
       {tab === "feed" && chatMode === "chat_only" && !showChat && (
@@ -644,6 +668,7 @@ const ConsumerOrder = () => {
           venueId={venueId}
           venueName={venue.name}
           menuItems={menuItems}
+          pricingIndex={pricingIndex}
           onClose={() => setSelectedItem(null)}
           onAdd={(it, qty, mods, notes) => {
             addConfiguredToCart(it, qty, mods, notes);

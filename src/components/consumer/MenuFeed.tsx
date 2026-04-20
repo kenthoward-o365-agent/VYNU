@@ -4,6 +4,7 @@ import { optimizedImageUrl } from "@/lib/image-utils";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { resolvePrice, type RuleIndex } from "@/lib/pricing-utils";
 
 interface MenuItem {
   id: string;
@@ -28,6 +29,7 @@ interface MenuFeedProps {
   onItemSelect: (item: MenuItem) => void;
   tableNumber?: string;
   sessionMode?: "solo" | "group";
+  pricingIndex?: RuleIndex | null;
 }
 
 const CategoryChips = ({
@@ -75,12 +77,15 @@ const MenuItemRow = ({
   item,
   onSelect,
   dimmed,
+  pricingIndex,
 }: {
   item: MenuItem;
   onSelect: () => void;
   dimmed?: boolean;
+  pricingIndex?: RuleIndex | null;
 }) => {
   const isAvailable = (item.is_available ?? true) && !dimmed;
+  const resolved = resolvePrice(item.id, item.price, pricingIndex ?? null);
 
   return (
     <button
@@ -148,9 +153,25 @@ const MenuItemRow = ({
           ))}
         </div>
         <div className="mt-1.5 flex items-center gap-2">
-          <span className="text-sm sm:text-base font-bold text-primary">
-            ${item.price.toFixed(2)}
-          </span>
+          {resolved.hasOverride ? (
+            <div className="flex flex-col">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xs text-muted-foreground line-through">
+                  ${resolved.originalPrice.toFixed(2)}
+                </span>
+                <span className="text-sm sm:text-base font-bold text-primary">
+                  ${resolved.price.toFixed(2)}
+                </span>
+              </div>
+              <span className="text-[9px] font-semibold uppercase tracking-wide text-primary/80 leading-tight">
+                {resolved.ruleName}
+              </span>
+            </div>
+          ) : (
+            <span className="text-sm sm:text-base font-bold text-primary">
+              ${item.price.toFixed(2)}
+            </span>
+          )}
           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors ml-auto" />
         </div>
       </div>
@@ -164,6 +185,7 @@ const MenuFeed = ({
   onItemSelect,
   tableNumber,
   sessionMode = "solo",
+  pricingIndex,
 }: MenuFeedProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
@@ -253,6 +275,7 @@ const MenuFeed = ({
               item={item}
               onSelect={() => onItemSelect(item)}
               dimmed={activeDietaryFilters.length > 0 && !itemMatchesFilters(item)}
+              pricingIndex={pricingIndex}
             />
           ))}
         </div>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { resolvePrice, type RuleIndex } from "@/lib/pricing-utils";
 
 export interface SelectedModifier {
   modifier_id: string;
@@ -57,6 +58,7 @@ interface Props {
   venueId: string;
   venueName: string;
   menuItems: MenuItemForDetail[];
+  pricingIndex?: RuleIndex | null;
   onClose: () => void;
   onAdd: (
     item: MenuItemForDetail,
@@ -66,7 +68,7 @@ interface Props {
   ) => void;
 }
 
-const ItemDetailScreen = ({ item, venueId, venueName, menuItems, onClose, onAdd }: Props) => {
+const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, onClose, onAdd }: Props) => {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
   const [categories, setCategories] = useState<ModifierCategoryRow[]>([]);
@@ -77,6 +79,8 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, onClose, onAdd 
   const [upsell, setUpsell] = useState<UpsellSuggestion | null>(null);
 
   const isAvailable = item.is_available ?? true;
+  const resolved = resolvePrice(item.id, Number(item.price) || 0, pricingIndex ?? null);
+  const effectiveBase = resolved.price;
 
   // Fetch modifier categories + modifiers attached to this item
   useEffect(() => {
@@ -222,7 +226,7 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, onClose, onAdd 
   }, [categories, selected, requiredCategoryIds]);
 
   const modifiersDelta = Array.from(selected.values()).reduce((s, m) => s + (m.price || 0), 0);
-  const lineTotal = (Number(item.price) + modifiersDelta) * quantity;
+  const lineTotal = (effectiveBase + modifiersDelta) * quantity;
 
   const handleAdd = () => {
     if (!validation.ok || !isAvailable) return;
@@ -274,9 +278,23 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, onClose, onAdd 
         <div className="px-5 pt-5 pb-4 space-y-2">
           <div className="flex items-start justify-between gap-3">
             <h2 className="text-2xl font-bold leading-tight flex-1">{item.name}</h2>
-            <span className="text-2xl font-bold text-primary shrink-0">
-              ${Number(item.price).toFixed(2)}
-            </span>
+            {resolved.hasOverride ? (
+              <div className="flex flex-col items-end shrink-0">
+                <span className="text-sm text-muted-foreground line-through leading-none">
+                  ${resolved.originalPrice.toFixed(2)}
+                </span>
+                <span className="text-2xl font-bold text-primary leading-tight">
+                  ${resolved.price.toFixed(2)}
+                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-primary/80 leading-tight">
+                  {resolved.ruleName}
+                </span>
+              </div>
+            ) : (
+              <span className="text-2xl font-bold text-primary shrink-0">
+                ${Number(item.price).toFixed(2)}
+              </span>
+            )}
           </div>
           {item.description && (
             <p className="text-muted-foreground text-sm leading-relaxed">{item.description}</p>
