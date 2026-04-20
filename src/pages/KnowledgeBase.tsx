@@ -491,16 +491,32 @@ export default function KnowledgeBase() {
             <p>Update your venue name, type, address, contact information, logo, and operating hours. This information is displayed to diners and used by the AI assistant.</p>
           </SubSection>
           <SubSection title="Users & Roles">
-            <p>Each venue defines its own custom roles under <strong>Settings → Users → Roles</strong>. Three system roles are seeded automatically and cannot be deleted: <strong>Owner</strong>, <strong>Manager</strong>, and <strong>Staff</strong>. You can create additional roles like "Bar Staff", "Floor Lead", or "Kitchen Only" as needed.</p>
-            <p>For each role you control:</p>
+            <p>Permissions in OrdrUp work in <strong>two layers</strong>: a <em>role</em> controls which sidebar areas a user can see, and <em>per-user toggles</em> refine what they can actually do inside Orders.</p>
+
+            <p className="font-semibold mt-3">Layer 1 — Roles (sidebar access)</p>
+            <p>Each venue defines its own roles under <strong>Settings → Users → Roles</strong>. Three system roles are seeded automatically and cannot be deleted: <strong>Owner</strong>, <strong>Manager</strong>, and <strong>Staff</strong>. You can create additional roles like "Bar Staff", "Floor Lead", or "Kitchen Only".</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Sidebar visibility</strong> — tick which top-level nav items the role can see (Dashboard, Orders, Menu, Pricing, Diners, Loyalty, Analytics, etc.). Sub-items inherit their parent (e.g. Modifiers follows Menu, Order Display System follows Orders).</li>
-              <li><strong>Update Order Status</strong> — show or hide the status buttons on the order card.</li>
-              <li><strong>Re-open & Refund Orders</strong> — gate the Re-open & Refund action on terminal orders.</li>
               <li><strong>Manage Roles</strong> — who can edit roles and permissions.</li>
               <li><strong>Manage Settings</strong> — who can edit venue-wide settings (Details, Payments, Taxes, Loyalty, etc.).</li>
             </ul>
-            <p>Owners always have full access regardless of permissions. To assign a role, edit the user under Settings → Users and pick the role from the dropdown.</p>
+
+            <p className="font-semibold mt-3">Layer 2 — Per-user order action toggles</p>
+            <p>When you edit a user under <strong>Settings → Users</strong>, if their role grants Orders access, three additional switches appear:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Update Order Status</strong> — show or hide the status buttons on each order card (Received → Preparing → Ready → …).</li>
+              <li><strong>Re-open Closed Orders</strong> — show a <em>Re-open</em> button on closed orders (Paid / Served / Cancelled) that lets the user move it back to an active status. <strong>No money is moved.</strong></li>
+              <li><strong>Process Refunds</strong> — show the <em>Re-open &amp; Refund</em> button that re-opens the order <em>and</em> processes a refund through OrdrPay.</li>
+            </ul>
+
+            <p className="mt-3"><strong>Worked examples:</strong></p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><em>Line cook</em> (role: Staff) — Update Status on, both re-open toggles off. Can advance orders through the kitchen workflow but can't touch closed orders.</li>
+              <li><em>Shift supervisor</em> (role: Staff) — Update Status on, Re-open Closed Orders on, Process Refunds off. Can fix up mistakes (e.g. accidentally marked as Paid) without being able to issue money.</li>
+              <li><em>Floor manager</em> (role: Manager) — all three on. Full Orders capability including refunds.</li>
+            </ul>
+
+            <p>Owners always have full access regardless of any per-user toggles. To assign a role and toggle order permissions, edit the user under <strong>Settings → Users</strong> and use the dialog.</p>
           </SubSection>
           <SubSection title="Loyalty">
             <p>Configure your loyalty programme:</p>
