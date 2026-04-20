@@ -84,6 +84,37 @@ export default function Modifiers() {
   const [newModPosId, setNewModPosId] = useState("");
   const [newModPlu, setNewModPlu] = useState("");
 
+  // Category settings dialog (limits + selection type)
+  const [settingsCatId, setSettingsCatId] = useState<string | null>(null);
+  const [settingsType, setSettingsType] = useState<SelectionType>("addon");
+  const [settingsMin, setSettingsMin] = useState("0");
+  const [settingsMax, setSettingsMax] = useState("0");
+
+  const openCategorySettings = (cat: ModifierCategory) => {
+    setSettingsCatId(cat.id);
+    setSettingsType(cat.selection_type || "addon");
+    setSettingsMin(String(cat.min_selection ?? 0));
+    setSettingsMax(String(cat.max_selection ?? 0));
+  };
+
+  const saveCategorySettings = async () => {
+    if (!settingsCatId) return;
+    const min = Math.max(0, parseInt(settingsMin) || 0);
+    const max = Math.max(0, parseInt(settingsMax) || 0);
+    if (max > 0 && min > max) {
+      toast.error("Min cannot exceed Max");
+      return;
+    }
+    const { error } = await supabase
+      .from("modifier_categories")
+      .update({ selection_type: settingsType, min_selection: min, max_selection: max } as any)
+      .eq("id", settingsCatId);
+    if (error) { toast.error("Failed to save"); return; }
+    setSettingsCatId(null);
+    toast.success("Saved");
+    fetchData();
+  };
+
   // AI state
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
@@ -299,7 +330,18 @@ export default function Modifiers() {
                       ) : (
                         <>
                           <span className="text-sm flex-1 truncate">{cat.name}</span>
+                          <Badge variant="outline" className="text-[10px] capitalize">
+                            {cat.selection_type === "removal" ? "No/Hold" : cat.selection_type === "choice" ? "Choice" : "Add-on"}
+                          </Badge>
+                          {(cat.min_selection > 0 || cat.max_selection > 0) && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {cat.min_selection}-{cat.max_selection === 0 ? "∞" : cat.max_selection}
+                            </Badge>
+                          )}
                           <Badge variant="secondary" className="text-[10px]">{modifiers.filter(m => m.category_id === cat.id).length}</Badge>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={e => { e.stopPropagation(); openCategorySettings(cat); }}>
+                            <Settings2 className="h-3 w-3" />
+                          </Button>
                           <Button size="icon" variant="ghost" className="h-6 w-6" onClick={e => { e.stopPropagation(); setEditingCatId(cat.id); setEditingCatName(cat.name); }}>
                             <Pencil className="h-3 w-3" />
                           </Button>
