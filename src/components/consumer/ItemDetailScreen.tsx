@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { resolvePrice, type RuleIndex } from "@/lib/pricing-utils";
 
 export interface SelectedModifier {
   modifier_id: string;
@@ -57,6 +58,7 @@ interface Props {
   venueId: string;
   venueName: string;
   menuItems: MenuItemForDetail[];
+  pricingIndex?: RuleIndex | null;
   onClose: () => void;
   onAdd: (
     item: MenuItemForDetail,
@@ -66,7 +68,7 @@ interface Props {
   ) => void;
 }
 
-const ItemDetailScreen = ({ item, venueId, venueName, menuItems, onClose, onAdd }: Props) => {
+const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, onClose, onAdd }: Props) => {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
   const [categories, setCategories] = useState<ModifierCategoryRow[]>([]);
@@ -77,6 +79,8 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, onClose, onAdd 
   const [upsell, setUpsell] = useState<UpsellSuggestion | null>(null);
 
   const isAvailable = item.is_available ?? true;
+  const resolved = resolvePrice(item.id, Number(item.price) || 0, pricingIndex ?? null);
+  const effectiveBase = resolved.price;
 
   // Fetch modifier categories + modifiers attached to this item
   useEffect(() => {
