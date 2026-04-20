@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Clock, ChefHat, CheckCircle, DollarSign, ShoppingCart, XCircle, RotateCcw, Undo2 } from "lucide-react";
+import { ClipboardList, Clock, ChefHat, CheckCircle, DollarSign, ShoppingCart, XCircle, RotateCcw, Undo2, Monitor, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
 import OrderAgeBadge from "@/components/orders/OrderAgeBadge";
 import RefundDialog from "@/components/orders/RefundDialog";
+import PairTerminalDialog from "@/components/orders/PairTerminalDialog";
 import { usePermissions } from "@/hooks/use-permissions";
 
 type OrderStatus = string;
@@ -66,6 +67,14 @@ const fallbackStatusConfig: Record<string, { label: string; color: string }> = {
   refunded: { label: "Refunded", color: "bg-orange-100 text-orange-800" },
 };
 
+interface TerminalBinding {
+  terminal_id: string;
+  venue_id: string;
+  terminal_name: string;
+  is_active: boolean;
+  area_ids: string[];
+}
+
 export default function Orders() {
   const { venue } = useVenue();
   const { canUpdateOrderStatus, canReopenAndRefund } = usePermissions();
@@ -75,6 +84,10 @@ export default function Orders() {
   const [auditDate, setAuditDate] = useState<DateRange>(getDefaultAuditDate);
   const [refundOrder, setRefundOrder] = useState<Order | null>(null);
   const [venueStatuses, setVenueStatuses] = useState<VenueStatus[]>([]);
+  const [terminal, setTerminal] = useState<TerminalBinding | null>(null);
+  const [pairOpen, setPairOpen] = useState(false);
+  const [terminalOverride, setTerminalOverride] = useState(false);
+  const [terminalAreaItemIds, setTerminalAreaItemIds] = useState<Set<string> | null>(null);
 
   const statusByName = (name: string) => {
     const vs = venueStatuses.find((s) => s.name === name);
