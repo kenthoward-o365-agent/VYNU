@@ -111,6 +111,8 @@ export default function Orders() {
   const [pairOpen, setPairOpen] = useState(false);
   const [terminalOverride, setTerminalOverride] = useState(false);
   const [terminalAreaItemIds, setTerminalAreaItemIds] = useState<Set<string> | null>(null);
+  const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const [fireGraceSeconds, setFireGraceSeconds] = useState(90);
 
   const statusByName = (name: string) => {
     const vs = venueStatuses.find((s) => s.name === name);
@@ -163,6 +165,24 @@ export default function Orders() {
     } else {
       setRefundsByOrder({});
     }
+  };
+
+  const fetchSessions = async () => {
+    if (!venue) return;
+    const { data } = await supabase
+      .from("table_sessions")
+      .select("id, venue_id, table_id, status, display_name, diner_count, fire_strategy, fired_at, opened_at, table:tables(table_number)")
+      .eq("venue_id", venue.id)
+      .in("status", ["open", "firing"])
+      .order("opened_at", { ascending: false });
+    setSessions((data as unknown as SessionRow[]) || []);
+  };
+
+  const fetchVenueSettings = async () => {
+    if (!venue) return;
+    const { data } = await supabase.from("venues").select("settings").eq("id", venue.id).single();
+    const grace = (data?.settings as any)?.table_session?.fire_grace_seconds;
+    if (typeof grace === "number") setFireGraceSeconds(grace);
   };
 
   // Load terminal binding from localStorage on mount
