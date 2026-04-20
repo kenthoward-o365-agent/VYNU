@@ -2,65 +2,95 @@
 
 ## Goal
 
-Replace the single "Move to next status" button on each order card with **up to 5 status buttons** rendered along the bottom of the card. Clicking a button advances the order to that status (still updating the diner's mobile view via the existing realtime channel). Add an **"Active for Orders Display"** flag to the status setup so venues choose which statuses count as "Active" in the upper-right Active/All filter.
+Extend the Display Terminals plan to also include a **detailed Knowledge Base update** so venue managers, IT installers, and support staff have step-by-step setup instructions, troubleshooting guidance, and a clear mental model of how terminal pairing works. This is the most operationally complex feature in the product, so the KB section needs to be thorough.
 
-## Schema (1 migration)
+## What gets added to `src/pages/KnowledgeBase.tsx`
 
-Add to `venue_order_statuses`:
-- `is_active_display bool not null default false` — when true, orders in this status appear under the "Active" filter on the Orders page
+A new top-level section **"Display Terminals"** under the Order Display System article, with these subsections:
 
-Backfill: seed defaults already inserted `received`, `preparing`, `ready` as the active working states → set `is_active_display = true` for those three on every existing venue. All others (`served`, `paid`, `cancelled`, `refunded`) stay false.
+### 1. Concept overview
+- What a Display Terminal is (a physical device — Mac mini, iPad, TV with a stick PC — running OrdrUp in a browser at a fixed station)
+- Difference between **a user** (who logs in), **a Display Area** (logical routing — Kitchen, Bar), and **a Display Terminal** (a specific browser on a specific device)
+- Why a user can be signed in on multiple devices but each device can be bound to only one terminal identity
+- Diagram (ASCII) showing: Order → Display Area routing → Terminals subscribed to that area
 
-Update `seed_venue_order_statuses()` so newly created venues get the same defaults.
+### 2. Why we don't use MAC address (FAQ)
+- Browsers can't read MAC addresses (privacy sandbox)
+- Even native apps get a randomised per-app ID on modern OSes
+- Our solution: a **device token** (UUID) the cloud issues during pairing, stored in `localStorage`
+- Implications: clearing browser data un-pairs the terminal; incognito mode won't persist the binding; each browser profile = one potential terminal
 
-## UI changes
+### 3. First-time setup (step-by-step)
+Numbered steps for the manager, with screenshots placeholders:
+1. Create your Display Areas (Kitchen, Bar, Expo, etc.) in the Display Areas section
+2. Assign Display Areas to your menu categories and items (covers the existing routing feature)
+3. Go to **Order Display System → Display Terminals** → click **Add Terminal**
+4. Name it descriptively ("Kitchen Mac mini — line cook station")
+5. Pick the Display Areas this terminal should show
+6. Save → copy the **6-character pairing code** (e.g. `K7-9F2`) — valid for 10 minutes
 
-### `src/pages/OrderStatuses.tsx` (status setup)
-- In the status row + the Add/Edit Status dialog, add a switch: **"Show in Active filter"** (writes `is_active_display`)
-- Add a small column/label badge "Active" on rows where it's true
-- Keep existing `is_terminal`, `is_default`, color, order, name, label fields
+### 4. Pairing the physical device
+1. On the kitchen Mac mini, open Chrome/Safari/Edge → go to your OrdrUp URL
+2. Sign in with any staff account that has Orders access
+3. In the Orders page header click **"Pair this Terminal"**
+4. Enter the 6-character code → tap Pair
+5. Page reloads → header now shows `🖥 Kitchen Mac mini — Fry Side, Expo` and only relevant orders appear
 
-### `src/pages/Orders.tsx` (order card)
-Replace the single `nextStatus` button with a **button row of up to 5 statuses**:
+### 5. Day-to-day operation
+- Heartbeat: terminal pings the cloud every 60s while Orders is open → status shows **Online** in the dashboard
+- If the terminal page is closed/asleep, status flips to **Offline** after ~2 minutes (other terminals continue working)
+- Signing out the user does NOT un-pair the device — the next user who signs in gets the same station view
+- "Show all (override)" toggle lets a manager temporarily see the full order list without un-pairing
 
-- Fetch `venue_order_statuses` for the venue once (sorted by `display_order`, `is_active = true`)
-- For each card, render the first **5** statuses as buttons across the bottom
-- The current status button is shown as `variant="default"` (highlighted); other buttons are `variant="outline"`
-- Buttons before the current one are dimmed (`opacity-60`) but still clickable (allows correcting a misclick / going back, gated by `canUpdateOrderStatus`)
-- Clicking a button calls the existing `updateStatus(orderId, status.name)` flow → already triggers the realtime channel that ConsumerOrder is subscribed to, so the diner's mobile view updates with no extra work
-- Hide the entire button row when `!canUpdateOrderStatus`
-- Terminal-status rows (already determined by `TERMINAL_STATUSES`) still show the OrderAgeBadge frozen and the existing Re-open & Refund button below the status row
+### 6. Managing terminals (manager actions)
+- **Rename** a terminal at any time
+- **Change assigned Display Areas** — takes effect on next page load on that terminal
+- **Regenerate pairing code** — issues a new 10-min code (use if the previous one expired before pairing)
+- **Unpair / revoke** — invalidates the device token immediately. Use cases: lost iPad, swapping hardware, decommissioning a station. The browser will fall back to the unpaired Orders view on next reload
+- **Deactivate** — keeps the configuration but stops it appearing in routing; useful for a terminal that's temporarily out of service
 
-**"Active" filter logic change:**
-- Currently `filter === "active"` is hard-coded to `["received", "preparing", "ready"]`
-- Change to: query the venue's `venue_order_statuses` where `is_active_display = true`, get those `name`s, and use them in the `.in("status", […])` clause
-- Falls back to the hard-coded list if the venue somehow has none flagged (safety)
+### 7. Multi-terminal patterns
+Worked examples showing common venue setups:
+- **Small café**: 1 terminal showing all areas (functionally identical to no terminal binding, but gives you "Online" monitoring)
+- **Pub with separate kitchen + bar**: Kitchen terminal → Kitchen area; Bar terminal → Bar area
+- **Restaurant with brigade**: Fry Side terminal → Fry; Grill terminal → Grill; Expo terminal → all three (Fry + Grill + Cold) so the expediter sees everything coming together
+- **Front of house tablet**: Tablet bound to all areas with "Show all" override on by default — server uses it to chase orders across the floor
 
-### Diner mobile view (`ConsumerOrder.tsx` / `OrderStatus.tsx`)
-- No structural changes required — the diner already subscribes to `orders` realtime updates and re-renders on status change. Verify the displayed status label/timeline still matches the venue's active status set (the consumer's `OrderStatus` component uses a fixed 4-step visual; that's fine for v1, but ideally also driven by `venue_order_statuses` later — out of scope here)
+### 8. Troubleshooting
+Table of symptom → cause → fix:
+- "I entered the code but it says invalid" → expired (>10 min) or already used → regenerate from the dashboard
+- "Terminal shows Offline but the screen is on" → browser tab is in background or device asleep → bring tab to foreground; disable display sleep on the device
+- "Wrong orders appearing" → terminal is bound to the wrong Display Areas → edit terminal, fix areas, reload the device's browser
+- "Terminal lost its identity after a Chrome update" → localStorage cleared → re-pair with a fresh code
+- "Same device keeps showing as two terminals" → user used both Chrome and Safari on the same Mac → each browser is its own terminal; pick one and standardise
+- "Pairing code dialog won't open" → user lacks Orders access in their role → grant `orders` nav permission
 
-## Constraints / behaviour
+### 9. Security notes
+- Device tokens are venue-scoped — a token from Venue A cannot view Venue B's orders even if pasted in
+- Tokens never appear in URLs or logs
+- Unpair immediately if a device is lost or stolen
+- Heartbeat lets you spot a terminal that's been unplugged for hours — alert (future enhancement) will email when a critical station goes offline
 
-- Cap buttons at 5 — if a venue defines more, only the first 5 (by `display_order`) render on the card to keep the card clean. They can still set the rest as terminal or via the Re-open flow.
-- Clicking the *current* status button is a no-op (button disabled).
-- Mobile/responsive: button row uses `flex flex-wrap gap-1.5`; small `size="sm"` buttons with truncated labels.
+### 10. Hardware recommendations (brief)
+- **Kitchen**: Mac mini + 27" wall-mounted monitor in landscape, or an iPad Pro 12.9" in a kitchen-grade case
+- **Bar**: iPad 10.9" in a counter mount
+- **Expo**: large TV (43"+) with an Intel NUC or Mac mini, browser in fullscreen kiosk mode
+- For all: disable display sleep, enable auto-launch of the browser to your OrdrUp URL after reboot
+
+## Implementation note
+
+This KB content will be added in the same PR as the Display Terminals feature itself (the previously approved plan). When you say "go", I implement both:
+1. The Display Terminals feature (schema, RPCs, manager UI, pairing dialog, terminal-aware Orders page)
+2. The Knowledge Base section above
 
 ## Files touched
 
-- `supabase/migrations/<ts>_status_active_display.sql` — add column + backfill + update seed function
-- `src/pages/OrderStatuses.tsx` — add "Show in Active filter" switch to status form/list
-- `src/pages/Orders.tsx` — fetch statuses, render up-to-5-button row, drive Active filter from `is_active_display`
-- `src/integrations/supabase/types.ts` — auto-regenerated
+- `src/pages/KnowledgeBase.tsx` — add the "Display Terminals" section described
+- Plus all files from the previously approved Display Terminals plan
 
 ## Out of scope
 
-- Driving the consumer-side `OrderStatus.tsx` timeline from `venue_order_statuses` (still hard-coded 4 steps for now)
-- Per-Display-Area filtering of the button row (will combine with the KDS work later)
-- Drag-to-reorder buttons on the card itself
-
-## Expected result
-
-- Manager opens **Order Display System** → toggles "Show in Active filter" on `received`, `preparing`, `ready` (default), turns it on for "Served" too if they want servers to keep working it.
-- Manager opens **Orders** with the Active filter → sees orders in those flagged statuses only.
-- Each order card shows up to 5 status buttons; tapping one advances the order, the diner's phone reflects the new status within ~1s via realtime.
+- Actual screenshots (placeholders only — to be added once UI is built)
+- Native kiosk-mode wrapper docs
+- Email alerts for offline terminals
 
