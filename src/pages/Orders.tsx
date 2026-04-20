@@ -142,6 +142,72 @@ export default function Orders() {
     }
   };
 
+  // Load terminal binding from localStorage on mount
+  useEffect(() => {
+    const token = localStorage.getItem("ordrup_terminal_token");
+    if (!token) { setTerminal(null); return; }
+    (async () => {
+      const { data, error } = await supabase.rpc("get_terminal_by_token" as any, { _token: token });
+      if (error || !data || (Array.isArray(data) && !data.length)) {
+        // Token invalid (revoked or terminal deleted) — clear it
+        localStorage.removeItem("ordrup_terminal_token");
+        setTerminal(null);
+        return;
+      }
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row.is_active || (venue && row.venue_id !== venue.id)) {
+        setTerminal(null);
+        return;
+      }
+      setTerminal(row as TerminalBinding);
+    })();
+  }, [venue?.id]);
+
+  // Heartbeat while terminal page is open
+  useEffect(() => {
+    if (!terminal) return;
+    const token = localStorage.getItem("ordrup_terminal_token");
+    if (!token) return;
+    const ping = () => { supabase.rpc("heartbeat_display_terminal" as any, { _token: token }); };
+    ping();
+    const i = setInterval(ping, 60000);
+    return () => clearInterval(i);
+  }, [terminal?.terminal_id]);
+
+  // When terminal binding active, fetch the set of menu_item ids that route to its areas
+  useEffect(() => {
+    if (!terminal || terminalOverride || !terminal.area_ids.length) {
+      setTerminalAreaItemIds(null);
+      return;
+    }
+    (async () => {
+      // items directly bound to areas
+      const { data: itemRows } = await supabase
+        .from("menu_item_display_areas")
+        .select("menu_item_id")
+        .in("display_area_id", terminal.area_ids);
+      // categories bound to areas → all items in those categories
+      const { data: catRows } = await supabase
+        .from("menu_category_display_areas")
+        .select("category_id")
+        .in("display_area_id", terminal.area_ids);
+      const catIds = (catRows || []).map((r: any) => r.category_id);
+      let catItemIds: string[] = [];
+      if (catIds.length) {
+        const { data: itemsInCats } = await supabase
+          .from("menu_items")
+          .select("id")
+          .in("category_id", catIds);
+        catItemIds = (itemsInCats || []).map((r: any) => r.id);
+      }
+      const all = new Set<string>([
+        ...((itemRows || []).map((r: any) => r.menu_item_id)),
+        ...catItemIds,
+      ]);
+      setTerminalAreaItemIds(all);
+    })();
+  }, [terminal?.terminal_id, terminalOverride, JSON.stringify(terminal?.area_ids)]);
+
   useEffect(() => { fetchVenueStatuses(); }, [venue?.id]);
   useEffect(() => { fetchOrders(); }, [venue, filter, auditDate, venueStatuses]);
 
@@ -156,6 +222,20 @@ export default function Orders() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [venue, filter, auditDate]);
+
+  const unpairThisBrowser = () => {
+    localStorage.removeItem("ordrup_terminal_token");
+    setTerminal(null);
+    toast.success("This browser is no longer bound to a terminal");
+  };
+
+  // Filter orders by terminal area routing if applicable
+  const visibleOrders = useMemo(() => {
+    if (!terminal || terminalOverride || !terminalAreaItemIds) return orders;
+    return orders.filter((o) =>
+      (o.order_items || []).some((it) => terminalAreaItemIds.has((it as any).menu_item_id || (it.menu_item as any)?.id))
+    );
+  }, [orders, terminal, terminalOverride, terminalAreaItemIds]);
 
   const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
     const { error } = await supabase.from("orders").update({ status: newStatus as any }).eq("id", orderId);
