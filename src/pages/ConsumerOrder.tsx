@@ -365,6 +365,7 @@ const ConsumerOrder = () => {
       notes: string,
     ) => {
       const lineKey = buildLineKey(item.id, modifiers, notes);
+      const resolved = resolvePrice(item.id, Number(item.price) || 0, pricingIndex);
       setCart((prev) => {
         const existing = prev.find((c) => c.id === lineKey);
         if (existing) {
@@ -378,7 +379,9 @@ const ConsumerOrder = () => {
             id: lineKey,
             menu_item_id: item.id,
             name: item.name,
-            price: Number(item.price) || 0,
+            price: resolved.price,
+            originalPrice: resolved.originalPrice,
+            ruleName: resolved.ruleName,
             quantity,
             modifiers,
             notes,
@@ -388,7 +391,7 @@ const ConsumerOrder = () => {
       toast.success(`Added ${item.name}`, { duration: 1500 });
       fetchUpsell({ id: item.id, name: item.name, price: Number(item.price) || 0 });
     },
-    [fetchUpsell],
+    [fetchUpsell, pricingIndex],
   );
 
   /** Quick-add (used by AI chat / upsell prompts) — no modifiers, no notes. */
@@ -564,6 +567,7 @@ const ConsumerOrder = () => {
           onItemSelect={(it) => setSelectedItem(it)}
           tableNumber={tableNumber || undefined}
           sessionMode={sessionMode ?? "solo"}
+          pricingIndex={pricingIndex}
         />
       )}
       {tab === "feed" && chatMode === "chat_only" && !showChat && (
@@ -664,6 +668,7 @@ const ConsumerOrder = () => {
           venueId={venueId}
           venueName={venue.name}
           menuItems={menuItems}
+          pricingIndex={pricingIndex}
           onClose={() => setSelectedItem(null)}
           onAdd={(it, qty, mods, notes) => {
             addConfiguredToCart(it, qty, mods, notes);

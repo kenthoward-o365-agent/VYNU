@@ -10,6 +10,10 @@ export interface CartItem {
   name: string;
   /** Base price (per unit, before modifiers) */
   price: number;
+  /** Original menu price before any pricing rule (per unit). */
+  originalPrice?: number;
+  /** Name of the pricing rule that adjusted the price, if any. */
+  ruleName?: string | null;
   quantity: number;
   modifiers: SelectedModifier[];
   notes: string;
