@@ -536,6 +536,47 @@ export default function Modifiers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Category Settings Dialog */}
+      <Dialog open={!!settingsCatId} onOpenChange={(open) => !open && setSettingsCatId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Category settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Selection type</label>
+              <Select value={settingsType} onValueChange={(v) => setSettingsType(v as SelectionType)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="addon">Add-on (paid extras)</SelectItem>
+                  <SelectItem value="removal">No / Hold (free removals)</SelectItem>
+                  <SelectItem value="choice">Choice (size, doneness, etc.)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Controls grouping in the diner UI and whether free options appear on the receipt (they always show on the kitchen display).
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Min selection</label>
+                <Input type="number" min="0" value={settingsMin} onChange={(e) => setSettingsMin(e.target.value)} />
+                <p className="text-[11px] text-muted-foreground">0 = optional</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Max selection</label>
+                <Input type="number" min="0" value={settingsMax} onChange={(e) => setSettingsMax(e.target.value)} />
+                <p className="text-[11px] text-muted-foreground">0 = unlimited</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSettingsCatId(null)}>Cancel</Button>
+            <Button onClick={saveCategorySettings}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
