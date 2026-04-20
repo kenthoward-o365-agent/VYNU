@@ -1,12 +1,18 @@
 import { Minus, Plus, Trash2, ShoppingCart, Users, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CartSuggestions from "./CartSuggestions";
+import type { SelectedModifier } from "./ItemDetailScreen";
 
 export interface CartItem {
+  /** Unique line key — combines menu_item_id + modifier signature + notes hash */
   id: string;
+  menu_item_id: string;
   name: string;
+  /** Base price (per unit, before modifiers) */
   price: number;
   quantity: number;
+  modifiers: SelectedModifier[];
+  notes: string;
 }
 
 interface CartPanelProps {
@@ -27,6 +33,9 @@ interface CartPanelProps {
   onSwitchMode?: () => void;
 }
 
+const lineTotalPerUnit = (item: CartItem) =>
+  item.price + item.modifiers.reduce((s, m) => s + (m.price || 0), 0);
+
 const CartPanel = ({
   items,
   onUpdateQuantity,
@@ -44,7 +53,7 @@ const CartPanel = ({
   groupDinerCount = 1,
   onSwitchMode,
 }: CartPanelProps) => {
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const total = items.reduce((sum, item) => sum + lineTotalPerUnit(item) * item.quantity, 0);
 
   if (items.length === 0) {
     return (
@@ -81,35 +90,60 @@ const CartPanel = ({
       </div>
 
       <div className="flex-1 overflow-auto px-5 pb-4 space-y-3">
-        {items.map((item) => (
-          <div key={item.id} className="flex items-center gap-3 bg-card rounded-xl border border-border p-3">
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{item.name}</p>
-              <p className="text-primary font-semibold text-sm">${(item.price * item.quantity).toFixed(2)}</p>
+        {items.map((item) => {
+          const perUnit = lineTotalPerUnit(item);
+          const addons = item.modifiers.filter((m) => m.type === "addon" || m.type === "choice");
+          const removals = item.modifiers.filter((m) => m.type === "removal");
+          return (
+            <div key={item.id} className="flex items-start gap-3 bg-card rounded-xl border border-border p-3">
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm">{item.name}</p>
+                {(addons.length > 0 || removals.length > 0 || item.notes) && (
+                  <div className="mt-1 space-y-0.5">
+                    {addons.map((m) => (
+                      <p key={m.modifier_id} className="text-[11px] text-muted-foreground">
+                        + {m.name}
+                        {m.price > 0 ? ` (+$${m.price.toFixed(2)})` : ""}
+                      </p>
+                    ))}
+                    {removals.map((m) => (
+                      <p key={m.modifier_id} className="text-[11px] text-muted-foreground">
+                        ✕ {m.name}
+                      </p>
+                    ))}
+                    {item.notes && (
+                      <p className="text-[11px] text-muted-foreground italic">"{item.notes}"</p>
+                    )}
+                  </div>
+                )}
+                <p className="text-primary font-semibold text-sm mt-1.5">
+                  ${(perUnit * item.quantity).toFixed(2)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => onUpdateQuantity(item.id, -1)}
+                  className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
+                <span className="text-sm font-semibold w-5 text-center">{item.quantity}</span>
+                <button
+                  onClick={() => onUpdateQuantity(item.id, 1)}
+                  className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => onRemove(item.id)}
+                  className="h-8 w-8 rounded-full flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors ml-1"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => onUpdateQuantity(item.id, -1)}
-                className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
-              >
-                <Minus className="h-3.5 w-3.5" />
-              </button>
-              <span className="text-sm font-semibold w-5 text-center">{item.quantity}</span>
-              <button
-                onClick={() => onUpdateQuantity(item.id, 1)}
-                className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={() => onRemove(item.id)}
-                className="h-8 w-8 rounded-full flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors ml-1"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* AI Cart Suggestions */}
@@ -117,7 +151,7 @@ const CartPanel = ({
         <CartSuggestions
           venueId={venueId}
           venueName={venueName}
-          cartItems={items.map((i) => ({ id: i.id, name: i.name, quantity: i.quantity }))}
+          cartItems={items.map((i) => ({ id: i.menu_item_id, name: i.name, quantity: i.quantity }))}
           menuItems={menuItems}
           dismissedIds={dismissedSuggestions}
           onAdd={onAddToCart}
