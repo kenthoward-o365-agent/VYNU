@@ -170,6 +170,24 @@ const ConsumerOrder = () => {
       if (itemsRes.data) setMenuItems(itemsRes.data as MenuItem[]);
       if (catsRes.data) setCategories(catsRes.data);
 
+      // Load active pricing rules + their item assignments so the diner UI
+      // can show the discounted price + rule label across menu / detail / cart.
+      const { data: rulesData } = await supabase
+        .from("pricing_rules")
+        .select("*")
+        .eq("venue_id", venueId)
+        .eq("is_active", true);
+      const rules = (rulesData || []) as any[];
+      let links: { pricing_rule_id: string; menu_item_id: string }[] = [];
+      if (rules.length > 0) {
+        const { data: linkData } = await supabase
+          .from("pricing_rule_items" as any)
+          .select("pricing_rule_id, menu_item_id")
+          .in("pricing_rule_id", rules.map((r) => r.id));
+        links = (linkData || []) as any[];
+      }
+      setPricingIndex(buildRuleIndex(rules as any, links));
+
       // Load OrdrUp AI chat mode
       const { data: aiConfig } = await supabase
         .from("venue_ai_config")
