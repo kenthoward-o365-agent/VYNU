@@ -453,32 +453,187 @@ export default function KnowledgeBase() {
 
         {/* Operational Throttling */}
         <Section id="operational-throttling" title="Operational Throttling" icon={Sliders}>
-          <SubSection title="What it does">
+          <SubSection title="What it is">
             <p>
-              Operational Throttling protects each station (Kitchen, Bar, Expo, Take Away) from being flooded during a rush. Orders are still placed and charged immediately — but the moment they appear on the kitchen Display Terminal is paced to whatever the station can actually handle. The diner sees a realistic ETA up front.
+              Operational Throttling is per-station flood control. Every Display Area (Kitchen, Bar, Expo, Take Away, Coffee, Dessert, etc.) has its own queue with its own capacity settings and its own mode. When a rush hits, throttling holds new tickets back and releases them at a rate the station can actually keep up with — instead of dumping 25 dockets on the kitchen at once.
+            </p>
+            <p>
+              The order is still <strong>placed and charged immediately</strong>. We do not delay the diner's checkout. What we delay is the moment the ticket appears on the kitchen's Display Terminal. The diner sees a realistic ETA up front (e.g. "35 min" instead of the usual 15) and the kitchen sees a steady, manageable flow of dockets.
+            </p>
+            <p>
+              This is the equivalent of Chewzie's "Smart Docket Queue" but built on our existing Display Areas — no extra hardware, no per-printer config, just a setting on each station you've already created.
             </p>
           </SubSection>
 
-          <SubSection title="The four modes">
-            <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Open</strong> — orders flow straight through. Use during normal trade.</li>
-              <li><strong>Auto</strong> — the system holds new orders back when the queue exceeds capacity and releases them at your configured rate (e.g. 5 orders per 10 minutes = one every 2 min). Open auto-flips to Auto when load spikes, and back to Open once the queue clears.</li>
-              <li><strong>Block</strong> — manual hold (e.g. coffee machine breaks). Nothing releases until you unblock or the timeout (default 15 min) auto-reverts to Auto.</li>
-              <li><strong>Test</strong> — logs queueing behaviour and shows diners the would-be ETA, but releases orders immediately. Lets you tune capacity safely.</li>
+          <SubSection title="Where to find it">
+            <p>
+              <strong>Orders → Operational Throttling</strong> in the sidebar. The status strip at the top of the main Orders page also shows each station's current mode and queue size at a glance — click any station to jump to its config.
+            </p>
+            <p>
+              Only users with <em>Manage Settings</em> permission can change throttle modes or capacity. Everyone else sees the status strip read-only.
+            </p>
+          </SubSection>
+
+          <SubSection title="The four modes explained">
+            <ul className="list-disc list-inside space-y-2 pl-1">
+              <li>
+                <strong>Open</strong> (green) — orders flow straight through with no delay. This is the default and what every station sits in during normal trade. Throttling is effectively off.
+              </li>
+              <li>
+                <strong>Auto</strong> (amber) — the system holds new tickets back when the queue exceeds your configured capacity and releases them at the rate you set. For example, "5 orders per 10 minutes" releases one ticket every 2 minutes regardless of how many are queued behind it. Auto is self-managing: <em>Open auto-flips to Auto</em> when the queue spikes past capacity, and <em>Auto auto-flips back to Open</em> once the queue is empty for 2+ minutes. You usually don't need to touch this — just leave the station in Auto as the standby mode.
+              </li>
+              <li>
+                <strong>Block</strong> (red) — a hard manual hold. Nothing releases until you unblock or the configured timeout expires (default 15 minutes, then auto-reverts to Auto). Use this when something has actually broken: coffee machine down, fryer overheated, chef stepped away. Diners' orders are still accepted and charged, but the ticket is held with an extended ETA.
+              </li>
+              <li>
+                <strong>Test</strong> (blue) — observation mode. The system logs queue behaviour and shows diners the would-be extended ETA, but always releases the ticket immediately to the kitchen. Use this for a week or two before going live in Auto so you can tune capacity numbers against real service data without affecting the kitchen.
+              </li>
             </ul>
           </SubSection>
 
-          <SubSection title="Tuning capacity">
-            <p>For each station set <strong>Max orders</strong> and <strong>per minutes</strong>. A pizza oven that pumps out 6 pies per 10 min → 6 / 10. A two-person bar making cocktails → maybe 4 / 10. Watch the queue counter on the Throttling page during a real service to dial it in. Run Test mode for a week and review the queue history before going live in Auto.</p>
+          <SubSection title="How auto-flipping between Open and Auto works">
+            <p>
+              The throttle-tick background job runs every 30 seconds. For each station with throttling enabled it:
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Counts orders currently queued (i.e. with <code>throttled_until</code> still in the future).</li>
+              <li>If the station is in <strong>Open</strong> and queue size exceeds <em>Max orders</em> → flips to <strong>Auto</strong>.</li>
+              <li>If the station is in <strong>Auto</strong> and the queue has been empty for ~2 min → flips back to <strong>Open</strong>.</li>
+              <li>If the station is in <strong>Block</strong> and the block timeout has passed → flips to <strong>Auto</strong> (so the backlog releases at a controlled pace, not all at once).</li>
+              <li>For stations in Auto, releases the next batch of tickets by clearing their <code>throttled_until</code> — they then appear on the kitchen Display Terminal.</li>
+              <li>Recalculates each remaining queued order's diner-facing wait so the ETA stays accurate as the queue moves.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Tuning capacity (Max orders / per minutes)">
+            <p>
+              Two numbers define each station's throughput:
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Max orders</strong> — how many tickets the station can comfortably handle within the window.</li>
+              <li><strong>Window minutes</strong> — the rolling time window that <em>Max orders</em> applies to.</li>
+            </ul>
+            <p>
+              The release rate is simply <code>window / max</code>. Some real-world starting points:
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Pizza oven</strong> doing 6 pies in 10 min → <em>6 / 10</em> (one pie every ~1.7 min).</li>
+              <li><strong>Two-person cocktail bar</strong> → <em>4 / 10</em> (one cocktail every ~2.5 min).</li>
+              <li><strong>Single barista on espresso</strong> → <em>8 / 10</em> (one coffee every ~75 sec).</li>
+              <li><strong>Hot kitchen line on a Friday</strong> → start at <em>5 / 10</em>, watch a real service, adjust.</li>
+              <li><strong>Take-away pickup window</strong> → usually high throughput, <em>10 / 10</em> or higher.</li>
+            </ul>
+            <p>
+              <strong>Base prep time</strong> is the venue's normal completion time for that station when there's no queue (e.g. 15 min for kitchen, 4 min for bar). It seeds the diner-facing ETA before any throttle delay is added.
+            </p>
+            <Tip>
+              Always run <strong>Test mode</strong> for at least a week before going live in Auto. The Throttling page shows queue history so you can see what <em>would have</em> been queued and adjust Max orders / window before any diners actually wait.
+            </Tip>
           </SubSection>
 
           <SubSection title="What the diner sees">
-            <p>When their order is queued, the order screen shows a small "Kitchen is busy — extra ~12m wait" line under the time. The headline ETA is automatically extended so they're never surprised. You can disable the diner-facing message per station if you'd rather absorb the delay silently.</p>
+            <p>
+              The diner's order screen shows the headline ETA <em>plus</em> any extra wait the queue has added. If their order picked up 12 min of throttle delay, they see:
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>The headline ETA is automatically extended (e.g. "35 min" instead of "15 min").</li>
+              <li>A subtle line underneath: <em>"Kitchen is busy — extra ~12m wait"</em>.</li>
+            </ul>
+            <p>
+              You can disable the explanation line per-station with the <strong>Show wait to diner</strong> toggle if you'd rather absorb the delay silently — the headline ETA still adjusts, but the "kitchen is busy" message is hidden.
+            </p>
+            <p>
+              Diners are <em>never</em> blocked from ordering by throttling. The cart still checks out, payment still processes, the order still gets placed. The only thing that changes is when the kitchen sees it and what ETA the diner is shown.
+            </p>
+          </SubSection>
+
+          <SubSection title="What the kitchen sees">
+            <p>
+              The Display Terminal for that area only shows tickets that have been released — i.e. <code>throttled_until</code> is null or in the past. Queued tickets are invisible to the kitchen, which is the whole point: chefs only see what they should be cooking right now.
+            </p>
+            <p>
+              On the manager's Orders page, queued orders show with a small "<strong>+12m delay applied</strong>" badge so you can see at a glance what's been throttled and by how much.
+            </p>
+          </SubSection>
+
+          <SubSection title="Multi-station orders">
+            <p>
+              An order with items routing to multiple stations (e.g. a burger from Kitchen + a beer from Bar) takes the <strong>latest release time</strong> across all its stations. The order isn't "ready for the floor" until every station can take it. The diner-facing ETA uses the <strong>highest extra wait</strong> from any single station so they're never under-quoted.
+            </p>
           </SubSection>
 
           <SubSection title="Bumping a single order">
-            <p>The "Bump next" button releases the oldest queued order immediately — useful for a VIP, a kids' meal, or a re-fire. The order is logged as <em>bumped</em> in the audit trail.</p>
-            <Tip>Throttling lives at <strong>Orders → Operational Throttling</strong>. The status strip at the top of the Orders page shows each station's current mode and queue size at a glance.</Tip>
+            <p>
+              The <strong>Bump next</strong> button on any station releases the oldest queued order for that station immediately — useful for:
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>VIP guests or regulars you want to look after.</li>
+              <li>A kids' meal that should never be made to wait.</li>
+              <li>A re-fire after a kitchen mistake.</li>
+              <li>An order that was placed before the rush but got caught behind it.</li>
+            </ul>
+            <p>The bump is logged as a <em>bumped</em> event in the audit trail with the queue size at the moment of the bump.</p>
+          </SubSection>
+
+          <SubSection title="Audit log and history">
+            <p>
+              Every throttle event is recorded in <code>order_throttle_log</code>: <em>queued</em> (held in Auto), <em>blocked</em> (held in Block), <em>released</em> (sent to the kitchen), <em>bumped</em> (manually released early). Each entry captures the queue size at that moment and the wait minutes added. This drives:
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>The sparkline on each station's card (queue size over the last hour).</li>
+              <li>Test-mode tuning data — what <em>would have</em> happened.</li>
+              <li>Future weekly throttle reports (planned).</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Common scenarios">
+            <ul className="list-disc list-inside space-y-2 pl-1">
+              <li>
+                <strong>Friday 7pm rush.</strong> Kitchen is in Auto with <em>5 / 10</em>. The 6th order arrives → gets queued for 2 min → diner sees "ETA 35 min, kitchen is busy ~10m". Kitchen receives one new ticket every 2 min and stays on top of the line.
+              </li>
+              <li>
+                <strong>Coffee machine breaks.</strong> Barista taps <strong>Block</strong> on the Bar station with a 20-min timeout. All new drink orders queue with diners seeing "Bar is busy, ~20m wait". Tech fixes the machine in 15 min, manager taps <strong>Auto</strong>, the queue clears at the controlled rate over the next 5–10 min instead of dumping 30 drinks at once.
+              </li>
+              <li>
+                <strong>Tuning a new station.</strong> You add a Dessert station and don't know its capacity. Set it to <strong>Test</strong> mode at <em>4 / 10</em>. Run Friday and Saturday service. Review the queue sparkline — if Test would have queued 15 desserts at 9pm, the kitchen probably can't actually do 4 / 10. Drop to <em>3 / 10</em> and switch to Auto next weekend.
+              </li>
+              <li>
+                <strong>VIP at table 7.</strong> Their burger is queued behind 4 others on the kitchen. Manager taps <strong>Bump next</strong> on the Kitchen card → the burger is released immediately, kitchen sees it on the next refresh, the audit log records the bump.
+              </li>
+              <li>
+                <strong>End of service.</strong> Last orders go in at 9:30pm. Kitchen finishes the queue by 9:45. Auto auto-flips back to Open. Nothing for staff to do.
+              </li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Permissions">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Owners and Managers</strong> — can change modes, edit capacity, bump orders, toggle throttling on/off per station.</li>
+              <li><strong>Staff with the <em>Orders</em> nav permission</strong> — see the status strip on the Orders page and can see queued tickets with the delay badge, but cannot change throttle settings.</li>
+              <li><strong>Display Terminals</strong> — only show released tickets. They never see throttled orders, regardless of which staff member is logged in.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Troubleshooting">
+            <ul className="list-disc list-inside space-y-2 pl-1">
+              <li><strong>"Orders are queueing but kitchen is empty."</strong> Check that Display Terminals are paired to the right Display Areas — a queued kitchen order won't appear on a terminal that's only watching the Bar area.</li>
+              <li><strong>"Diner sees a long wait but our queue is short."</strong> Multi-station orders take the longest wait across all stations. Check whether the Bar (or another station the order touches) is the bottleneck, not the Kitchen.</li>
+              <li><strong>"Mode keeps flipping Open ↔ Auto every minute."</strong> Your Max orders is too close to your actual ticket rate. Increase Max orders by 1–2, or increase the window slightly.</li>
+              <li><strong>"Blocked station never came back online."</strong> Block always auto-reverts after the timeout (default 15 min). If it's stuck, manually tap Auto or Open. Check that the throttle-tick background job is running (it runs every 30s).</li>
+              <li><strong>"I changed the mode but nothing happened for 30 seconds."</strong> Mode changes apply to <em>new</em> orders immediately, but the queue audit and diner ETAs refresh on the 30-second tick.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Best practices">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Leave every station in <strong>Auto</strong> as the standby mode — it self-manages and only kicks in when load demands it.</li>
+              <li>Always start a new station in <strong>Test</strong> mode for at least a week before going live.</li>
+              <li>Review queue history monthly. If Auto kicked in <em>often</em>, your capacity is probably set too low. If it <em>never</em> kicked in even on busy nights, you might be over-provisioned (or staff are heroically keeping up — talk to them).</li>
+              <li>Use <strong>Block</strong> sparingly and always with a realistic timeout. A 60-min block on the Kitchen will silently push every order into a long delay.</li>
+              <li>Brief front-of-house staff that the "+12m delay applied" badge means the kitchen won't see that ticket yet — so don't go chasing the chef about it.</li>
+              <li>Keep the diner-facing wait message <strong>on</strong> by default. A clear "kitchen is busy" beats a silent 20-min wait every time.</li>
+            </ul>
+            <Tip>The fastest way to validate your setup: pick one station, switch it to Test on a Friday night, look at the queue sparkline on Monday. The numbers don't lie.</Tip>
           </SubSection>
         </Section>
 
