@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Minus, Plus, Flame, Leaf, AlertTriangle, Ban, Sparkles } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Flame, Leaf, AlertTriangle, Ban, Sparkles, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { optimizedImageUrl } from "@/lib/image-utils";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,9 @@ interface ModifierCategoryRow {
   selection_type: "addon" | "removal" | "choice";
   min_selection: number;
   max_selection: number;
+  // per-item
+  is_required: boolean;
+  item_display_order: number;
 }
 
 interface ModifierRow {
@@ -73,10 +76,10 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
   const [notes, setNotes] = useState("");
   const [categories, setCategories] = useState<ModifierCategoryRow[]>([]);
   const [modifiers, setModifiers] = useState<ModifierRow[]>([]);
-  const [requiredCategoryIds, setRequiredCategoryIds] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Map<string, SelectedModifier>>(new Map());
   const [loadingMods, setLoadingMods] = useState(true);
   const [upsell, setUpsell] = useState<UpsellSuggestion | null>(null);
+  const [expandedOptional, setExpandedOptional] = useState<Set<string>>(new Set());
 
   const isAvailable = item.is_available ?? true;
   const resolved = resolvePrice(item.id, Number(item.price) || 0, pricingIndex ?? null);
@@ -89,21 +92,26 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
       setLoadingMods(true);
       const { data: itemMods } = await supabase
         .from("menu_item_modifiers")
-        .select("modifier_category_id, is_required")
+        .select("modifier_category_id, is_required, display_order")
         .eq("menu_item_id", item.id);
 
-      const catIds = (itemMods || []).map((r: any) => r.modifier_category_id);
-      const requiredSet = new Set<string>(
-        (itemMods || [])
-          .filter((r: any) => r.is_required)
-          .map((r: any) => r.modifier_category_id as string),
+      const itemModRows = (itemMods || []) as Array<{
+        modifier_category_id: string;
+        is_required: boolean;
+        display_order: number | null;
+      }>;
+      const catIds = itemModRows.map((r) => r.modifier_category_id);
+      const perItemMeta = new Map(
+        itemModRows.map((r) => [r.modifier_category_id, {
+          is_required: !!r.is_required,
+          item_display_order: r.display_order ?? 0,
+        }]),
       );
 
       if (catIds.length === 0) {
         if (!cancelled) {
           setCategories([]);
           setModifiers([]);
-          setRequiredCategoryIds(requiredSet);
           setLoadingMods(false);
         }
         return;
@@ -125,9 +133,16 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
       ]);
 
       if (cancelled) return;
-      setCategories((catsRes.data as any) || []);
+      const merged: ModifierCategoryRow[] = ((catsRes.data as any[]) || []).map((c) => {
+        const meta = perItemMeta.get(c.id);
+        return {
+          ...c,
+          is_required: meta?.is_required ?? false,
+          item_display_order: meta?.item_display_order ?? c.display_order ?? 0,
+        };
+      });
+      setCategories(merged);
       setModifiers((modsRes.data as any) || []);
-      setRequiredCategoryIds(requiredSet);
       setLoadingMods(false);
     })();
     return () => {
@@ -169,14 +184,25 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
     };
   }, [item.id, menuItems, venueName]);
 
-  // Group modifiers by category in order
-  const grouped = useMemo(() => {
-    return categories.map((cat) => ({
+  // Split into required (top, expanded) and optional (collapsed by default)
+  const { requiredGroups, optionalGroups } = useMemo(() => {
+    const groupFor = (cat: ModifierCategoryRow) => ({
       category: cat,
       mods: modifiers
         .filter((m) => m.category_id === cat.id)
         .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)),
-    }));
+    });
+    const required = categories
+      .filter((c) => c.is_required || (c.min_selection ?? 0) > 0)
+      .sort((a, b) => (a.item_display_order ?? 0) - (b.item_display_order ?? 0))
+      .map(groupFor)
+      .filter((g) => g.mods.length > 0);
+    const optional = categories
+      .filter((c) => !(c.is_required || (c.min_selection ?? 0) > 0))
+      .sort((a, b) => (a.item_display_order ?? 0) - (b.item_display_order ?? 0))
+      .map(groupFor)
+      .filter((g) => g.mods.length > 0);
+    return { requiredGroups: required, optionalGroups: optional };
   }, [categories, modifiers]);
 
   const countSelectedInCategory = (catId: string) =>
@@ -190,13 +216,11 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
         return next;
       }
       const currentCount = Array.from(next.values()).filter((m) => m.category_id === cat.id).length;
-      // Choice: single-pick — replace any existing in this category
       if (cat.selection_type === "choice") {
         for (const [k, v] of next) {
           if (v.category_id === cat.id) next.delete(k);
         }
       } else if (cat.max_selection > 0 && currentCount >= cat.max_selection) {
-        // Cap reached
         return prev;
       }
       next.set(mod.id, {
@@ -210,20 +234,26 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
     });
   };
 
+  const toggleOptionalExpanded = (catId: string) => {
+    setExpandedOptional((prev) => {
+      const next = new Set(prev);
+      if (next.has(catId)) next.delete(catId);
+      else next.add(catId);
+      return next;
+    });
+  };
+
   // Validation: required (per menu_item_modifiers.is_required) OR min_selection > 0
   const validation = useMemo(() => {
     for (const cat of categories) {
       const count = countSelectedInCategory(cat.id);
-      const minRequired = Math.max(
-        cat.min_selection || 0,
-        requiredCategoryIds.has(cat.id) ? 1 : 0,
-      );
+      const minRequired = Math.max(cat.min_selection || 0, cat.is_required ? 1 : 0);
       if (count < minRequired) {
         return { ok: false, hint: `Pick at least ${minRequired} from ${cat.name}` };
       }
     }
     return { ok: true, hint: "" };
-  }, [categories, selected, requiredCategoryIds]);
+  }, [categories, selected]);
 
   const modifiersDelta = Array.from(selected.values()).reduce((s, m) => s + (m.price || 0), 0);
   const lineTotal = (effectiveBase + modifiersDelta) * quantity;
@@ -234,6 +264,62 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
   };
 
   const upsellItem = upsell ? menuItems.find((m) => m.id === upsell.item_id) : null;
+
+  const renderModifierList = (category: ModifierCategoryRow, mods: ModifierRow[]) => {
+    const count = countSelectedInCategory(category.id);
+    const cap = category.max_selection;
+    return (
+      <div className="space-y-1.5">
+        {mods.map((mod) => {
+          const checked = selected.has(mod.id);
+          const wouldExceed =
+            !checked && category.selection_type !== "choice" && cap > 0 && count >= cap;
+          return (
+            <button
+              key={mod.id}
+              type="button"
+              onClick={() => toggleModifier(category, mod)}
+              disabled={wouldExceed}
+              className={cn(
+                "w-full flex items-center gap-3 rounded-xl border p-3 transition-colors text-left",
+                checked
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-card hover:border-primary/40",
+                wouldExceed && "opacity-40 cursor-not-allowed",
+              )}
+            >
+              <div
+                className={cn(
+                  "h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors",
+                  checked ? "border-primary bg-primary" : "border-muted-foreground/30",
+                )}
+              >
+                {checked && (
+                  <svg
+                    className="h-3 w-3 text-primary-foreground"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+              </div>
+              <span className="flex-1 text-sm font-medium">{mod.name}</span>
+              {Number(mod.price) > 0 && (
+                <span className="text-sm font-semibold text-primary">
+                  +${Number(mod.price).toFixed(2)}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
@@ -345,114 +431,120 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
           </div>
         </div>
 
-        {/* Modifier groups */}
+        {/* Required modifier groups (always expanded) */}
         {!loadingMods &&
-          grouped.map(({ category, mods }) => {
-            if (mods.length === 0) return null;
+          requiredGroups.map(({ category, mods }) => {
             const count = countSelectedInCategory(category.id);
-            const minRequired = Math.max(
-              category.min_selection || 0,
-              requiredCategoryIds.has(category.id) ? 1 : 0,
-            );
+            const minRequired = Math.max(category.min_selection || 0, category.is_required ? 1 : 0);
             const cap = category.max_selection;
+            const subLabel =
+              cap > 0 && minRequired > 0
+                ? `min ${minRequired} · max ${cap}`
+                : cap > 0
+                  ? `max ${cap}`
+                  : `min ${minRequired}`;
+            return (
+              <div key={category.id} className="px-5 pb-4">
+                <div className="flex items-baseline justify-between mb-2 gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h3 className="text-sm font-semibold truncate">{category.name}</h3>
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] h-5 px-1.5 border-destructive/40 text-destructive bg-destructive/5"
+                    >
+                      Required
+                    </Badge>
+                  </div>
+                  <span
+                    className={cn(
+                      "text-xs shrink-0",
+                      count < minRequired ? "text-destructive" : "text-muted-foreground",
+                    )}
+                  >
+                    {count}
+                    {cap > 0 ? `/${cap}` : ""}
+                  </span>
+                </div>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-2">
+                  {subLabel}
+                </p>
+                {renderModifierList(category, mods)}
+              </div>
+            );
+          })}
+
+        {/* Optional modifier groups (collapsed by default; auto-expand if selected) */}
+        {!loadingMods &&
+          optionalGroups.map(({ category, mods }) => {
+            const count = countSelectedInCategory(category.id);
+            const cap = category.max_selection;
+            const isExpanded = expandedOptional.has(category.id) || count > 0;
             const heading =
               category.selection_type === "removal"
                 ? "No / Hold"
                 : category.selection_type === "choice"
                   ? "Choose"
                   : "Add-ons";
-            const subLabel =
-              cap > 0 && minRequired > 0
-                ? `min ${minRequired} · max ${cap}`
-                : cap > 0
-                  ? `max ${cap}`
-                  : minRequired > 0
-                    ? `min ${minRequired}`
-                    : null;
-
+            const summaryLabel = cap > 0 ? `max ${cap}` : heading;
             return (
-              <div key={category.id} className="px-5 pb-4">
-                <div className="flex items-baseline justify-between mb-2">
-                  <div>
-                    <h3 className="text-sm font-semibold">{category.name}</h3>
-                    <p className="text-[11px] text-muted-foreground uppercase tracking-wide">
-                      {heading}
-                      {subLabel ? ` · ${subLabel}` : ""}
-                    </p>
-                  </div>
-                  {(minRequired > 0 || cap > 0) && (
-                    <span
-                      className={cn(
-                        "text-xs",
-                        count < minRequired ? "text-destructive" : "text-muted-foreground",
-                      )}
-                    >
-                      {count}
-                      {cap > 0 ? `/${cap}` : ""}
-                    </span>
+              <div key={category.id} className="px-5 pb-3">
+                <button
+                  type="button"
+                  onClick={() => toggleOptionalExpanded(category.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 rounded-xl border p-3 transition-colors text-left",
+                    isExpanded
+                      ? "border-primary/40 bg-primary/5"
+                      : "border-border bg-card hover:border-primary/40",
                   )}
-                </div>
-                <div className="space-y-1.5">
-                  {mods.map((mod) => {
-                    const checked = selected.has(mod.id);
-                    const wouldExceed =
-                      !checked &&
-                      category.selection_type !== "choice" &&
-                      cap > 0 &&
-                      count >= cap;
-                    return (
-                      <button
-                        key={mod.id}
-                        type="button"
-                        onClick={() => toggleModifier(category, mod)}
-                        disabled={wouldExceed}
-                        className={cn(
-                          "w-full flex items-center gap-3 rounded-xl border p-3 transition-colors text-left",
-                          checked
-                            ? "border-primary bg-primary/5"
-                            : "border-border bg-card hover:border-primary/40",
-                          wouldExceed && "opacity-40 cursor-not-allowed",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors",
-                            checked
-                              ? "border-primary bg-primary"
-                              : "border-muted-foreground/30",
-                          )}
-                        >
-                          {checked && (
-                            <svg
-                              className="h-3 w-3 text-primary-foreground"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                        <span className="flex-1 text-sm font-medium">{mod.name}</span>
-                        {Number(mod.price) > 0 && (
-                          <span className="text-sm font-semibold text-primary">
-                            +${Number(mod.price).toFixed(2)}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                  aria-expanded={isExpanded}
+                >
+                  <div
+                    className={cn(
+                      "h-7 w-7 rounded-full flex items-center justify-center shrink-0 transition-all",
+                      count > 0
+                        ? "bg-primary text-primary-foreground"
+                        : isExpanded
+                          ? "bg-primary/15 text-primary"
+                          : "bg-secondary text-foreground",
+                    )}
+                  >
+                    {count > 0 ? (
+                      <span className="text-xs font-semibold">
+                        {count}
+                        {cap > 0 ? `/${cap}` : ""}
+                      </span>
+                    ) : isExpanded ? (
+                      <X className="h-4 w-4" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{category.name}</p>
+                    {!isExpanded && (
+                      <p className="text-[11px] text-muted-foreground uppercase tracking-wide truncate">
+                        {summaryLabel}
+                      </p>
+                    )}
+                  </div>
+                </button>
+                {isExpanded && (
+                  <div className="pt-2.5">
+                    <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-2 px-1">
+                      {heading}
+                      {cap > 0 ? ` · max ${cap}` : ""}
+                    </p>
+                    {renderModifierList(category, mods)}
+                  </div>
+                )}
               </div>
             );
           })}
 
         {/* Upsell */}
         {upsellItem && (
-          <div className="px-5 pb-4">
+          <div className="px-5 pb-4 pt-2">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="h-4 w-4 text-primary" />
               <h3 className="text-sm font-semibold">You might also like</h3>

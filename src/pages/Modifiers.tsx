@@ -14,8 +14,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Sparkles, Plus, Trash2, Pencil, Check, X, Loader2, GripVertical, Settings2
+  Sparkles, Plus, Trash2, Pencil, Check, X, Loader2, GripVertical, Settings2, ListOrdered
 } from "lucide-react";
+import ReorderCategoriesDialog from "@/components/modifiers/ReorderCategoriesDialog";
 
 type SelectionType = "addon" | "removal" | "choice";
 
@@ -45,6 +46,7 @@ type MenuItemModifier = {
   menu_item_id: string;
   modifier_category_id: string;
   is_required: boolean;
+  display_order: number;
 };
 
 type MenuItem = {
@@ -89,6 +91,10 @@ export default function Modifiers() {
   const [settingsType, setSettingsType] = useState<SelectionType>("addon");
   const [settingsMin, setSettingsMin] = useState("0");
   const [settingsMax, setSettingsMax] = useState("0");
+
+  // Per-item reorder dialog
+  const [reorderItemId, setReorderItemId] = useState<string | null>(null);
+  const [reorderItemName, setReorderItemName] = useState("");
 
   const openCategorySettings = (cat: ModifierCategory) => {
     setSettingsCatId(cat.id);
@@ -208,7 +214,16 @@ export default function Modifiers() {
     if (existing) {
       await supabase.from("menu_item_modifiers").delete().eq("id", existing.id);
     } else {
-      await supabase.from("menu_item_modifiers").insert({ menu_item_id: menuItemId, modifier_category_id: catId, is_required: false });
+      const itemAssignments = assignments.filter(a => a.menu_item_id === menuItemId);
+      const nextOrder = itemAssignments.length > 0
+        ? Math.max(...itemAssignments.map(a => a.display_order ?? 0)) + 1
+        : 0;
+      await supabase.from("menu_item_modifiers").insert({
+        menu_item_id: menuItemId,
+        modifier_category_id: catId,
+        is_required: false,
+        display_order: nextOrder,
+      });
     }
     fetchData();
   };
@@ -431,12 +446,16 @@ export default function Modifiers() {
             <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">Create modifier categories first, then assign them to menu items.</CardContent></Card>
           ) : (
             <Card>
-              <CardContent className="pt-6">
+              <CardContent className="pt-6 space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Tick to assign a category. Toggle to mark Required. Use the reorder button on each row to set the order optional categories appear to diners.
+                </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-2 pr-4 font-medium text-muted-foreground">Menu Item</th>
+                        <th className="text-center py-2 px-2 font-medium text-muted-foreground w-12">Order</th>
                         {categories.map(cat => (
                           <th key={cat.id} className="text-center py-2 px-2 font-medium text-muted-foreground min-w-[120px]">
                             <div className="text-xs">{cat.name}</div>
@@ -445,9 +464,23 @@ export default function Modifiers() {
                       </tr>
                     </thead>
                     <tbody>
-                      {menuItems.map(item => (
+                      {menuItems.map(item => {
+                        const itemAssignmentCount = assignments.filter(a => a.menu_item_id === item.id).length;
+                        return (
                         <tr key={item.id} className="border-b last:border-0 hover:bg-muted/50">
                           <td className="py-2 pr-4 font-medium">{item.name}</td>
+                          <td className="text-center py-2 px-2">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7"
+                              disabled={itemAssignmentCount === 0}
+                              onClick={() => { setReorderItemId(item.id); setReorderItemName(item.name); }}
+                              title="Reorder modifier categories for this item"
+                            >
+                              <ListOrdered className="h-4 w-4" />
+                            </Button>
+                          </td>
                           {categories.map(cat => {
                             const assignment = assignments.find(a => a.menu_item_id === item.id && a.modifier_category_id === cat.id);
                             return (
@@ -472,7 +505,8 @@ export default function Modifiers() {
                             );
                           })}
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -481,6 +515,14 @@ export default function Modifiers() {
           )}
         </TabsContent>
       </Tabs>
+
+      <ReorderCategoriesDialog
+        open={!!reorderItemId}
+        onOpenChange={(o) => { if (!o) setReorderItemId(null); }}
+        menuItemId={reorderItemId}
+        menuItemName={reorderItemName}
+        onSaved={fetchData}
+      />
 
       {/* AI Review Dialog */}
       <Dialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>

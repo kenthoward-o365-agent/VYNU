@@ -584,6 +584,7 @@ export type Database = {
       menu_item_modifiers: {
         Row: {
           created_at: string
+          display_order: number
           id: string
           is_required: boolean
           menu_item_id: string
@@ -591,6 +592,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_order?: number
           id?: string
           is_required?: boolean
           menu_item_id: string
@@ -598,6 +600,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_order?: number
           id?: string
           is_required?: boolean
           menu_item_id?: string
