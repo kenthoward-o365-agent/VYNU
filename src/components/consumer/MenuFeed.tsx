@@ -207,9 +207,16 @@ const MenuFeed = ({
   });
 
   const itemMatchesFilters = (item: MenuItem) => {
-    if (activeDietaryFilters.length === 0) return true;
-    return activeDietaryFilters.every((tag) => item.dietary_tags?.includes(tag));
+    if (activeDietaryFilters.length > 0) {
+      if (!activeDietaryFilters.every((tag) => item.dietary_tags?.includes(tag))) return false;
+    }
+    if (activeAllergenAvoid.length > 0) {
+      if (activeAllergenAvoid.some((a) => item.allergens?.includes(a))) return false;
+    }
+    return true;
   };
+
+  const hasActiveFilters = activeDietaryFilters.length > 0 || activeAllergenAvoid.length > 0;
 
   if (filteredItems.length === 0) {
     return (
