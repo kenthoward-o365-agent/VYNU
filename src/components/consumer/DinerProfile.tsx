@@ -267,32 +267,51 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
     return map[s] || s;
   };
 
+  const memberSince = profile.created_at
+    ? new Date(profile.created_at).toLocaleDateString(undefined, { month: "short", year: "numeric" })
+    : null;
+
   return (
     <div className="px-5 pt-6 pb-24 space-y-5">
-      {/* Profile Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-            <User className="h-6 w-6 text-primary" />
+      {/* Ordrup ID Header Card */}
+      <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-accent/10">
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] uppercase tracking-wider font-bold text-primary">
+                Your Ordrup ID
+              </span>
+            </div>
+            <div className="flex gap-1">
+              {!editing && (
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditing(true)}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleSignOut}>
+                <LogOut className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
-          <div>
-            <h2 className="font-semibold text-foreground">
-              {profile.display_name || `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "Diner"}
-            </h2>
-            <p className="text-xs text-muted-foreground">{profile.email}</p>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center">
+              <User className="h-6 w-6 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-semibold text-foreground truncate">
+                {profile.display_name || `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "Diner"}
+              </h2>
+              <p className="text-xs text-muted-foreground truncate">{profile.email}</p>
+            </div>
           </div>
-        </div>
-        <div className="flex gap-2">
-          {!editing && (
-            <Button variant="ghost" size="icon" onClick={() => setEditing(true)}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+          <div className="flex items-center gap-3 mt-3 text-[11px] text-muted-foreground">
+            {memberSince && <span>Member since {memberSince}</span>}
+            {memberSince && <span aria-hidden>·</span>}
+            <span>{visitCount} {visitCount === 1 ? "visit" : "visits"}</span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Edit Form */}
       {editing && (
@@ -323,6 +342,34 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
                 onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
                 className="mt-1"
               />
+            </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1.5">
+                <AlertTriangle className="h-3 w-3 text-warning" />
+                Allergens to avoid
+              </Label>
+              <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">
+                Used at every Ordrup venue to filter your menu automatically.
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {COMMON_ALLERGENS.map((a) => {
+                  const active = editForm.allergens.includes(a);
+                  return (
+                    <button
+                      key={a}
+                      type="button"
+                      onClick={() => toggleAllergen(a)}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${
+                        active
+                          ? "bg-warning/15 text-warning border-warning/40"
+                          : "bg-card text-muted-foreground border-border hover:text-foreground"
+                      }`}
+                    >
+                      {a}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="flex gap-2 pt-1">
               <Button size="sm" onClick={handleSave} disabled={saving}>
