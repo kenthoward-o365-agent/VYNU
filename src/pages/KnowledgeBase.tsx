@@ -216,7 +216,18 @@ export default function KnowledgeBase() {
               "Assign modifier categories to menu items.",
             ]} />
           </SubSection>
-          <Tip>The AI assistant automatically presents relevant modifiers to diners during conversation.</Tip>
+          <SubSection title="Item Detail Flow & Modifier Limits">
+            <p>When a diner taps a menu item, a dedicated <strong>Item Detail screen</strong> opens with a larger image, quantity selector, modifier groups, AI upsell suggestions, and a sticky "Add to Order" button. After adding, they return to the menu feed.</p>
+            <p>Each modifier category has three configurable settings (cog icon next to the category name):</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Selection type</strong> — <em>Add-on</em> (paid extras), <em>No/Hold</em> (free removals like "no onion"), or <em>Choice</em> (size, doneness).</li>
+              <li><strong>Min selection</strong> — required minimum picks. Set to 1+ to make a category mandatory (the Add to Order button stays disabled until met).</li>
+              <li><strong>Max selection</strong> — caps how many options a diner can pick. <code>0</code> means unlimited.</li>
+            </ul>
+            <p><strong>Receipt vs kitchen display:</strong> the kitchen / expo display shows <em>every</em> chosen modifier (including free ones like "no onion", in red). The diner receipt shows <em>only</em> modifiers with a positive price — free notes are silently omitted to keep the bill clean.</p>
+            <p><strong>Cart behaviour:</strong> two adds of "Burger + Bacon + No onion" merge into qty 2; "Burger + Bacon" and "Burger + Avocado" stay as separate lines so the kitchen sees them correctly.</p>
+          </SubSection>
+          <Tip>The AI assistant automatically presents relevant modifiers to diners during conversation. Existing categories default to "Add-on" type with no limits — nothing breaks for venues already using modifiers.</Tip>
         </Section>
 
         {/* Pricing */}

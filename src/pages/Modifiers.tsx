@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Sparkles, Plus, Trash2, Pencil, Check, X, Loader2, GripVertical
+  Sparkles, Plus, Trash2, Pencil, Check, X, Loader2, GripVertical, Settings2
 } from "lucide-react";
 
 type SelectionType = "addon" | "removal" | "choice";
@@ -83,6 +83,37 @@ export default function Modifiers() {
   const [newModPrice, setNewModPrice] = useState("0");
   const [newModPosId, setNewModPosId] = useState("");
   const [newModPlu, setNewModPlu] = useState("");
+
+  // Category settings dialog (limits + selection type)
+  const [settingsCatId, setSettingsCatId] = useState<string | null>(null);
+  const [settingsType, setSettingsType] = useState<SelectionType>("addon");
+  const [settingsMin, setSettingsMin] = useState("0");
+  const [settingsMax, setSettingsMax] = useState("0");
+
+  const openCategorySettings = (cat: ModifierCategory) => {
+    setSettingsCatId(cat.id);
+    setSettingsType(cat.selection_type || "addon");
+    setSettingsMin(String(cat.min_selection ?? 0));
+    setSettingsMax(String(cat.max_selection ?? 0));
+  };
+
+  const saveCategorySettings = async () => {
+    if (!settingsCatId) return;
+    const min = Math.max(0, parseInt(settingsMin) || 0);
+    const max = Math.max(0, parseInt(settingsMax) || 0);
+    if (max > 0 && min > max) {
+      toast.error("Min cannot exceed Max");
+      return;
+    }
+    const { error } = await supabase
+      .from("modifier_categories")
+      .update({ selection_type: settingsType, min_selection: min, max_selection: max } as any)
+      .eq("id", settingsCatId);
+    if (error) { toast.error("Failed to save"); return; }
+    setSettingsCatId(null);
+    toast.success("Saved");
+    fetchData();
+  };
 
   // AI state
   const [aiLoading, setAiLoading] = useState(false);
@@ -299,7 +330,18 @@ export default function Modifiers() {
                       ) : (
                         <>
                           <span className="text-sm flex-1 truncate">{cat.name}</span>
+                          <Badge variant="outline" className="text-[10px] capitalize">
+                            {cat.selection_type === "removal" ? "No/Hold" : cat.selection_type === "choice" ? "Choice" : "Add-on"}
+                          </Badge>
+                          {(cat.min_selection > 0 || cat.max_selection > 0) && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {cat.min_selection}-{cat.max_selection === 0 ? "∞" : cat.max_selection}
+                            </Badge>
+                          )}
                           <Badge variant="secondary" className="text-[10px]">{modifiers.filter(m => m.category_id === cat.id).length}</Badge>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={e => { e.stopPropagation(); openCategorySettings(cat); }}>
+                            <Settings2 className="h-3 w-3" />
+                          </Button>
                           <Button size="icon" variant="ghost" className="h-6 w-6" onClick={e => { e.stopPropagation(); setEditingCatId(cat.id); setEditingCatName(cat.name); }}>
                             <Pencil className="h-3 w-3" />
                           </Button>
@@ -491,6 +533,47 @@ export default function Modifiers() {
               {savingAi ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Accept Selected ({aiSuggestions.filter(s => s.checked).length})
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Category Settings Dialog */}
+      <Dialog open={!!settingsCatId} onOpenChange={(open) => !open && setSettingsCatId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Category settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Selection type</label>
+              <Select value={settingsType} onValueChange={(v) => setSettingsType(v as SelectionType)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="addon">Add-on (paid extras)</SelectItem>
+                  <SelectItem value="removal">No / Hold (free removals)</SelectItem>
+                  <SelectItem value="choice">Choice (size, doneness, etc.)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Controls grouping in the diner UI and whether free options appear on the receipt (they always show on the kitchen display).
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Min selection</label>
+                <Input type="number" min="0" value={settingsMin} onChange={(e) => setSettingsMin(e.target.value)} />
+                <p className="text-[11px] text-muted-foreground">0 = optional</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Max selection</label>
+                <Input type="number" min="0" value={settingsMax} onChange={(e) => setSettingsMax(e.target.value)} />
+                <p className="text-[11px] text-muted-foreground">0 = unlimited</p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSettingsCatId(null)}>Cancel</Button>
+            <Button onClick={saveCategorySettings}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
