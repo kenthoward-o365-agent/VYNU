@@ -314,6 +314,25 @@ export default function KnowledgeBase() {
             <p>This sets the foundation for per-station Kitchen Display screens (coming next) — a single order line can fan out to multiple station views (e.g. "Loaded Fries" appears on both Fry Side and Expo).</p>
           </SubSection>
           <Tip>The diner's mobile view subscribes to live updates — the moment you tap a status button, their phone reflects the new status within ~1 second.</Tip>
+
+          <SubSection title="Table Sessions & Group Ordering">
+            <p>Multiple diners at the same table can choose to <strong>bundle</strong> their separate orders into one kitchen ticket so the food fires together. This is opt-in — the default is always solo.</p>
+            <p><strong>What the diner sees</strong> when scanning the QR:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>No active group at the table</strong> → "Order on my own" or "Start a group order".</li>
+              <li><strong>Active group exists</strong> → "Join Sarah's group (2 people)", "Order on my own anyway", or "Start a fresh group" (hidden behind "more").</li>
+              <li>The first joiner becomes the <strong>host</strong> (cosmetic badge — anyone in the group can fire).</li>
+              <li>Mode is locked once their first order is placed.</li>
+            </ul>
+            <p><strong>What the kitchen sees:</strong></p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Solo orders fire immediately, exactly as today.</li>
+              <li>Group orders are <strong>held</strong> from the kitchen view until the session fires — either when staff taps <strong>Fire now</strong> on the session bar, or after the configured grace period (default 90s after the last order in the group).</li>
+              <li>Once fired, all bundled orders appear together with a session header showing the table, party size, and order count.</li>
+              <li>A mixed table (3 in a group + 1 solo) shows two distinct cards on the kitchen screen so expo can sequence delivery.</li>
+            </ul>
+            <p><strong>Configure</strong> the join window, idle close, max session length, fire grace seconds, and default fire strategy under <strong>Settings → Table Sessions</strong>. Sessions auto-close after the idle window or once the hard ceiling is hit, so no orphan tickets.</p>
+          </SubSection>
         </Section>
 
         {/* Display Terminals */}
