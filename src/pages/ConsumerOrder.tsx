@@ -19,6 +19,7 @@ import UpsellPrompt, { UpsellSuggestion } from "@/components/consumer/UpsellProm
 import LoyaltyJoinPrompt from "@/components/consumer/LoyaltyJoinPrompt";
 import ModeSwitchSheet from "@/components/consumer/ModeSwitchSheet";
 import type { SessionMode } from "@/components/consumer/SessionModeChooser";
+import { buildRuleIndex, resolvePrice, type RuleIndex } from "@/lib/pricing-utils";
 
 interface VenueInfo {
   id: string;
@@ -69,6 +70,7 @@ const ConsumerOrder = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [pricingIndex, setPricingIndex] = useState<RuleIndex | null>(null);
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
   const [tab, setTab] = useState<"feed" | "chat" | "cart" | "profile">("feed");
   const [showChat, setShowChat] = useState(false);
