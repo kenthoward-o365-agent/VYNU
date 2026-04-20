@@ -10,11 +10,18 @@ import { toast } from "sonner";
 import { CreditCard, ArrowLeft, ShieldCheck, Trash2, Check } from "lucide-react";
 import OrdrPayDropin from "./AdyenDropin";
 
+import type { SelectedModifier } from "./ItemDetailScreen";
+
 export interface CartItem {
+  /** Unique cart-line key (menu_item_id + modifier signature + notes). */
   id: string;
+  menu_item_id: string;
   name: string;
+  /** Base unit price (modifiers added per line) */
   price: number;
   quantity: number;
+  modifiers: SelectedModifier[];
+  notes: string;
 }
 
 interface StoredCard {

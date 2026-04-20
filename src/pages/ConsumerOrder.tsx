@@ -8,6 +8,7 @@ import VenueLanding from "@/components/consumer/VenueLanding";
 import MenuFeed from "@/components/consumer/MenuFeed";
 import CartPanel, { CartItem } from "@/components/consumer/CartPanel";
 import CheckoutPanel from "@/components/consumer/CheckoutPanel";
+import ItemDetailScreen, { type SelectedModifier, type MenuItemForDetail } from "@/components/consumer/ItemDetailScreen";
 import AIChatOverlay from "@/components/consumer/AIChatOverlay";
 import OrderStatus from "@/components/consumer/OrderStatus";
 import ReceiptView from "@/components/consumer/ReceiptView";
@@ -91,6 +92,9 @@ const ConsumerOrder = () => {
   const [dismissedSuggestions] = useState(() => new Set<string>());
   const [upsellEnabled, setUpsellEnabled] = useState(true);
   const upsellConfigRef = useRef<any>(null);
+
+  // Selected item for detail screen
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
 
   // Session mode state (solo vs group)
   const sessionStorageKey = venueId && tableId ? `ordrup:session:${venueId}:${tableId}` : null;
@@ -317,17 +321,79 @@ const ConsumerOrder = () => {
     }
   }, [upsellEnabled, venue, menuItems, shownUpsells, dismissedSuggestions]);
 
-  const addToCart = useCallback((item: { id: string; name: string; price: number }) => {
-    setCart((prev) => {
-      const existing = prev.find((c) => c.id === item.id);
-      if (existing) {
-        return prev.map((c) => c.id === item.id ? { ...c, quantity: c.quantity + 1 } : c);
-      }
-      return [...prev, { id: item.id, name: item.name, price: item.price, quantity: 1 }];
-    });
-    toast.success(`Added ${item.name}`, { duration: 1500 });
-    fetchUpsell(item);
-  }, [fetchUpsell]);
+  /**
+   * Build a stable cart-line key from {menu_item_id + sorted modifier ids + notes}.
+   * Two adds with identical configuration merge into one line; differences split.
+   */
+  const buildLineKey = (
+    menuItemId: string,
+    modifiers: SelectedModifier[],
+    notes: string,
+  ) => {
+    const sig = modifiers
+      .map((m) => m.modifier_id)
+      .sort()
+      .join("|");
+    return `${menuItemId}::${sig}::${notes}`;
+  };
+
+  const addConfiguredToCart = useCallback(
+    (
+      item: MenuItemForDetail,
+      quantity: number,
+      modifiers: SelectedModifier[],
+      notes: string,
+    ) => {
+      const lineKey = buildLineKey(item.id, modifiers, notes);
+      setCart((prev) => {
+        const existing = prev.find((c) => c.id === lineKey);
+        if (existing) {
+          return prev.map((c) =>
+            c.id === lineKey ? { ...c, quantity: c.quantity + quantity } : c,
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: lineKey,
+            menu_item_id: item.id,
+            name: item.name,
+            price: Number(item.price) || 0,
+            quantity,
+            modifiers,
+            notes,
+          },
+        ];
+      });
+      toast.success(`Added ${item.name}`, { duration: 1500 });
+      fetchUpsell({ id: item.id, name: item.name, price: Number(item.price) || 0 });
+    },
+    [fetchUpsell],
+  );
+
+  /** Quick-add (used by AI chat / upsell prompts) — no modifiers, no notes. */
+  const addToCart = useCallback(
+    (item: { id: string; name: string; price: number }) => {
+      const menuItem = menuItems.find((m) => m.id === item.id);
+      addConfiguredToCart(
+        {
+          id: item.id,
+          name: item.name,
+          description: menuItem?.description ?? null,
+          price: item.price,
+          image_url: menuItem?.image_url ?? null,
+          dietary_tags: menuItem?.dietary_tags ?? null,
+          allergens: menuItem?.allergens ?? null,
+          is_available: menuItem?.is_available ?? true,
+          category_id: menuItem?.category_id ?? null,
+        },
+        1,
+        [],
+        "",
+      );
+    },
+    [menuItems, addConfiguredToCart],
+  );
 
   const updateQuantity = (id: string, delta: number) => {
     setCart((prev) =>
@@ -340,10 +406,14 @@ const ConsumerOrder = () => {
   };
 
   const handleOrderPlaced = (orderId: string) => {
+    const cartTotal = cart.reduce((sum, item) => {
+      const perUnit = item.price + item.modifiers.reduce((s, m) => s + (m.price || 0), 0);
+      return sum + perUnit * item.quantity;
+    }, 0);
     setActiveOrder({
       id: orderId,
       status: "received",
-      total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+      total: cartTotal,
       created_at: new Date().toISOString(),
     });
     setCart([]);
@@ -471,7 +541,7 @@ const ConsumerOrder = () => {
         <MenuFeed
           items={menuItems}
           categories={categories}
-          onAddToCart={addToCart}
+          onItemSelect={(it) => setSelectedItem(it)}
           tableNumber={tableNumber || undefined}
           sessionMode={sessionMode ?? "solo"}
         />
@@ -566,6 +636,21 @@ const ConsumerOrder = () => {
         agentName={agentName}
         agentIconUrl={agentIconUrl}
       />
+
+      {/* Item Detail overlay */}
+      {selectedItem && venue && venueId && (
+        <ItemDetailScreen
+          item={selectedItem}
+          venueId={venueId}
+          venueName={venue.name}
+          menuItems={menuItems}
+          onClose={() => setSelectedItem(null)}
+          onAdd={(it, qty, mods, notes) => {
+            addConfiguredToCart(it, qty, mods, notes);
+            setSelectedItem(null);
+          }}
+        />
+      )}
     </ConsumerLayout>
   );
 };
