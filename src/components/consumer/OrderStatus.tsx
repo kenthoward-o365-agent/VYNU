@@ -9,6 +9,7 @@ interface OrderStatusProps {
   status: Status;
   total: number;
   createdAt: string;
+  extraWaitMinutes?: number;
 }
 
 const steps: { status: Status; icon: typeof Clock; label: string }[] = [
@@ -20,7 +21,7 @@ const steps: { status: Status; icon: typeof Clock; label: string }[] = [
 
 const statusOrder: Status[] = ["received", "preparing", "ready", "served", "paid"];
 
-const OrderStatus = ({ status, total, createdAt }: OrderStatusProps) => {
+const OrderStatus = ({ status, total, createdAt, extraWaitMinutes = 0 }: OrderStatusProps) => {
   const currentIdx = statusOrder.indexOf(status);
 
   return (
@@ -32,6 +33,11 @@ const OrderStatus = ({ status, total, createdAt }: OrderStatusProps) => {
             <p className="text-muted-foreground text-xs">
               {new Date(createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </p>
+            {extraWaitMinutes > 0 && (
+              <p className="text-amber-600 text-xs mt-1">
+                Kitchen is busy — extra ~{extraWaitMinutes}m wait
+              </p>
+            )}
           </div>
           <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
         </div>

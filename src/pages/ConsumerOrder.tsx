@@ -54,6 +54,7 @@ interface ActiveOrder {
   status: "received" | "preparing" | "ready" | "served" | "paid" | "cancelled" | "refunded";
   total: number;
   created_at: string;
+  extra_wait_minutes?: number;
 }
 
 const OPEN_ORDER_STATUSES: ActiveOrder["status"][] = ["received", "preparing", "ready"];
@@ -408,6 +409,7 @@ const ConsumerOrder = () => {
           status={activeOrder.status as "received" | "preparing" | "ready" | "served" | "paid" | "cancelled"}
           total={activeOrder.total}
           createdAt={activeOrder.created_at}
+          extraWaitMinutes={activeOrder.extra_wait_minutes ?? 0}
         />
       )}
 

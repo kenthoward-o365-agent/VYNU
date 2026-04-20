@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   BookOpen, LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
   TrendingUp, Users, Settings, BarChart3, ChevronRight, Rocket, Sparkles,
-  SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X, Monitor
+  SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X, Monitor, Sliders
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +24,7 @@ const tocItems: TocItem[] = [
   { id: "tables-qr", label: "Tables & QR", icon: QrCode },
   { id: "orders", label: "Orders", icon: ClipboardList },
   { id: "display-terminals", label: "Display Terminals", icon: Monitor },
+  { id: "operational-throttling", label: "Operational Throttling", icon: Sliders },
   { id: "analytics", label: "Analytics", icon: TrendingUp },
   { id: "diners", label: "Diners", icon: Users },
   { id: "settings", label: "Settings", icon: Settings },
@@ -447,6 +448,37 @@ export default function KnowledgeBase() {
               <li><strong>For all stations</strong> — disable display sleep in the OS, set the browser to auto-launch on reboot, and bookmark the OrdrUp URL on the home screen.</li>
             </ul>
             <Tip>iPads in kitchens take a beating. Always pair a device with a code — never share the URL alone — and keep a printed list of active terminals near the manager's office for quick "is everything online?" checks.</Tip>
+          </SubSection>
+        </Section>
+
+        {/* Operational Throttling */}
+        <Section id="operational-throttling" title="Operational Throttling" icon={Sliders}>
+          <SubSection title="What it does">
+            <p>
+              Operational Throttling protects each station (Kitchen, Bar, Expo, Take Away) from being flooded during a rush. Orders are still placed and charged immediately — but the moment they appear on the kitchen Display Terminal is paced to whatever the station can actually handle. The diner sees a realistic ETA up front.
+            </p>
+          </SubSection>
+
+          <SubSection title="The four modes">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Open</strong> — orders flow straight through. Use during normal trade.</li>
+              <li><strong>Auto</strong> — the system holds new orders back when the queue exceeds capacity and releases them at your configured rate (e.g. 5 orders per 10 minutes = one every 2 min). Open auto-flips to Auto when load spikes, and back to Open once the queue clears.</li>
+              <li><strong>Block</strong> — manual hold (e.g. coffee machine breaks). Nothing releases until you unblock or the timeout (default 15 min) auto-reverts to Auto.</li>
+              <li><strong>Test</strong> — logs queueing behaviour and shows diners the would-be ETA, but releases orders immediately. Lets you tune capacity safely.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Tuning capacity">
+            <p>For each station set <strong>Max orders</strong> and <strong>per minutes</strong>. A pizza oven that pumps out 6 pies per 10 min → 6 / 10. A two-person bar making cocktails → maybe 4 / 10. Watch the queue counter on the Throttling page during a real service to dial it in. Run Test mode for a week and review the queue history before going live in Auto.</p>
+          </SubSection>
+
+          <SubSection title="What the diner sees">
+            <p>When their order is queued, the order screen shows a small "Kitchen is busy — extra ~12m wait" line under the time. The headline ETA is automatically extended so they're never surprised. You can disable the diner-facing message per station if you'd rather absorb the delay silently.</p>
+          </SubSection>
+
+          <SubSection title="Bumping a single order">
+            <p>The "Bump next" button releases the oldest queued order immediately — useful for a VIP, a kids' meal, or a re-fire. The order is logged as <em>bumped</em> in the audit trail.</p>
+            <Tip>Throttling lives at <strong>Orders → Operational Throttling</strong>. The status strip at the top of the Orders page shows each station's current mode and queue size at a glance.</Tip>
           </SubSection>
         </Section>
 
