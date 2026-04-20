@@ -340,11 +340,11 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         <CardContent className="space-y-5">
           {/* Environment Toggle */}
           <div className="flex items-center justify-between">
-            <div>
+            <div className="space-y-1">
               <Label>Mode</Label>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground">
                 {config.environment === "test"
-                  ? "Test mode — use test card numbers below, no real charges"
+                  ? "Test mode — use cards from the Knowledge Base, no real charges"
                   : "Live mode — real transactions will be processed"}
               </p>
             </div>

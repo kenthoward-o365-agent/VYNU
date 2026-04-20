@@ -216,6 +216,32 @@ export default function KnowledgeBase() {
               "Assign modifier categories to menu items.",
             ]} />
           </SubSection>
+          <SubSection title="Test Cards for Payments">
+            <p>When your venue is in Test mode (Settings → Payments), use these test card numbers to simulate different payment scenarios:</p>
+            <div className="mt-2 rounded-lg border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr className="text-left text-xs text-muted-foreground">
+                    <th className="py-2 px-3 font-medium">Card Type</th>
+                    <th className="py-2 px-3 font-medium">Number</th>
+                    <th className="py-2 px-3 font-medium">Expiry</th>
+                    <th className="py-2 px-3 font-medium">CVC</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  <tr><td className="py-2 px-3">Visa</td><td className="py-2 px-3 font-mono">4111 1111 1111 1111</td><td className="py-2 px-3">03/30</td><td className="py-2 px-3">737</td></tr>
+                  <tr><td className="py-2 px-3">Mastercard</td><td className="py-2 px-3 font-mono">5555 3412 4444 1115</td><td className="py-2 px-3">03/30</td><td className="py-2 px-3">737</td></tr>
+                  <tr><td className="py-2 px-3">Amex</td><td className="py-2 px-3 font-mono">3700 0000 0000 002</td><td className="py-2 px-3">03/30</td><td className="py-2 px-3">7373</td></tr>
+                  <tr><td className="py-2 px-3">Visa (3DS2)</td><td className="py-2 px-3 font-mono">4871 0499 9999 0006</td><td className="py-2 px-3">03/30</td><td className="py-2 px-3">737</td></tr>
+                  <tr><td className="py-2 px-3">Declined</td><td className="py-2 px-3 font-mono">4000 0000 0000 0002</td><td className="py-2 px-3">03/30</td><td className="py-2 px-3">737</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-xs">
+              Use any future expiry date and valid CVC. The 3DS2 card triggers 3D Secure authentication flow. The Declined card simulates a failed payment.
+            </p>
+            <Tip>Test mode is safe — no real charges are made. Set your venue to Test in Settings → Payments before using these cards.</Tip>
+          </SubSection>
           <SubSection title="Item Detail Flow & Modifier Limits">
             <p>When a diner taps a menu item, a dedicated <strong>Item Detail screen</strong> opens with a larger image, quantity selector, modifier groups, AI upsell suggestions, and a sticky "Add to Order" button. After adding, they return to the menu feed.</p>
             <p>Each modifier category has three configurable settings (cog icon next to the category name):</p>
