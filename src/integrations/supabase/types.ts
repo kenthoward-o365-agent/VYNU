@@ -1955,6 +1955,9 @@ export type Database = {
       }
       venue_staff: {
         Row: {
+          can_process_refunds: boolean
+          can_reopen_closed_orders: boolean
+          can_update_order_status: boolean
           created_at: string
           display_name: string | null
           id: string
@@ -1966,6 +1969,9 @@ export type Database = {
           venue_id: string
         }
         Insert: {
+          can_process_refunds?: boolean
+          can_reopen_closed_orders?: boolean
+          can_update_order_status?: boolean
           created_at?: string
           display_name?: string | null
           id?: string
@@ -1977,6 +1983,9 @@ export type Database = {
           venue_id: string
         }
         Update: {
+          can_process_refunds?: boolean
+          can_reopen_closed_orders?: boolean
+          can_update_order_status?: boolean
           created_at?: string
           display_name?: string | null
           id?: string
