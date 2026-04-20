@@ -13,3 +13,4 @@ Roles: each venue has custom `venue_roles` + `venue_role_permissions`. Use `useP
 - [Roles & permissions](mem://features/roles) — Custom per-venue roles, nav gating, refund permission
 - [Schema](mem://features/schema) — Database tables overview
 - [Vision](mem://features/vision) — Product vision and positioning
+- [Display Terminals](mem://features/display-terminals) — Physical device pairing via 6-char code + UUID token in localStorage; binds browser to Display Areas
