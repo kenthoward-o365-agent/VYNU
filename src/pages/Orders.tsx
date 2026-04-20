@@ -13,6 +13,7 @@ import RefundDialog from "@/components/orders/RefundDialog";
 import ReopenStatusDialog from "@/components/orders/ReopenStatusDialog";
 import PairTerminalDialog from "@/components/orders/PairTerminalDialog";
 import ThrottleStatusBar from "@/components/orders/ThrottleStatusBar";
+import SessionFireBar, { type SessionInfo } from "@/components/orders/SessionFireBar";
 import { usePermissions } from "@/hooks/use-permissions";
 
 type OrderStatus = string;
@@ -50,6 +51,22 @@ interface Order {
   order_items: OrderItem[];
   throttled_until: string | null;
   extra_wait_minutes: number;
+  session_id: string | null;
+  session_mode: string | null;
+  fired_at: string | null;
+}
+
+interface SessionRow {
+  id: string;
+  venue_id: string;
+  table_id: string | null;
+  status: string;
+  display_name: string | null;
+  diner_count: number;
+  fire_strategy: string;
+  fired_at: string | null;
+  opened_at: string;
+  table: { table_number: string } | null;
 }
 
 interface VenueStatus {
@@ -94,6 +111,8 @@ export default function Orders() {
   const [pairOpen, setPairOpen] = useState(false);
   const [terminalOverride, setTerminalOverride] = useState(false);
   const [terminalAreaItemIds, setTerminalAreaItemIds] = useState<Set<string> | null>(null);
+  const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const [fireGraceSeconds, setFireGraceSeconds] = useState(90);
 
   const statusByName = (name: string) => {
     const vs = venueStatuses.find((s) => s.name === name);
@@ -146,6 +165,24 @@ export default function Orders() {
     } else {
       setRefundsByOrder({});
     }
+  };
+
+  const fetchSessions = async () => {
+    if (!venue) return;
+    const { data } = await supabase
+      .from("table_sessions")
+      .select("id, venue_id, table_id, status, display_name, diner_count, fire_strategy, fired_at, opened_at, table:tables(table_number)")
+      .eq("venue_id", venue.id)
+      .in("status", ["open", "firing"])
+      .order("opened_at", { ascending: false });
+    setSessions((data as unknown as SessionRow[]) || []);
+  };
+
+  const fetchVenueSettings = async () => {
+    if (!venue) return;
+    const { data } = await supabase.from("venues").select("settings").eq("id", venue.id).single();
+    const grace = (data?.settings as any)?.table_session?.fire_grace_seconds;
+    if (typeof grace === "number") setFireGraceSeconds(grace);
   };
 
   // Load terminal binding from localStorage on mount
@@ -214,16 +251,20 @@ export default function Orders() {
     })();
   }, [terminal?.terminal_id, terminalOverride, JSON.stringify(terminal?.area_ids)]);
 
-  useEffect(() => { fetchVenueStatuses(); }, [venue?.id]);
-  useEffect(() => { fetchOrders(); }, [venue, filter, auditDate, venueStatuses]);
+  useEffect(() => { fetchVenueStatuses(); fetchVenueSettings(); }, [venue?.id]);
+  useEffect(() => { fetchOrders(); fetchSessions(); }, [venue, filter, auditDate, venueStatuses]);
 
-  // Realtime subscription
+  // Realtime subscription — orders + sessions
   useEffect(() => {
     if (!venue) return;
     const channel = supabase
       .channel("orders-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `venue_id=eq.${venue.id}` }, () => {
         fetchOrders();
+        fetchSessions();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "table_sessions", filter: `venue_id=eq.${venue.id}` }, () => {
+        fetchSessions();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -235,17 +276,38 @@ export default function Orders() {
     toast.success("This browser is no longer bound to a terminal");
   };
 
-  // Filter orders by terminal area routing AND throttling visibility
+  // Filter orders by terminal area routing, throttling, AND group-session firing.
+  // Group-session orders only become visible to kitchen once the session has fired.
   const visibleOrders = useMemo(() => {
     const nowMs = Date.now();
     const released = orders.filter(
       (o) => !o.throttled_until || new Date(o.throttled_until).getTime() <= nowMs,
     );
-    if (!terminal || terminalOverride || !terminalAreaItemIds) return released;
-    return released.filter((o) =>
+    // Hide group-session orders that haven't fired yet (only relevant on terminal views)
+    const sessionFiltered = (terminal && !terminalOverride)
+      ? released.filter((o) => !o.session_id || o.fired_at !== null)
+      : released;
+    if (!terminal || terminalOverride || !terminalAreaItemIds) return sessionFiltered;
+    return sessionFiltered.filter((o) =>
       (o.order_items || []).some((it) => terminalAreaItemIds.has((it as any).menu_item_id || (it.menu_item as any)?.id))
     );
   }, [orders, terminal, terminalOverride, terminalAreaItemIds]);
+
+  // Group visible orders by session_id (null = solo bucket)
+  const { soloOrders, sessionGroups } = useMemo(() => {
+    const groups = new Map<string, Order[]>();
+    const solo: Order[] = [];
+    for (const o of visibleOrders) {
+      if (o.session_id) {
+        const list = groups.get(o.session_id) || [];
+        list.push(o);
+        groups.set(o.session_id, list);
+      } else {
+        solo.push(o);
+      }
+    }
+    return { soloOrders: solo, sessionGroups: groups };
+  }, [visibleOrders]);
 
   const updateStatus = async (orderId: string, newStatus: OrderStatus) => {
     const { error } = await supabase.from("orders").update({ status: newStatus as any }).eq("id", orderId);
@@ -261,6 +323,114 @@ export default function Orders() {
   const activeCount = allOrders.filter((o) => ["received", "preparing", "ready"].includes(o.status)).length;
   const completedCount = allOrders.filter((o) => ["served", "paid"].includes(o.status)).length;
   const cancelledCount = allOrders.filter((o) => o.status === "cancelled").length;
+
+  const renderOrderCard = (order: Order) => {
+    const config = statusByName(order.status);
+    const refunds = refundsByOrder[order.id] || [];
+    const totalRefunded = refunds.reduce((sum, r) => sum + Number(r.amount), 0);
+    const isRefundable = REFUNDABLE_STATUSES.includes(order.status) && totalRefunded < Number(order.total);
+    const showRefundButton = canProcessRefunds && isRefundable;
+    const showReopenButton = canReopenClosedOrders && TERMINAL_STATUSES.includes(order.status);
+    const buttonStatuses = venueStatuses.slice(0, 5);
+    const currentIdx = buttonStatuses.findIndex((s) => s.name === order.status);
+    return (
+      <Card key={order.id} className="flex flex-col">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <CardTitle className="text-base">#{order.id.slice(0, 8)}</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                {new Date(order.created_at).toLocaleTimeString()}
+                {order.table?.table_number && ` · Table ${order.table.table_number}`}
+                {order.session_mode === "group" && " · Group"}
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              {config.vs ? (
+                <Badge style={{ backgroundColor: config.vs.color, color: "#fff" }} className="border-transparent">{config.label}</Badge>
+              ) : (
+                <Badge className={config.color}>{config.label}</Badge>
+              )}
+              <OrderAgeBadge createdAt={order.created_at} frozen={TERMINAL_STATUSES.includes(order.status)} />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 flex-1">
+          <div className="divide-y divide-border">
+            {order.order_items?.map((item) => (
+              <div key={item.id} className="flex justify-between py-1.5 text-sm">
+                <div className="flex-1">
+                  <span className="font-medium text-foreground">{item.quantity}× {item.menu_item?.name ?? "Unknown item"}</span>
+                  {item.notes && <p className="text-xs text-muted-foreground mt-0.5">⤷ {item.notes}</p>}
+                </div>
+                <span className="text-muted-foreground ml-2">${(item.quantity * Number(item.unit_price)).toFixed(2)}</span>
+              </div>
+            ))}
+            {(!order.order_items || order.order_items.length === 0) && (
+              <p className="text-xs text-muted-foreground py-1">No items</p>
+            )}
+          </div>
+          {order.customer_notes && (
+            <p className="text-sm text-muted-foreground italic border-l-2 border-primary pl-2">"{order.customer_notes}"</p>
+          )}
+          {order.extra_wait_minutes > 0 && (
+            <Badge variant="outline" className="text-[10px] gap-1 w-fit">
+              <Clock className="h-2.5 w-2.5" />+{order.extra_wait_minutes}m delay applied
+            </Badge>
+          )}
+          <div className="flex items-center justify-between pt-1 border-t border-border">
+            <span className="text-sm font-medium text-muted-foreground">Total</span>
+            <span className="font-bold text-foreground">${Number(order.total).toFixed(2)}</span>
+          </div>
+          {refunds.length > 0 && (
+            <div className="rounded-md bg-muted/40 p-2 space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">Refunds ({refunds.length})</p>
+              {refunds.map((r) => (
+                <div key={r.id} className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">{new Date(r.created_at).toLocaleString()}</span>
+                  <span className="font-medium text-foreground">−${Number(r.amount).toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between text-xs font-medium border-t border-border pt-1 mt-1">
+                <span>Total refunded</span><span>−${totalRefunded.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+          {canUpdateOrderStatus && buttonStatuses.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {buttonStatuses.map((s, i) => {
+                const isCurrent = s.name === order.status;
+                const isPast = currentIdx >= 0 && i < currentIdx;
+                return (
+                  <Button key={s.id} size="sm" variant={isCurrent ? "default" : "outline"} disabled={isCurrent}
+                    onClick={() => updateStatus(order.id, s.name)}
+                    className={`flex-1 min-w-[80px] ${isPast ? "opacity-60" : ""}`}
+                    style={isCurrent ? { backgroundColor: s.color, borderColor: s.color, color: "#fff" } : undefined}
+                    title={s.label}>
+                    <span className="truncate">{s.label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+          {(showReopenButton || showRefundButton) && (
+            <div className="flex flex-col gap-1.5">
+              {showReopenButton && (
+                <Button className="w-full" size="sm" variant="outline" onClick={() => setReopenOrder(order)}>
+                  <Undo2 className="h-3.5 w-3.5 mr-1" />Re-open
+                </Button>
+              )}
+              {showRefundButton && (
+                <Button className="w-full" size="sm" variant="outline" onClick={() => setRefundOrder(order)}>
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />Re-open & Refund
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -360,143 +530,59 @@ export default function Orders() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {visibleOrders.map((order) => {
-            const config = statusByName(order.status);
-            const refunds = refundsByOrder[order.id] || [];
-            const totalRefunded = refunds.reduce((sum, r) => sum + Number(r.amount), 0);
-            const isRefundable = REFUNDABLE_STATUSES.includes(order.status) && totalRefunded < Number(order.total);
-            const showRefundButton = canProcessRefunds && isRefundable;
-            const showReopenButton = canReopenClosedOrders && TERMINAL_STATUSES.includes(order.status);
-            const buttonStatuses = venueStatuses.slice(0, 5);
-            const currentIdx = buttonStatuses.findIndex((s) => s.name === order.status);
+        <div className="space-y-6">
+          {/* Group sessions */}
+          {Array.from(sessionGroups.entries()).map(([sid, sessionOrders]) => {
+            const session = sessions.find((s) => s.id === sid);
+            if (!session) {
+              // Session metadata not loaded — render orders as solo fallback
+              return (
+                <div key={sid} className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                  {sessionOrders.map((o) => renderOrderCard(o))}
+                </div>
+              );
+            }
+            const itemCount = sessionOrders.reduce(
+              (sum, o) => sum + (o.order_items || []).reduce((s, i) => s + i.quantity, 0), 0
+            );
+            const newest = sessionOrders.reduce(
+              (acc, o) => Math.max(acc, new Date(o.created_at).getTime()), 0
+            );
+            const secondsSinceLastOrder = newest > 0 ? Math.floor((Date.now() - newest) / 1000) : 0;
+            const sessionInfo: SessionInfo = {
+              id: session.id,
+              status: session.status,
+              display_name: session.display_name,
+              diner_count: session.diner_count,
+              fire_strategy: session.fire_strategy,
+              fired_at: session.fired_at,
+              opened_at: session.opened_at,
+              table_number: session.table?.table_number ?? null,
+            };
             return (
-              <Card key={order.id} className="flex flex-col">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <CardTitle className="text-base">#{order.id.slice(0, 8)}</CardTitle>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(order.created_at).toLocaleTimeString()}
-                        {order.table?.table_number && ` · Table ${order.table.table_number}`}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      {config.vs ? (
-                        <Badge
-                          style={{ backgroundColor: config.vs.color, color: "#fff" }}
-                          className="border-transparent"
-                        >
-                          {config.label}
-                        </Badge>
-                      ) : (
-                        <Badge className={config.color}>{config.label}</Badge>
-                      )}
-                      <OrderAgeBadge
-                        createdAt={order.created_at}
-                        frozen={TERMINAL_STATUSES.includes(order.status)}
-                      />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 flex-1">
-                  {/* Order items list */}
-                  <div className="divide-y divide-border">
-                    {order.order_items?.map((item) => (
-                      <div key={item.id} className="flex justify-between py-1.5 text-sm">
-                        <div className="flex-1">
-                          <span className="font-medium text-foreground">
-                            {item.quantity}× {item.menu_item?.name ?? "Unknown item"}
-                          </span>
-                          {item.notes && (
-                            <p className="text-xs text-muted-foreground mt-0.5">⤷ {item.notes}</p>
-                          )}
-                        </div>
-                        <span className="text-muted-foreground ml-2">${(item.quantity * Number(item.unit_price)).toFixed(2)}</span>
-                      </div>
-                    ))}
-                    {(!order.order_items || order.order_items.length === 0) && (
-                      <p className="text-xs text-muted-foreground py-1">No items</p>
-                    )}
-                  </div>
-
-                  {order.customer_notes && (
-                    <p className="text-sm text-muted-foreground italic border-l-2 border-primary pl-2">"{order.customer_notes}"</p>
-                  )}
-
-                  {order.extra_wait_minutes > 0 && (
-                    <Badge variant="outline" className="text-[10px] gap-1 w-fit">
-                      <Clock className="h-2.5 w-2.5" />
-                      +{order.extra_wait_minutes}m delay applied
-                    </Badge>
-                  )}
-
-                  <div className="flex items-center justify-between pt-1 border-t border-border">
-                    <span className="text-sm font-medium text-muted-foreground">Total</span>
-                    <span className="font-bold text-foreground">${Number(order.total).toFixed(2)}</span>
-                  </div>
-
-                  {/* Refund summary */}
-                  {refunds.length > 0 && (
-                    <div className="rounded-md bg-muted/40 p-2 space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground">Refunds ({refunds.length})</p>
-                      {refunds.map((r) => (
-                        <div key={r.id} className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">{new Date(r.created_at).toLocaleString()}</span>
-                          <span className="font-medium text-foreground">−${Number(r.amount).toFixed(2)}</span>
-                        </div>
-                      ))}
-                      <div className="flex justify-between text-xs font-medium border-t border-border pt-1 mt-1">
-                        <span>Total refunded</span>
-                        <span>−${totalRefunded.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Status button row (up to 5) */}
-                  {canUpdateOrderStatus && buttonStatuses.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {buttonStatuses.map((s, i) => {
-                        const isCurrent = s.name === order.status;
-                        const isPast = currentIdx >= 0 && i < currentIdx;
-                        return (
-                          <Button
-                            key={s.id}
-                            size="sm"
-                            variant={isCurrent ? "default" : "outline"}
-                            disabled={isCurrent}
-                            onClick={() => updateStatus(order.id, s.name)}
-                            className={`flex-1 min-w-[80px] ${isPast ? "opacity-60" : ""}`}
-                            style={isCurrent ? { backgroundColor: s.color, borderColor: s.color, color: "#fff" } : undefined}
-                            title={s.label}
-                          >
-                            <span className="truncate">{s.label}</span>
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {(showReopenButton || showRefundButton) && (
-                    <div className="flex flex-col gap-1.5">
-                      {showReopenButton && (
-                        <Button className="w-full" size="sm" variant="outline" onClick={() => setReopenOrder(order)}>
-                          <Undo2 className="h-3.5 w-3.5 mr-1" />
-                          Re-open
-                        </Button>
-                      )}
-                      {showRefundButton && (
-                        <Button className="w-full" size="sm" variant="outline" onClick={() => setRefundOrder(order)}>
-                          <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                          Re-open & Refund
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <div key={sid} className="space-y-3">
+                <SessionFireBar
+                  session={sessionInfo}
+                  orderCount={sessionOrders.length}
+                  itemCount={itemCount}
+                  secondsSinceLastOrder={secondsSinceLastOrder}
+                  fireGraceSeconds={fireGraceSeconds}
+                  canFire={canUpdateOrderStatus}
+                  onFired={() => { fetchOrders(); fetchSessions(); }}
+                />
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pl-2 border-l-2 border-primary/30">
+                  {sessionOrders.map((o) => renderOrderCard(o))}
+                </div>
+              </div>
             );
           })}
+
+          {/* Solo orders */}
+          {soloOrders.length > 0 && (
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {soloOrders.map((o) => renderOrderCard(o))}
+            </div>
+          )}
         </div>
       )}
 
