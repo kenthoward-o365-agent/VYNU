@@ -468,7 +468,13 @@ const ConsumerOrder = () => {
 
       {/* Main Content */}
       {tab === "feed" && chatMode !== "chat_only" && (
-        <MenuFeed items={menuItems} categories={categories} onAddToCart={addToCart} tableNumber={tableNumber || undefined} />
+        <MenuFeed
+          items={menuItems}
+          categories={categories}
+          onAddToCart={addToCart}
+          tableNumber={tableNumber || undefined}
+          sessionMode={sessionMode ?? "solo"}
+        />
       )}
       {tab === "feed" && chatMode === "chat_only" && !showChat && (
         <div className="flex-1 flex items-center justify-center px-6 text-center pb-20">
@@ -491,6 +497,9 @@ const ConsumerOrder = () => {
           dismissedSuggestions={dismissedSuggestions}
           onAddToCart={addToCart}
           onDismissSuggestion={(id) => dismissedSuggestions.add(id)}
+          sessionMode={sessionMode ?? "solo"}
+          groupDisplayName={groupDisplayName}
+          onSwitchMode={cart.length === 0 ? () => setShowModeSwitch(true) : undefined}
         />
       )}
       {tab === "cart" && showCheckout && resolvedTableId && (
@@ -499,10 +508,22 @@ const ConsumerOrder = () => {
           venueId={venueId!}
           tableId={resolvedTableId}
           dinerId={dinerId}
+          sessionMode={sessionMode ?? "solo"}
+          joinedSessionId={joinedSessionId}
+          groupDisplayName={groupDisplayName}
           onBack={() => setShowCheckout(false)}
           onOrderPlaced={handleOrderPlaced}
         />
       )}
+
+      <ModeSwitchSheet
+        open={showModeSwitch}
+        currentMode={sessionMode ?? "solo"}
+        hasItemsInCart={cart.length > 0}
+        onOpenChange={setShowModeSwitch}
+        onSwitch={handleSwitchMode}
+      />
+
       {tab === "profile" && venue && (
         <DinerProfile venueId={venue.id} groupId={venue.group_id} />
       )}
