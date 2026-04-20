@@ -98,10 +98,20 @@ const CartPanel = ({
           const perUnit = lineTotalPerUnit(item);
           const addons = item.modifiers.filter((m) => m.type === "addon" || m.type === "choice");
           const removals = item.modifiers.filter((m) => m.type === "removal");
+          const hasOverride =
+            typeof item.originalPrice === "number" &&
+            Math.abs((item.originalPrice ?? item.price) - item.price) > 0.0001;
+          const modsPerUnit = item.modifiers.reduce((s, m) => s + (m.price || 0), 0);
+          const originalPerUnit = (item.originalPrice ?? item.price) + modsPerUnit;
           return (
             <div key={item.id} className="flex items-start gap-3 bg-card rounded-xl border border-border p-3">
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm">{item.name}</p>
+                {hasOverride && item.ruleName && (
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-primary/80 mt-0.5">
+                    {item.ruleName}
+                  </p>
+                )}
                 {(addons.length > 0 || removals.length > 0 || item.notes) && (
                   <div className="mt-1 space-y-0.5">
                     {addons.map((m) => (
@@ -120,9 +130,16 @@ const CartPanel = ({
                     )}
                   </div>
                 )}
-                <p className="text-primary font-semibold text-sm mt-1.5">
-                  ${(perUnit * item.quantity).toFixed(2)}
-                </p>
+                <div className="flex items-baseline gap-1.5 mt-1.5">
+                  {hasOverride && (
+                    <span className="text-xs text-muted-foreground line-through">
+                      ${(originalPerUnit * item.quantity).toFixed(2)}
+                    </span>
+                  )}
+                  <span className="text-primary font-semibold text-sm">
+                    ${(perUnit * item.quantity).toFixed(2)}
+                  </span>
+                </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button
