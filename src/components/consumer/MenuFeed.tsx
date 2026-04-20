@@ -244,6 +244,43 @@ const MenuFeed = ({
         onSelect={setActiveCategory}
       />
 
+      {/* Allergen avoidance row (auto-applied from Ordrup ID profile) */}
+      {activeAllergenAvoid.length > 0 && (
+        <div className="px-4 pb-2 shrink-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+              Avoiding
+            </span>
+            {activeAllergenAvoid.map((a) => (
+              <button
+                key={a}
+                onClick={() =>
+                  setActiveAllergenAvoid((prev) => prev.filter((x) => x !== a))
+                }
+                className="px-2.5 py-0.5 rounded-full text-[10px] font-medium border border-warning/30 bg-warning/10 text-warning hover:bg-warning/20"
+                title="Remove this allergen filter"
+              >
+                {a} ✕
+              </button>
+            ))}
+            {allergensFromProfile && (
+              <span className="text-[10px] text-muted-foreground italic">
+                from your Ordrup ID
+              </span>
+            )}
+            <button
+              onClick={() => {
+                setActiveAllergenAvoid([]);
+                setAllergensFromProfile(false);
+              }}
+              className="ml-auto text-[10px] text-muted-foreground hover:text-foreground underline"
+            >
+              Clear all
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Dietary filter row */}
       {allDietaryTags.length > 0 && (
         <ScrollArea className="w-full px-4 pb-2 shrink-0">
@@ -288,7 +325,7 @@ const MenuFeed = ({
               key={item.id}
               item={item}
               onSelect={() => onItemSelect(item)}
-              dimmed={activeDietaryFilters.length > 0 && !itemMatchesFilters(item)}
+              dimmed={hasActiveFilters && !itemMatchesFilters(item)}
               pricingIndex={pricingIndex}
             />
           ))}
