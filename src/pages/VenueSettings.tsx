@@ -531,7 +531,7 @@ export default function VenueSettings() {
 
             {/* Edit User Dialog */}
             <Dialog open={editDialog} onOpenChange={setEditDialog}>
-              <DialogContent>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader><DialogTitle>Edit User</DialogTitle></DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -547,9 +547,49 @@ export default function VenueSettings() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Roles control sidebar access and permissions. Manage them in the Roles section above.
+                      Roles control which sidebar areas this user can see. Manage roles in the Roles section above.
                     </p>
                   </div>
+
+                  {/* Per-user order action permissions — only show when role grants Orders access */}
+                  {(() => {
+                    const role = venueRoles.find((r) => r.id === editForm.role_id);
+                    const hasOrders = role && (role.nav_keys || []).includes("orders");
+                    const isOwnerRow = editStaff?.role === "owner";
+                    if (!hasOrders && !isOwnerRow) return null;
+                    return (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Order action permissions</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Fine-grained control for what this user can do inside the Orders page.
+                          {isOwnerRow && " Owners always have all order permissions."}
+                        </p>
+                        <div className="rounded-md border border-border divide-y divide-border">
+                          <UserPermRow
+                            title="Update Order Status"
+                            description="Move orders through the workflow (Received → Preparing → …)"
+                            checked={isOwnerRow ? true : editForm.can_update_order_status}
+                            disabled={isOwnerRow}
+                            onChange={(v) => setEditForm({ ...editForm, can_update_order_status: v })}
+                          />
+                          <UserPermRow
+                            title="Re-open Closed Orders"
+                            description="Move a closed order (Paid / Served / Cancelled) back to an active status. No refund processed."
+                            checked={isOwnerRow ? true : editForm.can_reopen_closed_orders}
+                            disabled={isOwnerRow}
+                            onChange={(v) => setEditForm({ ...editForm, can_reopen_closed_orders: v })}
+                          />
+                          <UserPermRow
+                            title="Process Refunds"
+                            description="Re-open a closed order AND process a refund through the payment provider."
+                            checked={isOwnerRow ? true : editForm.can_process_refunds}
+                            disabled={isOwnerRow}
+                            onChange={(v) => setEditForm({ ...editForm, can_process_refunds: v })}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setEditDialog(false)}>Cancel</Button>
