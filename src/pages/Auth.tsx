@@ -175,11 +175,6 @@ export default function Auth() {
                 </button>
               </div>
             </form>
-            <div className="mt-6 pt-4 border-t border-border text-center">
-              <p className="text-xs text-muted-foreground">
-                Diner? Scan your table's QR code to order — no account needed here.
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
