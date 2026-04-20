@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// build: mock-fallback v2
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -186,7 +188,19 @@ Deno.serve(async (req) => {
       return json({ error: "Payments are not enabled for this venue" }, 400);
     }
 
-    const isMock = config.environment === "test" && !config.api_key_test;
+    // Mock whenever we're in test mode AND the venue isn't fully provisioned
+    // (no test API key, no client key, or merchant_account looks invalid).
+    // This lets venues demo the full payment flow before OrdrPay credentials land.
+    const merchantAccountLooksValid =
+      !!config.merchant_account &&
+      !config.merchant_account.includes("@") &&
+      config.merchant_account.length >= 3;
+    const isMock =
+      config.environment === "test" &&
+      (!config.api_key_test ||
+        !config.client_key_test ||
+        !merchantAccountLooksValid ||
+        config.merchant_status === "pending");
 
     const apiKey = config.environment === "live" ? config.api_key_live : config.api_key_test;
     const merchantAccount = config.merchant_account;
