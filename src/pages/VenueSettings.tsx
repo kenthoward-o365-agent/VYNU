@@ -42,12 +42,16 @@ interface StaffMember {
   role_id: string | null;
   display_name: string | null;
   is_active: boolean;
+  can_update_order_status: boolean;
+  can_reopen_closed_orders: boolean;
+  can_process_refunds: boolean;
 }
 
 interface VenueRoleOption {
   id: string;
   name: string;
   is_system: boolean;
+  nav_keys?: string[];
 }
 
 export default function VenueSettings() {
@@ -80,7 +84,13 @@ export default function VenueSettings() {
   // Edit user dialog
   const [editDialog, setEditDialog] = useState(false);
   const [editStaff, setEditStaff] = useState<StaffMember | null>(null);
-  const [editForm, setEditForm] = useState({ display_name: "", role_id: "" });
+  const [editForm, setEditForm] = useState({
+    display_name: "",
+    role_id: "",
+    can_update_order_status: false,
+    can_reopen_closed_orders: false,
+    can_process_refunds: false,
+  });
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {

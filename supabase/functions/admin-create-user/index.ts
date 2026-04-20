@@ -179,7 +179,16 @@ Deno.serve(async (req) => {
 
     // ── UPDATE STAFF ──
     if (action === "update") {
-      const { staff_id, venue_id, display_name, role, role_id } = body;
+      const {
+        staff_id,
+        venue_id,
+        display_name,
+        role,
+        role_id,
+        can_update_order_status,
+        can_reopen_closed_orders,
+        can_process_refunds,
+      } = body;
       if (!staff_id || !venue_id) return json({ error: "staff_id and venue_id are required" }, 400);
       if (!(await isVenueManager(venue_id))) return json({ error: "Forbidden" }, 403);
 
@@ -207,6 +216,9 @@ Deno.serve(async (req) => {
           if (["owner", "manager", "staff"].includes(lower)) updates.role = lower;
         }
       }
+      if (typeof can_update_order_status === "boolean") updates.can_update_order_status = can_update_order_status;
+      if (typeof can_reopen_closed_orders === "boolean") updates.can_reopen_closed_orders = can_reopen_closed_orders;
+      if (typeof can_process_refunds === "boolean") updates.can_process_refunds = can_process_refunds;
 
       const { error } = await adminClient
         .from("venue_staff")
