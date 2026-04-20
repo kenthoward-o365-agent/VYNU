@@ -16,6 +16,8 @@ import DinerSignup from "@/components/consumer/DinerSignup";
 import DinerProfile from "@/components/consumer/DinerProfile";
 import UpsellPrompt, { UpsellSuggestion } from "@/components/consumer/UpsellPrompt";
 import LoyaltyJoinPrompt from "@/components/consumer/LoyaltyJoinPrompt";
+import ModeSwitchSheet from "@/components/consumer/ModeSwitchSheet";
+import type { SessionMode } from "@/components/consumer/SessionModeChooser";
 
 interface VenueInfo {
   id: string;
@@ -89,6 +91,54 @@ const ConsumerOrder = () => {
   const [dismissedSuggestions] = useState(() => new Set<string>());
   const [upsellEnabled, setUpsellEnabled] = useState(true);
   const upsellConfigRef = useRef<any>(null);
+
+  // Session mode state (solo vs group)
+  const sessionStorageKey = venueId && tableId ? `ordrup:session:${venueId}:${tableId}` : null;
+  const [sessionMode, setSessionMode] = useState<SessionMode | null>(null);
+  const [joinedSessionId, setJoinedSessionId] = useState<string | null>(null);
+  const [groupDisplayName, setGroupDisplayName] = useState<string | null>(null);
+  const [showModeSwitch, setShowModeSwitch] = useState(false);
+
+  // Hydrate from localStorage
+  useEffect(() => {
+    if (!sessionStorageKey) return;
+    try {
+      const raw = localStorage.getItem(sessionStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.mode === "solo" || parsed.mode === "group") setSessionMode(parsed.mode);
+        if (parsed.sessionId) setJoinedSessionId(parsed.sessionId);
+        if (parsed.displayName) setGroupDisplayName(parsed.displayName);
+      }
+    } catch {}
+  }, [sessionStorageKey]);
+
+  const persistMode = (mode: SessionMode | null, sessionId?: string | null, displayName?: string | null) => {
+    if (!sessionStorageKey) return;
+    if (mode === null) {
+      localStorage.removeItem(sessionStorageKey);
+      return;
+    }
+    localStorage.setItem(
+      sessionStorageKey,
+      JSON.stringify({ mode, sessionId: sessionId ?? null, displayName: displayName ?? null })
+    );
+  };
+
+  const handleModeSelect = (mode: SessionMode, sessionId?: string, displayName?: string) => {
+    setSessionMode(mode);
+    setJoinedSessionId(sessionId ?? null);
+    setGroupDisplayName(displayName ?? null);
+    persistMode(mode, sessionId ?? null, displayName ?? null);
+  };
+
+  const handleSwitchMode = (mode: SessionMode) => {
+    setSessionMode(mode);
+    setJoinedSessionId(null);
+    setGroupDisplayName(null);
+    persistMode(mode, null, null);
+    setShowModeSwitch(false);
+  };
 
   // Fetch venue, table, and menu data
   useEffect(() => {
@@ -365,6 +415,9 @@ const ConsumerOrder = () => {
         <VenueLanding
           venue={venue}
           tableNumber={tableNumber || "?"}
+          tableId={resolvedTableId}
+          sessionMode={sessionMode}
+          onModeSelect={handleModeSelect}
           onStart={() => {
             setStarted(true);
             if (chatMode === "chat_first" || chatMode === "chat_only") {
@@ -415,7 +468,13 @@ const ConsumerOrder = () => {
 
       {/* Main Content */}
       {tab === "feed" && chatMode !== "chat_only" && (
-        <MenuFeed items={menuItems} categories={categories} onAddToCart={addToCart} tableNumber={tableNumber || undefined} />
+        <MenuFeed
+          items={menuItems}
+          categories={categories}
+          onAddToCart={addToCart}
+          tableNumber={tableNumber || undefined}
+          sessionMode={sessionMode ?? "solo"}
+        />
       )}
       {tab === "feed" && chatMode === "chat_only" && !showChat && (
         <div className="flex-1 flex items-center justify-center px-6 text-center pb-20">
@@ -438,6 +497,9 @@ const ConsumerOrder = () => {
           dismissedSuggestions={dismissedSuggestions}
           onAddToCart={addToCart}
           onDismissSuggestion={(id) => dismissedSuggestions.add(id)}
+          sessionMode={sessionMode ?? "solo"}
+          groupDisplayName={groupDisplayName}
+          onSwitchMode={cart.length === 0 ? () => setShowModeSwitch(true) : undefined}
         />
       )}
       {tab === "cart" && showCheckout && resolvedTableId && (
@@ -446,10 +508,22 @@ const ConsumerOrder = () => {
           venueId={venueId!}
           tableId={resolvedTableId}
           dinerId={dinerId}
+          sessionMode={sessionMode ?? "solo"}
+          joinedSessionId={joinedSessionId}
+          groupDisplayName={groupDisplayName}
           onBack={() => setShowCheckout(false)}
           onOrderPlaced={handleOrderPlaced}
         />
       )}
+
+      <ModeSwitchSheet
+        open={showModeSwitch}
+        currentMode={sessionMode ?? "solo"}
+        hasItemsInCart={cart.length > 0}
+        onOpenChange={setShowModeSwitch}
+        onSwitch={handleSwitchMode}
+      />
+
       {tab === "profile" && venue && (
         <DinerProfile venueId={venue.id} groupId={venue.group_id} />
       )}

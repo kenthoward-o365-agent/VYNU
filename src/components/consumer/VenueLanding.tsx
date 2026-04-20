@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Utensils, Gift, UserPlus, LogIn } from "lucide-react";
 import LandingSectionRenderer from "@/components/landing-editor/LandingSectionRenderer";
 import type { LandingSection } from "@/components/landing-editor/types";
+import SessionModeChooser, { type SessionMode } from "./SessionModeChooser";
 
 interface VenueLandingProps {
   venue: {
@@ -14,6 +15,9 @@ interface VenueLandingProps {
     landing_page_html?: string | null;
   };
   tableNumber: string;
+  tableId?: string | null;
+  sessionMode: SessionMode | null;
+  onModeSelect: (mode: SessionMode, sessionId?: string, displayName?: string) => void;
   onStart: () => void;
   onSignup: () => void;
   onSignin: () => void;
@@ -55,15 +59,38 @@ function InlineActions({ onStart, onSignup, onSignin }: { onStart: () => void; o
   );
 }
 
-const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: VenueLandingProps) => {
+const VenueLanding = ({
+  venue,
+  tableNumber,
+  tableId,
+  sessionMode,
+  onModeSelect,
+  onStart,
+  onSignup,
+  onSignin,
+}: VenueLandingProps) => {
+  const showChooser = !!(venue.id && tableId) && sessionMode === null;
+
+  const ChooserOrActions = () => {
+    if (showChooser) {
+      return (
+        <SessionModeChooser
+          venueId={venue.id!}
+          tableId={tableId!}
+          tableNumber={tableNumber}
+          onSelect={onModeSelect}
+        />
+      );
+    }
+    return <InlineActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />;
+  };
+
   if (venue.landing_page_html) {
     const sections = tryParseJsonSections(venue.landing_page_html);
 
     if (sections) {
-      // Filter out table-display — it now shows on the menu page
-      const filteredSections = sections.filter(s => s.type !== "table-display");
-      // Find hero index to inject action buttons after it
-      const heroIndex = filteredSections.findIndex(s => s.type === "hero");
+      const filteredSections = sections.filter((s) => s.type !== "table-display");
+      const heroIndex = filteredSections.findIndex((s) => s.type === "hero");
 
       return (
         <div className="min-h-screen relative">
@@ -71,7 +98,7 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: Venue
             sections={filteredSections}
             tableNumber={tableNumber}
             inlineActionsAfterIndex={heroIndex >= 0 ? heroIndex : 0}
-            inlineActions={<InlineActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />}
+            inlineActions={<ChooserOrActions />}
           />
           <p className="text-center text-white/40 text-xs py-4">
             Powered by <span className="font-semibold text-white/60">OrdrUp</span>
@@ -80,14 +107,11 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: Venue
       );
     }
 
-    // Legacy HTML fallback
     const processedHtml = venue.landing_page_html.replace(/\{\{TABLE\}\}/g, tableNumber);
     return (
       <div className="min-h-screen relative">
         <div dangerouslySetInnerHTML={{ __html: processedHtml }} />
-        <div className="px-6 py-6">
-          <InlineActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />
-        </div>
+        <ChooserOrActions />
       </div>
     );
   }
@@ -113,17 +137,19 @@ const VenueLanding = ({ venue, tableNumber, onStart, onSignup, onSignin }: Venue
         </p>
       )}
 
-      <InlineActions onStart={onStart} onSignup={onSignup} onSignin={onSignin} />
+      <ChooserOrActions />
 
-      <div className="bg-accent/50 rounded-2xl border border-primary/20 p-4 mt-6 w-full max-w-xs">
-        <div className="flex items-center gap-2 mb-2">
-          <Gift className="h-5 w-5 text-primary" />
-          <p className="text-sm font-semibold text-foreground">Earn rewards</p>
+      {!showChooser && (
+        <div className="bg-accent/50 rounded-2xl border border-primary/20 p-4 mt-6 w-full max-w-xs">
+          <div className="flex items-center gap-2 mb-2">
+            <Gift className="h-5 w-5 text-primary" />
+            <p className="text-sm font-semibold text-foreground">Earn rewards</p>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Sign up for our loyalty program and earn points with every order.
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Sign up for our loyalty program and earn points with every order.
-        </p>
-      </div>
+      )}
       <p className="text-muted-foreground text-xs mt-4">
         No account needed · Powered by <span className="font-semibold text-primary">OrdrUp</span>
       </p>

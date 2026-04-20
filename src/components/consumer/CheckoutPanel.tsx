@@ -33,6 +33,9 @@ interface CheckoutPanelProps {
   venueId: string;
   tableId: string;
   dinerId: string | null;
+  sessionMode?: "solo" | "group";
+  joinedSessionId?: string | null;
+  groupDisplayName?: string | null;
   onBack: () => void;
   onOrderPlaced: (orderId: string) => void;
 }
@@ -42,6 +45,9 @@ const CheckoutPanel = ({
   venueId,
   tableId,
   dinerId,
+  sessionMode = "solo",
+  joinedSessionId = null,
+  groupDisplayName = null,
   onBack,
   onOrderPlaced,
 }: CheckoutPanelProps) => {
@@ -225,6 +231,24 @@ const CheckoutPanel = ({
     const { data: auditDateData } = await supabase.rpc("get_venue_audit_date", { _venue_id: venueId });
     const auditDate = (auditDateData as string | null) || new Date().toISOString().slice(0, 10);
 
+    // Resolve session for group mode
+    let sessionIdToStamp: string | null = null;
+    if (sessionMode === "group") {
+      try {
+        const { data: sid, error: sessErr } = await supabase.rpc("find_or_create_table_session", {
+          _venue_id: venueId,
+          _table_id: tableId,
+          _fire_strategy: "wait_for_all",
+          _host_diner_id: dinerId,
+          _display_name: groupDisplayName || null,
+          _join_existing_id: joinedSessionId || null,
+        });
+        if (!sessErr && sid) sessionIdToStamp = sid as string;
+      } catch (e) {
+        console.error("find_or_create_table_session failed, falling back to solo:", e);
+      }
+    }
+
     const { error: orderError } = await supabase
       .from("orders")
       .insert({
@@ -237,6 +261,8 @@ const CheckoutPanel = ({
         status: "received" as const,
         customer_id: authUserId,
         customer_notes: tipAmount > 0 ? `Tip: $${tipAmount.toFixed(2)}` : null,
+        session_id: sessionIdToStamp,
+        session_mode: sessionIdToStamp ? "group" : "solo",
       } as any);
     if (orderError) throw orderError;
 
@@ -479,6 +505,12 @@ const CheckoutPanel = ({
           </p>
         </div>
       </div>
+
+      {sessionMode === "group" && (
+        <div className="mx-5 mb-3 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
+          Group order{groupDisplayName ? ` · ${groupDisplayName}` : ""} — kitchen holds your bundle until everyone's ready (or ~90s after your last order).
+        </div>
+      )}
 
       <div className="flex-1 overflow-auto px-5 pb-4 space-y-5">
         {/* Order Summary */}
@@ -758,7 +790,11 @@ const CheckoutPanel = ({
             {processing
               ? "Processing..."
               : paymentEnabled
-              ? `Pay $${(total + tipAmount).toFixed(2)}`
+              ? sessionMode === "group"
+                ? `Pay & send to table — $${(total + tipAmount).toFixed(2)}`
+                : `Pay $${(total + tipAmount).toFixed(2)}`
+              : sessionMode === "group"
+              ? `Send to table — $${(total + tipAmount).toFixed(2)}`
               : `Confirm Order — $${(total + tipAmount).toFixed(2)}`}
           </Button>
         </div>
