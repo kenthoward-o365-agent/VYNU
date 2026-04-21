@@ -411,6 +411,45 @@ export type Database = {
           },
         ]
       }
+      loyalty_program_venue_optouts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          program_id: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          program_id: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          program_id?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_program_venue_optouts_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_program_venue_optouts_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_programs: {
         Row: {
           created_at: string
@@ -2386,6 +2425,26 @@ export type Database = {
       }
       fire_table_session: { Args: { _session_id: string }; Returns: boolean }
       generate_site_id: { Args: never; Returns: string }
+      get_active_loyalty_program: {
+        Args: { _venue_id: string }
+        Returns: {
+          created_at: string
+          group_id: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          program_type: Database["public"]["Enums"]["loyalty_program_type"]
+          rules: Json | null
+          updated_at: string
+          venue_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "loyalty_programs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_terminal_by_token: {
         Args: { _token: string }
         Returns: {
@@ -2466,6 +2525,14 @@ export type Database = {
           venue_id: string
           venue_name: string
         }[]
+      }
+      migrate_loyalty_balances_to_program: {
+        Args: {
+          _deactivate_source?: boolean
+          _from_program: string
+          _to_program: string
+        }
+        Returns: Json
       }
       pair_display_terminal: {
         Args: { _code: string; _user_agent?: string }
