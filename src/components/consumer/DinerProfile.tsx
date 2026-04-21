@@ -437,17 +437,26 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
           <Separator />
           <div>
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-              <Star className="h-4 w-4 text-amber-500" /> Loyalty
+              <Star className="h-4 w-4 text-primary" /> Memberships
             </h3>
             <div className="space-y-2">
               {loyalty.map((l) => (
                 <Card key={l.id}>
                   <CardContent className="py-3 px-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{l.program_name}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{l.program_name}</p>
+                      {l.scope === "group" && l.group_venue_count && l.group_venue_count > 1 ? (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Earn &amp; spend at all {l.group_venue_count} venues in this group
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Earn &amp; spend at this venue
+                        </p>
+                      )}
                       {l.tier && <Badge variant="secondary" className="text-xs mt-1">{l.tier}</Badge>}
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0 pl-3">
                       <p className="text-lg font-bold text-primary">{l.balance}</p>
                       <p className="text-xs text-muted-foreground">
                         {l.program_type === "stamps" ? "stamps" : "points"}
