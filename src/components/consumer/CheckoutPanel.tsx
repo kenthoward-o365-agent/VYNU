@@ -311,6 +311,22 @@ const CheckoutPanel = ({
           spend_excl_tax: taxResult.subtotalExTax,
         } as any)
         .maybeSingle();
+      // Award Ordrup Rewards points (group/venue-aware) — fire and forget.
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: any = {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        };
+        if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/loyalty-earn`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ order_id: orderId, diner_id: dinerId }),
+        }).catch((e) => console.warn("loyalty-earn failed:", e));
+      } catch (e) {
+        console.warn("loyalty-earn dispatch error:", e);
+      }
     }
     toast.success("Payment successful! 🎉");
     onOrderPlaced(orderId);

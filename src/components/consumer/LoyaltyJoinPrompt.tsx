@@ -52,20 +52,11 @@ const LoyaltyJoinPrompt = ({
 
     let cancelled = false;
     const fetchProgram = async () => {
-      const filters: string[] = [`venue_id.eq.${venueId}`];
-      if (groupId) filters.push(`group_id.eq.${groupId}`);
-
-      const { data } = await supabase
-        .from("loyalty_programs")
-        .select("id, name, program_type, venue_id, group_id, rules")
-        .or(filters.join(","))
-        .eq("is_active", true)
-        .limit(5);
-
-      if (cancelled || !data || data.length === 0) return;
-
-      const venueScoped = data.find((p: any) => p.venue_id === venueId);
-      const chosen: any = venueScoped || data[0];
+      // Use the resolver so the right program (group > venue) is offered, respecting opt-outs.
+      const { data: resolved } = await supabase
+        .rpc("get_active_loyalty_program", { _venue_id: venueId });
+      const chosen: any = Array.isArray(resolved) ? resolved[0] : resolved;
+      if (cancelled || !chosen) return;
 
       // If signed in, skip if already enrolled in this program.
       if (dinerId) {

@@ -45,6 +45,10 @@ interface LoyaltyInfo {
   tier: string | null;
   program_name: string;
   program_type: string;
+  /** "group" when shared across sibling venues, "venue" when single-venue. */
+  scope: "group" | "venue";
+  /** Number of sibling venues this group program covers (only set when scope === "group"). */
+  group_venue_count?: number;
 }
 
 interface LoyaltyVenue {
@@ -152,6 +156,7 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
       }
       const allPrograms = [...(venuePrograms || []), ...groupPrograms];
       const uniquePrograms = [...new Map(allPrograms.map((p: any) => [p.id, p])).values()];
+      const loyaltyGroupIdsForCount = uniquePrograms.filter((p: any) => p.group_id).map((p: any) => p.group_id);
 
       // Auto-enroll into missing programs
       const missing = uniquePrograms.filter((p: any) => !enrolledProgramIds.has(p.id));
@@ -167,15 +172,58 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
           .select("id, balance, tier, program_id")
           .eq("diner_id", prof.id);
         const progMap = new Map(uniquePrograms.map((p: any) => [p.id, p]));
+        // Count sibling venues per group_id (for "Earn & spend at all N venues" subtitle)
+        const groupVenueCounts = new Map<string, number>();
+        if (loyaltyGroupIdsForCount.length > 0) {
+          const { data: gVenues } = await supabase
+            .from("venues")
+            .select("id, group_id")
+            .in("group_id", loyaltyGroupIdsForCount)
+            .neq("venue_type", "parent")
+            .eq("is_active", true);
+          (gVenues || []).forEach((v: any) => {
+            groupVenueCounts.set(v.group_id, (groupVenueCounts.get(v.group_id) || 0) + 1);
+          });
+        }
         setLoyalty((updatedBalances || []).map((b) => {
-          const prog = progMap.get(b.program_id);
-          return { id: b.id, balance: Number(b.balance), tier: b.tier, program_name: prog?.name || "Loyalty Program", program_type: prog?.program_type || "points" };
+          const prog: any = progMap.get(b.program_id);
+          const isGroup = !!prog?.group_id;
+          return {
+            id: b.id,
+            balance: Number(b.balance),
+            tier: b.tier,
+            program_name: prog?.name || "Loyalty Program",
+            program_type: prog?.program_type || "points",
+            scope: isGroup ? "group" : "venue",
+            group_venue_count: isGroup ? groupVenueCounts.get(prog.group_id) : undefined,
+          };
         }));
       } else {
         const progMap = new Map(uniquePrograms.map((p: any) => [p.id, p]));
+        const groupVenueCounts = new Map<string, number>();
+        if (loyaltyGroupIdsForCount.length > 0) {
+          const { data: gVenues } = await supabase
+            .from("venues")
+            .select("id, group_id")
+            .in("group_id", loyaltyGroupIdsForCount)
+            .neq("venue_type", "parent")
+            .eq("is_active", true);
+          (gVenues || []).forEach((v: any) => {
+            groupVenueCounts.set(v.group_id, (groupVenueCounts.get(v.group_id) || 0) + 1);
+          });
+        }
         setLoyalty((balances || []).map((b) => {
-          const prog = progMap.get(b.program_id);
-          return { id: b.id, balance: Number(b.balance), tier: b.tier, program_name: prog?.name || "Loyalty Program", program_type: prog?.program_type || "points" };
+          const prog: any = progMap.get(b.program_id);
+          const isGroup = !!prog?.group_id;
+          return {
+            id: b.id,
+            balance: Number(b.balance),
+            tier: b.tier,
+            program_name: prog?.name || "Loyalty Program",
+            program_type: prog?.program_type || "points",
+            scope: isGroup ? "group" : "venue",
+            group_venue_count: isGroup ? groupVenueCounts.get(prog.group_id) : undefined,
+          };
         }));
       }
 
@@ -389,17 +437,26 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
           <Separator />
           <div>
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-              <Star className="h-4 w-4 text-amber-500" /> Loyalty
+              <Star className="h-4 w-4 text-primary" /> Memberships
             </h3>
             <div className="space-y-2">
               {loyalty.map((l) => (
                 <Card key={l.id}>
                   <CardContent className="py-3 px-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{l.program_name}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{l.program_name}</p>
+                      {l.scope === "group" && l.group_venue_count && l.group_venue_count > 1 ? (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Earn &amp; spend at all {l.group_venue_count} venues in this group
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          Earn &amp; spend at this venue
+                        </p>
+                      )}
                       {l.tier && <Badge variant="secondary" className="text-xs mt-1">{l.tier}</Badge>}
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0 pl-3">
                       <p className="text-lg font-bold text-primary">{l.balance}</p>
                       <p className="text-xs text-muted-foreground">
                         {l.program_type === "stamps" ? "stamps" : "points"}
