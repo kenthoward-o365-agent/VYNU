@@ -156,6 +156,7 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
       }
       const allPrograms = [...(venuePrograms || []), ...groupPrograms];
       const uniquePrograms = [...new Map(allPrograms.map((p: any) => [p.id, p])).values()];
+      const loyaltyGroupIdsForCount = uniquePrograms.filter((p: any) => p.group_id).map((p: any) => p.group_id);
 
       // Auto-enroll into missing programs
       const missing = uniquePrograms.filter((p: any) => !enrolledProgramIds.has(p.id));
