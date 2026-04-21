@@ -45,6 +45,10 @@ interface LoyaltyInfo {
   tier: string | null;
   program_name: string;
   program_type: string;
+  /** "group" when shared across sibling venues, "venue" when single-venue. */
+  scope: "group" | "venue";
+  /** Number of sibling venues this group program covers (only set when scope === "group"). */
+  group_venue_count?: number;
 }
 
 interface LoyaltyVenue {
