@@ -171,15 +171,58 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
           .select("id, balance, tier, program_id")
           .eq("diner_id", prof.id);
         const progMap = new Map(uniquePrograms.map((p: any) => [p.id, p]));
+        // Count sibling venues per group_id (for "Earn & spend at all N venues" subtitle)
+        const groupVenueCounts = new Map<string, number>();
+        if (loyaltyGroupIdsForCount.length > 0) {
+          const { data: gVenues } = await supabase
+            .from("venues")
+            .select("id, group_id")
+            .in("group_id", loyaltyGroupIdsForCount)
+            .neq("venue_type", "parent")
+            .eq("is_active", true);
+          (gVenues || []).forEach((v: any) => {
+            groupVenueCounts.set(v.group_id, (groupVenueCounts.get(v.group_id) || 0) + 1);
+          });
+        }
         setLoyalty((updatedBalances || []).map((b) => {
-          const prog = progMap.get(b.program_id);
-          return { id: b.id, balance: Number(b.balance), tier: b.tier, program_name: prog?.name || "Loyalty Program", program_type: prog?.program_type || "points" };
+          const prog: any = progMap.get(b.program_id);
+          const isGroup = !!prog?.group_id;
+          return {
+            id: b.id,
+            balance: Number(b.balance),
+            tier: b.tier,
+            program_name: prog?.name || "Loyalty Program",
+            program_type: prog?.program_type || "points",
+            scope: isGroup ? "group" : "venue",
+            group_venue_count: isGroup ? groupVenueCounts.get(prog.group_id) : undefined,
+          };
         }));
       } else {
         const progMap = new Map(uniquePrograms.map((p: any) => [p.id, p]));
+        const groupVenueCounts = new Map<string, number>();
+        if (loyaltyGroupIdsForCount.length > 0) {
+          const { data: gVenues } = await supabase
+            .from("venues")
+            .select("id, group_id")
+            .in("group_id", loyaltyGroupIdsForCount)
+            .neq("venue_type", "parent")
+            .eq("is_active", true);
+          (gVenues || []).forEach((v: any) => {
+            groupVenueCounts.set(v.group_id, (groupVenueCounts.get(v.group_id) || 0) + 1);
+          });
+        }
         setLoyalty((balances || []).map((b) => {
-          const prog = progMap.get(b.program_id);
-          return { id: b.id, balance: Number(b.balance), tier: b.tier, program_name: prog?.name || "Loyalty Program", program_type: prog?.program_type || "points" };
+          const prog: any = progMap.get(b.program_id);
+          const isGroup = !!prog?.group_id;
+          return {
+            id: b.id,
+            balance: Number(b.balance),
+            tier: b.tier,
+            program_name: prog?.name || "Loyalty Program",
+            program_type: prog?.program_type || "points",
+            scope: isGroup ? "group" : "venue",
+            group_venue_count: isGroup ? groupVenueCounts.get(prog.group_id) : undefined,
+          };
         }));
       }
 
