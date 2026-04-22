@@ -605,17 +605,6 @@ export default function VenueSettings() {
         {/* ── LOYALTY TAB ── */}
         {isManager && venue && (
           <TabsContent value="loyalty" className="space-y-6">
-            {!venue.group_id && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ordrup Loyalty</CardTitle>
-                  <CardDescription>Ordrup's own built-in loyalty program — free of charge. Reward repeat diners with points, status tiers, birthday treats and more.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <OrdrupLoyaltyEditor scope={{ type: "venue", venue_id: venue.id }} menuVenueId={venue.id} defaultName="Ordrup Loyalty" />
-                </CardContent>
-              </Card>
-            )}
             <VenueLoyaltyTab venueId={venue?.id} groupId={venue?.group_id} />
           </TabsContent>
         )}
@@ -885,18 +874,37 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
   const [expandedGroupProgram, setExpandedGroupProgram] = useState<string | null>(null);
 
+  const [ordrupActive, setOrdrupActive] = useState(false);
+  const [ordrupProgramId, setOrdrupProgramId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+
   const fetchPrograms = async () => {
     if (!venueId) return;
     setLoading(true);
     const { data } = await supabase.from("loyalty_programs").select("*").eq("venue_id", venueId).order("created_at");
-    setPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
+    const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
+    const builtin = all.find((p: any) => p.is_ordrup_builtin);
+    setOrdrupActive(!!builtin?.is_active);
+    setOrdrupProgramId(builtin?.id ?? null);
+    setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
+  };
+
+  const toggleOrdrupActive = async (next: boolean) => {
+    if (!ordrupProgramId) { setEditorOpen(true); return; }
+    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", ordrupProgramId);
+    if (error) { toast.error(error.message); return; }
+    toast.success(next ? "Ordrup Loyalty enabled" : "Ordrup Loyalty paused");
+    fetchPrograms();
   };
 
   const fetchGroupPrograms = async () => {
     if (!groupId) return;
     const { data } = await supabase.from("loyalty_programs").select("*").eq("group_id", groupId).eq("is_active", true).order("created_at");
-    setGroupPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
+    // Hide built-in from inherited list — it's surfaced via the group's own resolver, not as a "custom" inherited program.
+    setGroupPrograms((data || [])
+      .filter((d: any) => !d.is_ordrup_builtin)
+      .map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
   };
 
   useEffect(() => { fetchPrograms(); fetchGroupPrograms(); }, [venueId, groupId]);
@@ -933,6 +941,46 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
 
   return (
     <div className="space-y-6">
+      {/* Ordrup Loyalty (built-in, venue-scoped) */}
+      <Card className="border-primary/30">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Ordrup Loyalty
+                <Badge variant="outline" className="ml-1 text-[10px]">Built-in · Free</Badge>
+              </CardTitle>
+              <CardDescription>
+                Ordrup's free built-in loyalty program. When ON, this becomes the active program for diners — your custom programs below are paused.
+              </CardDescription>
+            </div>
+            <Switch checked={ordrupActive} onCheckedChange={toggleOrdrupActive} aria-label="Toggle Ordrup Loyalty" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Configure Program
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>Configure Ordrup Loyalty</DialogTitle></DialogHeader>
+              {venueId && <OrdrupLoyaltyEditor scope={{ type: "venue", venue_id: venueId }} menuVenueId={venueId} defaultName="Ordrup Loyalty" />}
+            </DialogContent>
+          </Dialog>
+        </CardContent>
+      </Card>
+
+      {ordrupActive && (
+        <p className="text-xs text-muted-foreground italic px-1">
+          Ordrup Loyalty is your active program. Custom programs below are paused for diners.
+        </p>
+      )}
+
+      <Separator />
+
       {/* ── Inherited Group Programs (read-only) ── */}
       {groupPrograms.length > 0 && (
         <div className="space-y-4">

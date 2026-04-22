@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Gift, Plus, Trash2, Star, Cake, Award, DollarSign, Sparkles, Settings2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import OrdrupLoyaltyEditor from "@/components/venue/OrdrupLoyaltyEditor";
+import { Separator } from "@/components/ui/separator";
 
 interface LoyaltyRules {
   points_per_dollar?: number;
@@ -48,6 +50,10 @@ export default function GroupLoyaltyManager({ groupId, groupName }: GroupLoyalty
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
   const [form, setForm] = useState({ name: "", program_type: "points" as string });
 
+  const [ordrupActive, setOrdrupActive] = useState(false);
+  const [ordrupProgramId, setOrdrupProgramId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+
   const fetchPrograms = async () => {
     setLoading(true);
     const { data } = await supabase
@@ -55,8 +61,21 @@ export default function GroupLoyaltyManager({ groupId, groupName }: GroupLoyalty
       .select("*")
       .eq("group_id", groupId)
       .order("created_at");
-    setPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
+    const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
+    const builtin = all.find((p: any) => p.is_ordrup_builtin);
+    setOrdrupActive(!!builtin?.is_active);
+    setOrdrupProgramId(builtin?.id ?? null);
+    // Custom programs only.
+    setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
+  };
+
+  const toggleOrdrupActive = async (next: boolean) => {
+    if (!ordrupProgramId) { setEditorOpen(true); return; }
+    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", ordrupProgramId);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: next ? "Ordrup Loyalty enabled" : "Ordrup Loyalty paused" });
+    fetchPrograms();
   };
 
   useEffect(() => { fetchPrograms(); }, [groupId]);
@@ -92,11 +111,51 @@ export default function GroupLoyaltyManager({ groupId, groupName }: GroupLoyalty
 
   return (
     <div className="space-y-6">
+      {/* Ordrup Loyalty (built-in, group-scoped) */}
+      <Card className="border-primary/30">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Ordrup Loyalty
+                <Badge variant="outline" className="ml-1 text-[10px]">Built-in · Free</Badge>
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Ordrup's free built-in loyalty program for {groupName || "this group"}. When ON, this becomes the active program for diners across every venue — your custom group programs below are paused.
+              </p>
+            </div>
+            <Switch checked={ordrupActive} onCheckedChange={toggleOrdrupActive} aria-label="Toggle Ordrup Loyalty" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Configure Program
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>Configure Ordrup Loyalty</DialogTitle></DialogHeader>
+              <OrdrupLoyaltyEditor scope={{ type: "group", group_id: groupId }} defaultName="Ordrup Loyalty" />
+            </DialogContent>
+          </Dialog>
+        </CardContent>
+      </Card>
+
+      {ordrupActive && (
+        <p className="text-xs text-muted-foreground italic px-1">
+          Ordrup Loyalty is your active group program. Custom group programs below are paused for diners.
+        </p>
+      )}
+
+      <Separator />
+
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="py-4">
           <div className="flex items-center gap-2 mb-1">
             <Gift className="h-4 w-4 text-primary" />
-            <p className="text-sm font-medium text-foreground">Global Loyalty Programs</p>
+            <p className="text-sm font-medium text-foreground">Custom Group Programs</p>
           </div>
           <p className="text-xs text-muted-foreground">
             These programs apply to <strong>all child venues</strong> under {groupName || "this group"}. Diners earn and redeem across every venue in the group.

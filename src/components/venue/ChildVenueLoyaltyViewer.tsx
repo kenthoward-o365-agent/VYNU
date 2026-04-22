@@ -52,10 +52,12 @@ export default function ChildVenueLoyaltyViewer({ groupId, venueName }: ChildVen
         .order("created_at");
 
       setPrograms(
-        (data || []).map((program: any) => ({
-          ...program,
-          rules: (program.rules && typeof program.rules === "object" ? program.rules : {}) as LoyaltyRules,
-        }))
+        (data || [])
+          .filter((p: any) => !p.is_ordrup_builtin)
+          .map((program: any) => ({
+            ...program,
+            rules: (program.rules && typeof program.rules === "object" ? program.rules : {}) as LoyaltyRules,
+          }))
       );
       setLoading(false);
     };

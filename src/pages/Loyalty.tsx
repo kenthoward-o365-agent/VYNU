@@ -114,7 +114,9 @@ export default function Loyalty() {
       .select("*")
       .eq("group_id", venue.group_id)
       .eq("is_active", true)
-      .then(({ data }) => setGroupPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }))));
+      .then(({ data }) => setGroupPrograms((data || [])
+        .filter((d: any) => !d.is_ordrup_builtin)
+        .map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }))));
   }, [venue?.group_id]);
 
   const [expandedGroupProgram, setExpandedGroupProgram] = useState<string | null>(null);
