@@ -273,34 +273,28 @@ function SettingsTab({ group, onSaved }: { group: any; onSaved: () => Promise<vo
       <Card>
         <CardHeader>
           <CardTitle>Diner & Loyalty Settings</CardTitle>
-          <CardDescription>These settings apply across all venues in the group.</CardDescription>
+          <CardDescription>Cross-venue behaviours that apply to every venue in this group.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-sm">Ordrup Loyalty</p>
-              <p className="text-xs text-muted-foreground">Ordrup's own built-in loyalty program — free of charge. Reward repeat diners with points, status tiers, birthday treats and more, across every venue in your group.</p>
+              <p className="font-medium text-sm">Global Diner Recognition</p>
+              <p className="text-xs text-muted-foreground">Diners signing up at one venue are recognised at every venue in this group — same profile, allergens and saved cards.</p>
             </div>
             <Switch checked={globalDiners} onCheckedChange={setGlobalDiners} />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-sm">Global Loyalty Programs</p>
-              <p className="text-xs text-muted-foreground">Group loyalty programs automatically apply to all venues.</p>
+              <p className="font-medium text-sm">Global Loyalty Pooling</p>
+              <p className="text-xs text-muted-foreground">Points earned at one venue can be redeemed at any sibling venue. Requires a group-level loyalty program.</p>
             </div>
             <Switch checked={globalLoyalty} onCheckedChange={setGlobalLoyalty} />
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Configure Ordrup Loyalty</CardTitle>
-          <CardDescription>Set up how diners earn points, hit status tiers, and unlock birthday and milestone rewards across this group.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <OrdrupLoyaltyEditor scope={{ type: "group", group_id: group.id }} defaultName="Ordrup Loyalty" />
+          <Separator />
+          <p className="text-xs text-muted-foreground">
+            → Configure your loyalty program (Ordrup Loyalty or your own custom programs) in the <strong>Loyalty</strong> tab.
+          </p>
         </CardContent>
       </Card>
 
