@@ -898,6 +898,15 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
     fetchPrograms();
   };
 
+  const fetchGroupPrograms = async () => {
+    if (!groupId) return;
+    const { data } = await supabase.from("loyalty_programs").select("*").eq("group_id", groupId).eq("is_active", true).order("created_at");
+    // Hide built-in from inherited list — it's surfaced via the group's own resolver, not as a "custom" inherited program.
+    setGroupPrograms((data || [])
+      .filter((d: any) => !d.is_ordrup_builtin)
+      .map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
+  };
+
   useEffect(() => { fetchPrograms(); fetchGroupPrograms(); }, [venueId, groupId]);
 
   const createProgram = async () => {
