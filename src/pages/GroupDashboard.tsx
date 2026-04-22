@@ -514,10 +514,12 @@ function GroupLoyaltyTab({ group }: { group: any }) {
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {programs.map((p) => (
-              <Card key={p.id} className={`cursor-pointer transition-all ${editingProgram?.id === p.id ? "ring-2 ring-primary" : "hover:border-primary/50"}`} onClick={() => setEditingProgram(p)}>
+              <Card key={p.id} className={`cursor-pointer transition-all ${editingProgram?.id === p.id ? "ring-2 ring-primary" : "hover:border-primary/50"} ${ordrupActive ? "opacity-60" : ""}`} onClick={() => setEditingProgram(p)}>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-base">{p.name}</CardTitle>
-                  <Badge variant={p.is_active ? "default" : "secondary"}>{p.is_active ? "Active" : "Inactive"}</Badge>
+                  <Badge variant={ordrupActive ? "outline" : (p.is_active ? "default" : "secondary")}>
+                    {ordrupActive ? "Paused" : (p.is_active ? "Active" : "Inactive")}
+                  </Badge>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-sm text-muted-foreground">Type: {p.program_type}</p>
