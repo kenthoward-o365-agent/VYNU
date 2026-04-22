@@ -16,6 +16,7 @@ import {
   Building2, DollarSign, ShoppingCart, TrendingUp, Settings, Users, Gift,
   Plus, Trash2, Pencil, Search, Check, Mail, Phone, AlertTriangle, Star, Cake, Award, Sparkles, Settings2
 } from "lucide-react";
+import OrdrupLoyaltyEditor from "@/components/venue/OrdrupLoyaltyEditor";
 import { toast } from "@/hooks/use-toast";
 
 /* ── Types ── */
@@ -271,14 +272,14 @@ function SettingsTab({ group, onSaved }: { group: any; onSaved: () => Promise<vo
 
       <Card>
         <CardHeader>
-          <CardTitle>Global Settings</CardTitle>
+          <CardTitle>Diner & Loyalty Settings</CardTitle>
           <CardDescription>These settings apply across all venues in the group.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-sm">Global Diner Recognition</p>
-              <p className="text-xs text-muted-foreground">Diners are recognised and tracked across all venues.</p>
+              <p className="font-medium text-sm">Ordrup Loyalty</p>
+              <p className="text-xs text-muted-foreground">Ordrup's own built-in loyalty program — free of charge. Reward repeat diners with points, status tiers, birthday treats and more, across every venue in your group.</p>
             </div>
             <Switch checked={globalDiners} onCheckedChange={setGlobalDiners} />
           </div>
@@ -290,6 +291,16 @@ function SettingsTab({ group, onSaved }: { group: any; onSaved: () => Promise<vo
             </div>
             <Switch checked={globalLoyalty} onCheckedChange={setGlobalLoyalty} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Configure Ordrup Loyalty</CardTitle>
+          <CardDescription>Set up how diners earn points, hit status tiers, and unlock birthday and milestone rewards across this group.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <OrdrupLoyaltyEditor scope={{ type: "group", group_id: group.id }} defaultName="Ordrup Loyalty" />
         </CardContent>
       </Card>
 

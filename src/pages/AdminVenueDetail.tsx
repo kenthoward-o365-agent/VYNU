@@ -15,6 +15,7 @@ import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2,
 import BillingConfigTab from "@/components/venue/BillingConfigTab";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import ChildVenueLoyaltyViewer from "@/components/venue/ChildVenueLoyaltyViewer";
+import OrdrupLoyaltyEditor from "@/components/venue/OrdrupLoyaltyEditor";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 
@@ -289,8 +290,8 @@ export default function AdminVenueDetail() {
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-sm">Global Diner Recognition</p>
-                    <p className="text-xs text-muted-foreground">Diners are recognised and their visit history tracked across all child venues.</p>
+                    <p className="font-medium text-sm">Ordrup Loyalty</p>
+                    <p className="text-xs text-muted-foreground">Ordrup's own built-in loyalty program — free of charge. Reward repeat diners with points, status tiers, birthday treats and more, across every venue in your group.</p>
                   </div>
                   <Switch checked={groupSettings.global_diners} onCheckedChange={(v) => setGroupSettings({ ...groupSettings, global_diners: v })} />
                 </div>
@@ -304,6 +305,23 @@ export default function AdminVenueDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Ordrup Loyalty Editor — group-scoped */}
+            {venue?.group_id && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configure Ordrup Loyalty</CardTitle>
+                  <CardDescription>Define how diners earn, redeem, and unlock rewards across this group's venues.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <OrdrupLoyaltyEditor
+                    scope={{ type: "group", group_id: venue.group_id }}
+                    menuVenueId={childVenues[0]?.id || venue.id}
+                    defaultName="Ordrup Loyalty"
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>
