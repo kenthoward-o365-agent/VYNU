@@ -1,64 +1,175 @@
 
 
-## Impact on existing loyalty programs (and how Phase 1 handles it)
+## Ordrup Loyalty — built-in rewards engine (Toast-inspired)
 
-### What's in your database right now
+Rename the toggle, expand the program model with **Toast-style features**, and ship a full editor under Group Settings → **Diner & Loyalty Settings**.
 
-| Program | Scope | Enrolled diners | Status |
-|---------|-------|-----------------|--------|
-| **The Pass** | Group: *Australian Venue Co.* | 1 | Active |
-| **Morris House** | Venue: *Morris House* (child of that group) | 2 | Active |
+### 1. Rename + reframe the section
 
-The child venue currently has **both** a group program and its own venue program. Phase 1's "group wins for children" rule needs to handle this without breaking the 2 enrolled Morris House diners.
+In `AdminVenueDetail.tsx` (parent venue's *Group Settings* tab) and `GroupDashboard.tsx` (*Global Settings*):
+- **Section title** stays "Diner & Loyalty Settings".
+- Rename the toggle row from *"Global Diner Recognition"* → **"Ordrup Loyalty"**.
+- New description: *"Ordrup's own built-in loyalty program — free of charge. Reward repeat diners with points, status tiers, birthday treats and more, across every venue in your group."*
+- Keep the existing "Global Loyalty Programs" toggle (controls cross-venue pooling — separate concern).
+- Add a **"Configure Program"** button next to the toggle → opens the new editor.
 
-### How Phase 1 will treat existing data
+### 2. Expand the `loyalty_programs.rules` JSONB shape
 
-**Nothing is auto-deleted, auto-merged, or auto-renamed.** All existing programs and balances are preserved as-is. Phase 1 only changes two things:
+No table changes — only the JSON structure that lives in `rules`. New canonical shape:
 
-1. The **auto-provisioning trigger** only fires for *new* venues/groups going forward — your existing venues are skipped (the backfill check looks for "does this venue/group already have any active loyalty program?" and exits if yes).
-2. The **`get_active_loyalty_program(venue_id)` resolver** decides which single program the diner UI shows at a given venue. For a child venue with both a group program and a venue program, the rule is **group wins**.
+```jsonc
+{
+  "earn": {
+    "mode": "points" | "stamps",          // operator picks one
+    "points_per_dollar": 1,                // when mode=points
+    "stamp_trigger": "visit" | "item",     // when mode=stamps
+    "stamps_required": 10,                 // when mode=stamps
+    "stamp_reward_item_id": "uuid|null"
+  },
+  "redeem": {
+    "rate_cents_per_point": 5,             // 100 pts = $5
+    "min_redeem_points": 100
+  },
+  "signup_bonus": { "enabled": true, "points": 50 },
+  "tiers": {
+    "enabled": true,
+    "basis": "rolling_12mo_spend",
+    "levels": [
+      { "name": "Bronze", "threshold": 0,    "perks": "1x points",            "color": "#CD7F32" },
+      { "name": "Silver", "threshold": 500,  "perks": "1.25x points + priority", "color": "#C0C0C0" },
+      { "name": "Gold",   "threshold": 2000, "perks": "1.5x points + free dessert weekly", "color": "#FFD700" }
+    ]
+  },
+  "birthday_reward": {
+    "enabled": true,
+    "type": "points" | "free_item" | "percent_discount",
+    "points": 100,
+    "free_item_id": "uuid|null",
+    "discount_percent": 20,
+    "valid_days": 14
+  },
+  "anniversary_reward": { "enabled": false, "type": "points", "points": 50 },
+  "milestones": [
+    { "at_points": 250,  "reward_type": "discount_dollars", "value": 5,  "label": "Bronze milestone" },
+    { "at_points": 1000, "reward_type": "free_item",        "free_item_id": "uuid", "label": "House cocktail on us" }
+  ]
+}
+```
 
-### What this means for your two existing programs
+Backwards-compatible: existing programs (*The Pass*, *Morris House*) get auto-mapped at first edit (current `points_per_dollar` → `earn.points_per_dollar`, current `birthday_reward` block preserved, `tiers.enabled = false` until operator opts in).
 
-- **The Pass (group)** — unchanged. Becomes the resolved program for both *Australian Venue Co.* (parent) and *Morris House* (child). Its 1 enrolled diner sees it everywhere as before.
-- **Morris House (venue program on a child)** — *kept in the database, balances preserved, but hidden from the diner UI at Morris House* because the group's "The Pass" now resolves first. The 2 enrolled diners' balances are not lost — they just wouldn't see "Morris House Rewards" on the menu/checkout/profile until you decide what to do with it.
+### 3. New component: `OrdrupLoyaltyEditor.tsx`
 
-### Three options the venue manager will see (new "Conflict Resolution" banner)
+Mounted from both *AdminVenueDetail → Group Settings* (group programs) and *VenueSettings* (solo venues — same component, scope-aware via prop). Sectioned layout:
 
-When a manager opens the Ordrup Rewards settings on either Morris House or the group, we'll detect the overlap and show a one-time banner:
+```text
+┌─ Program Identity ─────────────────────────┐
+│ Name [_________________]  Active [✓]       │
+└────────────────────────────────────────────┘
 
-> *"You have two active loyalty programs covering Morris House: **The Pass** (group) and **Morris House** (venue). Diners can only see one. Choose how to resolve:"*
+┌─ Earn Mechanic ────────────────────────────┐
+│ ○ Points per dollar    ● Visit stamps      │
+│   Points/$ [1.0]         Trigger: Visit ▾  │
+│                          Stamps required [10]
+│                          Free item: Coffee ▾
+└────────────────────────────────────────────┘
 
-- **A. Keep "The Pass" only** *(recommended)* — deactivates the Morris House program (`is_active = false`), **migrates the 2 Morris House diners' balances into The Pass** (insert/update `loyalty_balances` rows so each diner's combined points roll into The Pass; original rows are kept for audit but the program is inactive). Diners see no disruption — they just see their points under "The Pass" now.
-- **B. Keep "Morris House" only at this venue** — deactivates the group program *for this child only* by setting an opt-out flag (new `loyalty_program_venue_optouts` row), so Morris House continues running its own program and ignores the group one. The Pass keeps running at the parent and any future siblings.
-- **C. Decide later** — leaves both active; resolver shows the group program (The Pass), Morris House program is hidden but data preserved. Banner stays visible until resolved.
+┌─ Redemption ───────────────────────────────┐
+│ 100 points = $[5.00]                       │
+│ Minimum redemption: [100] points           │
+└────────────────────────────────────────────┘
 
-### How Option A's balance migration works
+┌─ Sign-up Bonus ────────────────────────────┐
+│ [✓] Award [50] points when a diner joins   │
+└────────────────────────────────────────────┘
 
-For each diner enrolled in the Morris House program:
-1. Look up their balance in The Pass — if none exists, insert a new `loyalty_balances` row for The Pass with the migrated balance.
-2. If they're already in The Pass, add the Morris House balance to their existing The Pass balance.
-3. Set the Morris House program `is_active = false`. Old `loyalty_balances` rows stay for audit.
+┌─ Status Tiers (Rolling 12-month spend) ────┐
+│ [✓] Enable tier badges                     │
+│ ┌──────────┬────────────┬──────────────┐   │
+│ │ Bronze   │ $0+        │ 1x points    │ ✕ │
+│ │ Silver   │ $500+      │ 1.25x points │ ✕ │
+│ │ Gold     │ $2000+     │ 1.5x points  │ ✕ │
+│ └──────────┴────────────┴──────────────┘   │
+│ [+ Add tier]                               │
+└────────────────────────────────────────────┘
 
-Done as part of the manager clicking "Keep The Pass only" — not automatic.
+┌─ Birthday Reward ──────────────────────────┐
+│ [✓] Enabled                                │
+│ Type: ○ Bonus points  ● Free item  ○ % off │
+│ Pick item: [Cake slice ▾]                  │
+│ Valid for [14] days after birthday         │
+└────────────────────────────────────────────┘
 
-### What changes in the migration plan
+┌─ Point Milestones ─────────────────────────┐
+│ At 250 pts → $5 discount         [edit][✕] │
+│ At 1000 pts → Free house cocktail [edit][✕]│
+│ [+ Add milestone]                          │
+└────────────────────────────────────────────┘
 
-Add to the original Phase 1 migration:
+[ Save Program ]
+```
 
-- `auto_provision_ordrup_rewards()` trigger gets an **idempotency guard**: skip if the venue/group already has any active `loyalty_programs` row. So your existing setup gets *nothing* auto-created.
-- Backfill logic only touches venues/groups that have **zero** active programs today. Both your group and Morris House already have programs → both skipped.
-- New table `loyalty_program_venue_optouts (program_id, venue_id)` to support Option B (a child opting out of its parent group's program).
-- The `get_active_loyalty_program(venue_id)` resolver checks the optout table before returning the group program.
+Stores everything as one `UPDATE loyalty_programs SET rules = ..., name = ... WHERE id = ...`.
 
-### What you (the operator) need to do after Phase 1 ships
+### 4. Earn engine updates (`supabase/functions/loyalty-earn`)
 
-Open the Ordrup Rewards tab on Morris House → see the conflict banner → pick A, B, or C. Until you pick, diners at Morris House will see The Pass (the group program) and the Morris House venue program will be invisible but intact.
+Existing function already awards points on order paid. Extend it to:
+- Read the new `rules.earn` block; if `mode = stamps`, increment a stamp counter on `loyalty_balances.balance` (1 per qualifying visit/item) instead of points.
+- Apply tier multiplier when calculating points (`balance * level.multiplier` derived from perks string is too brittle — store an explicit `earn_multiplier` number on each tier level).
+- After awarding, recompute the diner's tier from rolling 12-month spend (`SELECT SUM(spend_excl_tax) FROM diner_visits WHERE diner_id = ? AND venue_id IN (...) AND visited_at > now() - interval '12 months'`) and write `loyalty_balances.tier`.
+- Check milestones — if balance crossed a threshold this order, insert a **redeemable reward** row (see #5).
+- Check birthday window — if `diner_profiles` has a birthday field within ±N days, fire the birthday reward once per year (idempotency key on a new `loyalty_rewards_issued` table).
 
-### No risk to
+### 5. New table: `loyalty_rewards_issued`
 
-- Existing diner balances (preserved on disk; only *visibility* changes until you resolve).
-- The group "The Pass" program (unchanged).
-- Any other venue/group not in this conflict (you only have one group right now, so this is the only conflict).
-- Cross-venue cards, profiles, allergens (separate system).
+To track one-off rewards (birthday, milestone, signup bonus issued as items rather than points), so they're idempotent and redeemable.
+
+```sql
+CREATE TABLE loyalty_rewards_issued (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  diner_id uuid NOT NULL,
+  program_id uuid NOT NULL REFERENCES loyalty_programs(id),
+  reward_kind text NOT NULL,        -- 'signup' | 'birthday' | 'anniversary' | 'milestone' | 'tier_up'
+  reward_payload jsonb NOT NULL,    -- {type, points, free_item_id, discount_percent, expires_at}
+  issued_at timestamptz NOT NULL DEFAULT now(),
+  redeemed_at timestamptz,
+  redeemed_order_id uuid,
+  idempotency_key text UNIQUE       -- e.g. "birthday-2026-{diner_id}-{program_id}"
+);
+```
+
+RLS: diners read their own; staff read for their venues; managers can void.
+
+### 6. Diner-side surfaces (small touches)
+
+- **`DinerProfile.tsx`**: under each membership, show the tier badge (color chip + name) and "Next tier in $X" progress bar; list active unredeemed rewards from `loyalty_rewards_issued`.
+- **`CheckoutPanel.tsx`**: "Available rewards" row above the redeem-points toggle — tap to apply a free item or % discount from `loyalty_rewards_issued`.
+
+### 7. Diner birthday capture
+
+Add a `birthday` (DATE) column to `diner_profiles` and an editor field in `DinerProfile`. Birthday reward issuance keyed off this.
+
+## Files to change
+
+| File | Change |
+|------|--------|
+| New migration | `loyalty_rewards_issued` table + RLS; `diner_profiles.birthday` column |
+| `src/components/venue/OrdrupLoyaltyEditor.tsx` (new) | Full sectioned editor described above |
+| `src/pages/AdminVenueDetail.tsx` | Rename row → "Ordrup Loyalty" + new description; "Configure Program" button mounts editor |
+| `src/pages/GroupDashboard.tsx` | Same rename + Configure button |
+| `src/pages/VenueSettings.tsx` | Mount the same editor for solo (non-group) venues |
+| `supabase/functions/loyalty-earn/index.ts` | Stamps mode, tier recalculation, milestone firing, birthday/anniversary issuance with idempotency |
+| `src/components/consumer/DinerProfile.tsx` | Tier badge + progress + active rewards list + birthday field |
+| `src/components/consumer/CheckoutPanel.tsx` | "Available rewards" applicator above existing redeem toggle |
+
+## Out of scope (Phase 2+)
+
+- Marketing automation (email/SMS blasts to tier holders or birthdays — separate notification system).
+- Item-level point multipliers (e.g. "2x points on cocktails").
+- Cross-group "Ordrup Network" pooling.
+- Staff-side manual point adjustment UI.
+
+## Expected result
+
+A group admin opens *Group Settings → Diner & Loyalty Settings*, sees the renamed **Ordrup Loyalty** section described as Ordrup's free built-in program. They click **Configure Program** and define: 1 pt/$, Bronze/Silver/Gold tiers based on rolling 12-month spend, a 50-pt signup bonus, a free dessert on birthdays valid 14 days, and milestones at 250 pts ($5 off) and 1000 pts (free cocktail). Diners see their tier badge + progress in their profile, redeem rewards at checkout, and get a birthday treat automatically — all without the venue paying for a 3rd-party loyalty platform.
 
