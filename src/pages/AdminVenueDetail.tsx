@@ -190,9 +190,7 @@ export default function AdminVenueDetail() {
           )}
           <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
           <TabsTrigger value="billing"><DollarSign className="h-3.5 w-3.5 mr-1" />Billing</TabsTrigger>
-          {venue?.group_id && (
-            <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
-          )}
+          <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
         </TabsList>
 
         {/* ── DETAILS TAB ── */}
