@@ -874,18 +874,28 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
   const [expandedGroupProgram, setExpandedGroupProgram] = useState<string | null>(null);
 
+  const [ordrupActive, setOrdrupActive] = useState(false);
+  const [ordrupProgramId, setOrdrupProgramId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+
   const fetchPrograms = async () => {
     if (!venueId) return;
     setLoading(true);
     const { data } = await supabase.from("loyalty_programs").select("*").eq("venue_id", venueId).order("created_at");
-    setPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
+    const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
+    const builtin = all.find((p: any) => p.is_ordrup_builtin);
+    setOrdrupActive(!!builtin?.is_active);
+    setOrdrupProgramId(builtin?.id ?? null);
+    setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
   };
 
-  const fetchGroupPrograms = async () => {
-    if (!groupId) return;
-    const { data } = await supabase.from("loyalty_programs").select("*").eq("group_id", groupId).eq("is_active", true).order("created_at");
-    setGroupPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
+  const toggleOrdrupActive = async (next: boolean) => {
+    if (!ordrupProgramId) { setEditorOpen(true); return; }
+    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", ordrupProgramId);
+    if (error) { toast.error(error.message); return; }
+    toast.success(next ? "Ordrup Loyalty enabled" : "Ordrup Loyalty paused");
+    fetchPrograms();
   };
 
   useEffect(() => { fetchPrograms(); fetchGroupPrograms(); }, [venueId, groupId]);
