@@ -15,6 +15,7 @@ import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2,
 import BillingConfigTab from "@/components/venue/BillingConfigTab";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import ChildVenueLoyaltyViewer from "@/components/venue/ChildVenueLoyaltyViewer";
+import OrdrupLoyaltyEditor from "@/components/venue/OrdrupLoyaltyEditor";
 
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
@@ -189,9 +190,7 @@ export default function AdminVenueDetail() {
           )}
           <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
           <TabsTrigger value="billing"><DollarSign className="h-3.5 w-3.5 mr-1" />Billing</TabsTrigger>
-          {venue?.group_id && (
-            <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
-          )}
+          <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
         </TabsList>
 
         {/* ── DETAILS TAB ── */}
@@ -411,15 +410,27 @@ export default function AdminVenueDetail() {
           />
         </TabsContent>
 
-        {venue?.group_id && (
-          <TabsContent value="loyalty" className="space-y-6">
-            {venue.venue_type === "parent" ? (
+        <TabsContent value="loyalty" className="space-y-6">
+          {venue?.group_id ? (
+            venue.venue_type === "parent" ? (
               <GroupLoyaltyManager groupId={venue.group_id} groupName={venue.name} />
             ) : (
               <ChildVenueLoyaltyViewer groupId={venue.group_id} venueName={venue.name} />
-            )}
-          </TabsContent>
-        )}
+            )
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Ordrup Loyalty</CardTitle>
+                <CardDescription>
+                  Configure the built-in Ordrup Loyalty program for {venue?.name}. To manage custom programs and toggle activation, the venue's operators can use the <strong>Loyalty</strong> tab in their dashboard.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <OrdrupLoyaltyEditor scope={{ type: "venue", venue_id: venueId! }} menuVenueId={venueId!} defaultName="Ordrup Loyalty" />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );
