@@ -410,15 +410,27 @@ export default function AdminVenueDetail() {
           />
         </TabsContent>
 
-        {venue?.group_id && (
-          <TabsContent value="loyalty" className="space-y-6">
-            {venue.venue_type === "parent" ? (
+        <TabsContent value="loyalty" className="space-y-6">
+          {venue?.group_id ? (
+            venue.venue_type === "parent" ? (
               <GroupLoyaltyManager groupId={venue.group_id} groupName={venue.name} />
             ) : (
               <ChildVenueLoyaltyViewer groupId={venue.group_id} venueName={venue.name} />
-            )}
-          </TabsContent>
-        )}
+            )
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Ordrup Loyalty</CardTitle>
+                <CardDescription>
+                  Configure the built-in Ordrup Loyalty program for {venue?.name}. To manage custom programs and toggle activation, the venue's operators can use the <strong>Loyalty</strong> tab in their dashboard.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <OrdrupLoyaltyEditor scope={{ type: "venue", venue_id: venueId! }} menuVenueId={venueId!} defaultName="Ordrup Loyalty" />
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );
