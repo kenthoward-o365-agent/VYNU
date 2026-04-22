@@ -120,6 +120,7 @@ export type Database = {
       diner_profiles: {
         Row: {
           allergens: string[] | null
+          birthday: string | null
           country_code: string | null
           created_at: string
           display_name: string | null
@@ -134,6 +135,7 @@ export type Database = {
         }
         Insert: {
           allergens?: string[] | null
+          birthday?: string | null
           country_code?: string | null
           created_at?: string
           display_name?: string | null
@@ -148,6 +150,7 @@ export type Database = {
         }
         Update: {
           allergens?: string[] | null
+          birthday?: string | null
           country_code?: string | null
           created_at?: string
           display_name?: string | null
@@ -497,6 +500,56 @@ export type Database = {
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_rewards_issued: {
+        Row: {
+          created_at: string
+          diner_id: string
+          id: string
+          idempotency_key: string | null
+          issued_at: string
+          program_id: string
+          redeemed_at: string | null
+          redeemed_order_id: string | null
+          reward_kind: string
+          reward_payload: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          diner_id: string
+          id?: string
+          idempotency_key?: string | null
+          issued_at?: string
+          program_id: string
+          redeemed_at?: string | null
+          redeemed_order_id?: string | null
+          reward_kind: string
+          reward_payload?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          diner_id?: string
+          id?: string
+          idempotency_key?: string | null
+          issued_at?: string
+          program_id?: string
+          redeemed_at?: string | null
+          redeemed_order_id?: string | null
+          reward_kind?: string
+          reward_payload?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_rewards_issued_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_programs"
             referencedColumns: ["id"]
           },
         ]
