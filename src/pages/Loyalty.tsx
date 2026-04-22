@@ -47,6 +47,10 @@ export default function Loyalty() {
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
   const [form, setForm] = useState({ name: "", program_type: "points" as string });
 
+  const [ordrupActive, setOrdrupActive] = useState(false);
+  const [ordrupProgramId, setOrdrupProgramId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+
   const fetchPrograms = async () => {
     if (!venue) return;
     setLoading(true);
@@ -55,8 +59,21 @@ export default function Loyalty() {
       .select("*")
       .eq("venue_id", venue.id)
       .order("created_at");
-    setPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
+    const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
+    const builtin = all.find((p: any) => p.is_ordrup_builtin);
+    setOrdrupActive(!!builtin?.is_active);
+    setOrdrupProgramId(builtin?.id ?? null);
+    // Custom programs only.
+    setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
+  };
+
+  const toggleOrdrupActive = async (next: boolean) => {
+    if (!ordrupProgramId) { setEditorOpen(true); return; }
+    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", ordrupProgramId);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: next ? "Ordrup Loyalty enabled" : "Ordrup Loyalty paused" });
+    fetchPrograms();
   };
 
   useEffect(() => { fetchPrograms(); }, [venue]);
