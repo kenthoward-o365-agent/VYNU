@@ -361,6 +361,11 @@ function GroupLoyaltyTab({ group }: { group: any }) {
   const [form, setForm] = useState({ name: "", program_type: "points" });
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
 
+  const [ordrupActive, setOrdrupActive] = useState(false);
+  const [ordrupProgramId, setOrdrupProgramId] = useState<string | null>(null);
+  const [ordrupName, setOrdrupName] = useState("Ordrup Loyalty");
+  const [editorOpen, setEditorOpen] = useState(false);
+
   const fetchPrograms = async () => {
     setLoading(true);
     const { data } = await supabase
@@ -368,8 +373,27 @@ function GroupLoyaltyTab({ group }: { group: any }) {
       .select("*")
       .eq("group_id", group.id)
       .order("created_at");
-    setPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
+    const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
+    const builtin = all.find((p: any) => p.is_ordrup_builtin);
+    setOrdrupActive(!!builtin?.is_active);
+    setOrdrupProgramId(builtin?.id ?? null);
+    setOrdrupName(builtin?.name || "Ordrup Loyalty");
+    // Custom programs only — never show the built-in row in the list (it's controlled by the card above).
+    setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
+  };
+
+  const toggleOrdrupActive = async (next: boolean) => {
+    if (!ordrupProgramId) {
+      // No row yet — open the editor to create one.
+      setEditorOpen(true);
+      return;
+    }
+    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", ordrupProgramId);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    setOrdrupActive(next);
+    toast({ title: next ? "Ordrup Loyalty enabled" : "Ordrup Loyalty paused" });
+    fetchPrograms();
   };
 
   useEffect(() => { fetchPrograms(); }, [group.id]);
