@@ -27,6 +27,7 @@ interface Profile {
   phone: string | null;
   display_name: string | null;
   allergens: string[] | null;
+  birthday: string | null;
   created_at?: string;
 }
 
@@ -64,7 +65,7 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
   const [loyalty, setLoyalty] = useState<LoyaltyInfo[]>([]);
   const [venues, setVenues] = useState<LoyaltyVenue[]>([]);
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "", allergens: [] as string[] });
+  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "", allergens: [] as string[], birthday: "" });
   const [saving, setSaving] = useState(false);
   const [visitCount, setVisitCount] = useState<number>(0);
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -90,17 +91,18 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
     // Fetch profile
     const { data: prof } = await supabase
       .from("diner_profiles")
-      .select("id, first_name, last_name, email, phone, display_name, allergens, created_at")
+      .select("id, first_name, last_name, email, phone, display_name, allergens, birthday, created_at")
       .eq("user_id", session.user.id)
       .maybeSingle();
 
     if (prof) {
-      setProfile(prof);
+      setProfile(prof as any);
       setEditForm({
         first_name: prof.first_name || "",
         last_name: prof.last_name || "",
         phone: prof.phone || "",
         allergens: prof.allergens || [],
+        birthday: (prof as any).birthday || "",
       });
 
       // Fetch total visit count across all venues
@@ -257,7 +259,8 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
         phone: editForm.phone.trim() || null,
         display_name: `${editForm.first_name.trim()} ${editForm.last_name.trim()}`.trim() || null,
         allergens: editForm.allergens,
-      })
+        birthday: editForm.birthday || null,
+      } as any)
       .eq("id", profile.id);
     setSaving(false);
     if (error) { toast.error("Failed to update profile"); return; }
@@ -390,6 +393,20 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
                 onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
                 className="mt-1"
               />
+            </div>
+            <div>
+              <Label className="text-xs flex items-center gap-1.5">
+                🎂 Birthday
+              </Label>
+              <Input
+                type="date"
+                value={editForm.birthday}
+                onChange={(e) => setEditForm((f) => ({ ...f, birthday: e.target.value }))}
+                className="mt-1"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Used to send you a birthday treat from venues running Ordrup Loyalty.
+              </p>
             </div>
             <div>
               <Label className="text-xs flex items-center gap-1.5">
