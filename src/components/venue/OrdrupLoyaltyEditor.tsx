@@ -249,6 +249,7 @@ export default function OrdrupLoyaltyEditor({ scope, menuVenueId, defaultName = 
         is_active: isActive,
         rules: rules as any,
         program_type: "points",
+        is_ordrup_builtin: true,
       };
       if (scope.type === "group") insertRow.group_id = scope.group_id;
       else insertRow.venue_id = scope.venue_id;
