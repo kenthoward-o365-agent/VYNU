@@ -2482,25 +2482,16 @@ export type Database = {
       fire_table_session: { Args: { _session_id: string }; Returns: boolean }
       generate_site_id: { Args: never; Returns: string }
       get_active_loyalty_program: {
-        Args: { _venue_id: string }
+        Args: { p_venue_id: string }
         Returns: {
-          created_at: string
-          group_id: string | null
+          group_id: string
           id: string
-          is_active: boolean | null
           is_ordrup_builtin: boolean
           name: string
           program_type: Database["public"]["Enums"]["loyalty_program_type"]
-          rules: Json | null
-          updated_at: string
-          venue_id: string | null
+          rules: Json
+          venue_id: string
         }[]
-        SetofOptions: {
-          from: "*"
-          to: "loyalty_programs"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       get_terminal_by_token: {
         Args: { _token: string }
