@@ -459,6 +459,7 @@ export type Database = {
           group_id: string | null
           id: string
           is_active: boolean | null
+          is_ordrup_builtin: boolean
           name: string
           program_type: Database["public"]["Enums"]["loyalty_program_type"]
           rules: Json | null
@@ -470,6 +471,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           is_active?: boolean | null
+          is_ordrup_builtin?: boolean
           name: string
           program_type?: Database["public"]["Enums"]["loyalty_program_type"]
           rules?: Json | null
@@ -481,6 +483,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           is_active?: boolean | null
+          is_ordrup_builtin?: boolean
           name?: string
           program_type?: Database["public"]["Enums"]["loyalty_program_type"]
           rules?: Json | null
@@ -2485,6 +2488,7 @@ export type Database = {
           group_id: string | null
           id: string
           is_active: boolean | null
+          is_ordrup_builtin: boolean
           name: string
           program_type: Database["public"]["Enums"]["loyalty_program_type"]
           rules: Json | null
