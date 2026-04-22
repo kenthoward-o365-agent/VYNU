@@ -273,34 +273,28 @@ function SettingsTab({ group, onSaved }: { group: any; onSaved: () => Promise<vo
       <Card>
         <CardHeader>
           <CardTitle>Diner & Loyalty Settings</CardTitle>
-          <CardDescription>These settings apply across all venues in the group.</CardDescription>
+          <CardDescription>Cross-venue behaviours that apply to every venue in this group.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-sm">Ordrup Loyalty</p>
-              <p className="text-xs text-muted-foreground">Ordrup's own built-in loyalty program — free of charge. Reward repeat diners with points, status tiers, birthday treats and more, across every venue in your group.</p>
+              <p className="font-medium text-sm">Global Diner Recognition</p>
+              <p className="text-xs text-muted-foreground">Diners signing up at one venue are recognised at every venue in this group — same profile, allergens and saved cards.</p>
             </div>
             <Switch checked={globalDiners} onCheckedChange={setGlobalDiners} />
           </div>
           <Separator />
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-sm">Global Loyalty Programs</p>
-              <p className="text-xs text-muted-foreground">Group loyalty programs automatically apply to all venues.</p>
+              <p className="font-medium text-sm">Global Loyalty Pooling</p>
+              <p className="text-xs text-muted-foreground">Points earned at one venue can be redeemed at any sibling venue. Requires a group-level loyalty program.</p>
             </div>
             <Switch checked={globalLoyalty} onCheckedChange={setGlobalLoyalty} />
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Configure Ordrup Loyalty</CardTitle>
-          <CardDescription>Set up how diners earn points, hit status tiers, and unlock birthday and milestone rewards across this group.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <OrdrupLoyaltyEditor scope={{ type: "group", group_id: group.id }} defaultName="Ordrup Loyalty" />
+          <Separator />
+          <p className="text-xs text-muted-foreground">
+            → Configure your loyalty program (Ordrup Loyalty or your own custom programs) in the <strong>Loyalty</strong> tab.
+          </p>
         </CardContent>
       </Card>
 
@@ -367,6 +361,11 @@ function GroupLoyaltyTab({ group }: { group: any }) {
   const [form, setForm] = useState({ name: "", program_type: "points" });
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
 
+  const [ordrupActive, setOrdrupActive] = useState(false);
+  const [ordrupProgramId, setOrdrupProgramId] = useState<string | null>(null);
+  const [ordrupName, setOrdrupName] = useState("Ordrup Loyalty");
+  const [editorOpen, setEditorOpen] = useState(false);
+
   const fetchPrograms = async () => {
     setLoading(true);
     const { data } = await supabase
@@ -374,8 +373,27 @@ function GroupLoyaltyTab({ group }: { group: any }) {
       .select("*")
       .eq("group_id", group.id)
       .order("created_at");
-    setPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
+    const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
+    const builtin = all.find((p: any) => p.is_ordrup_builtin);
+    setOrdrupActive(!!builtin?.is_active);
+    setOrdrupProgramId(builtin?.id ?? null);
+    setOrdrupName(builtin?.name || "Ordrup Loyalty");
+    // Custom programs only — never show the built-in row in the list (it's controlled by the card above).
+    setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
+  };
+
+  const toggleOrdrupActive = async (next: boolean) => {
+    if (!ordrupProgramId) {
+      // No row yet — open the editor to create one.
+      setEditorOpen(true);
+      return;
+    }
+    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", ordrupProgramId);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    setOrdrupActive(next);
+    toast({ title: next ? "Ordrup Loyalty enabled" : "Ordrup Loyalty paused" });
+    fetchPrograms();
   };
 
   useEffect(() => { fetchPrograms(); }, [group.id]);
@@ -408,14 +426,56 @@ function GroupLoyaltyTab({ group }: { group: any }) {
 
   return (
     <div className="space-y-6">
+      {/* Ordrup Loyalty (built-in) — top of Loyalty tab */}
+      <Card className="border-primary/30">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Ordrup Loyalty
+                <Badge variant="outline" className="ml-1 text-[10px]">Built-in · Free</Badge>
+              </CardTitle>
+              <CardDescription>
+                Ordrup's free built-in loyalty program. When ON, this is the active program for diners — your custom programs below are paused.
+              </CardDescription>
+            </div>
+            <Switch checked={ordrupActive} onCheckedChange={toggleOrdrupActive} aria-label="Toggle Ordrup Loyalty" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Configure Program
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Configure Ordrup Loyalty</DialogTitle>
+              </DialogHeader>
+              <OrdrupLoyaltyEditor scope={{ type: "group", group_id: group.id }} defaultName="Ordrup Loyalty" />
+            </DialogContent>
+          </Dialog>
+        </CardContent>
+      </Card>
+
+      {ordrupActive && (
+        <p className="text-xs text-muted-foreground italic px-1">
+          Ordrup Loyalty is your active program. Custom programs below are paused for diners.
+        </p>
+      )}
+
+      <Separator />
+
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Group Loyalty Programs</h3>
-          <p className="text-sm text-muted-foreground">These programs apply across all venues in the group.</p>
+          <h3 className="text-lg font-semibold text-foreground">Custom Loyalty Programs</h3>
+          <p className="text-sm text-muted-foreground">Your own programs (e.g. The Pass). Apply across all venues in this group.</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" /> New Program</Button>
+            <Button variant="outline"><Plus className="mr-2 h-4 w-4" /> New Program</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Create Group Loyalty Program</DialogTitle></DialogHeader>
@@ -454,10 +514,12 @@ function GroupLoyaltyTab({ group }: { group: any }) {
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {programs.map((p) => (
-              <Card key={p.id} className={`cursor-pointer transition-all ${editingProgram?.id === p.id ? "ring-2 ring-primary" : "hover:border-primary/50"}`} onClick={() => setEditingProgram(p)}>
+              <Card key={p.id} className={`cursor-pointer transition-all ${editingProgram?.id === p.id ? "ring-2 ring-primary" : "hover:border-primary/50"} ${ordrupActive ? "opacity-60" : ""}`} onClick={() => setEditingProgram(p)}>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-base">{p.name}</CardTitle>
-                  <Badge variant={p.is_active ? "default" : "secondary"}>{p.is_active ? "Active" : "Inactive"}</Badge>
+                  <Badge variant={ordrupActive ? "outline" : (p.is_active ? "default" : "secondary")}>
+                    {ordrupActive ? "Paused" : (p.is_active ? "Active" : "Inactive")}
+                  </Badge>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-sm text-muted-foreground">Type: {p.program_type}</p>

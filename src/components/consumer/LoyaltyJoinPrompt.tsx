@@ -54,7 +54,7 @@ const LoyaltyJoinPrompt = ({
     const fetchProgram = async () => {
       // Use the resolver so the right program (group > venue) is offered, respecting opt-outs.
       const { data: resolved } = await supabase
-        .rpc("get_active_loyalty_program", { _venue_id: venueId });
+        .rpc("get_active_loyalty_program", { p_venue_id: venueId });
       const chosen: any = Array.isArray(resolved) ? resolved[0] : resolved;
       if (cancelled || !chosen) return;
 

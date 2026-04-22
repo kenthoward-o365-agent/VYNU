@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Gift, Plus, Trash2, Star, Cake, Award, DollarSign, Sparkles, Settings2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import OrdrupLoyaltyEditor from "@/components/venue/OrdrupLoyaltyEditor";
 
 interface LoyaltyRules {
   points_per_dollar?: number;
@@ -46,6 +47,10 @@ export default function Loyalty() {
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
   const [form, setForm] = useState({ name: "", program_type: "points" as string });
 
+  const [ordrupActive, setOrdrupActive] = useState(false);
+  const [ordrupProgramId, setOrdrupProgramId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+
   const fetchPrograms = async () => {
     if (!venue) return;
     setLoading(true);
@@ -54,8 +59,21 @@ export default function Loyalty() {
       .select("*")
       .eq("venue_id", venue.id)
       .order("created_at");
-    setPrograms((data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
+    const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
+    const builtin = all.find((p: any) => p.is_ordrup_builtin);
+    setOrdrupActive(!!builtin?.is_active);
+    setOrdrupProgramId(builtin?.id ?? null);
+    // Custom programs only.
+    setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
+  };
+
+  const toggleOrdrupActive = async (next: boolean) => {
+    if (!ordrupProgramId) { setEditorOpen(true); return; }
+    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", ordrupProgramId);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: next ? "Ordrup Loyalty enabled" : "Ordrup Loyalty paused" });
+    fetchPrograms();
   };
 
   useEffect(() => { fetchPrograms(); }, [venue]);
@@ -105,6 +123,46 @@ export default function Loyalty() {
 
   return (
     <div className="space-y-6">
+      {/* Ordrup Loyalty (built-in) */}
+      <Card className="border-primary/30">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Ordrup Loyalty
+                <Badge variant="outline" className="ml-1 text-[10px]">Built-in · Free</Badge>
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Ordrup's free built-in loyalty program. When ON, this becomes the active program for diners — your custom programs below are paused.
+              </p>
+            </div>
+            <Switch checked={ordrupActive} onCheckedChange={toggleOrdrupActive} aria-label="Toggle Ordrup Loyalty" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Configure Program
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>Configure Ordrup Loyalty</DialogTitle></DialogHeader>
+              {venue && <OrdrupLoyaltyEditor scope={{ type: "venue", venue_id: venue.id }} menuVenueId={venue.id} defaultName="Ordrup Loyalty" />}
+            </DialogContent>
+          </Dialog>
+        </CardContent>
+      </Card>
+
+      {ordrupActive && (
+        <p className="text-xs text-muted-foreground italic px-1">
+          Ordrup Loyalty is your active program. Custom programs below are paused for diners.
+        </p>
+      )}
+
+      <Separator />
+
       {groupPrograms.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
