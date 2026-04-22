@@ -123,6 +123,46 @@ export default function Loyalty() {
 
   return (
     <div className="space-y-6">
+      {/* Ordrup Loyalty (built-in) */}
+      <Card className="border-primary/30">
+        <CardHeader>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Ordrup Loyalty
+                <Badge variant="outline" className="ml-1 text-[10px]">Built-in · Free</Badge>
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Ordrup's free built-in loyalty program. When ON, this becomes the active program for diners — your custom programs below are paused.
+              </p>
+            </div>
+            <Switch checked={ordrupActive} onCheckedChange={toggleOrdrupActive} aria-label="Toggle Ordrup Loyalty" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings2 className="h-3.5 w-3.5 mr-1.5" /> Configure Program
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>Configure Ordrup Loyalty</DialogTitle></DialogHeader>
+              {venue && <OrdrupLoyaltyEditor scope={{ type: "venue", venue_id: venue.id }} menuVenueId={venue.id} defaultName="Ordrup Loyalty" />}
+            </DialogContent>
+          </Dialog>
+        </CardContent>
+      </Card>
+
+      {ordrupActive && (
+        <p className="text-xs text-muted-foreground italic px-1">
+          Ordrup Loyalty is your active program. Custom programs below are paused for diners.
+        </p>
+      )}
+
+      <Separator />
+
       {groupPrograms.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
