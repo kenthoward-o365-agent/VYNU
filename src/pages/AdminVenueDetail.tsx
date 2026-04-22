@@ -15,7 +15,7 @@ import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2,
 import BillingConfigTab from "@/components/venue/BillingConfigTab";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import ChildVenueLoyaltyViewer from "@/components/venue/ChildVenueLoyaltyViewer";
-import OrdrupLoyaltyEditor from "@/components/venue/OrdrupLoyaltyEditor";
+
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 
