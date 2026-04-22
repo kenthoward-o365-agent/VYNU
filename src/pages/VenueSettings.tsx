@@ -605,17 +605,6 @@ export default function VenueSettings() {
         {/* ── LOYALTY TAB ── */}
         {isManager && venue && (
           <TabsContent value="loyalty" className="space-y-6">
-            {!venue.group_id && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ordrup Loyalty</CardTitle>
-                  <CardDescription>Ordrup's own built-in loyalty program — free of charge. Reward repeat diners with points, status tiers, birthday treats and more.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <OrdrupLoyaltyEditor scope={{ type: "venue", venue_id: venue.id }} menuVenueId={venue.id} defaultName="Ordrup Loyalty" />
-                </CardContent>
-              </Card>
-            )}
             <VenueLoyaltyTab venueId={venue?.id} groupId={venue?.group_id} />
           </TabsContent>
         )}
