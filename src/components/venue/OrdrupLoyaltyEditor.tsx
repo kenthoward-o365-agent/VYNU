@@ -190,8 +190,13 @@ export default function OrdrupLoyaltyEditor({ scope, menuVenueId, defaultName = 
 
   const loadProgram = async () => {
     setLoading(true);
-    // Get the most recently updated active program for this scope; otherwise first row of any kind.
-    let q = supabase.from("loyalty_programs").select("id, name, is_active, rules, group_id, venue_id").order("updated_at", { ascending: false }).limit(1);
+    // Load ONLY the Ordrup built-in program for this scope.
+    // Custom programs (The Pass, Morris House, etc.) live separately and are never touched here.
+    let q = supabase
+      .from("loyalty_programs")
+      .select("id, name, is_active, rules, group_id, venue_id")
+      .eq("is_ordrup_builtin", true)
+      .limit(1);
     if (scope.type === "group") q = q.eq("group_id", scope.group_id).is("venue_id", null);
     else q = q.eq("venue_id", scope.venue_id).is("group_id", null);
     const { data } = await q.maybeSingle();
@@ -203,7 +208,8 @@ export default function OrdrupLoyaltyEditor({ scope, menuVenueId, defaultName = 
     } else {
       setProgram(null);
       setName(defaultName);
-      setIsActive(true);
+      // Default OFF so it doesn't override custom programs until the operator deliberately turns it on.
+      setIsActive(false);
       setRules(JSON.parse(JSON.stringify(DEFAULT_RULES)));
     }
     setLoading(false);
