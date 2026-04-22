@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
 
     // Resolve active program for this venue (group > venue priority, optouts respected).
     const { data: programRows, error: progErr } = await admin
-      .rpc("get_active_loyalty_program", { _venue_id: order.venue_id });
+      .rpc("get_active_loyalty_program", { p_venue_id: order.venue_id });
     if (progErr) return json({ error: progErr.message }, 500);
     const program = Array.isArray(programRows) ? programRows[0] : programRows;
     if (!program) return json({ skipped: true, reason: "no_active_program" });

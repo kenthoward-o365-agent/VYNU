@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Gift, Plus, Trash2, Star, Cake, Award, DollarSign, Sparkles, Settings2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import OrdrupLoyaltyEditor from "@/components/venue/OrdrupLoyaltyEditor";
 
 interface LoyaltyRules {
   points_per_dollar?: number;
