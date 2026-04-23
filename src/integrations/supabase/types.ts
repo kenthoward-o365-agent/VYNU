@@ -2583,7 +2583,7 @@ export type Database = {
         Returns: Json
       }
       pair_display_terminal: {
-        Args: { _code: string; _user_agent?: string }
+        Args: { _code: string; _user_agent: string }
         Returns: {
           area_ids: string[]
           device_token: string
