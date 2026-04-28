@@ -18,7 +18,7 @@ interface TocItem {
 const tocItems: TocItem[] = [
   { id: "getting-started", label: "Getting Started", icon: Rocket },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "ordrup-ai-analytics", label: "L.O.U. AI Analytics", icon: BarChart3 },
+  { id: "shyndig-ai-analytics", label: "L.O.U. AI Analytics", icon: BarChart3 },
   { id: "menu-builder", label: "Menu Builder", icon: UtensilsCrossed },
   { id: "pricing", label: "Pricing", icon: Tag },
   { id: "tables-qr", label: "Tables & QR", icon: QrCode },
@@ -126,15 +126,15 @@ export default function KnowledgeBase() {
       <div className="flex-1 space-y-8 min-w-0">
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-1">Knowledge Base</h1>
-          <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on OrdrUp.</p>
+          <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on Shyndig.</p>
         </div>
 
         <Separator />
 
         {/* Getting Started */}
         <Section id="getting-started" title="Getting Started" icon={Rocket}>
-          <SubSection title="Welcome to OrdrUp">
-            <p>OrdrUp replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue&apos;s AI assistant, and place orders — no app download required.</p>
+          <SubSection title="Welcome to Shyndig">
+            <p>Shyndig replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue&apos;s AI assistant, and place orders — no app download required.</p>
           </SubSection>
           <SubSection title="First-Time Setup Checklist">
             <StepList steps={[
@@ -144,7 +144,7 @@ export default function KnowledgeBase() {
               "Set up your tables and generate QR codes in Tables &amp; QR.",
               "Set up OrdrPay payments in Settings → Payments.",
               "Set up tax rules in Settings → Taxes.",
-              "Customise your OrdrUp AI agent personality in Settings → OrdrUp AI.",
+              "Customise your Shyndig AI agent personality in Settings → Shyndig AI.",
               "Print and place QR stickers on each table — you're live!",
             ]} />
           </SubSection>
@@ -169,7 +169,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* L.O.U. AI Analytics */}
-        <Section id="ordrup-ai-analytics" title="L.O.U. AI Analytics" icon={BarChart3}>
+        <Section id="shyndig-ai-analytics" title="L.O.U. AI Analytics" icon={BarChart3}>
           <SubSection title="What the AI Tracks">
             <p>L.O.U. AI Analytics shows you how diners interact with your AI assistant:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
@@ -180,7 +180,7 @@ export default function KnowledgeBase() {
             </ul>
           </SubSection>
           <SubSection title="Reading the Insights">
-            <p>A high conversion rate means your AI personality and menu descriptions are working well. If diners are chatting a lot but not ordering, consider simplifying your menu descriptions or adjusting the AI&apos;s tone in Settings → OrdrUp AI.</p>
+            <p>A high conversion rate means your AI personality and menu descriptions are working well. If diners are chatting a lot but not ordering, consider simplifying your menu descriptions or adjusting the AI&apos;s tone in Settings → Shyndig AI.</p>
           </SubSection>
         </Section>
 
@@ -196,7 +196,7 @@ export default function KnowledgeBase() {
             ]} />
           </SubSection>
           <SubSection title="AI Import">
-            <p>Upload a photo or PDF of your existing menu. OrdrUp&apos;s AI will read it and create categories and items automatically. Review and adjust before saving.</p>
+            <p>Upload a photo or PDF of your existing menu. Shyndig&apos;s AI will read it and create categories and items automatically. Review and adjust before saving.</p>
             <StepList steps={[
               "Go to Menu Builder → Settings → AI Features → Import.",
               "Upload your menu file (PDF, JPG, PNG).",
@@ -401,7 +401,7 @@ export default function KnowledgeBase() {
               <li><strong>Kitchen</strong> — Mac mini + 27&quot; wall-mounted monitor in landscape, OR an iPad Pro 12.9&quot; in a kitchen-grade splash-proof case.</li>
               <li><strong>Bar</strong> — iPad 10.9&quot; in a counter mount with a charging cable run.</li>
               <li><strong>Expo / pass</strong> — a large TV (43&quot;+) driven by an Intel NUC or Mac mini, browser launched in fullscreen kiosk mode.</li>
-              <li><strong>For all stations</strong> — disable display sleep in the OS, set the browser to auto-launch on reboot, and bookmark the OrdrUp URL on the home screen.</li>
+              <li><strong>For all stations</strong> — disable display sleep in the OS, set the browser to auto-launch on reboot, and bookmark the Shyndig URL on the home screen.</li>
             </ul>
             <Tip>iPads in kitchens take a beating. Always pair a device with a code — never share the URL alone — and keep a printed list of active terminals near the manager&apos;s office for quick &quot;is everything online?&quot; checks.</Tip>
           </SubSection>
@@ -662,7 +662,7 @@ export default function KnowledgeBase() {
             <p>Update your venue name, type, address, contact information, logo, and operating hours. This information is displayed to diners and used by the AI assistant.</p>
           </SubSection>
           <SubSection title="Users &amp; Roles">
-            <p>Permissions in OrdrUp work in <strong>two layers</strong>: a <em>role</em> controls which sidebar areas a user can see, and <em>per-user toggles</em> refine what they can actually do inside Orders.</p>
+            <p>Permissions in Shyndig work in <strong>two layers</strong>: a <em>role</em> controls which sidebar areas a user can see, and <em>per-user toggles</em> refine what they can actually do inside Orders.</p>
 
             <p className="font-semibold mt-3">Layer 1 — Roles (sidebar access)</p>
             <p>Each venue defines its own roles under <strong>Settings → Users → Roles</strong>. Three system roles are seeded automatically and cannot be deleted: <strong>Owner</strong>, <strong>Manager</strong>, and <strong>Staff</strong>. You can create additional roles like &quot;Bar Staff&quot;, &quot;Floor Lead&quot;, or &quot;Kitchen Only&quot;.</p>
@@ -698,7 +698,7 @@ export default function KnowledgeBase() {
               "Toggle the programme active when ready.",
             ]} />
           </SubSection>
-          <SubSection title="OrdrUp AI">
+          <SubSection title="Shyndig AI">
             <p>Customise your AI dining assistant:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Agent Name</strong> — What your AI introduces itself as.</li>
@@ -709,7 +709,7 @@ export default function KnowledgeBase() {
             </ul>
           </SubSection>
           <SubSection title="Payments — OrdrPay">
-            <p>OrdrPay is OrdrUp&apos;s built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don&apos;t need a separate processor account or API keys.</p>
+            <p>OrdrPay is Shyndig&apos;s built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don&apos;t need a separate processor account or API keys.</p>
             <SubSection title="Onboarding flow">
               <ol className="list-decimal list-inside space-y-1 pl-1">
                 <li><strong>Application</strong> — submit your venue and business details.</li>
@@ -747,7 +747,7 @@ export default function KnowledgeBase() {
 
         <Separator />
         <p className="text-xs text-muted-foreground text-center pb-8">
-          Need more help? Contact us at support@ordrup.com
+          Need more help? Contact us at support@shyndig.com
         </p>
       </div>
     </div>

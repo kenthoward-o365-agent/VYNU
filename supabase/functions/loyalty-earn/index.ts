@@ -1,4 +1,4 @@
-// Awards loyalty rewards for a paid order using the venue's resolved Ordrup Loyalty program.
+// Awards loyalty rewards for a paid order using the venue's resolved Shyndig Loyalty program.
 // Supports: points-per-dollar OR visit/item stamps, status tiers (rolling 12mo spend) with earn multipliers,
 // signup bonus, milestone rewards, and birthday rewards. Idempotent via diner_visits + loyalty_rewards_issued.idempotency_key.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";

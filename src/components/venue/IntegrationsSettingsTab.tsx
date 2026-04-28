@@ -247,7 +247,7 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
                   <Label>Location ID</Label>
                   <Input
                     className="mt-1"
-                    placeholder="OrdrUp Location ID"
+                    placeholder="Shyndig Location ID"
                     value={locationId}
                     onChange={(e) => setLocationId(e.target.value)}
                   />
@@ -256,7 +256,7 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
                   <Label>Account ID</Label>
                   <Input
                     className="mt-1"
-                    placeholder="OrdrUp Account ID"
+                    placeholder="Shyndig Account ID"
                     value={accountId}
                     onChange={(e) => setAccountId(e.target.value)}
                   />

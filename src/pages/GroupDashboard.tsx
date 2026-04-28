@@ -16,7 +16,7 @@ import {
   Building2, DollarSign, ShoppingCart, TrendingUp, Settings, Users, Gift,
   Plus, Trash2, Pencil, Search, Check, Mail, Phone, AlertTriangle, Star, Cake, Award, Sparkles, Settings2
 } from "lucide-react";
-import OrdrupLoyaltyEditor from "@/components/venue/OrdrupLoyaltyEditor";
+import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
 import { toast } from "@/hooks/use-toast";
 
 /* ── Types ── */
@@ -293,7 +293,7 @@ function SettingsTab({ group, onSaved }: { group: any; onSaved: () => Promise<vo
           </div>
           <Separator />
           <p className="text-xs text-muted-foreground">
-            → Configure your loyalty program (Ordrup Loyalty or your own custom programs) in the <strong>Loyalty</strong> tab.
+            → Configure your loyalty program (Shyndig Loyalty or your own custom programs) in the <strong>Loyalty</strong> tab.
           </p>
         </CardContent>
       </Card>
@@ -361,9 +361,9 @@ function GroupLoyaltyTab({ group }: { group: any }) {
   const [form, setForm] = useState({ name: "", program_type: "points" });
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
 
-  const [ordrupActive, setOrdrupActive] = useState(false);
-  const [ordrupProgramId, setOrdrupProgramId] = useState<string | null>(null);
-  const [ordrupName, setOrdrupName] = useState("Ordrup Loyalty");
+  const [shyndigActive, setShyndigActive] = useState(false);
+  const [shyndigProgramId, setShyndigProgramId] = useState<string | null>(null);
+  const [shyndigName, setShyndigName] = useState("Shyndig Loyalty");
   const [editorOpen, setEditorOpen] = useState(false);
 
   const fetchPrograms = async () => {
@@ -375,24 +375,24 @@ function GroupLoyaltyTab({ group }: { group: any }) {
       .order("created_at");
     const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
     const builtin = all.find((p: any) => p.is_ordrup_builtin);
-    setOrdrupActive(!!builtin?.is_active);
-    setOrdrupProgramId(builtin?.id ?? null);
-    setOrdrupName(builtin?.name || "Ordrup Loyalty");
+    setShyndigActive(!!builtin?.is_active);
+    setShyndigProgramId(builtin?.id ?? null);
+    setShyndigName(builtin?.name || "Shyndig Loyalty");
     // Custom programs only — never show the built-in row in the list (it's controlled by the card above).
     setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
   };
 
-  const toggleOrdrupActive = async (next: boolean) => {
-    if (!ordrupProgramId) {
+  const toggleShyndigActive = async (next: boolean) => {
+    if (!shyndigProgramId) {
       // No row yet — open the editor to create one.
       setEditorOpen(true);
       return;
     }
-    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", ordrupProgramId);
+    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", shyndigProgramId);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    setOrdrupActive(next);
-    toast({ title: next ? "Ordrup Loyalty enabled" : "Ordrup Loyalty paused" });
+    setShyndigActive(next);
+    toast({ title: next ? "Shyndig Loyalty enabled" : "Shyndig Loyalty paused" });
     fetchPrograms();
   };
 
@@ -426,21 +426,21 @@ function GroupLoyaltyTab({ group }: { group: any }) {
 
   return (
     <div className="space-y-6">
-      {/* Ordrup Loyalty (built-in) — top of Loyalty tab */}
+      {/* Shyndig Loyalty (built-in) — top of Loyalty tab */}
       <Card className="border-primary/30">
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                Ordrup Loyalty
+                Shyndig Loyalty
                 <Badge variant="outline" className="ml-1 text-[10px]">Built-in · Free</Badge>
               </CardTitle>
               <CardDescription>
-                Ordrup's free built-in loyalty program. When ON, this is the active program for diners — your custom programs below are paused.
+                Shyndig's free built-in loyalty program. When ON, this is the active program for diners — your custom programs below are paused.
               </CardDescription>
             </div>
-            <Switch checked={ordrupActive} onCheckedChange={toggleOrdrupActive} aria-label="Toggle Ordrup Loyalty" />
+            <Switch checked={shyndigActive} onCheckedChange={toggleShyndigActive} aria-label="Toggle Shyndig Loyalty" />
           </div>
         </CardHeader>
         <CardContent>
@@ -452,17 +452,17 @@ function GroupLoyaltyTab({ group }: { group: any }) {
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Configure Ordrup Loyalty</DialogTitle>
+                <DialogTitle>Configure Shyndig Loyalty</DialogTitle>
               </DialogHeader>
-              <OrdrupLoyaltyEditor scope={{ type: "group", group_id: group.id }} defaultName="Ordrup Loyalty" />
+              <ShyndigLoyaltyEditor scope={{ type: "group", group_id: group.id }} defaultName="Shyndig Loyalty" />
             </DialogContent>
           </Dialog>
         </CardContent>
       </Card>
 
-      {ordrupActive && (
+      {shyndigActive && (
         <p className="text-xs text-muted-foreground italic px-1">
-          Ordrup Loyalty is your active program. Custom programs below are paused for diners.
+          Shyndig Loyalty is your active program. Custom programs below are paused for diners.
         </p>
       )}
 
@@ -514,11 +514,11 @@ function GroupLoyaltyTab({ group }: { group: any }) {
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {programs.map((p) => (
-              <Card key={p.id} className={`cursor-pointer transition-all ${editingProgram?.id === p.id ? "ring-2 ring-primary" : "hover:border-primary/50"} ${ordrupActive ? "opacity-60" : ""}`} onClick={() => setEditingProgram(p)}>
+              <Card key={p.id} className={`cursor-pointer transition-all ${editingProgram?.id === p.id ? "ring-2 ring-primary" : "hover:border-primary/50"} ${shyndigActive ? "opacity-60" : ""}`} onClick={() => setEditingProgram(p)}>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-base">{p.name}</CardTitle>
-                  <Badge variant={ordrupActive ? "outline" : (p.is_active ? "default" : "secondary")}>
-                    {ordrupActive ? "Paused" : (p.is_active ? "Active" : "Inactive")}
+                  <Badge variant={shyndigActive ? "outline" : (p.is_active ? "default" : "secondary")}>
+                    {shyndigActive ? "Paused" : (p.is_active ? "Active" : "Inactive")}
                   </Badge>
                 </CardHeader>
                 <CardContent className="space-y-3">

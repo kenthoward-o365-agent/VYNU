@@ -24,7 +24,7 @@ import SurchargeSettingsTab from "@/components/venue/SurchargeSettingsTab";
 import IntegrationsSettingsTab from "@/components/venue/IntegrationsSettingsTab";
 import RolesManager from "@/components/venue/RolesManager";
 import TableSessionsSettingsTab from "@/components/venue/TableSessionsSettingsTab";
-import OrdrupLoyaltyEditor from "@/components/venue/OrdrupLoyaltyEditor";
+import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
 
 const venueTypes = [
   { value: "restaurant", label: "Restaurant" },
@@ -874,8 +874,8 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
   const [expandedGroupProgram, setExpandedGroupProgram] = useState<string | null>(null);
 
-  const [ordrupActive, setOrdrupActive] = useState(false);
-  const [ordrupProgramId, setOrdrupProgramId] = useState<string | null>(null);
+  const [shyndigActive, setShyndigActive] = useState(false);
+  const [shyndigProgramId, setShyndigProgramId] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
 
   const fetchPrograms = async () => {
@@ -884,17 +884,17 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
     const { data } = await supabase.from("loyalty_programs").select("*").eq("venue_id", venueId).order("created_at");
     const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
     const builtin = all.find((p: any) => p.is_ordrup_builtin);
-    setOrdrupActive(!!builtin?.is_active);
-    setOrdrupProgramId(builtin?.id ?? null);
+    setShyndigActive(!!builtin?.is_active);
+    setShyndigProgramId(builtin?.id ?? null);
     setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
   };
 
-  const toggleOrdrupActive = async (next: boolean) => {
-    if (!ordrupProgramId) { setEditorOpen(true); return; }
-    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", ordrupProgramId);
+  const toggleShyndigActive = async (next: boolean) => {
+    if (!shyndigProgramId) { setEditorOpen(true); return; }
+    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", shyndigProgramId);
     if (error) { toast.error(error.message); return; }
-    toast.success(next ? "Ordrup Loyalty enabled" : "Ordrup Loyalty paused");
+    toast.success(next ? "Shyndig Loyalty enabled" : "Shyndig Loyalty paused");
     fetchPrograms();
   };
 
@@ -941,21 +941,21 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
 
   return (
     <div className="space-y-6">
-      {/* Ordrup Loyalty (built-in, venue-scoped) */}
+      {/* Shyndig Loyalty (built-in, venue-scoped) */}
       <Card className="border-primary/30">
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                Ordrup Loyalty
+                Shyndig Loyalty
                 <Badge variant="outline" className="ml-1 text-[10px]">Built-in · Free</Badge>
               </CardTitle>
               <CardDescription>
-                Ordrup's free built-in loyalty program. When ON, this becomes the active program for diners — your custom programs below are paused.
+                Shyndig's free built-in loyalty program. When ON, this becomes the active program for diners — your custom programs below are paused.
               </CardDescription>
             </div>
-            <Switch checked={ordrupActive} onCheckedChange={toggleOrdrupActive} aria-label="Toggle Ordrup Loyalty" />
+            <Switch checked={shyndigActive} onCheckedChange={toggleShyndigActive} aria-label="Toggle Shyndig Loyalty" />
           </div>
         </CardHeader>
         <CardContent>
@@ -966,16 +966,16 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Configure Ordrup Loyalty</DialogTitle></DialogHeader>
-              {venueId && <OrdrupLoyaltyEditor scope={{ type: "venue", venue_id: venueId }} menuVenueId={venueId} defaultName="Ordrup Loyalty" />}
+              <DialogHeader><DialogTitle>Configure Shyndig Loyalty</DialogTitle></DialogHeader>
+              {venueId && <ShyndigLoyaltyEditor scope={{ type: "venue", venue_id: venueId }} menuVenueId={venueId} defaultName="Shyndig Loyalty" />}
             </DialogContent>
           </Dialog>
         </CardContent>
       </Card>
 
-      {ordrupActive && (
+      {shyndigActive && (
         <p className="text-xs text-muted-foreground italic px-1">
-          Ordrup Loyalty is your active program. Custom programs below are paused for diners.
+          Shyndig Loyalty is your active program. Custom programs below are paused for diners.
         </p>
       )}
 

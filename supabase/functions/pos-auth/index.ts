@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Request token from OrdrUp OAuth endpoint
+    // Request token from Shyndig OAuth endpoint
     const tokenUrl = `${integration.endpoint_url}/oauth/token`;
     const tokenRes = await fetch(tokenUrl, {
       method: "POST",

@@ -75,7 +75,7 @@ const ConsumerOrder = () => {
   const [tab, setTab] = useState<"feed" | "chat" | "cart" | "profile">("feed");
   const [showChat, setShowChat] = useState(false);
   const [chatMode, setChatMode] = useState<string>("chat_optional");
-  const [agentName, setAgentName] = useState<string>("OrdrUp");
+  const [agentName, setAgentName] = useState<string>("Shyndig");
   const [agentIconUrl, setAgentIconUrl] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
@@ -101,7 +101,7 @@ const ConsumerOrder = () => {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
 
   // Session mode state (solo vs group)
-  const sessionStorageKey = venueId && tableId ? `ordrup:session:${venueId}:${tableId}` : null;
+  const sessionStorageKey = venueId && tableId ? `shyndig:session:${venueId}:${tableId}` : null;
   const [sessionMode, setSessionMode] = useState<SessionMode | null>(null);
   const [joinedSessionId, setJoinedSessionId] = useState<string | null>(null);
   const [groupDisplayName, setGroupDisplayName] = useState<string | null>(null);
@@ -190,7 +190,7 @@ const ConsumerOrder = () => {
       }
       setPricingIndex(buildRuleIndex(rules as any, links));
 
-      // Load OrdrUp AI chat mode
+      // Load Shyndig AI chat mode
       const { data: aiConfig } = await supabase
         .from("venue_ai_config")
         .select("chat_mode, agent_name, agent_icon_url")
@@ -214,7 +214,7 @@ const ConsumerOrder = () => {
     fetchData();
   }, [venueId, tableId]);
 
-  // Check for diner profile (Ordrup ID) — silently log visit + sync prefs
+  // Check for diner profile (Shyndig ID) — silently log visit + sync prefs
   useEffect(() => {
     const fetchDinerProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -232,7 +232,7 @@ const ConsumerOrder = () => {
 
           // Silent visit log for cross-venue recognition (one per page load)
           if (venueId) {
-            const visitKey = `ordrup_visit_logged_${venueId}_${data.id}`;
+            const visitKey = `shyndig_visit_logged_${venueId}_${data.id}`;
             const today = new Date().toISOString().slice(0, 10);
             if (sessionStorage.getItem(visitKey) !== today) {
               await supabase
@@ -564,7 +564,7 @@ const ConsumerOrder = () => {
         </>
       )}
 
-      {/* One-tap loyalty join for signed-in Ordrup ID holders (on session start, when no active/paid order is showing) */}
+      {/* One-tap loyalty join for signed-in Shyndig ID holders (on session start, when no active/paid order is showing) */}
       {dinerId && venue && !activeOrder && (
         <LoyaltyJoinPrompt
           venueId={venue.id}

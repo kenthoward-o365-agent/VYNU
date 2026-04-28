@@ -196,13 +196,13 @@ export default function Orders() {
 
   // Load terminal binding from localStorage on mount
   useEffect(() => {
-    const token = localStorage.getItem("ordrup_terminal_token");
+    const token = localStorage.getItem("shyndig_terminal_token");
     if (!token) { setTerminal(null); return; }
     (async () => {
       const { data, error } = await supabase.rpc("get_terminal_by_token" as any, { _token: token });
       if (error || !data || (Array.isArray(data) && !data.length)) {
         // Token invalid (revoked or terminal deleted) — clear it
-        localStorage.removeItem("ordrup_terminal_token");
+        localStorage.removeItem("shyndig_terminal_token");
         setTerminal(null);
         return;
       }
@@ -218,7 +218,7 @@ export default function Orders() {
   // Heartbeat while terminal page is open
   useEffect(() => {
     if (!terminal) return;
-    const token = localStorage.getItem("ordrup_terminal_token");
+    const token = localStorage.getItem("shyndig_terminal_token");
     if (!token) return;
     const ping = () => { supabase.rpc("heartbeat_display_terminal" as any, { _token: token }); };
     ping();
@@ -280,7 +280,7 @@ export default function Orders() {
   }, [venue, filter, auditDate]);
 
   const unpairThisBrowser = () => {
-    localStorage.removeItem("ordrup_terminal_token");
+    localStorage.removeItem("shyndig_terminal_token");
     setTerminal(null);
     toast.success("This browser is no longer bound to a terminal");
   };

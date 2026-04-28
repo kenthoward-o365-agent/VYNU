@@ -39,7 +39,7 @@ export default function PairTerminalDialog({ open, onOpenChange, onPaired }: Pro
       toast.error("Pairing failed");
       return;
     }
-    localStorage.setItem("ordrup_terminal_token", result.device_token);
+    localStorage.setItem("shyndig_terminal_token", result.device_token);
     toast.success(`Paired as "${result.terminal_name}"`);
     onOpenChange(false);
     onPaired();

@@ -264,7 +264,7 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
       .eq("id", profile.id);
     setSaving(false);
     if (error) { toast.error("Failed to update profile"); return; }
-    toast.success("Ordrup ID updated");
+    toast.success("Shyndig ID updated");
     setEditing(false);
     fetchAll();
   };
@@ -324,14 +324,14 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
 
   return (
     <div className="px-5 pt-6 pb-24 space-y-5">
-      {/* Ordrup ID Header Card */}
+      {/* Shyndig ID Header Card */}
       <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-accent/10">
         <CardContent className="pt-4 pb-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
               <span className="text-[10px] uppercase tracking-wider font-bold text-primary">
-                Your Ordrup ID
+                Your Shyndig ID
               </span>
             </div>
             <div className="flex gap-1">
@@ -405,7 +405,7 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
                 className="mt-1"
               />
               <p className="text-[10px] text-muted-foreground mt-1">
-                Used to send you a birthday treat from venues running Ordrup Loyalty.
+                Used to send you a birthday treat from venues running Shyndig Loyalty.
               </p>
             </div>
             <div>
@@ -414,7 +414,7 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
                 Allergens to avoid
               </Label>
               <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">
-                Used at every Ordrup venue to filter your menu automatically.
+                Used at every Shyndig venue to filter your menu automatically.
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {COMMON_ALLERGENS.map((a) => {

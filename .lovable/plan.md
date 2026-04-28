@@ -53,7 +53,7 @@ Keep the existing **Global Diner Recognition** behaviour (under its real name) a
 
 Top section becomes the Ordrup Loyalty card:
 - Switch toggling the built-in program's `is_active`
-- "Configure Program →" button opens `OrdrupLoyaltyEditor` in a dialog (or expands inline)
+- "Configure Program →" button opens `ShyndigLoyaltyEditor` in a dialog (or expands inline)
 - When ON, show a clear notice: *"Ordrup Loyalty is your active program. Custom programs below are paused for diners."*
 
 Below it, the existing custom-program list — unchanged, but with a "Paused while Ordrup Loyalty is on" overlay state when the built-in is active.
@@ -96,11 +96,11 @@ The "Configure Ordrup Loyalty" card here is **removed** — the editor now lives
 | File | Change |
 |------|--------|
 | New migration | Add `loyalty_programs.is_ordrup_builtin BOOLEAN DEFAULT false`; update `get_active_loyalty_program` to prefer built-in when active |
-| `src/components/venue/OrdrupLoyaltyEditor.tsx` | Filter load/save by `is_ordrup_builtin = true`; new programs created with the flag set |
+| `src/components/venue/ShyndigLoyaltyEditor.tsx` | Filter load/save by `is_ordrup_builtin = true`; new programs created with the flag set |
 | `src/pages/Loyalty.tsx` | New top section: Ordrup Loyalty toggle + Configure button + dialog; existing custom-program list shown below with "paused" state when built-in is on |
 | `src/pages/AdminVenueDetail.tsx` | Remove Ordrup Loyalty switch + Configure card from Group Settings; restore *Global Diner Recognition* label; clarify Global Loyalty Pooling copy |
 | `src/pages/GroupDashboard.tsx` | Same cleanup — remove the Ordrup Loyalty config card and rename the toggle |
-| `src/pages/VenueSettings.tsx` | Remove the inline OrdrupLoyaltyEditor card (it now lives on the Loyalty tab) |
+| `src/pages/VenueSettings.tsx` | Remove the inline ShyndigLoyaltyEditor card (it now lives on the Loyalty tab) |
 | `src/components/consumer/CheckoutPanel.tsx` | Already uses the resolver — no change needed |
 
 ## What happens to existing data

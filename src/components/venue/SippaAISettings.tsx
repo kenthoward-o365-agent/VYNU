@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Sparkles, Upload, X, MessageSquare, Bot } from "lucide-react";
 
-interface OrdrUpConfig {
+interface ShyndigConfig {
   id?: string;
   venue_id: string;
   agent_name: string;
@@ -65,10 +65,10 @@ interface Props {
   venueId: string;
 }
 
-export default function OrdrUpAISettings({ venueId }: Props) {
-  const [config, setConfig] = useState<OrdrUpConfig>({
+export default function ShyndigAISettings({ venueId }: Props) {
+  const [config, setConfig] = useState<ShyndigConfig>({
     venue_id: venueId,
-    agent_name: "OrdrUp",
+    agent_name: "Shyndig",
     agent_icon_url: null,
     opening_message: "Hey! 👋 I'm your AI server. Tell me what you're in the mood for and I'll find the perfect dish.",
     tone: "aussie",
@@ -124,7 +124,7 @@ export default function OrdrUpAISettings({ venueId }: Props) {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("OrdrUp AI configured!");
+        toast.success("Shyndig AI configured!");
         setIsNew(false);
       }
     } else {
@@ -142,7 +142,7 @@ export default function OrdrUpAISettings({ venueId }: Props) {
     }
     setUploading(true);
     const ext = file.name.split(".").pop();
-    const path = `ordrup-icons/${venueId}.${ext}`;
+    const path = `shyndig-icons/${venueId}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from("venue-assets")
@@ -162,7 +162,7 @@ export default function OrdrUpAISettings({ venueId }: Props) {
 
   const selectedTone = toneOptions.find((t) => t.value === config.tone);
 
-  if (loading) return <p className="text-muted-foreground">Loading OrdrUp AI settings...</p>;
+  if (loading) return <p className="text-muted-foreground">Loading Shyndig AI settings...</p>;
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -181,7 +181,7 @@ export default function OrdrUpAISettings({ venueId }: Props) {
             <Input
               value={config.agent_name}
               onChange={(e) => setConfig((c) => ({ ...c, agent_name: e.target.value }))}
-              placeholder="OrdrUp"
+              placeholder="Shyndig"
               className="mt-1 max-w-xs"
             />
             <p className="text-xs text-muted-foreground mt-1">This name is shown to diners in the chat header</p>
@@ -356,7 +356,7 @@ export default function OrdrUpAISettings({ venueId }: Props) {
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} size="lg">
           <Sparkles className="h-4 w-4 mr-2" />
-          {saving ? "Saving..." : "Save OrdrUp AI Settings"}
+          {saving ? "Saving..." : "Save Shyndig AI Settings"}
         </Button>
       </div>
     </div>
