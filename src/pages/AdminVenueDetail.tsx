@@ -15,7 +15,7 @@ import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2,
 import BillingConfigTab from "@/components/venue/BillingConfigTab";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import ChildVenueLoyaltyViewer from "@/components/venue/ChildVenueLoyaltyViewer";
-import OrdrupLoyaltyEditor from "@/components/venue/OrdrupLoyaltyEditor";
+import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
 
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
@@ -304,7 +304,7 @@ export default function AdminVenueDetail() {
                 </div>
                 <Separator />
                 <p className="text-xs text-muted-foreground">
-                  → Configure your loyalty program (Ordrup Loyalty or your own custom programs) in the <strong>Loyalty</strong> tab.
+                  → Configure your loyalty program (Shyndig Loyalty or your own custom programs) in the <strong>Loyalty</strong> tab.
                 </p>
               </CardContent>
             </Card>
@@ -420,13 +420,13 @@ export default function AdminVenueDetail() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>Ordrup Loyalty</CardTitle>
+                <CardTitle>Shyndig Loyalty</CardTitle>
                 <CardDescription>
-                  Configure the built-in Ordrup Loyalty program for {venue?.name}. To manage custom programs and toggle activation, the venue's operators can use the <strong>Loyalty</strong> tab in their dashboard.
+                  Configure the built-in Shyndig Loyalty program for {venue?.name}. To manage custom programs and toggle activation, the venue's operators can use the <strong>Loyalty</strong> tab in their dashboard.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <OrdrupLoyaltyEditor scope={{ type: "venue", venue_id: venueId! }} menuVenueId={venueId!} defaultName="Ordrup Loyalty" />
+                <ShyndigLoyaltyEditor scope={{ type: "venue", venue_id: venueId! }} menuVenueId={venueId!} defaultName="Shyndig Loyalty" />
               </CardContent>
             </Card>
           )}

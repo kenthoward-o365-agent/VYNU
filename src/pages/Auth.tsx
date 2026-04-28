@@ -27,12 +27,12 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [notProvisioned, setNotProvisioned] = useState(false);
 
-  const logoSrc = "/ordrup-symbol-1024.png";
+  const logoSrc = "/shyndig-symbol-1024.png";
 
   useEffect(() => {
-    if (sessionStorage.getItem("ordrup_not_provisioned") === "1") {
+    if (sessionStorage.getItem("shyndig_not_provisioned") === "1") {
       setNotProvisioned(true);
-      sessionStorage.removeItem("ordrup_not_provisioned");
+      sessionStorage.removeItem("shyndig_not_provisioned");
     }
   }, []);
 
@@ -75,7 +75,7 @@ export default function Auth() {
 
       if (isAdmin) {
         localStorage.removeItem("tabless_active_venue");
-        toast.success("Welcome, OrdrUp admin");
+        toast.success("Welcome, Shyndig admin");
         return;
       }
 
@@ -109,9 +109,9 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-4">
-          <img src={logoSrc} alt="OrdrUp" className="h-16 w-16 mx-auto" />
+          <img src={logoSrc} alt="Shyndig" className="h-16 w-16 mx-auto" />
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-foreground">OrdrUp</h1>
+            <h1 className="text-3xl font-bold text-foreground">Shyndig</h1>
             <p className="text-muted-foreground">The world's first agentic Ordering Platform</p>
           </div>
         </div>
@@ -119,7 +119,7 @@ export default function Auth() {
           <CardHeader>
             <CardTitle>Sign in</CardTitle>
             <CardDescription>
-              Sign in to your venue dashboard or OrdrUp admin console
+              Sign in to your venue dashboard or Shyndig admin console
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -139,7 +139,7 @@ export default function Auth() {
                   onChange={(e) => setSiteId(e.target.value)}
                   className="font-mono tracking-wider"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Operators: enter your venue's Site ID. OrdrUp staff: leave blank.</p>
+                <p className="text-xs text-muted-foreground mt-1">Operators: enter your venue's Site ID. Shyndig staff: leave blank.</p>
               </div>
               <Input
                 id="email"

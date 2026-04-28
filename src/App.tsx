@@ -48,7 +48,7 @@ function AppRoutes() {
   useEffect(() => {
     if (!user || !hasProvisioningResolved || venue || isTablessAdmin) return;
 
-    sessionStorage.setItem("ordrup_not_provisioned", "1");
+    sessionStorage.setItem("shyndig_not_provisioned", "1");
     void supabase.auth.signOut();
   }, [user?.id, hasProvisioningResolved, venue?.id, isTablessAdmin]);
 
@@ -56,7 +56,7 @@ function AppRoutes() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center space-y-2">
-          <h2 className="text-xl font-semibold text-foreground">OrdrUp</h2>
+          <h2 className="text-xl font-semibold text-foreground">Shyndig</h2>
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>

@@ -13,7 +13,7 @@ import MobilePreviewFrame from "@/components/landing-editor/MobilePreviewFrame";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
-const PUBLISHED_BASE_URL = "https://ordrup.lovable.app"; // Published domain — OrdrUp
+const PUBLISHED_BASE_URL = "https://shyndig.lovable.app"; // Published domain — Shyndig
 
 interface Table {
   id: string;

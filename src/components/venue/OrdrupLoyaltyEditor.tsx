@@ -1,6 +1,6 @@
-// Sectioned editor for Ordrup Loyalty programs (Toast-inspired).
+// Sectioned editor for Shyndig Loyalty programs (Toast-inspired).
 // Used by both AdminVenueDetail (group programs on parent venues) and VenueSettings (solo venue programs).
-// Loads/creates the canonical Ordrup Loyalty program for the given scope (group or venue),
+// Loads/creates the canonical Shyndig Loyalty program for the given scope (group or venue),
 // then exposes earn mechanic (points or stamps), redemption, signup bonus, status tiers,
 // birthday reward, and milestones — all stored in `loyalty_programs.rules` JSONB.
 import { useEffect, useState, useMemo } from "react";
@@ -39,7 +39,7 @@ interface Milestone {
   label: string;
 }
 
-export interface OrdrupRules {
+export interface ShyndigRules {
   earn?: {
     mode?: EarnMode;
     points_per_dollar?: number;
@@ -72,7 +72,7 @@ export interface OrdrupRules {
   signup_bonus_legacy?: number;
 }
 
-const DEFAULT_RULES: OrdrupRules = {
+const DEFAULT_RULES: ShyndigRules = {
   earn: { mode: "points", points_per_dollar: 1, stamp_trigger: "visit", stamps_required: 10, stamp_reward_item_id: null },
   redeem: { rate_cents_per_point: 5, min_redeem_points: 100 },
   signup_bonus: { enabled: true, points: 50 },
@@ -91,8 +91,8 @@ const DEFAULT_RULES: OrdrupRules = {
 };
 
 /** Migrate legacy rules shape (just `points_per_dollar` / old birthday_reward) into the new canonical shape, non-destructively. */
-function migrateRules(raw: any): OrdrupRules {
-  const r: OrdrupRules = JSON.parse(JSON.stringify(DEFAULT_RULES));
+function migrateRules(raw: any): ShyndigRules {
+  const r: ShyndigRules = JSON.parse(JSON.stringify(DEFAULT_RULES));
   if (!raw || typeof raw !== "object") return r;
   // earn
   if (raw.earn && typeof raw.earn === "object") {
@@ -159,7 +159,7 @@ interface ProgramRow {
   venue_id: string | null;
 }
 
-interface OrdrupLoyaltyEditorProps {
+interface ShyndigLoyaltyEditorProps {
   /** Either group_id (for group-scoped) or venue_id (for venue-scoped). Provide exactly one. */
   scope: { type: "group"; group_id: string } | { type: "venue"; venue_id: string };
   /** Venue id whose menu items to use as options for free-item rewards (group scope can pass any child venue). */
@@ -168,11 +168,11 @@ interface OrdrupLoyaltyEditorProps {
   defaultName?: string;
 }
 
-export default function OrdrupLoyaltyEditor({ scope, menuVenueId, defaultName = "Ordrup Loyalty" }: OrdrupLoyaltyEditorProps) {
+export default function ShyndigLoyaltyEditor({ scope, menuVenueId, defaultName = "Shyndig Loyalty" }: ShyndigLoyaltyEditorProps) {
   const [program, setProgram] = useState<ProgramRow | null>(null);
   const [name, setName] = useState(defaultName);
   const [isActive, setIsActive] = useState(true);
-  const [rules, setRules] = useState<OrdrupRules>(DEFAULT_RULES);
+  const [rules, setRules] = useState<ShyndigRules>(DEFAULT_RULES);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [menuItems, setMenuItems] = useState<{ id: string; name: string }[]>([]);
@@ -190,12 +190,12 @@ export default function OrdrupLoyaltyEditor({ scope, menuVenueId, defaultName = 
 
   const loadProgram = async () => {
     setLoading(true);
-    // Load ONLY the Ordrup built-in program for this scope.
+    // Load ONLY the Shyndig built-in program for this scope.
     // Custom programs (The Pass, Morris House, etc.) live separately and are never touched here.
     let q = supabase
       .from("loyalty_programs")
       .select("id, name, is_active, rules, group_id, venue_id")
-      .eq("is_ordrup_builtin", true)
+      .eq("is_shyndig_builtin", true)
       .limit(1);
     if (scope.type === "group") q = q.eq("group_id", scope.group_id).is("venue_id", null);
     else q = q.eq("venue_id", scope.venue_id).is("group_id", null);
@@ -240,7 +240,7 @@ export default function OrdrupLoyaltyEditor({ scope, menuVenueId, defaultName = 
         .eq("id", program.id);
       if (error) toast.error(error.message);
       else {
-        toast.success("Ordrup Loyalty saved");
+        toast.success("Shyndig Loyalty saved");
         await loadProgram();
       }
     } else {
@@ -249,29 +249,29 @@ export default function OrdrupLoyaltyEditor({ scope, menuVenueId, defaultName = 
         is_active: isActive,
         rules: rules as any,
         program_type: "points",
-        is_ordrup_builtin: true,
+        is_shyndig_builtin: true,
       };
       if (scope.type === "group") insertRow.group_id = scope.group_id;
       else insertRow.venue_id = scope.venue_id;
       const { error } = await supabase.from("loyalty_programs").insert(insertRow);
       if (error) toast.error(error.message);
       else {
-        toast.success("Ordrup Loyalty created");
+        toast.success("Shyndig Loyalty created");
         await loadProgram();
       }
     }
     setSaving(false);
   };
 
-  const setEarn = (patch: Partial<NonNullable<OrdrupRules["earn"]>>) =>
+  const setEarn = (patch: Partial<NonNullable<ShyndigRules["earn"]>>) =>
     setRules((r) => ({ ...r, earn: { ...r.earn, ...patch } }));
-  const setRedeem = (patch: Partial<NonNullable<OrdrupRules["redeem"]>>) =>
+  const setRedeem = (patch: Partial<NonNullable<ShyndigRules["redeem"]>>) =>
     setRules((r) => ({ ...r, redeem: { ...r.redeem, ...patch } }));
-  const setSignup = (patch: Partial<NonNullable<OrdrupRules["signup_bonus"]>>) =>
+  const setSignup = (patch: Partial<NonNullable<ShyndigRules["signup_bonus"]>>) =>
     setRules((r) => ({ ...r, signup_bonus: { ...r.signup_bonus, ...patch } }));
-  const setTiers = (patch: Partial<NonNullable<OrdrupRules["tiers"]>>) =>
+  const setTiers = (patch: Partial<NonNullable<ShyndigRules["tiers"]>>) =>
     setRules((r) => ({ ...r, tiers: { ...r.tiers, ...patch } as any }));
-  const setBirthday = (patch: Partial<NonNullable<OrdrupRules["birthday_reward"]>>) =>
+  const setBirthday = (patch: Partial<NonNullable<ShyndigRules["birthday_reward"]>>) =>
     setRules((r) => ({ ...r, birthday_reward: { ...r.birthday_reward, ...patch } }));
 
   const updateTierLevel = (idx: number, patch: Partial<TierLevel>) => {
@@ -316,7 +316,7 @@ export default function OrdrupLoyaltyEditor({ scope, menuVenueId, defaultName = 
     });
   };
 
-  if (loading) return <p className="text-sm text-muted-foreground">Loading Ordrup Loyalty…</p>;
+  if (loading) return <p className="text-sm text-muted-foreground">Loading Shyndig Loyalty…</p>;
 
   const earnMode = rules.earn?.mode ?? "points";
 
@@ -338,8 +338,8 @@ export default function OrdrupLoyaltyEditor({ scope, menuVenueId, defaultName = 
               <Input className="mt-1" value={name} onChange={(e) => setName(e.target.value)} placeholder={defaultName} />
             </div>
             <div className="flex items-center gap-2">
-              <Switch checked={isActive} onCheckedChange={setIsActive} id="ordrup-active" />
-              <Label htmlFor="ordrup-active" className="text-sm">Active</Label>
+              <Switch checked={isActive} onCheckedChange={setIsActive} id="shyndig-active" />
+              <Label htmlFor="shyndig-active" className="text-sm">Active</Label>
             </div>
           </div>
         </CardContent>

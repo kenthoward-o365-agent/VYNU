@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Gift, Plus, Trash2, Star, Cake, Award, DollarSign, Sparkles, Settings2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import OrdrupLoyaltyEditor from "@/components/venue/OrdrupLoyaltyEditor";
+import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
 
 interface LoyaltyRules {
   points_per_dollar?: number;
@@ -47,8 +47,8 @@ export default function Loyalty() {
   const [editingProgram, setEditingProgram] = useState<LoyaltyProgram | null>(null);
   const [form, setForm] = useState({ name: "", program_type: "points" as string });
 
-  const [ordrupActive, setOrdrupActive] = useState(false);
-  const [ordrupProgramId, setOrdrupProgramId] = useState<string | null>(null);
+  const [shyndigActive, setShyndigActive] = useState(false);
+  const [shyndigProgramId, setShyndigProgramId] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
 
   const fetchPrograms = async () => {
@@ -60,19 +60,19 @@ export default function Loyalty() {
       .eq("venue_id", venue.id)
       .order("created_at");
     const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
-    const builtin = all.find((p: any) => p.is_ordrup_builtin);
-    setOrdrupActive(!!builtin?.is_active);
-    setOrdrupProgramId(builtin?.id ?? null);
+    const builtin = all.find((p: any) => p.is_shyndig_builtin);
+    setShyndigActive(!!builtin?.is_active);
+    setShyndigProgramId(builtin?.id ?? null);
     // Custom programs only.
-    setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
+    setPrograms(all.filter((p: any) => !p.is_shyndig_builtin));
     setLoading(false);
   };
 
-  const toggleOrdrupActive = async (next: boolean) => {
-    if (!ordrupProgramId) { setEditorOpen(true); return; }
-    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", ordrupProgramId);
+  const toggleShyndigActive = async (next: boolean) => {
+    if (!shyndigProgramId) { setEditorOpen(true); return; }
+    const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", shyndigProgramId);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    toast({ title: next ? "Ordrup Loyalty enabled" : "Ordrup Loyalty paused" });
+    toast({ title: next ? "Shyndig Loyalty enabled" : "Shyndig Loyalty paused" });
     fetchPrograms();
   };
 
@@ -115,7 +115,7 @@ export default function Loyalty() {
       .eq("group_id", venue.group_id)
       .eq("is_active", true)
       .then(({ data }) => setGroupPrograms((data || [])
-        .filter((d: any) => !d.is_ordrup_builtin)
+        .filter((d: any) => !d.is_shyndig_builtin)
         .map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }))));
   }, [venue?.group_id]);
 
@@ -125,21 +125,21 @@ export default function Loyalty() {
 
   return (
     <div className="space-y-6">
-      {/* Ordrup Loyalty (built-in) */}
+      {/* Shyndig Loyalty (built-in) */}
       <Card className="border-primary/30">
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                Ordrup Loyalty
+                Shyndig Loyalty
                 <Badge variant="outline" className="ml-1 text-[10px]">Built-in · Free</Badge>
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Ordrup's free built-in loyalty program. When ON, this becomes the active program for diners — your custom programs below are paused.
+                Shyndig's free built-in loyalty program. When ON, this becomes the active program for diners — your custom programs below are paused.
               </p>
             </div>
-            <Switch checked={ordrupActive} onCheckedChange={toggleOrdrupActive} aria-label="Toggle Ordrup Loyalty" />
+            <Switch checked={shyndigActive} onCheckedChange={toggleShyndigActive} aria-label="Toggle Shyndig Loyalty" />
           </div>
         </CardHeader>
         <CardContent>
@@ -150,16 +150,16 @@ export default function Loyalty() {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Configure Ordrup Loyalty</DialogTitle></DialogHeader>
-              {venue && <OrdrupLoyaltyEditor scope={{ type: "venue", venue_id: venue.id }} menuVenueId={venue.id} defaultName="Ordrup Loyalty" />}
+              <DialogHeader><DialogTitle>Configure Shyndig Loyalty</DialogTitle></DialogHeader>
+              {venue && <ShyndigLoyaltyEditor scope={{ type: "venue", venue_id: venue.id }} menuVenueId={venue.id} defaultName="Shyndig Loyalty" />}
             </DialogContent>
           </Dialog>
         </CardContent>
       </Card>
 
-      {ordrupActive && (
+      {shyndigActive && (
         <p className="text-xs text-muted-foreground italic px-1">
-          Ordrup Loyalty is your active program. Custom programs below are paused for diners.
+          Shyndig Loyalty is your active program. Custom programs below are paused for diners.
         </p>
       )}
 
