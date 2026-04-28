@@ -374,12 +374,12 @@ function GroupLoyaltyTab({ group }: { group: any }) {
       .eq("group_id", group.id)
       .order("created_at");
     const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
-    const builtin = all.find((p: any) => p.is_shyndig_builtin);
+    const builtin = all.find((p: any) => p.is_ordrup_builtin);
     setShyndigActive(!!builtin?.is_active);
     setShyndigProgramId(builtin?.id ?? null);
     setShyndigName(builtin?.name || "Shyndig Loyalty");
     // Custom programs only — never show the built-in row in the list (it's controlled by the card above).
-    setPrograms(all.filter((p: any) => !p.is_shyndig_builtin));
+    setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
   };
 

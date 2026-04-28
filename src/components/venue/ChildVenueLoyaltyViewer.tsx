@@ -53,7 +53,7 @@ export default function ChildVenueLoyaltyViewer({ groupId, venueName }: ChildVen
 
       setPrograms(
         (data || [])
-          .filter((p: any) => !p.is_shyndig_builtin)
+          .filter((p: any) => !p.is_ordrup_builtin)
           .map((program: any) => ({
             ...program,
             rules: (program.rules && typeof program.rules === "object" ? program.rules : {}) as LoyaltyRules,

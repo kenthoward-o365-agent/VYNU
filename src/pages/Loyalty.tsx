@@ -60,11 +60,11 @@ export default function Loyalty() {
       .eq("venue_id", venue.id)
       .order("created_at");
     const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
-    const builtin = all.find((p: any) => p.is_shyndig_builtin);
+    const builtin = all.find((p: any) => p.is_ordrup_builtin);
     setShyndigActive(!!builtin?.is_active);
     setShyndigProgramId(builtin?.id ?? null);
     // Custom programs only.
-    setPrograms(all.filter((p: any) => !p.is_shyndig_builtin));
+    setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
   };
 
@@ -115,7 +115,7 @@ export default function Loyalty() {
       .eq("group_id", venue.group_id)
       .eq("is_active", true)
       .then(({ data }) => setGroupPrograms((data || [])
-        .filter((d: any) => !d.is_shyndig_builtin)
+        .filter((d: any) => !d.is_ordrup_builtin)
         .map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }))));
   }, [venue?.group_id]);
 

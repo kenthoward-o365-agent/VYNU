@@ -62,11 +62,11 @@ export default function GroupLoyaltyManager({ groupId, groupName }: GroupLoyalty
       .eq("group_id", groupId)
       .order("created_at");
     const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
-    const builtin = all.find((p: any) => p.is_shyndig_builtin);
+    const builtin = all.find((p: any) => p.is_ordrup_builtin);
     setShyndigActive(!!builtin?.is_active);
     setShyndigProgramId(builtin?.id ?? null);
     // Custom programs only.
-    setPrograms(all.filter((p: any) => !p.is_shyndig_builtin));
+    setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
   };
 

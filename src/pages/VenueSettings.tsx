@@ -883,10 +883,10 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
     setLoading(true);
     const { data } = await supabase.from("loyalty_programs").select("*").eq("venue_id", venueId).order("created_at");
     const all = (data || []).map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules }));
-    const builtin = all.find((p: any) => p.is_shyndig_builtin);
+    const builtin = all.find((p: any) => p.is_ordrup_builtin);
     setShyndigActive(!!builtin?.is_active);
     setShyndigProgramId(builtin?.id ?? null);
-    setPrograms(all.filter((p: any) => !p.is_shyndig_builtin));
+    setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
   };
 
@@ -903,7 +903,7 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
     const { data } = await supabase.from("loyalty_programs").select("*").eq("group_id", groupId).eq("is_active", true).order("created_at");
     // Hide built-in from inherited list — it's surfaced via the group's own resolver, not as a "custom" inherited program.
     setGroupPrograms((data || [])
-      .filter((d: any) => !d.is_shyndig_builtin)
+      .filter((d: any) => !d.is_ordrup_builtin)
       .map((d: any) => ({ ...d, rules: (d.rules && typeof d.rules === "object" ? d.rules : {}) as LoyaltyRules })));
   };
 

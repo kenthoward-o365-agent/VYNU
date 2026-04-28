@@ -195,7 +195,7 @@ export default function ShyndigLoyaltyEditor({ scope, menuVenueId, defaultName =
     let q = supabase
       .from("loyalty_programs")
       .select("id, name, is_active, rules, group_id, venue_id")
-      .eq("is_shyndig_builtin", true)
+      .eq("is_ordrup_builtin", true)
       .limit(1);
     if (scope.type === "group") q = q.eq("group_id", scope.group_id).is("venue_id", null);
     else q = q.eq("venue_id", scope.venue_id).is("group_id", null);
@@ -249,7 +249,7 @@ export default function ShyndigLoyaltyEditor({ scope, menuVenueId, defaultName =
         is_active: isActive,
         rules: rules as any,
         program_type: "points",
-        is_shyndig_builtin: true,
+        is_ordrup_builtin: true,
       };
       if (scope.type === "group") insertRow.group_id = scope.group_id;
       else insertRow.venue_id = scope.venue_id;
