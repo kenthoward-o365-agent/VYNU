@@ -44,7 +44,7 @@ interface NavItem {
 
 const venueNavItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: { light: navDashboard, dark: navDashboardDark }, navKey: "dashboard" },
-  { path: "/sippa-analytics", label: "L.O.U. AI Analytics", icon: { light: navAIAnalytics, dark: navAIAnalyticsDark }, navKey: "sippa_analytics" },
+  { path: "/sippa-analytics", label: "Spark AI Analytics", icon: { light: navAIAnalytics, dark: navAIAnalyticsDark }, navKey: "sippa_analytics" },
   { path: "/menu", label: "Menu Builder", icon: { light: navMenuBuilder, dark: navMenuBuilderDark }, hasSub: true, navKey: "menu" },
   { path: "/pricing", label: "Pricing", icon: { light: navPricing, dark: navPricingDark }, hasSub: true, navKey: "pricing" },
   { path: "/tables", label: "Tables & QR", icon: { light: navTablesQR, dark: navTablesQRDark }, navKey: "tables" },
