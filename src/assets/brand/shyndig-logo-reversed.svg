@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="400" height="100">
+  <g transform="translate(45, 50)">
+    <circle cx="4" cy="-24" r="6" fill="#DBBE4F"/>
+    <circle cx="-3" cy="-10" r="5.5" fill="#E8845A" opacity="0.8"/>
+    <circle cx="2" cy="2" r="5" fill="#DBBE4F" opacity="0.65"/>
+    <circle cx="10" cy="14" r="5.5" fill="#E8845A" opacity="0.45"/>
+    <circle cx="2" cy="26" r="6" fill="#DBBE4F" opacity="0.3"/>
+  </g>
+  <text x="105" y="62" font-family="'DM Sans', Arial, Helvetica, sans-serif" font-size="42" font-weight="700" fill="#FAF7F2" letter-spacing="1">Shyndig</text>
+</svg>
