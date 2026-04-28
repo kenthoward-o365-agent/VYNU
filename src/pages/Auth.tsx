@@ -27,7 +27,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [notProvisioned, setNotProvisioned] = useState(false);
 
-  const logoSrc = "/shyndig-symbol-1024.png";
+  const logoSrc = "/brand/shyndig-icon.png";
 
   useEffect(() => {
     if (sessionStorage.getItem("shyndig_not_provisioned") === "1") {

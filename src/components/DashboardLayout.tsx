@@ -96,7 +96,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <img src="/shyndig-symbol-1024.png" alt="Shyndig" className="h-8 w-8" />
+              <img src="/brand/shyndig-icon.png" alt="Shyndig" className="h-8 w-8" />
               <span className="text-lg font-bold text-sidebar-foreground">Shyndig</span>
             </div>
             <button className="lg:hidden text-sidebar-foreground" onClick={() => setSidebarOpen(false)}>
