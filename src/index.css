@@ -49,17 +49,16 @@
 
     --radius: 0.75rem;
 
-    /* Light-mode sidebar mirrors the operator dark feel even in light theme,
-       per brand book (Midnight dominates 55%). */
-    --sidebar-background: 222 39% 11%;
-    --sidebar-foreground: 38 43% 97%;
+    /* Light-mode sidebar follows the light theme. */
+    --sidebar-background: 38 43% 97%;
+    --sidebar-foreground: 222 39% 11%;
     --sidebar-primary: 46 67% 58%;
     --sidebar-primary-foreground: 222 39% 11%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 38 43% 97%;
-    --sidebar-border: 217 33% 22%;
+    --sidebar-accent: 38 30% 92%;
+    --sidebar-accent-foreground: 222 39% 11%;
+    --sidebar-border: 38 20% 88%;
     --sidebar-ring: 46 67% 58%;
-    --sidebar-muted: 215 14% 65%;
+    --sidebar-muted: 217 15% 38%;
   }
 
   .dark {
