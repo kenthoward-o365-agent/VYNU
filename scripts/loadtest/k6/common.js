@@ -31,7 +31,7 @@ export function authHeaders() {
 }
 
 export function fetchMenuSnapshot(venueId) {
-  const url = `${BASE_URL}/functions/v1/menu-snapshot?venue_id=${venueId}`;
+  const url = `${BASE_URL}/functions/v1/menu-snapshot?venueId=${venueId}`;
   const res = http.get(url, { headers: authHeaders(), tags: { name: "menu-snapshot" } });
   return res;
 }
