@@ -15,6 +15,7 @@ import PairTerminalDialog from "@/components/orders/PairTerminalDialog";
 import ThrottleStatusBar from "@/components/orders/ThrottleStatusBar";
 import SessionFireBar, { type SessionInfo } from "@/components/orders/SessionFireBar";
 import { usePermissions } from "@/hooks/use-permissions";
+import { applyRealtimePatch, prependFetchedRow, type RealtimePayload } from "@/lib/realtime-patch";
 
 type OrderStatus = string;
 
@@ -263,21 +264,56 @@ export default function Orders() {
   useEffect(() => { fetchVenueStatuses(); fetchVenueSettings(); }, [venue?.id]);
   useEffect(() => { fetchOrders(); fetchSessions(); }, [venue, filter, auditDate, venueStatuses]);
 
-  // Realtime subscription — orders + sessions
+  // Realtime subscription — patch in place instead of full re-fetch (Phase 3 scaling).
+  // Avoids N×fetchOrders per event when many orders are flowing through the kitchen.
   useEffect(() => {
     if (!venue) return;
     const channel = supabase
-      .channel("orders-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders", filter: `venue_id=eq.${venue.id}` }, () => {
-        fetchOrders();
-        fetchSessions();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "table_sessions", filter: `venue_id=eq.${venue.id}` }, () => {
-        fetchSessions();
-      })
+      .channel(`orders-realtime-${venue.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders", filter: `venue_id=eq.${venue.id}` },
+        async (payload: any) => {
+          const p = payload as RealtimePayload<Order>;
+          if (p.eventType === "INSERT") {
+            // Realtime payload lacks joined relations — fetch the full row.
+            const { data } = await supabase
+              .from("orders")
+              .select(
+                "*, table:tables(table_number), order_items(id, quantity, unit_price, notes, menu_item_id, modifiers, menu_item:menu_items(name))",
+              )
+              .eq("id", (p.new as any).id)
+              .maybeSingle();
+            if (data) setOrders((prev) => prependFetchedRow(prev, data as unknown as Order));
+          } else {
+            setOrders((prev) => applyRealtimePatch(prev, p));
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "table_sessions", filter: `venue_id=eq.${venue.id}` },
+        async (payload: any) => {
+          const p = payload as RealtimePayload<SessionRow>;
+          if (p.eventType === "INSERT") {
+            const { data } = await supabase
+              .from("table_sessions")
+              .select(
+                "id, venue_id, table_id, status, display_name, diner_count, fire_strategy, fired_at, opened_at, table:tables(table_number)",
+              )
+              .eq("id", (p.new as any).id)
+              .maybeSingle();
+            if (data) setSessions((prev) => prependFetchedRow(prev, data as unknown as SessionRow));
+          } else {
+            setSessions((prev) => applyRealtimePatch(prev, p));
+          }
+        },
+      )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [venue, filter, auditDate]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [venue?.id]);
 
   const unpairThisBrowser = () => {
     localStorage.removeItem("shyndig_terminal_token");
