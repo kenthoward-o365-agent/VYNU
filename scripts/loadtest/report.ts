@@ -28,7 +28,11 @@ const summary = JSON.parse(readFileSync(summaryPath, "utf8"));
 const m = summary.metrics ?? {};
 
 function p(metricName: string, key: string) {
-  return m[metricName]?.values?.[key] ?? "n/a";
+  const v = m[metricName]?.values?.[key] ?? m[metricName]?.[key];
+  return v ?? "n/a";
+}
+function fmt(n: any, suffix = "") {
+  return typeof n === "number" ? `${n.toFixed(1)}${suffix}` : String(n);
 }
 
 const lines: string[] = [];
@@ -36,10 +40,12 @@ lines.push(`# Load test report — ${label}`);
 lines.push(`Generated ${new Date().toISOString()}\n`);
 lines.push(`## Headline numbers`);
 lines.push(`- HTTP requests: ${p("http_reqs", "count")}`);
-lines.push(`- Failure rate: ${(p("http_req_failed", "rate") * 100).toFixed(2)}%`);
-lines.push(`- Duration p50: ${p("http_req_duration", "med").toFixed?.(1)} ms`);
-lines.push(`- Duration p95: ${p("http_req_duration", "p(95)").toFixed?.(1)} ms`);
-lines.push(`- Duration p99: ${p("http_req_duration", "p(99)").toFixed?.(1)} ms`);
+const failRate = p("http_req_failed", "rate");
+lines.push(`- Failure rate: ${typeof failRate === "number" ? (failRate * 100).toFixed(2) + "%" : failRate}`);
+lines.push(`- Duration p50: ${fmt(p("http_req_duration", "med"), " ms")}`);
+lines.push(`- Duration p95: ${fmt(p("http_req_duration", "p(95)"), " ms")}`);
+lines.push(`- Duration p90: ${fmt(p("http_req_duration", "p(90)"), " ms")}`);
+lines.push(`- Duration max: ${fmt(p("http_req_duration", "max"), " ms")}`);
 lines.push(`- Iterations: ${p("iterations", "count")}\n`);
 
 if (admin) {
