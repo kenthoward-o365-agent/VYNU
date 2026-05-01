@@ -2,8 +2,12 @@
 // Same shape as peak.js, shorter stages, slightly tighter sleep so we
 // produce a representative sample rather than a 17-minute soak.
 // For real Friday-night-soak runs use peak.js.
+//
+// Distribution: set DISTRIBUTION=zipf for realistic Friday-night
+// (a few venues are very hot, most are quiet) or DISTRIBUTION=uniform
+// for the worst-case "every venue equally cold" baseline.
 import { check, sleep } from "k6";
-import { fetchMenuSnapshot, pickVenue } from "./common.js";
+import { fetchMenuSnapshot, pickVenue, DISTRIBUTION } from "./common.js";
 
 const PEAK_VUS = Number(__ENV.PEAK_VUS || 1500);
 
@@ -25,6 +29,7 @@ export const options = {
     "http_req_duration{name:menu-snapshot}": ["p(95)<800", "p(99)<1500"],
     http_req_failed: ["rate<0.02"],
   },
+  tags: { distribution: DISTRIBUTION },
 };
 
 export default function () {
