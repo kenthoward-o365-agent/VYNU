@@ -41,7 +41,6 @@ async function main() {
   console.log(`Seeding ${COUNT} LOADTEST venues...`);
   const venues = Array.from({ length: COUNT }, (_, i) => ({
     name: `LOADTEST_Venue_${Date.now()}_${i}`,
-    slug: `loadtest-${Date.now()}-${i}`,
     is_active: true,
   }));
   const { data: createdVenues, error } = await admin
@@ -56,7 +55,6 @@ async function main() {
     Array.from({ length: TABLES_PER_VENUE }, (_, t) => ({
       venue_id: vid,
       table_number: String(t + 1),
-      seats: 4,
     })),
   );
   await chunkInsert("tables", allTables);

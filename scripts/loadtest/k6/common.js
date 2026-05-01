@@ -1,8 +1,6 @@
 // Shared helpers for k6 load tests against Tab-Less / Shyndig.
 // k6 runs in its own JS runtime — no Node APIs.
 import http from "k6/http";
-import { check, sleep } from "k6/check" /* eslint-disable-line */;
-// Note: k6 exposes `check` and `sleep` from "k6", not "k6/check".
 
 export const BASE_URL = __ENV.BASE_URL || "https://jsbxivkgfekcgvtyqnek.supabase.co";
 export const ANON_KEY =
@@ -31,7 +29,7 @@ export function authHeaders() {
 }
 
 export function fetchMenuSnapshot(venueId) {
-  const url = `${BASE_URL}/functions/v1/menu-snapshot?venue_id=${venueId}`;
+  const url = `${BASE_URL}/functions/v1/menu-snapshot?venueId=${venueId}`;
   const res = http.get(url, { headers: authHeaders(), tags: { name: "menu-snapshot" } });
   return res;
 }
