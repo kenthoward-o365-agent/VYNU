@@ -34,7 +34,13 @@ Deno.serve(async (req) => {
     );
 
     const [venueRes, itemsRes, catsRes, rulesRes, aiRes] = await Promise.all([
-      supabase.rpc("get_venue_public_info", { _venue_id: venueId }).maybeSingle(),
+      supabase
+        .from("venues")
+        .select(
+          "id, name, venue_type, logo_url, address, city, state, postcode, country, phone, email, landing_page_html, group_id, settings, is_active, operating_hours",
+        )
+        .eq("id", venueId)
+        .maybeSingle(),
       supabase
         .from("menu_items")
         .select(
