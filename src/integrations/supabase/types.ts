@@ -369,6 +369,42 @@ export type Database = {
           },
         ]
       }
+      job_run_log: {
+        Row: {
+          attempt: number | null
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: string
+          msg_id: number | null
+          payload: Json | null
+          queue: string
+          status: string
+        }
+        Insert: {
+          attempt?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          msg_id?: number | null
+          payload?: Json | null
+          queue: string
+          status: string
+        }
+        Update: {
+          attempt?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          msg_id?: number | null
+          payload?: Json | null
+          queue?: string
+          status?: string
+        }
+        Relationships: []
+      }
       loyalty_balances: {
         Row: {
           balance: number
@@ -994,6 +1030,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          diner_id: string | null
+          id: string
+          kind: string
+          payload: Json | null
+          read_at: string | null
+          title: string
+          user_id: string | null
+          venue_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          diner_id?: string | null
+          id?: string
+          kind: string
+          payload?: Json | null
+          read_at?: string | null
+          title: string
+          user_id?: string | null
+          venue_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          diner_id?: string | null
+          id?: string
+          kind?: string
+          payload?: Json | null
+          read_at?: string | null
+          title?: string
+          user_id?: string | null
+          venue_id?: string | null
+        }
+        Relationships: []
       }
       order_items: {
         Row: {
@@ -2444,6 +2519,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ack_job: { Args: { _msg_id: number; _queue: string }; Returns: boolean }
       advance_audit_date: { Args: { _venue_id: string }; Returns: string }
       apply_throttle_on_order_insert_for: {
         Args: { _order_id: string; _venue_id: string }
@@ -2468,6 +2544,16 @@ export type Database = {
         }
         Returns: string
       }
+      dequeue_jobs: {
+        Args: { _qty?: number; _queue: string; _vt_seconds?: number }
+        Returns: {
+          enqueued_at: string
+          message: Json
+          msg_id: number
+          read_ct: number
+        }[]
+      }
+      enqueue_job: { Args: { _payload: Json; _queue: string }; Returns: number }
       find_or_create_table_session: {
         Args: {
           _display_name?: string
