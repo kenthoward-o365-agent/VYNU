@@ -20,6 +20,7 @@ import LoyaltyJoinPrompt from "@/components/consumer/LoyaltyJoinPrompt";
 import ModeSwitchSheet from "@/components/consumer/ModeSwitchSheet";
 import type { SessionMode } from "@/components/consumer/SessionModeChooser";
 import { buildRuleIndex, resolvePrice, type RuleIndex } from "@/lib/pricing-utils";
+import { useMenuSnapshot } from "@/hooks/use-menu-snapshot";
 
 interface VenueInfo {
   id: string;
@@ -148,71 +149,39 @@ const ConsumerOrder = () => {
     setShowModeSwitch(false);
   };
 
-  // Fetch venue, table, and menu data
+  // Fetch venue, table, and menu data via edge-cached snapshot (Phase 2 scaling).
+  // Replaces ~6 serial Supabase round-trips with ONE CDN-cached HTTP call.
+  const { data: snapshot, isLoading: snapshotLoading } = useMenuSnapshot(venueId, tableId);
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!venueId || !tableId) return;
+    if (!snapshot) return;
 
-      const [venueRes, itemsRes, catsRes] = await Promise.all([
-        supabase.from("venues").select("id, name, venue_type, logo_url, address, city, state, postcode, phone, email, landing_page_html, group_id").eq("id", venueId).single(),
-        supabase.from("menu_items").select("*").eq("venue_id", venueId).eq("is_available", true).order("display_order"),
-        supabase.from("menu_categories").select("id, name").eq("venue_id", venueId).eq("is_active", true).order("display_order"),
-      ]);
+    if (snapshot.venue) setVenue(snapshot.venue as VenueInfo);
+    if (snapshot.table) {
+      setTableNumber(snapshot.table.table_number);
+      setResolvedTableId(snapshot.table.id);
+    }
+    setMenuItems(snapshot.items as MenuItem[]);
+    setCategories(snapshot.categories as MenuCategory[]);
+    setPricingIndex(buildRuleIndex(snapshot.pricing.rules as any, snapshot.pricing.links));
 
-      let tableRes = await supabase.from("tables").select("id, table_number").eq("id", tableId).eq("venue_id", venueId).maybeSingle();
-      if (!tableRes.data) {
-        tableRes = await supabase.from("tables").select("id, table_number").eq("table_number", tableId).eq("venue_id", venueId).maybeSingle();
-      }
+    if (snapshot.ai?.chat_mode) setChatMode(snapshot.ai.chat_mode);
+    if (snapshot.ai?.agent_name) setAgentName(snapshot.ai.agent_name);
+    if (snapshot.ai?.agent_icon_url) setAgentIconUrl(snapshot.ai.agent_icon_url);
 
-      if (venueRes.data) setVenue(venueRes.data);
-      if (tableRes.data) {
-        setTableNumber(tableRes.data.table_number);
-        setResolvedTableId(tableRes.data.id);
-      }
-      if (itemsRes.data) setMenuItems(itemsRes.data as MenuItem[]);
-      if (catsRes.data) setCategories(catsRes.data);
+    if (snapshot.venue) {
+      const settings = (snapshot.venue as any).settings as Record<string, any> | null;
+      const upsell = settings?.upsell;
+      upsellConfigRef.current = upsell;
+      setUpsellEnabled(upsell?.enabled !== false);
+    }
 
-      // Load active pricing rules + their item assignments so the diner UI
-      // can show the discounted price + rule label across menu / detail / cart.
-      const { data: rulesData } = await supabase
-        .from("pricing_rules")
-        .select("*")
-        .eq("venue_id", venueId)
-        .eq("is_active", true);
-      const rules = (rulesData || []) as any[];
-      let links: { pricing_rule_id: string; menu_item_id: string }[] = [];
-      if (rules.length > 0) {
-        const { data: linkData } = await supabase
-          .from("pricing_rule_items" as any)
-          .select("pricing_rule_id, menu_item_id")
-          .in("pricing_rule_id", rules.map((r) => r.id));
-        links = (linkData || []) as any[];
-      }
-      setPricingIndex(buildRuleIndex(rules as any, links));
+    setLoading(false);
+  }, [snapshot]);
 
-      // Load Shyndig AI chat mode
-      const { data: aiConfig } = await supabase
-        .from("venue_ai_config")
-        .select("chat_mode, agent_name, agent_icon_url")
-        .eq("venue_id", venueId)
-        .maybeSingle();
-      if (aiConfig?.chat_mode) setChatMode(aiConfig.chat_mode);
-      if (aiConfig?.agent_name) setAgentName(aiConfig.agent_name);
-      if (aiConfig?.agent_icon_url) setAgentIconUrl(aiConfig.agent_icon_url);
-
-      // Load upsell config from venue settings
-      if (venueRes.data) {
-        const settings = (venueRes.data as any).settings as Record<string, any> | null;
-        const upsell = settings?.upsell;
-        upsellConfigRef.current = upsell;
-        setUpsellEnabled(upsell?.enabled !== false);
-      }
-
-      setLoading(false);
-    };
-
-    fetchData();
-  }, [venueId, tableId]);
+  useEffect(() => {
+    if (!snapshotLoading && !snapshot) setLoading(false);
+  }, [snapshotLoading, snapshot]);
 
   // Check for diner profile (Shyndig ID) — silently log visit + sync prefs
   useEffect(() => {
