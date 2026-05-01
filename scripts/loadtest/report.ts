@@ -44,10 +44,7 @@ lines.push(`- Iterations: ${p("iterations", "count")}\n`);
 
 if (admin) {
   lines.push(`## Top 20 slow queries (pg_stat_statements)`);
-  const { data, error } = await admin.rpc("loadtest_top_queries" as any).catch(() => ({
-    data: null,
-    error: { message: "RPC loadtest_top_queries not installed" },
-  }));
+  const { data, error } = await admin.rpc("loadtest_top_queries" as any);
   if (error || !data) {
     lines.push(`_unable to fetch: ${error?.message ?? "no data"}_`);
   } else {
