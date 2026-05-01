@@ -2579,6 +2579,10 @@ export type Database = {
           venue_id: string
         }[]
       }
+      get_menu_snapshot: {
+        Args: { _table_id?: string; _venue_id: string }
+        Returns: Json
+      }
       get_terminal_by_token: {
         Args: { _token: string }
         Returns: {

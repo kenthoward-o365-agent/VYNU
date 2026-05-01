@@ -13,11 +13,59 @@ export const VENUE_IDS = (__ENV.VENUE_IDS || "")
   .map((s) => s.trim())
   .filter(Boolean);
 
-export function pickVenue() {
+// Distribution mode: 'uniform' (worst case, every venue equally hot)
+// or 'zipf' (realistic — a handful of venues dominate Friday-night traffic).
+export const DISTRIBUTION = (__ENV.DISTRIBUTION || "uniform").toLowerCase();
+const ZIPF_ALPHA = Number(__ENV.ZIPF_ALPHA || 1.1);
+
+// Precompute the Zipf CDF over VENUE_IDS once. Index 0 is the hottest venue.
+let _zipfCdf = null;
+function zipfCdf() {
+  if (_zipfCdf) return _zipfCdf;
+  const n = VENUE_IDS.length;
+  const weights = new Array(n);
+  let sum = 0;
+  for (let i = 0; i < n; i++) {
+    const w = 1 / Math.pow(i + 1, ZIPF_ALPHA);
+    weights[i] = w;
+    sum += w;
+  }
+  const cdf = new Array(n);
+  let acc = 0;
+  for (let i = 0; i < n; i++) {
+    acc += weights[i] / sum;
+    cdf[i] = acc;
+  }
+  _zipfCdf = cdf;
+  return cdf;
+}
+
+export function pickVenueUniform() {
   if (VENUE_IDS.length === 0) {
     throw new Error("VENUE_IDS env var is empty — run seed.ts first");
   }
   return VENUE_IDS[Math.floor(Math.random() * VENUE_IDS.length)];
+}
+
+export function pickVenueZipf() {
+  if (VENUE_IDS.length === 0) {
+    throw new Error("VENUE_IDS env var is empty — run seed.ts first");
+  }
+  const cdf = zipfCdf();
+  const r = Math.random();
+  // Binary search.
+  let lo = 0;
+  let hi = cdf.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (cdf[mid] < r) lo = mid + 1;
+    else hi = mid;
+  }
+  return VENUE_IDS[lo];
+}
+
+export function pickVenue() {
+  return DISTRIBUTION === "zipf" ? pickVenueZipf() : pickVenueUniform();
 }
 
 export function authHeaders() {
