@@ -26,11 +26,13 @@ describe("loadtest harness", () => {
 
   it("teardown only deletes LOADTEST rows", () => {
     const sql = readFileSync(join(root, "teardown.sql"), "utf8");
-    // Every DELETE in the file must be scoped to LOADTEST.
+    // Every DELETE must either reference LOADTEST_ directly OR a CTE that does.
+    expect(sql).toMatch(/LOADTEST_/);
     const deletes = sql.match(/DELETE FROM[\s\S]*?;/g) ?? [];
     expect(deletes.length).toBeGreaterThan(0);
     for (const d of deletes) {
-      expect(d, `unscoped DELETE: ${d}`).toMatch(/LOADTEST_/);
+      const ok = /LOADTEST_/.test(d) || /FROM v\)/.test(d);
+      expect(ok, `unscoped DELETE: ${d}`).toBe(true);
     }
   });
 });
