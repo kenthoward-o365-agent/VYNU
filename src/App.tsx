@@ -38,7 +38,16 @@ import Reporting from "@/pages/Reporting";
 import OrderStatuses from "@/pages/OrderStatuses";
 import OrderThrottling from "@/pages/OrderThrottling";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000, // 1 minute - data considered fresh
+      gcTime: 5 * 60_000, // 5 minutes - keep cached after unmount
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function AppRoutes() {
   const { user, loading: authLoading } = useAuth();
