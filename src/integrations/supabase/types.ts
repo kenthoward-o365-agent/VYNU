@@ -2653,6 +2653,15 @@ export type Database = {
           opened_at: string
         }[]
       }
+      loadtest_top_queries: {
+        Args: never
+        Returns: {
+          calls: number
+          mean_ms: number
+          p95_ms: number
+          query: string
+        }[]
+      }
       lookup_venue_by_site_id: {
         Args: { _site_id: string }
         Returns: {
