@@ -2579,6 +2579,17 @@ export type Database = {
           venue_id: string
         }[]
       }
+      get_diner_order_status: {
+        Args: { _order_id: string }
+        Returns: {
+          created_at: string
+          extra_wait_minutes: number
+          id: string
+          status: string
+          throttled_until: string
+          total: number
+        }[]
+      }
       get_menu_snapshot: {
         Args: { _table_id?: string; _venue_id: string }
         Returns: Json
