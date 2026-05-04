@@ -168,6 +168,7 @@ const CheckoutPanel = ({
       // Read client key returned by the OrdrPay backend (per-venue)
       const key = data?.client_key || (import.meta as any).env?.VITE_ADYEN_CLIENT_KEY || null;
       setOrdrPayClientKey(key);
+      setIsMockMode(!!data?.mock_mode);
     } catch (e) {
       console.error("Failed to load payment methods:", e);
     }
