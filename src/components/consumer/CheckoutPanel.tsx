@@ -87,6 +87,7 @@ const CheckoutPanel = ({
   // OrdrPay Drop-in state
   const [paymentMethodsResponse, setPaymentMethodsResponse] = useState<any>(null);
   const [ordrPayClientKey, setOrdrPayClientKey] = useState<string | null>(null);
+  const [isMockMode, setIsMockMode] = useState(false);
   const [loadingMethods, setLoadingMethods] = useState(false);
 
   useEffect(() => {
