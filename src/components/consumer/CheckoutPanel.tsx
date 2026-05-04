@@ -87,6 +87,7 @@ const CheckoutPanel = ({
   // OrdrPay Drop-in state
   const [paymentMethodsResponse, setPaymentMethodsResponse] = useState<any>(null);
   const [ordrPayClientKey, setOrdrPayClientKey] = useState<string | null>(null);
+  const [isMockMode, setIsMockMode] = useState(false);
   const [loadingMethods, setLoadingMethods] = useState(false);
 
   useEffect(() => {
@@ -167,6 +168,7 @@ const CheckoutPanel = ({
       // Read client key returned by the OrdrPay backend (per-venue)
       const key = data?.client_key || (import.meta as any).env?.VITE_ADYEN_CLIENT_KEY || null;
       setOrdrPayClientKey(key);
+      setIsMockMode(!!data?.mock_mode);
     } catch (e) {
       console.error("Failed to load payment methods:", e);
     }
@@ -512,11 +514,12 @@ const CheckoutPanel = ({
       card.expiry_year &&
       card.cvc.length >= 3);
 
-  // Show Drop-in only when payments enabled, no stored card selected, and we have methods + key
+  // Show Drop-in only when payments enabled, no stored card selected, we have methods + key,
+  // and we're NOT in mock mode (mock mode falls back to the legacy test-card form).
   const showDropin =
-    paymentEnabled && !selectedStoredCard && !!paymentMethodsResponse && !!ordrPayClientKey;
+    paymentEnabled && !selectedStoredCard && !!paymentMethodsResponse && !!ordrPayClientKey && !isMockMode;
 
-  // Show legacy form as fallback if Drop-in can't render (no client key) OR if a stored card is picked
+  // Show legacy form whenever Drop-in can't render (no client key / mock mode)
   const showLegacyForm =
     paymentEnabled && !showDropin;
 
@@ -737,6 +740,12 @@ const CheckoutPanel = ({
                   <CreditCard className="h-4 w-4" />
                   Card Details
                 </Label>
+                {isMockMode && (
+                  <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[11px] text-warning-foreground">
+                    <strong>OrdrPay test mode.</strong> Use card{" "}
+                    <code className="font-mono">4111 1111 1111 1111</code>, any future expiry, any CVC.
+                  </div>
+                )}
 
                 <div>
                   <Input

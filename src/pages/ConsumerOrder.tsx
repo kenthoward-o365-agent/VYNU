@@ -63,6 +63,9 @@ interface ActiveOrder {
 }
 
 const OPEN_ORDER_STATUSES: ActiveOrder["status"][] = ["received", "preparing", "ready"];
+const TERMINAL_ORDER_STATUSES = new Set<ActiveOrder["status"]>(["paid", "cancelled", "refunded"]);
+const lastOrderKey = (venueId?: string, tableId?: string) =>
+  `shyndig.lastOrder.${venueId || "_"}.${tableId || "_"}`;
 
 const ConsumerOrder = () => {
   const { venueId, tableId } = useParams<{ venueId: string; tableId: string }>();
@@ -246,8 +249,33 @@ const ConsumerOrder = () => {
 
   useEffect(() => {
     const fetchOpenOrder = async () => {
+      if (!venueId) return;
+
+      // 1) Guest recovery: hydrate via localStorage + safe RPC (works without auth).
+      const storedId = typeof window !== "undefined"
+        ? localStorage.getItem(lastOrderKey(venueId, tableId))
+        : null;
+      if (storedId) {
+        const { data: rpcData } = await supabase.rpc("get_diner_order_status", { _order_id: storedId });
+        const row = (rpcData as any)?.[0];
+        if (row && !TERMINAL_ORDER_STATUSES.has(row.status)) {
+          setActiveOrder({
+            id: row.id,
+            status: row.status,
+            total: Number(row.total) || 0,
+            created_at: row.created_at,
+            extra_wait_minutes: row.extra_wait_minutes ?? 0,
+          });
+          return;
+        }
+        if (row && TERMINAL_ORDER_STATUSES.has(row.status)) {
+          localStorage.removeItem(lastOrderKey(venueId, tableId));
+        }
+      }
+
+      // 2) Signed-in diner: look up most recent open order via RLS.
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user || !venueId) return;
+      if (!session?.user) return;
 
       const customerFilters = [session.user.id, dinerId].filter(Boolean);
       if (customerFilters.length === 0) return;
@@ -273,9 +301,10 @@ const ConsumerOrder = () => {
     };
 
     fetchOpenOrder();
-  }, [venueId, showSignup, dinerId]);
+  }, [venueId, tableId, showSignup, dinerId]);
 
-  // Subscribe to order status changes
+  // Subscribe to order status changes (realtime) + polling fallback for guests
+  // and for cases where the websocket misses an event (mobile Safari background, etc.)
   useEffect(() => {
     if (!activeOrder) return;
 
@@ -291,8 +320,37 @@ const ConsumerOrder = () => {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [activeOrder?.id]);
+    // Polling fallback — RPC is RLS-safe and works for guests and signed-in diners.
+    let cancelled = false;
+    let attempt = 0;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        const { data } = await supabase.rpc("get_diner_order_status", { _order_id: activeOrder.id });
+        const row = (data as any)?.[0];
+        if (row) {
+          setActiveOrder((prev) => prev ? { ...prev, ...row, total: Number(row.total) || prev.total } : prev);
+          if (TERMINAL_ORDER_STATUSES.has(row.status)) {
+            if (venueId && tableId) localStorage.removeItem(lastOrderKey(venueId, tableId));
+            return; // stop polling on terminal
+          }
+        }
+      } catch (e) {
+        // swallow — next tick will retry
+      }
+      attempt++;
+      const delay = attempt < 24 ? 5000 : 15000; // ~2 min then back off
+      timer = setTimeout(poll, delay);
+    };
+    timer = setTimeout(poll, 5000);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
+  }, [activeOrder?.id, venueId, tableId]);
 
   const fetchUpsell = useCallback(async (item: { id: string; name: string; price: number }) => {
     if (!upsellEnabled || !venue || shownUpsells.has(item.id)) return;
@@ -424,6 +482,9 @@ const ConsumerOrder = () => {
       total: cartTotal,
       created_at: new Date().toISOString(),
     });
+    if (venueId && tableId) {
+      try { localStorage.setItem(lastOrderKey(venueId, tableId), orderId); } catch {}
+    }
     setCart([]);
     setShowCheckout(false);
     setTab("feed");
