@@ -482,6 +482,9 @@ const ConsumerOrder = () => {
       total: cartTotal,
       created_at: new Date().toISOString(),
     });
+    if (venueId && tableId) {
+      try { localStorage.setItem(lastOrderKey(venueId, tableId), orderId); } catch {}
+    }
     setCart([]);
     setShowCheckout(false);
     setTab("feed");
