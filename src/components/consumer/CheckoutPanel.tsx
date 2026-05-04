@@ -740,6 +740,12 @@ const CheckoutPanel = ({
                   <CreditCard className="h-4 w-4" />
                   Card Details
                 </Label>
+                {isMockMode && (
+                  <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[11px] text-warning-foreground">
+                    <strong>OrdrPay test mode.</strong> Use card{" "}
+                    <code className="font-mono">4111 1111 1111 1111</code>, any future expiry, any CVC.
+                  </div>
+                )}
 
                 <div>
                   <Input
