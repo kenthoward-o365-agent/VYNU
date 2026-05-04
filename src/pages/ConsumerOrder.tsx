@@ -63,6 +63,9 @@ interface ActiveOrder {
 }
 
 const OPEN_ORDER_STATUSES: ActiveOrder["status"][] = ["received", "preparing", "ready"];
+const TERMINAL_ORDER_STATUSES = new Set<ActiveOrder["status"]>(["paid", "cancelled", "refunded"]);
+const lastOrderKey = (venueId?: string, tableId?: string) =>
+  `shyndig.lastOrder.${venueId || "_"}.${tableId || "_"}`;
 
 const ConsumerOrder = () => {
   const { venueId, tableId } = useParams<{ venueId: string; tableId: string }>();
