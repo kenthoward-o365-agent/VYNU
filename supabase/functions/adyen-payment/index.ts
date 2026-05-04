@@ -253,7 +253,7 @@ Deno.serve(async (req) => {
         config.environment === "live" ? config.client_key_live : config.client_key_test;
 
       if (isMock) {
-        return json({ ...MOCK_PAYMENT_METHODS, client_key: clientKey || null });
+        return json({ ...MOCK_PAYMENT_METHODS, client_key: clientKey || null, mock_mode: true });
       }
 
       if (!apiKey || !merchantAccount) return json({ error: "OrdrPay not configured" }, 400);
