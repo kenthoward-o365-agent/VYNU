@@ -5,7 +5,7 @@
 For your venue, `venue_payment_config` has `is_active=true` and `environment=test` and an `api_key_test`, but **`client_key_test` is null** and `merchant_account` isn't a valid Adyen value. The edge function (`adyen-payment/index.ts` lines 194–203) treats *any* missing piece as "not provisioned yet" and silently falls into **mock mode**, which:
 
 - Returns mock `paymentMethods` to the client.
-- Causes `OrdrPayDropin` to refuse to mount (no client key) → falls back to the legacy raw card form.
+- Causes `ShyndigPayDropin` to refuse to mount (no client key) → falls back to the legacy raw card form.
 - `mockPayment()` auto-`Authorised`s anything the diner types — including no card at all in some paths — so the order flips to `paid` without contacting Adyen.
 
 That's why "the order is just placed without payment".
@@ -14,7 +14,7 @@ That's why "the order is just placed without payment".
 
 ### Part A — Wire up real Adyen test mode (admin-only credentials)
 
-Per the OrdrPay branding rule, the underlying processor must never appear in venue-facing UI. So credentials go into a **Tab-Less Admin** screen, not Settings → Payments.
+Per the ShyndigPay branding rule, the underlying processor must never appear in venue-facing UI. So credentials go into a **Tab-Less Admin** screen, not Settings → Payments.
 
 1. **New super-admin section** in `src/pages/AdminVenueDetail.tsx` → "Processor credentials (internal)", visible only to `tabless_admin`. Fields:
    - `api_key_test`, `api_key_live`
