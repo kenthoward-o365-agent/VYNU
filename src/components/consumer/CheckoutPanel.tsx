@@ -476,7 +476,7 @@ const CheckoutPanel = ({
         const result = await resp.json();
 
         if (result.resultCode === "Authorised") {
-          await finalizePaidOrder(orderId);
+          await finalizePaidOrder(orderId, !!result?.mock_mode);
         } else {
           toast.error(`Payment ${result.resultCode || "failed"}: ${result.refusalReason || "Please try again"}`);
           await cleanupOrder(orderId);
