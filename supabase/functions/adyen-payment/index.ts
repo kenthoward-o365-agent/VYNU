@@ -53,64 +53,71 @@ const MOCK_TEST_CARDS: Record<string, { resultCode: string; refusalReason?: stri
 };
 
 function mockPayment(body: any) {
-  // Stored card always succeeds
+  // Stored card always succeeds (in mock, the saved token is itself simulated)
   if (body.stored_card_token) {
     return {
       resultCode: "Authorised",
       pspReference: `MOCK_${Date.now()}`,
       merchantReference: body.reference,
       additionalData: { cardSummary: "1111", paymentMethod: "visa" },
+      mock_mode: true,
     };
   }
 
-  // Drop-in payments — wallet tokens or encrypted card payloads
+  // Drop-in payments — wallet tokens or encrypted card payloads.
+  // In mock mode wallets are NOT supported (the diner-side UI disables those
+  // buttons when mock_mode is true), so anything reaching here that claims to
+  // be a wallet payment is rejected to avoid silent free orders.
   const pm = body.payment_method;
   if (pm) {
-    const type = pm.type;
-    if (type === "applepay" || type === "googlepay") {
-      return {
-        resultCode: "Authorised",
-        pspReference: `MOCK_${type.toUpperCase()}_${Date.now()}`,
-        merchantReference: body.reference,
-        additionalData: {
-          paymentMethod: type,
-          cardSummary: "0000",
-        },
-      };
-    }
-    // Encrypted card from Drop-in — we can't read the digits; just authorise
     return {
-      resultCode: "Authorised",
-      pspReference: `MOCK_${Date.now()}`,
+      resultCode: "Refused",
+      refusalReason:
+        "Simulated mode does not support wallet or encrypted card payments — use a listed test card number.",
       merchantReference: body.reference,
-      additionalData: { cardSummary: "1234", paymentMethod: "visa" },
+      mock_mode: true,
     };
   }
 
-  // Legacy raw-card path (kept for stored-card flow / backwards compat)
+  // Legacy raw-card path — strict match against known test cards only.
   const cardNumber = body.card?.number?.replace(/\s/g, "") || "";
   const testResult = MOCK_TEST_CARDS[cardNumber];
-  const resultCode = testResult?.resultCode || "Authorised";
+
+  if (!testResult) {
+    return {
+      resultCode: "Refused",
+      refusalReason:
+        cardNumber.length === 0
+          ? "No card number provided"
+          : "Unknown test card — use 4111 1111 1111 1111 in simulated mode",
+      merchantReference: body.reference,
+      mock_mode: true,
+    };
+  }
+
+  const resultCode = testResult.resultCode;
   const isAuthorised = resultCode === "Authorised";
 
   const response: any = {
     resultCode,
     pspReference: `MOCK_${Date.now()}`,
     merchantReference: body.reference,
+    mock_mode: true,
   };
 
   if (!isAuthorised) {
-    response.refusalReason = testResult?.refusalReason || "Refused";
+    response.refusalReason = testResult.refusalReason || "Refused";
+    return response;
   }
 
-  if (isAuthorised && body.store_card) {
+  if (body.store_card) {
     response.additionalData = {
       "recurring.recurringDetailReference": `MOCK_TOKEN_${Date.now()}`,
       "recurring.shopperReference": body.shopper_reference,
       cardSummary: cardNumber.slice(-4),
       paymentMethod: detectBrand(cardNumber),
     };
-  } else if (isAuthorised) {
+  } else {
     response.additionalData = {
       cardSummary: cardNumber.slice(-4),
       paymentMethod: detectBrand(cardNumber),
@@ -405,13 +412,26 @@ Deno.serve(async (req) => {
         }
       }
 
-      return json(result);
+      // If authorised, stamp the order with the PSP reference and (when in mock
+      // mode) flag it so operators see a clear DEMO badge instead of treating
+      // it as real revenue.
+      if (result.resultCode === "Authorised" && reference?.startsWith("order_")) {
+        const orderId = reference.slice("order_".length);
+        const stamp: any = {};
+        if (result.pspReference) stamp.payment_psp_reference = result.pspReference;
+        if (isMock) stamp.payment_is_mock = true;
+        if (Object.keys(stamp).length > 0) {
+          await adminClient.from("orders").update(stamp).eq("id", orderId);
+        }
+      }
+
+      return json({ ...result, mock_mode: isMock });
     }
 
     // ═══ PAYMENT DETAILS (3DS) ═══
     if (action === "payment_details") {
       if (isMock) {
-        return json({ resultCode: "Authorised", pspReference: `MOCK_3DS_${Date.now()}` });
+        return json({ resultCode: "Authorised", pspReference: `MOCK_3DS_${Date.now()}`, mock_mode: true });
       }
       if (!apiKey || !merchantAccount) return json({ error: "Not configured" }, 400);
       const resp = await fetch(`${baseUrl}/payments/details`, {
