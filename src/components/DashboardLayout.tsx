@@ -334,11 +334,32 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
           {showGroupNav && (
             <>
-              <div className="pt-3 pb-1 px-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-muted">Group</span>
-              </div>
+              {!pinned && (
+                <div className="pt-3 pb-1 px-3">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-muted">Group</span>
+                </div>
+              )}
               {groupNavItems.map((item) => {
                 const active = location.pathname === item.path;
+                if (pinned) {
+                  return (
+                    <Tooltip key={item.path}>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to={item.path}
+                          onClick={() => setSidebarOpen(false)}
+                          className={cn(
+                            "flex items-center justify-center h-10 w-full rounded-lg transition-colors",
+                            active ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          )}
+                        >
+                          <item.icon className="h-4 w-4 shrink-0" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">{item.label}</TooltipContent>
+                    </Tooltip>
+                  );
+                }
                 return (
                   <Link
                     key={item.path}
@@ -361,11 +382,32 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
           {isTablessAdmin && (
             <>
-              <div className="pt-3 pb-1 px-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-muted">Admin</span>
-              </div>
+              {!pinned && (
+                <div className="pt-3 pb-1 px-3">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-muted">Admin</span>
+                </div>
+              )}
               {adminNavItems.map((item) => {
                 const active = location.pathname.startsWith(item.path);
+                if (pinned) {
+                  return (
+                    <Tooltip key={item.path}>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to={item.path}
+                          onClick={() => setSidebarOpen(false)}
+                          className={cn(
+                            "flex items-center justify-center h-10 w-full rounded-lg transition-colors",
+                            active ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          )}
+                        >
+                          <item.icon className="h-4 w-4 shrink-0" />
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">{item.label}</TooltipContent>
+                    </Tooltip>
+                  );
+                }
                 return (
                   <Link
                     key={item.path}
