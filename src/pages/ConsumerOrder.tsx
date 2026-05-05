@@ -154,7 +154,28 @@ const ConsumerOrder = () => {
     setShowModeSwitch(false);
   };
 
-  // Fetch venue, table, and menu data via edge-cached snapshot (Phase 2 scaling).
+  // Diner web session: idle timeout + cart abandonment tracking
+  const dinerSession = useDinerSession({
+    venueId,
+    tableId: resolvedTableId,
+    dinerId,
+    sessionMode,
+    idleMinutes: 10,
+    graceSeconds: 60,
+    onSessionEnd: () => {
+      setCart([]);
+      setShowCheckout(false);
+      setStarted(false);
+      setSessionMode(null);
+      setJoinedSessionId(null);
+      setGroupDisplayName(null);
+      if (sessionStorageKey) localStorage.removeItem(sessionStorageKey);
+      if (venueId && tableId) {
+        try { localStorage.removeItem(lastOrderKey(venueId, tableId)); } catch {}
+      }
+      toast("Your session ended due to inactivity.");
+    },
+  });
   // Replaces ~6 serial Supabase round-trips with ONE CDN-cached HTTP call.
   const { data: snapshot, isLoading: snapshotLoading } = useMenuSnapshot(venueId, tableId);
 
