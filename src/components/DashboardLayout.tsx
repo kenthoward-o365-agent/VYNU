@@ -186,22 +186,76 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             );
 
             if (pinned) {
+              const subItems: { to: string; label: string; icon: any }[] = isMenuBuilder ? [
+                { to: "/menu?import=true", label: "Import", icon: Upload },
+                { to: "/menu?enhance=true", label: "Enhance Images", icon: ImagePlus },
+                { to: "/modifiers", label: "Modifiers", icon: SlidersHorizontal },
+              ] : isOrders ? [
+                { to: "/orders/statuses", label: "Order Display System", icon: Monitor },
+                { to: "/orders/throttling", label: "Operational Throttling", icon: Sliders },
+              ] : isPricing ? [
+                { to: "/rule-types", label: "Rule Types", icon: Tag },
+              ] : isDiners ? [
+                { to: "/diners/preferences", label: "Diner Preferences", icon: Settings },
+              ] : isDayEnd ? [
+                { to: "/reporting", label: "Reporting", icon: FileText },
+              ] : isSettings ? [
+                { to: "/settings?tab=details", label: "Details", icon: Settings },
+                { to: "/settings?tab=users", label: "Users", icon: Users },
+                { to: "/settings?tab=loyalty", label: "Loyalty", icon: Gift },
+                { to: "/settings?tab=sippa", label: "Shyndig AI", icon: Bot },
+                { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
+                { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
+                { to: "/settings?tab=surcharges", label: "Surcharges", icon: Percent },
+                { to: "/settings?tab=taxes", label: "Taxes", icon: Receipt },
+                { to: "/settings?tab=table-sessions", label: "Table Sessions", icon: Users },
+                { to: "/settings?tab=integrations", label: "Integrations", icon: Plug },
+              ] : [];
+
+              const linkEl = (
+                <Link
+                  to={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  className={cn(
+                    "flex items-center justify-center h-10 w-full rounded-lg transition-colors",
+                    active
+                      ? "bg-sidebar-accent text-sidebar-primary"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  {iconEl}
+                </Link>
+              );
+
+              if (hasSub && subItems.length > 0) {
+                return (
+                  <HoverCard key={item.path} openDelay={80} closeDelay={120}>
+                    <HoverCardTrigger asChild>{linkEl}</HoverCardTrigger>
+                    <HoverCardContent side="right" align="start" sideOffset={8} className="w-56 p-1.5">
+                      <div className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border mb-1">
+                        {item.label}
+                      </div>
+                      <div className="space-y-0.5">
+                        {subItems.map((sub) => (
+                          <Link
+                            key={sub.to}
+                            to={sub.to}
+                            onClick={() => setSidebarOpen(false)}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                          >
+                            <sub.icon className="h-3.5 w-3.5 shrink-0" />
+                            {sub.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
+                );
+              }
+
               return (
                 <Tooltip key={item.path}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      to={item.path}
-                      onClick={() => setSidebarOpen(false)}
-                      className={cn(
-                        "flex items-center justify-center h-10 w-full rounded-lg transition-colors",
-                        active
-                          ? "bg-sidebar-accent text-sidebar-primary"
-                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                      )}
-                    >
-                      {iconEl}
-                    </Link>
-                  </TooltipTrigger>
+                  <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
                   <TooltipContent side="right">{item.label}</TooltipContent>
                 </Tooltip>
               );
