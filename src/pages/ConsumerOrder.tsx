@@ -174,6 +174,7 @@ const ConsumerOrder = () => {
       setJoinedSessionId(null);
       setGroupDisplayName(null);
       if (sessionStorageKey) localStorage.removeItem(sessionStorageKey);
+      clearDinerVisit(venueId);
       if (venueId && tableId) {
         try { localStorage.removeItem(lastOrderKey(venueId, tableId)); } catch {}
       }
