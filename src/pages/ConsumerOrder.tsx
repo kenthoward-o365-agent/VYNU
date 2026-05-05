@@ -280,14 +280,25 @@ const ConsumerOrder = () => {
     return () => { cancelled = true; };
   }, [venueId, hydrateDiner]);
 
-  const handleResumeContinue = useCallback(async () => {
-    if (!venueId || !pendingDinerUserId) return;
+  const handleResumeContinue = useCallback(async (password: string) => {
+    if (!venueId || !pendingDinerUserId) {
+      throw new Error("Session expired. Please refresh and try again.");
+    }
+    const email = dinerInfo?.email;
+    if (!email) {
+      throw new Error("Missing account email. Please sign in again.");
+    }
+    // Re-verify identity by re-authenticating with password.
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      throw new Error(signInError.message || "Incorrect password.");
+    }
     const profile = await hydrateDiner(pendingDinerUserId, true);
     if (profile) writeDinerVisit(venueId, profile.id);
     setShowResumeGate(false);
     setPendingDinerUserId(null);
     setStarted(true);
-  }, [venueId, pendingDinerUserId, hydrateDiner]);
+  }, [venueId, pendingDinerUserId, hydrateDiner, dinerInfo?.email]);
 
   const handleResumeSwitchAccount = useCallback(async () => {
     await supabase.auth.signOut();
