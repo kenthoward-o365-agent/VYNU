@@ -1,14 +1,15 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
 import { usePermissions } from "@/hooks/use-permissions";
 import {
-  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Sliders, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug, Monitor
+  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Sliders, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug, Monitor, Pin, PinOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
