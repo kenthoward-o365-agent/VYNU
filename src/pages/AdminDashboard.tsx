@@ -267,6 +267,8 @@ export default function AdminDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <PlatformFunnelCard />
     </div>
   );
 }
