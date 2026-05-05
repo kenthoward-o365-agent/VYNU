@@ -221,6 +221,8 @@ export default function Dashboard() {
       <div className="grid gap-3 lg:grid-cols-2">
         {venue && <TopItemsCharts venueId={venue.id} auditDate={auditDate} />}
       </div>
+
+      {venue && <AbandonmentCard venueId={venue.id} />}
     </div>
   );
 }
