@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -125,6 +125,38 @@ function AppRoutes() {
   );
 }
 
+function isPasswordRecoveryLocation(search: string, hash: string) {
+  const searchParams = new URLSearchParams(search);
+  const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
+  return searchParams.get("type") === "recovery" || hashParams.get("type") === "recovery";
+}
+
+function RootRoutes() {
+  const location = useLocation();
+
+  if (location.pathname !== "/reset-password" && isPasswordRecoveryLocation(location.search, location.hash)) {
+    return <Navigate to={{ pathname: "/reset-password", search: location.search, hash: location.hash }} replace />;
+  }
+
+  return (
+    <Routes>
+      {/* Public routes — no auth required */}
+      <Route path="/order/:venueId/:tableId" element={<ConsumerOrder />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      {/* All other routes go through auth */}
+      <Route path="/*" element={
+        <AuthProvider>
+          <VenueProvider>
+            <AuditDateProvider>
+              <AppRoutes />
+            </AuditDateProvider>
+          </VenueProvider>
+        </AuthProvider>
+      } />
+    </Routes>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -132,21 +164,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            {/* Public routes — no auth required */}
-            <Route path="/order/:venueId/:tableId" element={<ConsumerOrder />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            {/* All other routes go through auth */}
-            <Route path="/*" element={
-              <AuthProvider>
-                <VenueProvider>
-                  <AuditDateProvider>
-                    <AppRoutes />
-                  </AuditDateProvider>
-                </VenueProvider>
-              </AuthProvider>
-            } />
-          </Routes>
+          <RootRoutes />
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
