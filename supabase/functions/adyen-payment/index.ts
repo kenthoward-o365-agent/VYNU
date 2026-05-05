@@ -431,7 +431,7 @@ Deno.serve(async (req) => {
     // ═══ PAYMENT DETAILS (3DS) ═══
     if (action === "payment_details") {
       if (isMock) {
-        return json({ resultCode: "Authorised", pspReference: `MOCK_3DS_${Date.now()}` });
+        return json({ resultCode: "Authorised", pspReference: `MOCK_3DS_${Date.now()}`, mock_mode: true });
       }
       if (!apiKey || !merchantAccount) return json({ error: "Not configured" }, 400);
       const resp = await fetch(`${baseUrl}/payments/details`, {
