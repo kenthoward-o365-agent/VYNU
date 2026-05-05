@@ -142,7 +142,7 @@ export default function KnowledgeBase() {
               "Build your menu: create categories, add items with descriptions and prices.",
               "Use AI Import to upload an existing menu (PDF or photo) and auto-populate items.",
               "Set up your tables and generate QR codes in Tables &amp; QR.",
-              "Set up OrdrPay payments in Settings → Payments.",
+              "Set up ShyndigPay payments in Settings → Payments.",
               "Set up tax rules in Settings → Taxes.",
               "Customise your Shyndig AI agent personality in Settings → Shyndig AI.",
               "Print and place QR stickers on each table — you're live!",
@@ -315,7 +315,7 @@ export default function KnowledgeBase() {
             <p>On finished orders (terminal statuses), operators with permission see <strong>&quot;Re-open &amp; Refund&quot;</strong>. This:</p>
             <ol className="list-decimal list-inside space-y-1 pl-1">
               <li>Moves the order back to a working status (Selected → Re-opened).</li>
-              <li>Processes a full or partial refund through OrdrPay.</li>
+              <li>Processes a full or partial refund through ShyndigPay.</li>
             </ol>
             <p>Use this workflow when a diner changes their mind after paying or something was wrong with the order. If you just need to move the order back in the kitchen flow without money changing hands, use the dimmed status button to step back to a non-terminal status.</p>
           </SubSection>
@@ -677,7 +677,7 @@ export default function KnowledgeBase() {
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Update Order Status</strong> — show or hide the status buttons on each order card (Received → Preparing → Ready → …).</li>
               <li><strong>Re-open Closed Orders</strong> — show a <em>Re-open</em> button on closed orders (Paid / Served / Cancelled) that lets the user move it back to an active status. <strong>No money is moved.</strong></li>
-              <li><strong>Process Refunds</strong> — show the <em>Re-open &amp; Refund</em> button that re-opens the order <em>and</em> processes a refund through OrdrPay.</li>
+              <li><strong>Process Refunds</strong> — show the <em>Re-open &amp; Refund</em> button that re-opens the order <em>and</em> processes a refund through ShyndigPay.</li>
             </ul>
 
             <p className="mt-3"><strong>Worked examples:</strong></p>
@@ -708,13 +708,13 @@ export default function KnowledgeBase() {
               <li><strong>Agent Icon</strong> — Custom avatar for the chat interface.</li>
             </ul>
           </SubSection>
-          <SubSection title="Payments — OrdrPay">
-            <p>OrdrPay is Shyndig&apos;s built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don&apos;t need a separate processor account or API keys.</p>
+          <SubSection title="Payments — ShyndigPay">
+            <p>ShyndigPay is Shyndig&apos;s built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don&apos;t need a separate processor account or API keys.</p>
             <SubSection title="Onboarding flow">
               <ol className="list-decimal list-inside space-y-1 pl-1">
                 <li><strong>Application</strong> — submit your venue and business details.</li>
                 <li><strong>Underwriting</strong> — our risk team reviews your application (usually 1–3 business days).</li>
-                <li><strong>Approval</strong> — once approved, your OrdrPay merchant ID is issued and Settings → Payments shows the &quot;Approved&quot; badge.</li>
+                <li><strong>Approval</strong> — once approved, your ShyndigPay merchant ID is issued and Settings → Payments shows the &quot;Approved&quot; badge.</li>
                 <li><strong>Funding</strong> — settled funds land in your nominated bank account on a daily rolling schedule.</li>
               </ol>
             </SubSection>
@@ -727,7 +727,7 @@ export default function KnowledgeBase() {
               </ul>
             </SubSection>
             <SubSection title="Wallets — Apple Pay &amp; Google Pay">
-              <p>Apple Pay and Google Pay are enabled automatically on your OrdrPay account, including domain verification. Diners on Safari (iPhone/Mac) see Apple Pay; diners on Chrome/Android see Google Pay. Anonymous guests can pay with their wallet too — no account or card entry required.</p>
+              <p>Apple Pay and Google Pay are enabled automatically on your ShyndigPay account, including domain verification. Diners on Safari (iPhone/Mac) see Apple Pay; diners on Chrome/Android see Google Pay. Anonymous guests can pay with their wallet too — no account or card entry required.</p>
             </SubSection>
             <Tip>Use the test card numbers shown in Settings → Payments to verify your full ordering and payment flow before going live.</Tip>
           </SubSection>

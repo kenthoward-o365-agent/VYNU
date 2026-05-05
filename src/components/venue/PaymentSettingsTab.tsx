@@ -160,7 +160,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
     }
 
     if (error) toast.error(error.message);
-    else toast.success("OrdrPay settings saved");
+    else toast.success("ShyndigPay settings saved");
     setSaving(false);
   };
 
@@ -191,7 +191,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
       if (resp.ok && result.success) {
         setTestResult({
           success: true,
-          message: result.message || "OrdrPay connection verified successfully.",
+          message: result.message || "ShyndigPay connection verified successfully.",
         });
         const methodTypes = (result.methods || []).map((m: any) => m.type);
         setAvailableMethods(methodTypes);
@@ -206,7 +206,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
   };
 
   const startOnboarding = () => {
-    toast.info("OrdrPay merchant onboarding is coming soon. Our team will be in touch.");
+    toast.info("ShyndigPay merchant onboarding is coming soon. Our team will be in touch.");
   };
 
   const copyMerchantId = () => {
@@ -243,16 +243,16 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
               <p className="font-medium text-sm">
                 {config.is_active
                   ? isMockMode
-                    ? "OrdrPay active in TEST mode"
-                    : "OrdrPay active — LIVE transactions"
-                  : "OrdrPay not enabled"}
+                    ? "ShyndigPay active in TEST mode"
+                    : "ShyndigPay active — LIVE transactions"
+                  : "ShyndigPay not enabled"}
               </p>
               <p className="text-xs text-muted-foreground">
                 {config.is_active
                   ? isMockMode
                     ? "Simulated payments — use test cards below to verify your flow."
                     : "Live payment processing — real transactions will be charged."
-                  : "Enable OrdrPay below to accept payments from diners."}
+                  : "Enable ShyndigPay below to accept payments from diners."}
               </p>
             </div>
             <Badge
@@ -269,15 +269,15 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         </CardContent>
       </Card>
 
-      {/* OrdrPay Merchant Account */}
+      {/* ShyndigPay Merchant Account */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            OrdrPay Merchant Account
+            ShyndigPay Merchant Account
           </CardTitle>
           <CardDescription>
-            OrdrPay handles your merchant account, funding, statements, and chargebacks.
+            ShyndigPay handles your merchant account, funding, statements, and chargebacks.
             No third-party processor accounts to manage.
           </CardDescription>
         </CardHeader>
@@ -286,7 +286,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             <div>
               <Label>Application status</Label>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Set automatically by the OrdrPay underwriting team.
+                Set automatically by the ShyndigPay underwriting team.
               </p>
             </div>
             <Badge variant={STATUS_VARIANT[config.merchant_status]}>
@@ -297,7 +297,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
           <Separator />
 
           <div>
-            <Label>OrdrPay Merchant ID</Label>
+            <Label>ShyndigPay Merchant ID</Label>
             <div className="flex items-center gap-2 mt-1.5">
               <Input
                 value={config.merchant_id_ordrpay || "—"}
@@ -334,7 +334,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             Payment Behaviour
           </CardTitle>
           <CardDescription>
-            Control how OrdrPay processes payments at this venue.
+            Control how ShyndigPay processes payments at this venue.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -482,7 +482,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             </Button>
             <Button variant="outline" onClick={testConnection} disabled={testing}>
               <ShieldCheck className="h-4 w-4 mr-2" />
-              {testing ? "Testing..." : "Test OrdrPay connection"}
+              {testing ? "Testing..." : "Test ShyndigPay connection"}
             </Button>
           </div>
 
@@ -520,7 +520,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         <CardContent className="space-y-3">
           {availableMethods === null ? (
             <p className="text-sm text-muted-foreground">
-              Run <span className="font-medium">Test OrdrPay connection</span> above to detect
+              Run <span className="font-medium">Test ShyndigPay connection</span> above to detect
               which payment methods are enabled on your account.
             </p>
           ) : (
@@ -572,7 +572,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
           <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
             <p>
               <span className="font-medium text-foreground">Apple Pay domain verification — automatic.</span>{" "}
-              OrdrPay handles the verification file for every venue. Apple Pay only renders on
+              ShyndigPay handles the verification file for every venue. Apple Pay only renders on
               Safari; Google Pay only on Chrome/Android — that's a browser/OS requirement.
             </p>
           </div>
