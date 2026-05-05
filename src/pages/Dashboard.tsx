@@ -11,6 +11,7 @@ import RevenueByHourChart from "@/components/dashboard/RevenueByHourChart";
 import TopItemsCharts from "@/components/dashboard/TopItemsCharts";
 import TableUtilization from "@/components/dashboard/TableUtilization";
 import TicketTimesCard from "@/components/dashboard/TicketTimesCard";
+import AbandonmentCard from "@/components/dashboard/AbandonmentCard";
 
 export default function Dashboard() {
   const { venue } = useVenue();
