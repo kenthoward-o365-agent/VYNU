@@ -455,9 +455,11 @@ const ConsumerOrder = () => {
         ];
       });
       toast.success(`Added ${item.name}`, { duration: 1500 });
+      const cents = Math.round((Number(item.price) || 0) * quantity * 100);
+      dinerSession.markAddToCart(cents);
       fetchUpsell({ id: item.id, name: item.name, price: Number(item.price) || 0 });
     },
-    [fetchUpsell, pricingIndex],
+    [fetchUpsell, pricingIndex, dinerSession],
   );
 
   /** Quick-add (used by AI chat / upsell prompts) — no modifiers, no notes. */
