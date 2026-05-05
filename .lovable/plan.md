@@ -1,115 +1,87 @@
-## Goal
+## Problem
 
-1. Add a 10-minute idle timeout to the diner web app, with a "Still here?" modal grace period before the session closes.
-2. Track diner-session lifecycle and cart abandonment as first-class events.
-3. Surface the abandonment metric on the Venue Dashboard and the Shyndig admin panel.
+Diner accounts use Supabase Auth, which persists the session in `localStorage` indefinitely (default behaviour). When a member closes the tab and later re-scans the QR at a venue, `ConsumerOrder.tsx` calls `supabase.auth.getSession()`, finds the saved session, and silently treats them as logged in — skipping the sign-in screen entirely.
 
-## Data model
+For a shared/handed-around table device, or a personal phone left on a cafe table, this is a privacy and ordering-integrity risk: someone else could scan, land in the previous diner's identity, see their saved prefs, and place orders on their account.
 
-New table `diner_web_sessions` (one row per diner visit to a venue/table on the web app):
+## Proposed Behaviour
 
+Treat a diner's web session as **short-lived and bound to the active visit**. After any of the following, force the diner to sign in again the next time they hit `/order/:venueId/:tableId`:
+
+1. **Tab/browser closed** — no active visit when they return.
+2. **Idle timeout fired** — the existing 10-min inactivity flow ends the visit.
+3. **Order completed + receipt dismissed** — visit is over.
+4. **More than N hours since last activity**, even if Supabase still has a valid token.
+
+The Supabase auth refresh token is still kept (so password re-entry isn't always required — see options below), but the diner must take an explicit action to "resume as {Name}" before the app treats them as that diner.
+
+## UX Options (please pick one)
+
+We'll ask via `ask_questions` after you approve the shape of this plan. The main choice is how strict to be:
+
+- **A. Always require password** — every QR scan after tab close shows the sign-in form pre-filled with their email. Most secure, most friction.
+- **B. "Continue as {Name}?" tap-to-confirm** — if Supabase still has a valid session, show a small confirmation card with their name/avatar and a "Not you? Sign in" link. One tap to resume, zero friction for the legit owner. Recommended.
+- **C. Time-based** — auto-resume if last activity < 30 min ago; otherwise show the confirm card from option B; otherwise require password.
+
+## Technical Plan
+
+### 1. Track "active diner visit" separately from Supabase auth
+
+Add a `sessionStorage` key (cleared automatically when the tab closes) per venue:
 ```
-id                uuid pk
-venue_id          uuid not null
-table_id          uuid null
-diner_id          uuid null            -- if signed in
-session_mode      text null            -- solo / group
-started_at        timestamptz default now()
-last_activity_at  timestamptz default now()
-ended_at          timestamptz null
-end_reason        text null            -- 'ordered' | 'idle_timeout' | 'manual_close' | 'tab_closed'
-first_add_to_cart_at  timestamptz null
-reached_checkout_at   timestamptz null
-order_placed_at       timestamptz null
-order_id              uuid null
-items_added_count     int default 0
-cart_value_peak_cents int default 0
-```
-
-RLS:
-- anon + authenticated INSERT (venue_id required)
-- anon UPDATE by id (so the diner can patch their own row without auth)
-- venue staff SELECT for their venue
-- tabless_admin SELECT all
-
-Index: `(venue_id, started_at desc)`, `(venue_id, end_reason)`.
-
-Helper RPC `close_idle_web_sessions()` (SECURITY DEFINER):
-- Marks any row with `ended_at IS NULL AND last_activity_at < now() - interval '15 minutes'` as `ended_at = now(), end_reason = 'idle_timeout'`. Safety net for tabs that died.
-
-Cron: schedule every 5 minutes via `pg_cron` calling the RPC.
-
-## Frontend — idle + lifecycle
-
-New hook `src/hooks/use-diner-session.ts`:
-- On mount: insert a `diner_web_sessions` row, store id in `sessionStorage` keyed by venue/table.
-- Activity listeners: `pointerdown`, `keydown`, `scroll`, `visibilitychange` → debounced (15s) UPDATE of `last_activity_at`.
-- Timer: 9 min of no activity → fire "Still here?" modal. 60s countdown. If user taps "I'm here", reset timer + bump `last_activity_at`. If countdown hits 0 or user taps "End session" → UPDATE row with `end_reason = 'idle_timeout'` (or `'manual_close'`), then call `onSessionEnd()`.
-- `beforeunload` / `pagehide`: best-effort `navigator.sendBeacon` to a tiny edge function `web-session-ping` that sets `end_reason = 'tab_closed'` if still open.
-- Expose helpers: `markAddToCart(value)`, `markCheckout()`, `markOrderPlaced(orderId)`.
-
-New component `src/components/consumer/IdleTimeoutModal.tsx`:
-- Centered modal, 60s ring countdown, two buttons: "I'm still here" (primary) / "End session".
-
-Wire into `src/pages/ConsumerOrder.tsx`:
-- Initialize hook with `{ venueId, tableId, dinerId, sessionMode }`.
-- Call `markAddToCart` from existing `handleAddToCart`.
-- Call `markCheckout` when `showCheckout` becomes true.
-- Call `markOrderPlaced(orderId)` after a successful order insert.
-- On `onSessionEnd`: clear cart, clear `lastOrderKey`, navigate back to `/v/:venueId/t/:tableId` landing.
-
-## Edge function `web-session-ping`
-
-Tiny POST endpoint that accepts `{ session_id, end_reason }` and updates the row using the service role. Used only for `sendBeacon` on tab-close. No auth required (anon-keyed); validates session_id is a uuid.
-
-## Metrics views
-
-SQL view `diner_session_metrics_daily`:
-
-```
-venue_id, day,
-  sessions,
-  sessions_with_cart       -- first_add_to_cart_at not null
-  sessions_with_checkout   -- reached_checkout_at not null
-  sessions_converted       -- order_placed_at not null
-  cart_abandoned           -- with_cart and not converted
-  checkout_abandoned       -- with_checkout and not converted
-  cart_abandon_rate, checkout_abandon_rate, conversion_rate
+shyndig:diner_visit:{venueId} = { dinerId, startedAt, lastActivityAt }
 ```
 
-RLS: venue staff SELECT for their venue, tabless_admin SELECT all.
+`sessionStorage` (not `localStorage`) is the key choice — it dies with the tab, exactly matching "closed the web page".
 
-## UI
+### 2. Update `ConsumerOrder.tsx` diner-hydration effect
 
-**Venue Dashboard** (`src/pages/Dashboard.tsx`): new card "Cart abandonment (last 7 days)" — shows conversion rate, cart-abandon rate, checkout-abandon rate, and a small spark line of daily abandonment.
+Change the effect at lines 212–271 so it does **not** auto-set `started = true` based on Supabase session alone. Instead:
 
-**Shyndig admin** (`src/pages/AdminDashboard.tsx`): new section "Platform funnel" — same metrics aggregated across all venues plus a per-venue table sortable by abandon rate.
+```ts
+const visit = readDinerVisit(venueId);          // sessionStorage
+const { data: { session } } = await supabase.auth.getSession();
 
-Both pull from the new view via `supabase.from("diner_session_metrics_daily").select(...)`.
+if (visit && session?.user) {
+  // Same tab, mid-visit → fully resume silently.
+  hydrateDiner(session.user.id);
+  setStarted(true);
+} else if (session?.user) {
+  // Token still valid, but no active visit → show "Continue as X?" gate.
+  hydrateDinerLight(session.user.id);            // name/avatar only
+  setShowResumeGate(true);                       // new state
+} else {
+  // No token → existing signup/signin flow.
+  setShowSignup(true);
+}
+```
 
-## Settings
+### 3. New `DinerResumeGate.tsx` component
 
-Add a single venue setting `web_session.idle_minutes` (default 10) inside `venues.settings` jsonb so operators can tune it later — UI exposed in `VenueSettings → Table Sessions`. Modal countdown stays at 60s regardless.
+Small full-screen card shown before menu loads:
+- "Welcome back, {first_name}"
+- Primary button: **Continue as {first_name}** → writes the visit to sessionStorage, sets `started`, proceeds.
+- Secondary link: **Not you? Sign in with a different account** → calls `supabase.auth.signOut()` then opens `DinerSignup` in `signin` mode.
 
-## Out of scope
+### 4. Tie into existing idle/abandonment system
 
-- Push/email "you left items behind" recovery (Phase 2).
-- Multi-device session merging.
-- Tracking abandonment for unauthenticated landing-page visitors who never opened the menu.
+In `useDinerSession`, when the idle timeout fires (or `end_reason = 'idle_timeout' | 'tab_closed'`):
+- Clear `shyndig:diner_visit:{venueId}` from sessionStorage.
+- Optionally call `supabase.auth.signOut({ scope: 'local' })` if the user picked option **A**.
 
-## Files
+After a successful order + receipt close, also clear the visit key so the next QR scan re-gates.
 
-Created:
-- `supabase/migrations/<ts>_diner_web_sessions.sql`
-- `supabase/functions/web-session-ping/index.ts`
-- `src/hooks/use-diner-session.ts`
-- `src/components/consumer/IdleTimeoutModal.tsx`
-- `src/components/dashboard/AbandonmentCard.tsx`
-- `src/components/admin/PlatformFunnelCard.tsx`
+### 5. No database changes required
 
-Modified:
-- `src/pages/ConsumerOrder.tsx` (wire hook)
-- `src/pages/Dashboard.tsx` (add card)
-- `src/pages/AdminDashboard.tsx` (add section)
-- `src/components/venue/TableSessionsSettingsTab.tsx` (idle minutes input)
-- Cron seeded via `insert` tool (not migration) since it includes the project URL + anon key.
+This is purely a client-side gating change on top of the existing auth + session-tracking infrastructure. No migrations, no edge functions.
+
+## Files to Edit / Create
+
+- **Create**: `src/components/consumer/DinerResumeGate.tsx`
+- **Create**: `src/lib/diner-visit.ts` (small read/write/clear helpers around sessionStorage)
+- **Modify**: `src/pages/ConsumerOrder.tsx` — change diner hydration effect, render the resume gate, clear visit on order complete + on idle timeout.
+- **Modify**: `src/hooks/use-diner-session.ts` — clear the visit key when the session ends.
+
+## Open Question for You
+
+Before I implement, please confirm the UX option (A / B / C above). Default recommendation is **B — Continue as {Name}? tap-to-confirm**, which matches how Uber Eats / DoorDash handle returning users on the same device while still preventing silent identity carry-over after a tab close.
