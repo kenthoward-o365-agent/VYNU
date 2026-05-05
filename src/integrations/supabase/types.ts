@@ -14,6 +14,296 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_idempotency: {
+        Row: {
+          created_at: string
+          key: string
+          partner_id: string
+          request_hash: string
+          response_body: Json | null
+          response_status: number
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          partner_id: string
+          request_hash: string
+          response_body?: Json | null
+          response_status: number
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          partner_id?: string
+          request_hash?: string
+          response_body?: Json | null
+          response_status?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_idempotency_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "api_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_keys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          key_hash: string
+          key_prefix: string
+          label: string | null
+          last_used_at: string | null
+          partner_id: string
+          revoked_at: string | null
+          scopes: string[]
+          venue_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_hash: string
+          key_prefix: string
+          label?: string | null
+          last_used_at?: string | null
+          partner_id: string
+          revoked_at?: string | null
+          scopes?: string[]
+          venue_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key_hash?: string
+          key_prefix?: string
+          label?: string | null
+          last_used_at?: string | null
+          partner_id?: string
+          revoked_at?: string | null
+          scopes?: string[]
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "api_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_keys_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_partners: {
+        Row: {
+          contact_email: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          partner_type: Database["public"]["Enums"]["api_partner_type"]
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          partner_type: Database["public"]["Enums"]["api_partner_type"]
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          partner_type?: Database["public"]["Enums"]["api_partner_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      api_request_log: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          method: string
+          partner_id: string | null
+          path: string
+          request_id: string | null
+          status_code: number
+          venue_id: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method: string
+          partner_id?: string | null
+          path: string
+          request_id?: string | null
+          status_code: number
+          venue_id?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method?: string
+          partner_id?: string | null
+          path?: string
+          request_id?: string | null
+          status_code?: number
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_request_log_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_request_log_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "api_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_request_log_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_webhook_deliveries: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          delivered_at: string | null
+          event_type: string
+          id: string
+          next_retry_at: string | null
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+          webhook_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          delivered_at?: string | null
+          event_type: string
+          id?: string
+          next_retry_at?: string | null
+          payload: Json
+          response_body?: string | null
+          response_status?: number | null
+          webhook_id: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          delivered_at?: string | null
+          event_type?: string
+          id?: string
+          next_retry_at?: string | null
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_webhook_deliveries_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "api_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_webhooks: {
+        Row: {
+          created_at: string
+          events: string[]
+          id: string
+          is_active: boolean
+          last_delivery_at: string | null
+          last_delivery_status: number | null
+          partner_id: string
+          secret: string
+          updated_at: string
+          url: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          last_delivery_at?: string | null
+          last_delivery_status?: number | null
+          partner_id: string
+          secret: string
+          updated_at?: string
+          url: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          events?: string[]
+          id?: string
+          is_active?: boolean
+          last_delivery_at?: string | null
+          last_delivery_status?: number | null
+          partner_id?: string
+          secret?: string
+          updated_at?: string
+          url?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_webhooks_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "api_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_webhooks_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages_log: {
         Row: {
           content: string
@@ -867,6 +1157,7 @@ export type Database = {
           pos_tags: string[] | null
           prep_time_minutes: number | null
           price: number
+          snooze_until: string | null
           updated_at: string
           venue_id: string
         }
@@ -889,6 +1180,7 @@ export type Database = {
           pos_tags?: string[] | null
           prep_time_minutes?: number | null
           price: number
+          snooze_until?: string | null
           updated_at?: string
           venue_id: string
         }
@@ -911,6 +1203,7 @@ export type Database = {
           pos_tags?: string[] | null
           prep_time_minutes?: number | null
           price?: number
+          snooze_until?: string | null
           updated_at?: string
           venue_id?: string
         }
@@ -2781,10 +3074,21 @@ export type Database = {
         Args: { _terminal_id: string }
         Returns: boolean
       }
+      verify_api_key: {
+        Args: { _full_key: string; _prefix: string }
+        Returns: {
+          key_id: string
+          partner_id: string
+          partner_type: Database["public"]["Enums"]["api_partner_type"]
+          scopes: string[]
+          venue_id: string
+        }[]
+      }
     }
     Enums: {
       alert_status: "pending" | "acknowledged" | "resolved"
       alert_type: "manager_request" | "assistance" | "complaint"
+      api_partner_type: "pos" | "crm"
       app_role: "tabless_admin"
       group_staff_role: "group_admin" | "group_viewer"
       loyalty_program_type: "points" | "stamps" | "tier"
@@ -2927,6 +3231,7 @@ export const Constants = {
     Enums: {
       alert_status: ["pending", "acknowledged", "resolved"],
       alert_type: ["manager_request", "assistance", "complaint"],
+      api_partner_type: ["pos", "crm"],
       app_role: ["tabless_admin"],
       group_staff_role: ["group_admin", "group_viewer"],
       loyalty_program_type: ["points", "stamps", "tier"],
