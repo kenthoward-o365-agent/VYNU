@@ -513,6 +513,7 @@ const ConsumerOrder = () => {
     setCart([]);
     setShowCheckout(false);
     setTab("feed");
+    dinerSession.markOrderPlaced(orderId);
 
     // Mark the active chat session as converted
     if (chatSessionIdRef.current) {
