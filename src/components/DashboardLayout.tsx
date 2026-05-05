@@ -97,22 +97,53 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       )}
 
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-200 lg:static lg:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 flex flex-col transition-[transform,width] duration-200 lg:static lg:translate-x-0",
         "bg-sidebar text-sidebar-foreground border-r border-sidebar-border",
+        pinned ? "w-16" : "w-64",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-4 border-b border-sidebar-border">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
+        <div className={cn("border-b border-sidebar-border", pinned ? "p-2" : "p-4")}>
+          <div className={cn("flex items-center mb-2", pinned ? "justify-center" : "justify-between")}> 
+            <div className={cn("flex items-center gap-2", pinned && "justify-center")}> 
               <img src="/brand/shyndig-icon.png" alt="Shyndig" className="h-8 w-8" />
-              <span className="text-lg font-bold text-sidebar-foreground">Shyndig</span>
+              {!pinned && <span className="text-lg font-bold text-sidebar-foreground">Shyndig</span>}
             </div>
-            <button className="lg:hidden text-sidebar-foreground" onClick={() => setSidebarOpen(false)}>
-              <X className="h-5 w-5" />
-            </button>
+            {!pinned && (
+              <div className="flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setPinned(true)}
+                      className="hidden lg:inline-flex p-1.5 rounded-md text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                      aria-label="Collapse sidebar"
+                    >
+                      <PinOff className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Collapse sidebar</TooltipContent>
+                </Tooltip>
+                <button className="lg:hidden text-sidebar-foreground" onClick={() => setSidebarOpen(false)}>
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            )}
           </div>
+          {pinned && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setPinned(false)}
+                  className="hidden lg:flex w-full justify-center p-1.5 rounded-md text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                  aria-label="Expand sidebar"
+                >
+                  <Pin className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Expand sidebar</TooltipContent>
+            </Tooltip>
+          )}
 
-          {showVenueNav && (venues.length > 1 ? (
+          {!pinned && showVenueNav && (venues.length > 1 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center justify-between w-full px-2 py-1.5 rounded-md text-sm bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/80 transition-colors">
@@ -134,7 +165,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           ))}
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+        <nav className={cn("flex-1 overflow-y-auto space-y-1", pinned ? "p-2" : "p-3")}>
           {showVenueNav && filteredVenueNav.map((item) => {
             const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners")) || (item.path === "/pricing" && location.pathname === "/menu-times") || (item.path === "/reporting" && location.pathname.startsWith("/reporting")) || (item.path === "/orders" && location.pathname.startsWith("/orders"));
             const isMenuBuilder = item.path === "/menu";
@@ -144,6 +175,37 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             const isDayEnd = item.path === "/reporting";
             const isOrders = item.path === "/orders";
             const hasSub = isMenuBuilder || isDiners || isSettings || isPricing || isDayEnd || isOrders;
+
+            const iconEl = typeof item.icon === 'object' && 'light' in item.icon ? (
+              <img src={theme === 'dark' ? item.icon.dark : item.icon.light} className="h-4 w-4 shrink-0" alt="" />
+            ) : typeof item.icon === 'string' ? (
+              <img src={item.icon} className="h-4 w-4 shrink-0" alt="" />
+            ) : (
+              <item.icon className="h-4 w-4 shrink-0" />
+            );
+
+            if (pinned) {
+              return (
+                <Tooltip key={item.path}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={item.path}
+                      onClick={() => setSidebarOpen(false)}
+                      className={cn(
+                        "flex items-center justify-center h-10 w-full rounded-lg transition-colors",
+                        active
+                          ? "bg-sidebar-accent text-sidebar-primary"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      )}
+                    >
+                      {iconEl}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{item.label}</TooltipContent>
+                </Tooltip>
+              );
+            }
+
             return (
               <Collapsible key={item.path} defaultOpen={
                 (isDiners && location.pathname.startsWith("/diners/")) ||
