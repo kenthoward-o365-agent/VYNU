@@ -21,6 +21,8 @@ import ModeSwitchSheet from "@/components/consumer/ModeSwitchSheet";
 import type { SessionMode } from "@/components/consumer/SessionModeChooser";
 import { buildRuleIndex, resolvePrice, type RuleIndex } from "@/lib/pricing-utils";
 import { useMenuSnapshot } from "@/hooks/use-menu-snapshot";
+import { useDinerSession } from "@/hooks/use-diner-session";
+import IdleTimeoutModal from "@/components/consumer/IdleTimeoutModal";
 
 interface VenueInfo {
   id: string;
