@@ -25,7 +25,7 @@ const ResetPassword = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
-  const [hasSession, setHasSession] = useState(false);
+  const [recoverySessionReady, setRecoverySessionReady] = useState(false);
 
   const strength = getPasswordStrength(password);
   const strengthColor = strength.score <= 2 ? "bg-destructive" : strength.score <= 3 ? "bg-yellow-500" : "bg-green-500";
@@ -36,21 +36,24 @@ const ResetPassword = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
-      if (event === "PASSWORD_RECOVERY" || session) {
-        setHasSession(!!session);
+      if (event === "PASSWORD_RECOVERY") {
+        setRecoverySessionReady(!!session);
         setReady(true);
       }
     });
 
     const init = async () => {
       const hash = window.location.hash;
+      let isRecoveryFlow = false;
 
       // PKCE-style recovery link: ?code=...
       const search = new URLSearchParams(window.location.search);
       const code = search.get("code");
+      const searchType = search.get("type");
       if (code) {
         const { error: exchErr } = await supabase.auth.exchangeCodeForSession(code);
         if (exchErr) setError(exchErr.message);
+        isRecoveryFlow = !exchErr && (!searchType || searchType === "recovery");
       } else if (hash.includes("access_token") && hash.includes("type=recovery")) {
         // Implicit-flow recovery link: tokens in URL hash
         const params = new URLSearchParams(hash.replace(/^#/, ""));
@@ -59,12 +62,13 @@ const ResetPassword = () => {
         if (access_token && refresh_token) {
           const { error: setErr } = await supabase.auth.setSession({ access_token, refresh_token });
           if (setErr) setError(setErr.message);
+          isRecoveryFlow = !setErr;
         }
       }
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!mounted) return;
-      setHasSession(!!session);
+      setRecoverySessionReady(!!session && isRecoveryFlow);
       setReady(true);
     };
 
@@ -78,7 +82,7 @@ const ResetPassword = () => {
 
   const handleSubmit = async () => {
     if (!isValid) return;
-    if (!hasSession) {
+    if (!recoverySessionReady) {
       setError("Your reset link has expired or is invalid. Please request a new password reset email.");
       return;
     }
@@ -86,6 +90,9 @@ const ResetPassword = () => {
     setError("");
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Your reset link has expired or is invalid. Please request a new password reset email.");
+
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
       toast.success("Password updated successfully!");
