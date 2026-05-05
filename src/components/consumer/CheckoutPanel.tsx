@@ -300,9 +300,9 @@ const CheckoutPanel = ({
     await supabase.from("orders").delete().eq("id", orderId);
   };
 
-  const finalizePaidOrder = async (orderId: string) => {
+  const finalizePaidOrder = async (orderId: string, isMock = false) => {
     await supabase.from("orders").update({ status: "paid" as any }).eq("id", orderId);
-    if (dinerId) {
+    if (dinerId && !isMock) {
       const taxResult = calculateTaxes(total, venueTaxes);
       await supabase
         .from("diner_visits")
@@ -330,7 +330,11 @@ const CheckoutPanel = ({
         console.warn("loyalty-earn dispatch error:", e);
       }
     }
-    toast.success("Payment successful! 🎉");
+    if (isMock) {
+      toast.warning("Demo order placed — no payment was taken (simulated mode)");
+    } else {
+      toast.success("Payment successful! 🎉");
+    }
     onOrderPlaced(orderId);
   };
 
