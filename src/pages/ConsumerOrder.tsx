@@ -281,12 +281,12 @@ const ConsumerOrder = () => {
 
   const handleResumeContinue = useCallback(async () => {
     if (!venueId || !pendingDinerUserId) return;
-    await hydrateDiner(pendingDinerUserId, true);
-    if (dinerId) writeDinerVisit(venueId, dinerId);
+    const profile = await hydrateDiner(pendingDinerUserId, true);
+    if (profile) writeDinerVisit(venueId, profile.id);
     setShowResumeGate(false);
     setPendingDinerUserId(null);
     setStarted(true);
-  }, [venueId, pendingDinerUserId, hydrateDiner, dinerId]);
+  }, [venueId, pendingDinerUserId, hydrateDiner]);
 
   const handleResumeSwitchAccount = useCallback(async () => {
     await supabase.auth.signOut();
