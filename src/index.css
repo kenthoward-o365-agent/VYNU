@@ -116,6 +116,11 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  html, body, #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
 }
 
 /* Print styles for receipt */
