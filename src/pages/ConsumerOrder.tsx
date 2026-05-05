@@ -536,6 +536,10 @@ const ConsumerOrder = () => {
     }
   };
 
+  useEffect(() => {
+    if (showCheckout) dinerSession.markCheckout();
+  }, [showCheckout, dinerSession]);
+
   if (loading) {
     return (
       <ConsumerLayout>
