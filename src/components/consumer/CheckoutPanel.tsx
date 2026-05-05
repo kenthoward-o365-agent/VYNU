@@ -651,6 +651,19 @@ const CheckoutPanel = ({
           <>
             <Separator />
 
+            {isMockMode && (
+              <div className="rounded-xl border-2 border-warning bg-warning/15 px-4 py-3 text-sm">
+                <p className="font-bold text-warning-foreground flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" /> Simulated payment mode
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This venue isn't fully connected to the payment processor yet, so no card will
+                  actually be charged. Use test card <code className="font-mono">4111 1111 1111 1111</code> to
+                  simulate a successful order. Wallet payments are disabled in this mode.
+                </p>
+              </div>
+            )}
+
             {/* Stored Cards (signed-in diners) — render above Drop-in */}
             {storedCards.length > 0 && (
               <div className="space-y-3">
