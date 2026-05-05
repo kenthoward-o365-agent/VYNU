@@ -385,7 +385,7 @@ const CheckoutPanel = ({
       });
 
       if (result.resultCode === "Authorised") {
-        await finalizePaidOrder(orderId);
+        await finalizePaidOrder(orderId, !!result?.mock_mode);
       } else if (
         result.resultCode === "Refused" ||
         result.resultCode === "Error" ||
