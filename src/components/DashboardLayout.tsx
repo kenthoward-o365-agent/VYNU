@@ -72,6 +72,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pinned, setPinned] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("shyndig_sidebar_pinned") === "1";
+  });
+  useEffect(() => {
+    localStorage.setItem("shyndig_sidebar_pinned", pinned ? "1" : "0");
+  }, [pinned]);
   const perms = usePermissions();
 
   const showVenueNav = !!venue;
