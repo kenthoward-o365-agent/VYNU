@@ -28,6 +28,8 @@ import AdminVenues from "@/pages/AdminVenues";
 import AdminVenueDetail from "@/pages/AdminVenueDetail";
 import AdminStaff from "@/pages/AdminStaff";
 import AdminDashboard from "@/pages/AdminDashboard";
+import AdminPartners from "@/pages/AdminPartners";
+import Developers from "@/pages/Developers";
 import NotFound from "@/pages/NotFound";
 import ConsumerOrder from "@/pages/ConsumerOrder";
 import ResetPassword from "@/pages/ResetPassword";
@@ -115,6 +117,7 @@ function AppRoutes() {
         <Route path="/admin/venues" element={<AdminVenues />} />
         <Route path="/admin/venues/:venueId" element={<AdminVenueDetail />} />
         <Route path="/admin/staff" element={<AdminStaff />} />
+        <Route path="/admin/partners" element={<AdminPartners />} />
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />
         <Route path="/reporting" element={<Reporting />} />
@@ -143,6 +146,7 @@ function RootRoutes() {
       {/* Public routes — no auth required */}
       <Route path="/order/:venueId/:tableId" element={<ConsumerOrder />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/developers" element={<Developers />} />
       {/* All other routes go through auth */}
       <Route path="/*" element={
         <AuthProvider>
