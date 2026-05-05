@@ -23,6 +23,8 @@ import { buildRuleIndex, resolvePrice, type RuleIndex } from "@/lib/pricing-util
 import { useMenuSnapshot } from "@/hooks/use-menu-snapshot";
 import { useDinerSession } from "@/hooks/use-diner-session";
 import IdleTimeoutModal from "@/components/consumer/IdleTimeoutModal";
+import DinerResumeGate from "@/components/consumer/DinerResumeGate";
+import { readDinerVisit, writeDinerVisit, clearDinerVisit } from "@/lib/diner-visit";
 
 interface VenueInfo {
   id: string;
