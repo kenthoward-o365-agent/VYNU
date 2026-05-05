@@ -213,66 +213,92 @@ const ConsumerOrder = () => {
     if (!snapshotLoading && !snapshot) setLoading(false);
   }, [snapshotLoading, snapshot]);
 
-  // Check for diner profile (Shyndig ID) — silently log visit + sync prefs
-  useEffect(() => {
-    const fetchDinerProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data } = await supabase
-          .from("diner_profiles")
-          .select("id, first_name, last_name, email, phone, allergens")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-        if (data) {
-          setDinerId(data.id);
-          setDinerInfo({ first_name: data.first_name, last_name: data.last_name, email: data.email, phone: data.phone });
-          setDinerAllergens(data.allergens || []);
-          setStarted(true);
+  // Check for diner profile (Shyndig ID). Only auto-resume if there's an
+  // active visit in sessionStorage (i.e. tab wasn't closed since sign-in).
+  // Otherwise show a "Continue as {Name}?" gate so a stale token can't silently
+  // identify a different person who scans the same QR later.
+  const hydrateDiner = useCallback(async (userId: string, fullHydrate: boolean) => {
+    const { data } = await supabase
+      .from("diner_profiles")
+      .select("id, first_name, last_name, email, phone, allergens")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!data) return null;
 
-          // Silent visit log for cross-venue recognition (one per page load)
-          if (venueId) {
-            const visitKey = `shyndig_visit_logged_${venueId}_${data.id}`;
-            const today = new Date().toISOString().slice(0, 10);
-            if (sessionStorage.getItem(visitKey) !== today) {
-              await supabase
-                .from("diner_visits")
-                .insert({ diner_id: data.id, venue_id: venueId } as any);
-              sessionStorage.setItem(visitKey, today);
-            }
+    setDinerId(data.id);
+    setDinerInfo({ first_name: data.first_name, last_name: data.last_name, email: data.email, phone: data.phone });
+    setDinerAllergens(data.allergens || []);
 
-            // Trigger one-tap loyalty prompt if not already enrolled at this venue/group
-            setShowOneTapLoyalty(true);
+    if (fullHydrate && venueId) {
+      const visitKey = `shyndig_visit_logged_${venueId}_${data.id}`;
+      const today = new Date().toISOString().slice(0, 10);
+      if (sessionStorage.getItem(visitKey) !== today) {
+        await supabase.from("diner_visits").insert({ diner_id: data.id, venue_id: venueId } as any);
+        sessionStorage.setItem(visitKey, today);
+      }
+      setShowOneTapLoyalty(true);
 
-            // Fetch last order items for "another round"
-            const { data: lastOrder } = await supabase
-              .from("orders")
-              .select("id")
-              .eq("venue_id", venueId)
-              .eq("customer_id", data.id)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            if (lastOrder) {
-              const { data: items } = await supabase
-                .from("order_items")
-                .select("menu_item_id, quantity, menu_items(name)")
-                .eq("order_id", lastOrder.id);
-
-              if (items) {
-                setLastOrderItems(items.map((oi: any) => ({
-                  id: oi.menu_item_id,
-                  name: oi.menu_items?.name || "Unknown",
-                  quantity: oi.quantity,
-                })));
-              }
-            }
-          }
+      const { data: lastOrder } = await supabase
+        .from("orders").select("id").eq("venue_id", venueId).eq("customer_id", data.id)
+        .order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (lastOrder) {
+        const { data: items } = await supabase
+          .from("order_items").select("menu_item_id, quantity, menu_items(name)").eq("order_id", lastOrder.id);
+        if (items) {
+          setLastOrderItems(items.map((oi: any) => ({
+            id: oi.menu_item_id, name: oi.menu_items?.name || "Unknown", quantity: oi.quantity,
+          })));
         }
       }
-    };
-    fetchDinerProfile();
-  }, [started, showSignup, venueId]);
+    }
+    return data;
+  }, [venueId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled || !session?.user || !venueId) return;
+
+      const visit = readDinerVisit(venueId);
+      if (visit) {
+        // Same tab, mid-visit — fully resume silently.
+        await hydrateDiner(session.user.id, true);
+        if (!cancelled) setStarted(true);
+      } else {
+        // Token still valid but tab was closed (or first time on this tab).
+        // Hydrate name/email lightly and show the resume gate.
+        const profile = await hydrateDiner(session.user.id, false);
+        if (cancelled) return;
+        if (profile) {
+          setPendingDinerUserId(session.user.id);
+          setShowResumeGate(true);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [venueId, hydrateDiner]);
+
+  const handleResumeContinue = useCallback(async () => {
+    if (!venueId || !pendingDinerUserId) return;
+    await hydrateDiner(pendingDinerUserId, true);
+    if (dinerId) writeDinerVisit(venueId, dinerId);
+    setShowResumeGate(false);
+    setPendingDinerUserId(null);
+    setStarted(true);
+  }, [venueId, pendingDinerUserId, hydrateDiner, dinerId]);
+
+  const handleResumeSwitchAccount = useCallback(async () => {
+    await supabase.auth.signOut();
+    clearDinerVisit(venueId);
+    setDinerId(null);
+    setDinerInfo(null);
+    setDinerAllergens([]);
+    setPendingDinerUserId(null);
+    setShowResumeGate(false);
+    setAuthMode("signin");
+    setShowSignup(true);
+  }, [venueId]);
 
   useEffect(() => {
     const fetchOpenOrder = async () => {
