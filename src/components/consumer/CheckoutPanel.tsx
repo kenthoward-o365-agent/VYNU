@@ -86,7 +86,7 @@ const CheckoutPanel = ({
 
   // ShyndigPay Drop-in state
   const [paymentMethodsResponse, setPaymentMethodsResponse] = useState<any>(null);
-  const [ordrPayClientKey, setShyndigPayClientKey] = useState<string | null>(null);
+  const [shyndigPayClientKey, setShyndigPayClientKey] = useState<string | null>(null);
   const [isMockMode, setIsMockMode] = useState(false);
   const [loadingMethods, setLoadingMethods] = useState(false);
 
@@ -521,7 +521,7 @@ const CheckoutPanel = ({
   // Show Drop-in only when payments enabled, no stored card selected, we have methods + key,
   // and we're NOT in mock mode (mock mode falls back to the legacy test-card form).
   const showDropin =
-    paymentEnabled && !selectedStoredCard && !!paymentMethodsResponse && !!ordrPayClientKey && !isMockMode;
+    paymentEnabled && !selectedStoredCard && !!paymentMethodsResponse && !!shyndigPayClientKey && !isMockMode;
 
   // Show legacy form whenever Drop-in can't render (no client key / mock mode)
   const showLegacyForm =
@@ -732,7 +732,7 @@ const CheckoutPanel = ({
                   currency="AUD"
                   countryCode="AU"
                   environment={paymentEnvironment}
-                  clientKey={ordrPayClientKey || undefined}
+                  clientKey={shyndigPayClientKey || undefined}
                   merchantName="ShyndigPay"
                   onSubmit={handleDropinSubmit}
                   onAdditionalDetails={handleDropinAdditionalDetails}

@@ -27,7 +27,7 @@ interface AdyenDropinProps {
 }
 
 /**
- * Mounts an ShyndigPay payment Drop-in instance.
+ * Mounts a ShyndigPay payment Drop-in instance.
  * - Renders Apple Pay / Google Pay buttons natively when supported
  * - Falls back to a hosted (PCI SAQ A) card form
  */
