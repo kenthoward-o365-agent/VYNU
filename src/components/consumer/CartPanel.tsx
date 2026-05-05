@@ -61,7 +61,7 @@ const CartPanel = ({
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-8rem)] px-6 text-center">
+      <div className="flex flex-col items-center justify-center h-[calc(100dvh-8rem)] px-6 text-center">
         <ShoppingCart className="h-16 w-16 text-muted-foreground/30 mb-4" />
         <h2 className="text-lg font-semibold mb-1">Your order is empty</h2>
         <p className="text-muted-foreground text-sm">Browse the menu and add items to get started</p>
@@ -70,7 +70,7 @@ const CartPanel = ({
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-[calc(100dvh-4rem)]">
       <div className="px-5 pt-5 pb-2">
         <h2 className="text-xl font-bold">Your Order</h2>
         <p className="text-muted-foreground text-sm">{items.length} item{items.length !== 1 ? "s" : ""}</p>
