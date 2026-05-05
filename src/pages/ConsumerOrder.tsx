@@ -766,6 +766,14 @@ const ConsumerOrder = () => {
           }}
         />
       )}
+
+      <IdleTimeoutModal
+        open={dinerSession.showIdleModal}
+        secondsLeft={dinerSession.graceLeft}
+        totalSeconds={60}
+        onStay={dinerSession.stayActive}
+        onEnd={dinerSession.endNow}
+      />
     </ConsumerLayout>
   );
 };
