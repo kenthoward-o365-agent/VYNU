@@ -10,6 +10,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import { format } from "date-fns";
+import PlatformFunnelCard from "@/components/admin/PlatformFunnelCard";
 
 interface VenueRow {
   id: string;
