@@ -11,6 +11,7 @@ import RevenueByHourChart from "@/components/dashboard/RevenueByHourChart";
 import TopItemsCharts from "@/components/dashboard/TopItemsCharts";
 import TableUtilization from "@/components/dashboard/TableUtilization";
 import TicketTimesCard from "@/components/dashboard/TicketTimesCard";
+import AbandonmentCard from "@/components/dashboard/AbandonmentCard";
 
 export default function Dashboard() {
   const { venue } = useVenue();
@@ -220,6 +221,8 @@ export default function Dashboard() {
       <div className="grid gap-3 lg:grid-cols-2">
         {venue && <TopItemsCharts venueId={venue.id} auditDate={auditDate} />}
       </div>
+
+      {venue && <AbandonmentCard venueId={venue.id} />}
     </div>
   );
 }

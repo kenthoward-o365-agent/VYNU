@@ -21,6 +21,8 @@ import ModeSwitchSheet from "@/components/consumer/ModeSwitchSheet";
 import type { SessionMode } from "@/components/consumer/SessionModeChooser";
 import { buildRuleIndex, resolvePrice, type RuleIndex } from "@/lib/pricing-utils";
 import { useMenuSnapshot } from "@/hooks/use-menu-snapshot";
+import { useDinerSession } from "@/hooks/use-diner-session";
+import IdleTimeoutModal from "@/components/consumer/IdleTimeoutModal";
 
 interface VenueInfo {
   id: string;
@@ -152,7 +154,28 @@ const ConsumerOrder = () => {
     setShowModeSwitch(false);
   };
 
-  // Fetch venue, table, and menu data via edge-cached snapshot (Phase 2 scaling).
+  // Diner web session: idle timeout + cart abandonment tracking
+  const dinerSession = useDinerSession({
+    venueId,
+    tableId: resolvedTableId,
+    dinerId,
+    sessionMode,
+    idleMinutes: 10,
+    graceSeconds: 60,
+    onSessionEnd: () => {
+      setCart([]);
+      setShowCheckout(false);
+      setStarted(false);
+      setSessionMode(null);
+      setJoinedSessionId(null);
+      setGroupDisplayName(null);
+      if (sessionStorageKey) localStorage.removeItem(sessionStorageKey);
+      if (venueId && tableId) {
+        try { localStorage.removeItem(lastOrderKey(venueId, tableId)); } catch {}
+      }
+      toast("Your session ended due to inactivity.");
+    },
+  });
   // Replaces ~6 serial Supabase round-trips with ONE CDN-cached HTTP call.
   const { data: snapshot, isLoading: snapshotLoading } = useMenuSnapshot(venueId, tableId);
 
@@ -432,9 +455,11 @@ const ConsumerOrder = () => {
         ];
       });
       toast.success(`Added ${item.name}`, { duration: 1500 });
+      const cents = Math.round((Number(item.price) || 0) * quantity * 100);
+      dinerSession.markAddToCart(cents);
       fetchUpsell({ id: item.id, name: item.name, price: Number(item.price) || 0 });
     },
-    [fetchUpsell, pricingIndex],
+    [fetchUpsell, pricingIndex, dinerSession],
   );
 
   /** Quick-add (used by AI chat / upsell prompts) — no modifiers, no notes. */
@@ -488,6 +513,7 @@ const ConsumerOrder = () => {
     setCart([]);
     setShowCheckout(false);
     setTab("feed");
+    dinerSession.markOrderPlaced(orderId);
 
     // Mark the active chat session as converted
     if (chatSessionIdRef.current) {
@@ -509,6 +535,10 @@ const ConsumerOrder = () => {
       if (newTab !== "cart") setShowCheckout(false);
     }
   };
+
+  useEffect(() => {
+    if (showCheckout) dinerSession.markCheckout();
+  }, [showCheckout, dinerSession]);
 
   if (loading) {
     return (
@@ -736,6 +766,14 @@ const ConsumerOrder = () => {
           }}
         />
       )}
+
+      <IdleTimeoutModal
+        open={dinerSession.showIdleModal}
+        secondsLeft={dinerSession.graceLeft}
+        totalSeconds={60}
+        onStay={dinerSession.stayActive}
+        onEnd={dinerSession.endNow}
+      />
     </ConsumerLayout>
   );
 };

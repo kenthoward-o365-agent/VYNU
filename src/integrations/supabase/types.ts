@@ -280,6 +280,63 @@ export type Database = {
           },
         ]
       }
+      diner_web_sessions: {
+        Row: {
+          cart_value_peak_cents: number
+          diner_id: string | null
+          end_reason: string | null
+          ended_at: string | null
+          first_add_to_cart_at: string | null
+          id: string
+          items_added_count: number
+          last_activity_at: string
+          order_id: string | null
+          order_placed_at: string | null
+          reached_checkout_at: string | null
+          session_mode: string | null
+          started_at: string
+          table_id: string | null
+          user_agent: string | null
+          venue_id: string
+        }
+        Insert: {
+          cart_value_peak_cents?: number
+          diner_id?: string | null
+          end_reason?: string | null
+          ended_at?: string | null
+          first_add_to_cart_at?: string | null
+          id?: string
+          items_added_count?: number
+          last_activity_at?: string
+          order_id?: string | null
+          order_placed_at?: string | null
+          reached_checkout_at?: string | null
+          session_mode?: string | null
+          started_at?: string
+          table_id?: string | null
+          user_agent?: string | null
+          venue_id: string
+        }
+        Update: {
+          cart_value_peak_cents?: number
+          diner_id?: string | null
+          end_reason?: string | null
+          ended_at?: string | null
+          first_add_to_cart_at?: string | null
+          id?: string
+          items_added_count?: number
+          last_activity_at?: string
+          order_id?: string | null
+          order_placed_at?: string | null
+          reached_checkout_at?: string | null
+          session_mode?: string | null
+          started_at?: string
+          table_id?: string | null
+          user_agent?: string | null
+          venue_id?: string
+        }
+        Relationships: []
+      }
       display_terminal_areas: {
         Row: {
           created_at: string
@@ -2516,7 +2573,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      diner_session_metrics_daily: {
+        Row: {
+          cart_abandon_rate: number | null
+          cart_abandoned: number | null
+          checkout_abandon_rate: number | null
+          checkout_abandoned: number | null
+          conversion_rate: number | null
+          day: string | null
+          sessions: number | null
+          sessions_converted: number | null
+          sessions_with_cart: number | null
+          sessions_with_checkout: number | null
+          venue_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       ack_job: { Args: { _msg_id: number; _queue: string }; Returns: boolean }
@@ -2529,6 +2601,7 @@ export type Database = {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
       }
+      close_idle_web_sessions: { Args: never; Returns: number }
       close_table_session: { Args: { _session_id: string }; Returns: boolean }
       create_venue_with_owner: {
         Args: {
