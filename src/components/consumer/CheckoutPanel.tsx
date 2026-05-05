@@ -526,7 +526,7 @@ const CheckoutPanel = ({
   const canProceedLegacy = paymentEnabled ? isLegacyCardValid : true;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-[calc(100dvh-4rem)]">
       {/* Header */}
       <div className="px-5 pt-5 pb-3 flex items-center gap-3">
         <button onClick={onBack} className="p-1">

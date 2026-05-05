@@ -220,7 +220,7 @@ const MenuFeed = ({
 
   if (filteredItems.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-8rem)] px-6">
+      <div className="flex items-center justify-center h-[calc(100dvh-8rem)] px-6">
         <p className="text-muted-foreground">No items available</p>
       </div>
     );
