@@ -429,28 +429,59 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           )}
         </nav>
 
-        <div className="p-3 border-t border-sidebar-border space-y-1">
-          <div className="flex items-center justify-between px-3 py-2">
-            <div className="flex items-center gap-2 text-xs text-sidebar-muted">
-              {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
-              <span>{theme === "dark" ? "Dark" : "Light"}</span>
-            </div>
-            <Switch
-              checked={theme === "dark"}
-              onCheckedChange={toggleTheme}
-              className="data-[state=checked]:bg-sidebar-primary data-[state=unchecked]:bg-sidebar-accent"
-            />
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 text-xs text-sidebar-muted">
-            <span className="truncate">{user?.email}</span>
-          </div>
-          <button
-            onClick={signOut}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
+        <div className={cn("border-t border-sidebar-border space-y-1", pinned ? "p-2" : "p-3")}>
+          {pinned ? (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleTheme}
+                    className="flex items-center justify-center h-10 w-full rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                    aria-label="Toggle theme"
+                  >
+                    {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">{theme === "dark" ? "Dark mode" : "Light mode"}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={signOut}
+                    className="flex items-center justify-center h-10 w-full rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                    aria-label="Sign out"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Sign out{user?.email ? ` (${user.email})` : ""}</TooltipContent>
+              </Tooltip>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between px-3 py-2">
+                <div className="flex items-center gap-2 text-xs text-sidebar-muted">
+                  {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+                  <span>{theme === "dark" ? "Dark" : "Light"}</span>
+                </div>
+                <Switch
+                  checked={theme === "dark"}
+                  onCheckedChange={toggleTheme}
+                  className="data-[state=checked]:bg-sidebar-primary data-[state=unchecked]:bg-sidebar-accent"
+                />
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 text-xs text-sidebar-muted">
+                <span className="truncate">{user?.email}</span>
+              </div>
+              <button
+                onClick={signOut}
+                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </button>
+            </>
+          )}
         </div>
       </aside>
 
