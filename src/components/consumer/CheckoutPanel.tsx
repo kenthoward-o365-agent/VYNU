@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { CreditCard, ArrowLeft, ShieldCheck, Trash2, Check } from "lucide-react";
-import OrdrPayDropin from "./AdyenDropin";
+import ShyndigPayDropin from "./AdyenDropin";
 
 import type { SelectedModifier } from "./ItemDetailScreen";
 
@@ -84,9 +84,9 @@ const CheckoutPanel = ({
   const [gratuityDecline, setGratuityDecline] = useState("No thanks");
   const [selectedTip, setSelectedTip] = useState<number | null>(null);
 
-  // OrdrPay Drop-in state
+  // ShyndigPay Drop-in state
   const [paymentMethodsResponse, setPaymentMethodsResponse] = useState<any>(null);
-  const [ordrPayClientKey, setOrdrPayClientKey] = useState<string | null>(null);
+  const [ordrPayClientKey, setShyndigPayClientKey] = useState<string | null>(null);
   const [isMockMode, setIsMockMode] = useState(false);
   const [loadingMethods, setLoadingMethods] = useState(false);
 
@@ -165,9 +165,9 @@ const CheckoutPanel = ({
       if (data?.paymentMethods) {
         setPaymentMethodsResponse(data);
       }
-      // Read client key returned by the OrdrPay backend (per-venue)
+      // Read client key returned by the ShyndigPay backend (per-venue)
       const key = data?.client_key || (import.meta as any).env?.VITE_ADYEN_CLIENT_KEY || null;
-      setOrdrPayClientKey(key);
+      setShyndigPayClientKey(key);
       setIsMockMode(!!data?.mock_mode);
     } catch (e) {
       console.error("Failed to load payment methods:", e);
@@ -719,25 +719,25 @@ const CheckoutPanel = ({
               </div>
             )}
 
-            {/* OrdrPay Drop-in — Apple Pay / Google Pay / hosted card */}
+            {/* ShyndigPay Drop-in — Apple Pay / Google Pay / hosted card */}
             {showDropin && (
               <div className="space-y-3">
                 <Label className="text-sm font-semibold flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
                   Pay with card or wallet
                 </Label>
-                <OrdrPayDropin
+                <ShyndigPayDropin
                   paymentMethodsResponse={paymentMethodsResponse}
                   amount={total + tipAmount}
                   currency="AUD"
                   countryCode="AU"
                   environment={paymentEnvironment}
                   clientKey={ordrPayClientKey || undefined}
-                  merchantName="OrdrPay"
+                  merchantName="ShyndigPay"
                   onSubmit={handleDropinSubmit}
                   onAdditionalDetails={handleDropinAdditionalDetails}
                   onError={(e) => {
-                    console.error("OrdrPay error:", e);
+                    console.error("ShyndigPay error:", e);
                   }}
                 />
               </div>
@@ -759,7 +759,7 @@ const CheckoutPanel = ({
                 </Label>
                 {isMockMode && (
                   <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[11px] text-warning-foreground">
-                    <strong>OrdrPay test mode.</strong> Use card{" "}
+                    <strong>ShyndigPay test mode.</strong> Use card{" "}
                     <code className="font-mono">4111 1111 1111 1111</code>, any future expiry, any CVC.
                   </div>
                 )}
@@ -833,7 +833,7 @@ const CheckoutPanel = ({
                     <div>
                       <p className="text-sm font-medium">Save card for next time</p>
                       <p className="text-xs text-muted-foreground">
-                        Securely stored by OrdrPay — we never see your full card number
+                        Securely stored by ShyndigPay — we never see your full card number
                       </p>
                     </div>
                     <Switch checked={saveCard} onCheckedChange={setSaveCard} />
@@ -844,7 +844,7 @@ const CheckoutPanel = ({
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Secured by OrdrPay</span>
+              <span>Secured by ShyndigPay</span>
             </div>
           </>
         )}

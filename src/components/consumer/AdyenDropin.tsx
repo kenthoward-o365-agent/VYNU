@@ -27,15 +27,15 @@ interface AdyenDropinProps {
 }
 
 /**
- * Mounts an OrdrPay payment Drop-in instance.
+ * Mounts an ShyndigPay payment Drop-in instance.
  * - Renders Apple Pay / Google Pay buttons natively when supported
  * - Falls back to a hosted (PCI SAQ A) card form
  */
-export default function OrdrPayDropin({
+export default function ShyndigPayDropin({
   paymentMethodsResponse,
   amount,
   currency,
-  merchantName = "OrdrPay",
+  merchantName = "ShyndigPay",
   countryCode = "AU",
   environment = "test",
   clientKey,
@@ -93,7 +93,7 @@ export default function OrdrPayDropin({
             onPaymentCompleted?.(result);
           },
           onError: (error: any) => {
-            console.error("[OrdrPay Drop-in] error:", error);
+            console.error("[ShyndigPay Drop-in] error:", error);
             onError?.(error);
           },
         });
@@ -118,7 +118,7 @@ export default function OrdrPayDropin({
               configuration: {
                 merchantName,
                 merchantId: "BCR2DN4T...",
-                gatewayMerchantId: "OrdrPaymentsAU",
+                gatewayMerchantId: "ShyndigPaymentsAU",
               },
             },
           },
@@ -127,7 +127,7 @@ export default function OrdrPayDropin({
         dropin.mount(containerRef.current);
         dropinRef.current = dropin;
       } catch (e: any) {
-        console.error("[OrdrPay Drop-in] mount failed:", e);
+        console.error("[ShyndigPay Drop-in] mount failed:", e);
         setMountError(e?.message || "Failed to load payment form");
       }
     }
