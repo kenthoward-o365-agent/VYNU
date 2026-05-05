@@ -412,6 +412,10 @@ export default function AdminVenueDetail() {
           />
         </TabsContent>
 
+        <TabsContent value="payments">
+          <ProcessorCredentialsTab venueId={venueId!} />
+        </TabsContent>
+
         <TabsContent value="loyalty" className="space-y-6">
           {venue?.group_id ? (
             venue.venue_type === "parent" ? (
