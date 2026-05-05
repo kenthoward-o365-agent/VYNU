@@ -227,7 +227,10 @@ const MenuFeed = ({
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] relative overflow-hidden">
+    <div
+      className="flex flex-col relative overflow-hidden"
+      style={{ height: "calc(100dvh - 4rem - env(safe-area-inset-top))" }}
+    >
       {sessionMode === "group" && (
         <div className="h-1 w-full bg-primary shrink-0" aria-hidden />
       )}
