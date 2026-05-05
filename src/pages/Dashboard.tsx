@@ -111,7 +111,24 @@ export default function Dashboard() {
           </h2>
           <p className="text-sm text-muted-foreground">{venue?.name}</p>
         </div>
-        <AuditDatePicker value={auditDate} onChange={setAuditDate} auditDateOverride={venueAuditDate} />
+        <div className="flex items-center gap-2">
+          {venueAuditDate && venueAuditDate !== format(new Date(), "yyyy-MM-dd") && (
+            <TooltipProvider>
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-medium cursor-help">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <span>Audit day not closed</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>The venue's current audit day ({format(new Date(venueAuditDate), "dd MMM yyyy")}) does not match today's calendar date ({format(new Date(), "dd MMM yyyy")}). Close the day in DayEnd to advance.</p>
+                </TooltipContent>
+              </UITooltip>
+            </TooltipProvider>
+          )}
+          <AuditDatePicker value={auditDate} onChange={setAuditDate} auditDateOverride={venueAuditDate} />
+        </div>
       </div>
 
       {/* Financial KPIs - compact row */}
