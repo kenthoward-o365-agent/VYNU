@@ -65,29 +65,29 @@ const CartSuggestions = ({
   if (displayed.length === 0 && !loading) return null;
 
   return (
-    <div className="px-5 pb-3 space-y-2">
+    <div className="px-5 pb-3 space-y-2 overflow-hidden">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Sparkles className="h-3.5 w-3.5" />
-        <span>You might also like</span>
+        <Sparkles className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate">You might also like</span>
       </div>
       {loading && displayed.length === 0 && (
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           {[1, 2].map((i) => (
-            <div key={i} className="flex-1 h-20 rounded-xl bg-muted animate-pulse" />
+            <div key={i} className="flex-1 min-w-0 basis-0 h-20 rounded-xl bg-muted animate-pulse" />
           ))}
         </div>
       )}
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         {displayed.map((s) => (
           <div
             key={s.item_id}
-            className="flex-1 bg-card rounded-xl border border-border p-3 flex items-center gap-2.5"
+            className="flex-1 min-w-0 basis-0 bg-card rounded-xl border border-border p-2 flex items-center gap-2"
           >
             {s.image_url && (
               <img
                 src={s.image_url}
                 alt={s.name}
-                className="w-12 h-12 rounded-lg object-cover shrink-0"
+                className="w-10 h-10 rounded-lg object-cover shrink-0"
               />
             )}
             <div className="flex-1 min-w-0">
@@ -100,6 +100,7 @@ const CartSuggestions = ({
                 onDismiss(s.item_id);
               }}
               className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 hover:bg-primary/90 transition-colors"
+              aria-label={`Add ${s.name}`}
             >
               <Plus className="h-4 w-4" />
             </button>
