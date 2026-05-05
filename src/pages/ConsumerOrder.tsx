@@ -95,6 +95,8 @@ const ConsumerOrder = () => {
   const [dinerInfo, setDinerInfo] = useState<{ first_name: string | null; last_name: string | null; email: string | null; phone: string | null } | null>(null);
   const [dinerAllergens, setDinerAllergens] = useState<string[]>([]);
   const [showOneTapLoyalty, setShowOneTapLoyalty] = useState(false);
+  const [showResumeGate, setShowResumeGate] = useState(false);
+  const [pendingDinerUserId, setPendingDinerUserId] = useState<string | null>(null);
   const [lastOrderItems, setLastOrderItems] = useState<{ id: string; name: string; quantity: number }[]>([]);
   const chatSessionIdRef = useRef<string | null>(null);
 
