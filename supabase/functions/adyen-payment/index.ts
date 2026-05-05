@@ -412,7 +412,20 @@ Deno.serve(async (req) => {
         }
       }
 
-      return json(result);
+      // If authorised, stamp the order with the PSP reference and (when in mock
+      // mode) flag it so operators see a clear DEMO badge instead of treating
+      // it as real revenue.
+      if (result.resultCode === "Authorised" && reference?.startsWith("order_")) {
+        const orderId = reference.slice("order_".length);
+        const stamp: any = {};
+        if (result.pspReference) stamp.payment_psp_reference = result.pspReference;
+        if (isMock) stamp.payment_is_mock = true;
+        if (Object.keys(stamp).length > 0) {
+          await adminClient.from("orders").update(stamp).eq("id", orderId);
+        }
+      }
+
+      return json({ ...result, mock_mode: isMock });
     }
 
     // ═══ PAYMENT DETAILS (3DS) ═══
