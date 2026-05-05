@@ -170,24 +170,23 @@ export function useDinerSession({
   // Funnel markers
   const markAddToCart = useCallback(async (cartValueCents?: number) => {
     if (!sessionIdRef.current || endedRef.current) return;
-    const patch: Record<string, unknown> = {
-      items_added_count: undefined,
-    };
-    // Use raw RPC-style increment via two calls would be heavy; do a fetch + update in one round-trip.
     const { data: row } = await supabase
       .from("diner_web_sessions")
       .select("first_add_to_cart_at, items_added_count, cart_value_peak_cents")
       .eq("id", sessionIdRef.current)
       .maybeSingle();
     if (!row) return;
-    const update: Record<string, unknown> = {
+    const update: {
+      items_added_count: number;
+      first_add_to_cart_at?: string;
+      cart_value_peak_cents?: number;
+    } = {
       items_added_count: (row.items_added_count ?? 0) + 1,
     };
     if (!row.first_add_to_cart_at) update.first_add_to_cart_at = new Date().toISOString();
     if (cartValueCents != null && cartValueCents > (row.cart_value_peak_cents ?? 0)) {
       update.cart_value_peak_cents = cartValueCents;
     }
-    delete patch.items_added_count;
     await supabase
       .from("diner_web_sessions")
       .update(update)
