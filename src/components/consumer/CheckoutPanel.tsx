@@ -828,7 +828,7 @@ const CheckoutPanel = ({
                   />
                 </div>
 
-                {dinerId && (
+                {dinerId && !isMockMode && (
                   <div className="flex items-center justify-between rounded-xl bg-muted/50 p-3">
                     <div>
                       <p className="text-sm font-medium">Save card for next time</p>
