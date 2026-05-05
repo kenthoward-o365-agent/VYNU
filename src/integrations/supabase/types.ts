@@ -1329,6 +1329,7 @@ export type Database = {
           fired_at: string | null
           gratuity_amount: number
           id: string
+          payment_is_mock: boolean
           payment_psp_reference: string | null
           pos_order_id: string | null
           session_id: string | null
@@ -1349,6 +1350,7 @@ export type Database = {
           fired_at?: string | null
           gratuity_amount?: number
           id?: string
+          payment_is_mock?: boolean
           payment_psp_reference?: string | null
           pos_order_id?: string | null
           session_id?: string | null
@@ -1369,6 +1371,7 @@ export type Database = {
           fired_at?: string | null
           gratuity_amount?: number
           id?: string
+          payment_is_mock?: boolean
           payment_psp_reference?: string | null
           pos_order_id?: string | null
           session_id?: string | null
