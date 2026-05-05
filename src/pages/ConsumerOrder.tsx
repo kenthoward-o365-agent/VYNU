@@ -596,12 +596,34 @@ const ConsumerOrder = () => {
     );
   }
 
+  if (showResumeGate && venue) {
+    return (
+      <ConsumerLayout>
+        <DinerResumeGate
+          firstName={dinerInfo?.first_name ?? null}
+          email={dinerInfo?.email ?? null}
+          onContinue={handleResumeContinue}
+          onSwitchAccount={handleResumeSwitchAccount}
+        />
+      </ConsumerLayout>
+    );
+  }
+
   if (showSignup && venue) {
     return (
       <ConsumerLayout>
         <DinerSignup
           venueId={venue.id}
-          onComplete={() => { setShowSignup(false); setStarted(true); }}
+          onComplete={async () => {
+            setShowSignup(false);
+            setStarted(true);
+            // After fresh sign-in, fetch profile id and mark visit active.
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user && venueId) {
+              const profile = await hydrateDiner(session.user.id, true);
+              if (profile) writeDinerVisit(venueId, profile.id);
+            }
+          }}
           onBack={() => setShowSignup(false)}
           initialMode={authMode}
         />
