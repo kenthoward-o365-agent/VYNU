@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plug, RefreshCw, AlertTriangle, Copy, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Plug, RefreshCw, AlertTriangle, Copy, CheckCircle, XCircle, Clock, Cable } from "lucide-react";
+import PosConnectDialog from "./PosConnectDialog";
 
 const posProviders = [
   { value: "hl_exceed", label: "H&L Exceed POS" },
