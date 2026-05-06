@@ -64,6 +64,7 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
   const [showWarning, setShowWarning] = useState(false);
   const [pendingSource, setPendingSource] = useState<string | null>(null);
   const [syncLogs, setSyncLogs] = useState<SyncLogEntry[]>([]);
+  const [connectOpen, setConnectOpen] = useState(false);
 
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pos-product-sync`;
 
