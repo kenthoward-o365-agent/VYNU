@@ -1700,6 +1700,54 @@ export type Database = {
           },
         ]
       }
+      pos_providers: {
+        Row: {
+          auth_type: string
+          capabilities: Json
+          config_schema: Json
+          created_at: string
+          docs_url: string | null
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          slug: string
+          status: string
+          updated_at: string
+          webhook_url_template: string | null
+        }
+        Insert: {
+          auth_type: string
+          capabilities?: Json
+          config_schema?: Json
+          created_at?: string
+          docs_url?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          slug: string
+          status?: string
+          updated_at?: string
+          webhook_url_template?: string | null
+        }
+        Update: {
+          auth_type?: string
+          capabilities?: Json
+          config_schema?: Json
+          created_at?: string
+          docs_url?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          status?: string
+          updated_at?: string
+          webhook_url_template?: string | null
+        }
+        Relationships: []
+      }
       pos_sync_log: {
         Row: {
           created_at: string
@@ -2531,12 +2579,15 @@ export type Database = {
           client_id: string | null
           client_secret_ref: string | null
           config: Json | null
+          connection_status: string
           created_at: string
           endpoint_url: string | null
           id: string
+          last_error: string | null
           last_sync_at: string | null
           location_id: string | null
           pos_provider: string
+          provider_id: string | null
           sync_status: string
           token_cache: Json | null
           updated_at: string
@@ -2549,12 +2600,15 @@ export type Database = {
           client_id?: string | null
           client_secret_ref?: string | null
           config?: Json | null
+          connection_status?: string
           created_at?: string
           endpoint_url?: string | null
           id?: string
+          last_error?: string | null
           last_sync_at?: string | null
           location_id?: string | null
           pos_provider: string
+          provider_id?: string | null
           sync_status?: string
           token_cache?: Json | null
           updated_at?: string
@@ -2567,12 +2621,15 @@ export type Database = {
           client_id?: string | null
           client_secret_ref?: string | null
           config?: Json | null
+          connection_status?: string
           created_at?: string
           endpoint_url?: string | null
           id?: string
+          last_error?: string | null
           last_sync_at?: string | null
           location_id?: string | null
           pos_provider?: string
+          provider_id?: string | null
           sync_status?: string
           token_cache?: Json | null
           updated_at?: string
@@ -2580,6 +2637,13 @@ export type Database = {
           webhook_secret?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "venue_pos_integrations_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "pos_providers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "venue_pos_integrations_venue_id_fkey"
             columns: ["venue_id"]
