@@ -178,6 +178,67 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "api_request_log_api_key_id_fkey1"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_request_log_partner_id_fkey1"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "api_partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "api_request_log_venue_id_fkey1"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_request_log_legacy: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          method: string
+          partner_id: string | null
+          path: string
+          request_id: string | null
+          status_code: number
+          venue_id: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method: string
+          partner_id?: string | null
+          path: string
+          request_id?: string | null
+          status_code: number
+          venue_id?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method?: string
+          partner_id?: string | null
+          path?: string
+          request_id?: string | null
+          status_code?: number
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
             foreignKeyName: "api_request_log_api_key_id_fkey"
             columns: ["api_key_id"]
             isOneToOne: false
@@ -199,6 +260,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      api_request_log_y2026m05: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          method: string
+          partner_id: string | null
+          path: string
+          request_id: string | null
+          status_code: number
+          venue_id: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method: string
+          partner_id?: string | null
+          path: string
+          request_id?: string | null
+          status_code: number
+          venue_id?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method?: string
+          partner_id?: string | null
+          path?: string
+          request_id?: string | null
+          status_code?: number
+          venue_id?: string | null
+        }
+        Relationships: []
+      }
+      api_request_log_y2026m06: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          method: string
+          partner_id: string | null
+          path: string
+          request_id: string | null
+          status_code: number
+          venue_id: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method: string
+          partner_id?: string | null
+          path: string
+          request_id?: string | null
+          status_code: number
+          venue_id?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method?: string
+          partner_id?: string | null
+          path?: string
+          request_id?: string | null
+          status_code?: number
+          venue_id?: string | null
+        }
+        Relationships: []
       }
       api_webhook_deliveries: {
         Row: {
@@ -1784,6 +1923,50 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "pos_sync_log_venue_id_fkey1"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_sync_log_legacy: {
+        Row: {
+          created_at: string
+          direction: string
+          error_message: string | null
+          event_type: string
+          id: string
+          items_synced: number | null
+          payload_hash: string | null
+          result: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
             foreignKeyName: "pos_sync_log_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
@@ -1791,6 +1974,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pos_sync_log_y2026m05: {
+        Row: {
+          created_at: string
+          direction: string
+          error_message: string | null
+          event_type: string
+          id: string
+          items_synced: number | null
+          payload_hash: string | null
+          result: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id?: string
+        }
+        Relationships: []
+      }
+      pos_sync_log_y2026m06: {
+        Row: {
+          created_at: string
+          direction: string
+          error_message: string | null
+          event_type: string
+          id: string
+          items_synced: number | null
+          payload_hash: string | null
+          result: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id?: string
+        }
+        Relationships: []
       }
       pricing_rule_items: {
         Row: {
@@ -2576,6 +2831,9 @@ export type Database = {
         Row: {
           account_id: string | null
           api_key_ref: string | null
+          breaker_failures: number
+          breaker_opened_at: string | null
+          breaker_state: string
           client_id: string | null
           client_secret_ref: string | null
           config: Json | null
@@ -2588,6 +2846,7 @@ export type Database = {
           location_id: string | null
           pos_provider: string
           provider_id: string | null
+          secrets_map: Json
           sync_status: string
           token_cache: Json | null
           updated_at: string
@@ -2597,6 +2856,9 @@ export type Database = {
         Insert: {
           account_id?: string | null
           api_key_ref?: string | null
+          breaker_failures?: number
+          breaker_opened_at?: string | null
+          breaker_state?: string
           client_id?: string | null
           client_secret_ref?: string | null
           config?: Json | null
@@ -2609,6 +2871,7 @@ export type Database = {
           location_id?: string | null
           pos_provider: string
           provider_id?: string | null
+          secrets_map?: Json
           sync_status?: string
           token_cache?: Json | null
           updated_at?: string
@@ -2618,6 +2881,9 @@ export type Database = {
         Update: {
           account_id?: string | null
           api_key_ref?: string | null
+          breaker_failures?: number
+          breaker_opened_at?: string | null
+          breaker_state?: string
           client_id?: string | null
           client_secret_ref?: string | null
           config?: Json | null
@@ -2630,6 +2896,7 @@ export type Database = {
           location_id?: string | null
           pos_provider?: string
           provider_id?: string | null
+          secrets_map?: Json
           sync_status?: string
           token_cache?: Json | null
           updated_at?: string
@@ -2987,6 +3254,11 @@ export type Database = {
         }[]
       }
       enqueue_job: { Args: { _payload: Json; _queue: string }; Returns: number }
+      enqueue_pos_job: { Args: { _payload: Json }; Returns: number }
+      ensure_monthly_partition: {
+        Args: { _month: string; _parent: unknown }
+        Returns: undefined
+      }
       find_or_create_table_session: {
         Args: {
           _display_name?: string
@@ -3117,6 +3389,7 @@ export type Database = {
           venue_name: string
         }[]
       }
+      maintain_log_partitions: { Args: never; Returns: undefined }
       migrate_loyalty_balances_to_program: {
         Args: {
           _deactivate_source?: boolean
@@ -3133,6 +3406,15 @@ export type Database = {
           terminal_id: string
           terminal_name: string
         }[]
+      }
+      purge_api_idempotency: { Args: never; Returns: number }
+      read_pos_credential: {
+        Args: { _field: string; _venue_id: string }
+        Returns: string
+      }
+      set_pos_credential: {
+        Args: { _field: string; _value: string; _venue_id: string }
+        Returns: string
       }
       unpair_display_terminal: {
         Args: { _terminal_id: string }

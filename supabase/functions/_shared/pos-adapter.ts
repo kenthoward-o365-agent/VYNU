@@ -1,14 +1,11 @@
-// Adapter contract used by generic pos-* edge functions to dispatch to a specific
-// vendor implementation. Each provider exports an object satisfying PosAdapter.
-//
-// Lookup is performed via provider.slug (e.g. "doshii") on the venue's
-// venue_pos_integrations row joined to pos_providers.
+// Adapter contract used by generic pos-* edge functions to dispatch to a
+// specific vendor implementation. Adapters are LAZY-LOADED by slug to keep
+// edge function cold starts fast as the registry grows to N providers.
 
 export interface PosAdapterContext {
   venueId: string;
-  config: Record<string, unknown>;        // venue-specific config (location_id, etc.)
-  clientId?: string | null;
-  clientSecretRef?: string | null;
+  config: Record<string, unknown>;        // non-secret venue config (location_id, etc.)
+  secrets: Record<string, string>;        // secret values resolved from Vault
   endpointUrl?: string | null;
   tokenCache?: Record<string, unknown> | null;
 }
@@ -30,17 +27,23 @@ export interface PosAdapter {
   testConnection(ctx: PosAdapterContext): Promise<{ ok: boolean; message: string }>;
 }
 
-// Dynamic registry — adapters self-register on import.
-const registry = new Map<string, PosAdapter>();
+// Whitelisted slugs; prevents arbitrary path imports.
+const KNOWN: Record<string, () => Promise<{ default: PosAdapter }>> = {
+  doshii: () => import("../adapters/doshii/index.ts"),
+  mock:   () => import("../adapters/mock/index.ts"),
+};
 
-export function registerAdapter(adapter: PosAdapter) {
-  registry.set(adapter.slug, adapter);
+const cache = new Map<string, PosAdapter>();
+
+export async function loadAdapter(slug: string): Promise<PosAdapter | null> {
+  if (cache.has(slug)) return cache.get(slug)!;
+  const loader = KNOWN[slug];
+  if (!loader) return null;
+  const mod = await loader();
+  cache.set(slug, mod.default);
+  return mod.default;
 }
 
-export function getAdapter(slug: string): PosAdapter | null {
-  return registry.get(slug) ?? null;
+export function listAdapterSlugs(): string[] {
+  return Object.keys(KNOWN);
 }
-
-// Eagerly import all known adapters so they self-register.
-import "../adapters/doshii/index.ts";
-import "../adapters/mock/index.ts";
