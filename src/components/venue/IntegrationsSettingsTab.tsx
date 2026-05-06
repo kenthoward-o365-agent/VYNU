@@ -322,9 +322,12 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
                 </p>
               </div>
 
-              <div className="flex gap-2">
-                <Button onClick={saveIntegration} disabled={saving}>
-                  {saving ? "Saving..." : integration ? "Update Integration" : "Save Integration"}
+              <div className="flex gap-2 flex-wrap">
+                <Button onClick={() => setConnectOpen(true)} variant="default">
+                  <Cable className="h-4 w-4 mr-1" /> {integration ? "Reconfigure Provider" : "Connect Provider"}
+                </Button>
+                <Button onClick={saveIntegration} disabled={saving} variant="outline">
+                  {saving ? "Saving..." : "Save Legacy Fields"}
                 </Button>
                 <Button variant="outline" disabled>
                   <RefreshCw className="h-4 w-4 mr-1" /> Test Connection
