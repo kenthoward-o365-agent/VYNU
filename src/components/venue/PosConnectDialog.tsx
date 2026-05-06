@@ -191,7 +191,7 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
                     {f.help && <p className="text-xs text-muted-foreground mt-1">{f.help}</p>}
                     {f.type === "secret" && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Stored encrypted in venue config and accessed only by backend functions.
+                        Stored encrypted in Vault. Leave blank to keep the existing value.
                       </p>
                     )}
                   </div>
