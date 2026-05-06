@@ -407,6 +407,13 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PosConnectDialog
+        venueId={venueId}
+        open={connectOpen}
+        onOpenChange={setConnectOpen}
+        onSaved={() => { void fetchIntegration(); void fetchSyncLogs(); }}
+      />
     </div>
   );
 }
