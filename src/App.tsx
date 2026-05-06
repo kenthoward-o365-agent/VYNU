@@ -29,6 +29,7 @@ import AdminVenueDetail from "@/pages/AdminVenueDetail";
 import AdminStaff from "@/pages/AdminStaff";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminPartners from "@/pages/AdminPartners";
+import AdminIntegrations from "@/pages/AdminIntegrations";
 import Developers from "@/pages/Developers";
 import NotFound from "@/pages/NotFound";
 import ConsumerOrder from "@/pages/ConsumerOrder";
@@ -118,6 +119,7 @@ function AppRoutes() {
         <Route path="/admin/venues/:venueId" element={<AdminVenueDetail />} />
         <Route path="/admin/staff" element={<AdminStaff />} />
         <Route path="/admin/partners" element={<AdminPartners />} />
+        <Route path="/admin/integrations" element={<AdminIntegrations />} />
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />
         <Route path="/reporting" element={<Reporting />} />
