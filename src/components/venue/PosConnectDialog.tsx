@@ -85,11 +85,23 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
     if (err) { toast.error(err); return; }
     setSaving(true);
 
+    // Split secrets out — they go to Vault via admin-set-pos-credentials.
+    const secretKeys = new Set(schema.filter((f) => f.type === "secret").map((f) => f.key));
+    const nonSecret: Record<string, string> = {};
+    const secretEntries: Array<[string, string]> = [];
+    for (const [k, v] of Object.entries(values)) {
+      if (secretKeys.has(k)) {
+        if (v && v.trim().length > 0) secretEntries.push([k, v]);
+      } else {
+        nonSecret[k] = v;
+      }
+    }
+
     const payload: any = {
       venue_id: venueId,
       provider_id: provider.id,
       pos_provider: provider.slug,
-      config: values,
+      config: nonSecret,
       connection_status: "connecting",
     };
 
@@ -100,8 +112,21 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
       ? await (supabase as any).from("venue_pos_integrations").update(payload).eq("id", existing.id)
       : await (supabase as any).from("venue_pos_integrations").insert(payload);
 
+    if (error) { setSaving(false); toast.error(error.message); return; }
+
+    // Push each secret into Vault via the edge function.
+    for (const [field, value] of secretEntries) {
+      const { error: secErr } = await supabase.functions.invoke("admin-set-pos-credentials", {
+        body: { venue_id: venueId, field, value },
+      });
+      if (secErr) {
+        setSaving(false);
+        toast.error(`Failed to store ${field}: ${secErr.message}`);
+        return;
+      }
+    }
+
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
     toast.success("Integration saved");
     onSaved?.();
     onOpenChange(false);
