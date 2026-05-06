@@ -1,5 +1,5 @@
 // Mock adapter for development and end-to-end testing without external dependencies.
-import { registerAdapter, type PosAdapter, type PosOrderUpdate } from "../../_shared/pos-adapter.ts";
+import type { PosAdapter, PosOrderUpdate } from "../../_shared/pos-adapter.ts";
 
 const adapter: PosAdapter = {
   slug: "mock",
@@ -19,5 +19,4 @@ const adapter: PosAdapter = {
   async snoozeProduct() {},
 };
 
-registerAdapter(adapter);
 export default adapter;
