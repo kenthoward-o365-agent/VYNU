@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plug, RefreshCw, AlertTriangle, Copy, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Plug, RefreshCw, AlertTriangle, Copy, CheckCircle, XCircle, Clock, Cable } from "lucide-react";
+import PosConnectDialog from "./PosConnectDialog";
 
 const posProviders = [
   { value: "hl_exceed", label: "H&L Exceed POS" },
@@ -63,6 +64,7 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
   const [showWarning, setShowWarning] = useState(false);
   const [pendingSource, setPendingSource] = useState<string | null>(null);
   const [syncLogs, setSyncLogs] = useState<SyncLogEntry[]>([]);
+  const [connectOpen, setConnectOpen] = useState(false);
 
   const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pos-product-sync`;
 
@@ -320,9 +322,12 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
                 </p>
               </div>
 
-              <div className="flex gap-2">
-                <Button onClick={saveIntegration} disabled={saving}>
-                  {saving ? "Saving..." : integration ? "Update Integration" : "Save Integration"}
+              <div className="flex gap-2 flex-wrap">
+                <Button onClick={() => setConnectOpen(true)} variant="default">
+                  <Cable className="h-4 w-4 mr-1" /> {integration ? "Reconfigure Provider" : "Connect Provider"}
+                </Button>
+                <Button onClick={saveIntegration} disabled={saving} variant="outline">
+                  {saving ? "Saving..." : "Save Legacy Fields"}
                 </Button>
                 <Button variant="outline" disabled>
                   <RefreshCw className="h-4 w-4 mr-1" /> Test Connection
@@ -402,6 +407,13 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PosConnectDialog
+        venueId={venueId}
+        open={connectOpen}
+        onOpenChange={setConnectOpen}
+        onSaved={() => { void fetchIntegration(); void fetchSyncLogs(); }}
+      />
     </div>
   );
 }
