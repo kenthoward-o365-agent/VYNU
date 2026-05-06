@@ -1,135 +1,109 @@
-# Shyndig Public API v1 — Plan
+# Plan: Outbound POS Integrations Hub + Doshii Reference Adapter
 
-Build a branded public API that third-party POS vendors and CRM/loyalty partners can develop against. Modeled on **Deliverect** for POS (orders, menu, status, snooze) and **Sprout** for conventions (filtering syntax, scoped keys, versioning header).
+Build the management surface and reference implementation for **outbound** POS connections — the side where Shyndig builds adapters to vendor APIs (Doshii, H&L Exceed, Lightspeed, Square, etc.). This is the counterpart to `/admin/partners` (inbound, where third parties build to our spec).
 
-**Decision locked**: POS and CRM credentials are **strictly separated**. A partner registered as `pos` can never mint CRM keys and never sees diner PII; a `crm` partner can never push order status or read order line items. This is enforced at the `api_partners.partner_type` level (no `both`) and double-enforced by scope whitelists on each function.
+## 1. Provider Registry (new table)
 
-## Goals
+New table `pos_providers` — the catalogue of every POS Shyndig has built an adapter for.
 
-1. POS vendors can integrate Shyndig themselves — read orders, push status, sync menus, snooze items.
-2. CRM/loyalty vendors can read diner/visit data and push vouchers.
-3. Each partner gets scoped credentials per venue; PII isolated by partner type.
-4. A `/developers` docs page describes auth, resources, errors, webhooks.
+Columns: `id`, `slug` (e.g. `doshii`, `hl_exceed`, `lightspeed`, `square`), `name`, `logo_url`, `auth_type` (`oauth2` | `api_key` | `hmac`), `capabilities` (jsonb: `{menu_push, menu_pull, orders_push, orders_pull, snooze, payments, loyalty}`), `config_schema` (jsonb describing what credentials each venue must supply), `webhook_url_template`, `docs_url`, `status` (`alpha`|`beta`|`ga`|`deprecated`), `is_active`.
 
-## Non-goals (this phase)
+Seeded rows: `doshii` (GA reference), `hl_exceed` (alpha), `lightspeed` (alpha), `square` (alpha), `mock` (for dev/testing).
 
-- Self-serve partner signup portal (admin issues keys manually for v1).
-- Public sandbox environment with seeded data.
-- Official SDKs (REST + OpenAPI spec only).
+Admin-only RLS for write; readable by venue managers (so settings UI can render the catalogue).
 
----
+## 2. Extend `venue_pos_integrations`
 
-## 1. Database
+Add columns:
+- `provider_id uuid references pos_providers(id)` — replaces ad-hoc string identifiers
+- `connection_status` (`disconnected`|`connecting`|`connected`|`error`)
+- `last_sync_at`, `last_sync_status`, `last_error`
+- `config jsonb` — provider-specific (e.g. Doshii `locationId`)
+- Keep existing `client_id`, `client_secret_ref`, `endpoint_url`, `token_cache`
 
-New tables (via migration):
+Backfill existing rows to point at correct `provider_id`.
 
-- **`api_partners`** — `id`, `name`, `contact_email`, `partner_type` enum (`pos` | `crm` — **not both**), `is_active`, timestamps. A vendor that needs both surfaces registers as two separate partners.
-- **`api_keys`** — `id`, `partner_id`, `venue_id` (nullable for group-level), `key_prefix` (visible, e.g. `sk_pos_live_abc123` or `sk_crm_live_xyz789`), `key_hash` (bcrypt), `scopes` (text[]), `last_used_at`, `revoked_at`, `created_by`, timestamps. Key prefix encodes type so misuse is obvious.
-- **`api_webhooks`** — `id`, `partner_id`, `venue_id`, `url`, `events` (text[]), `secret`, `is_active`, `last_delivery_at`, `last_delivery_status`. Allowed events restricted by partner type.
-- **`api_webhook_deliveries`** — `id`, `webhook_id`, `event_type`, `payload`, `response_status`, `attempt_count`, `next_retry_at`, `delivered_at`.
-- **`api_idempotency`** — `(partner_id, key)` PK, `request_hash`, `response_status`, `response_body`, `created_at` (24h TTL).
-- **`api_request_log`** — `id`, `partner_id`, `api_key_id`, `venue_id`, `method`, `path`, `status_code`, `latency_ms`, `request_id`, `created_at` (monthly partitioned, 30d retention).
+## 3. `/admin/integrations` (new page)
 
-Allowed scopes:
-- POS: `orders:read`, `orders:write`, `status:write`, `menu:write`, `snooze:write`, `busy:write`.
-- CRM: `diners:read`, `visits:read`, `vouchers:write`, `vouchers:read`.
+Three tabs:
 
-DB function `verify_api_key(_prefix, _full_key) returns (partner_id, key_id, venue_id, partner_type, scopes)`. Returns NULL on revoked/expired/mismatched.
+**a. Providers** — Grid of registry cards (logo, capabilities chips, status badge, docs link). Admin can toggle `is_active` and edit metadata.
 
-RLS: all `api_*` tables admin-only via `has_role(auth.uid(), 'tabless_admin')`. Edge functions use service role.
+**b. Connections** — Cross-venue table:
+```text
+Venue            Provider     Status      Last sync    Actions
+─────────────────────────────────────────────────────────────
+The Local Bar    Doshii       Connected   2m ago       View · Sync · Disconnect
+Surf Club        H&L Exceed   Error       1h ago       View · Reconnect
+Beach Cafe       —            —           —            Connect…
+```
+Filters: provider, status, group. "Connect…" opens provider picker → credential form (driven by `config_schema`) → test connection → save.
 
-New column: `menu_items.snooze_until timestamptz` for POS snooze endpoint.
+**c. Activity** — Tail of `pos_sync_log` (new table: timestamped sync events, errors, payload sizes per venue/provider) for debugging.
 
----
+Add nav link **POS Integrations** (icon `Cable`) in admin sidebar, below **API Partners**.
 
-## 2. Edge functions
+## 4. Refactor venue-side `IntegrationsSettingsTab`
 
-All under `supabase/functions/`, `verify_jwt = false` (auth done in code via Bearer key).
+Currently shows hard-coded provider buttons. Replace with:
+- Read enabled providers from `pos_providers`
+- Render dynamic credential form from `config_schema`
+- "Test connection" button calls new `pos-test-connection` edge fn
+- Show capability chips so the venue manager knows what will sync
 
-**Shared module** (`_shared/api-auth.ts`):
-- `authenticate(req, expectedType: 'pos' | 'crm')` — extract Bearer key, verify, **reject if `partner_type` mismatches the function's expected type**, return context or 401/403.
-- `requireScope(ctx, required)` — 403 if missing.
-- `parseFilters(url)` — Sprout-style `field__gte=`, `field__in=a,b`, `sortBy=field:asc`, `page`, `pageSize`.
-- `idempotencyCheck(req, partnerId)` — read `Idempotency-Key`, return cached response if duplicate.
-- `logRequest(...)` — fire-and-forget insert into `api_request_log`.
+Venue managers can self-serve connect/disconnect; admins can do it on their behalf from `/admin/integrations`.
 
-**POS Partner endpoints** (`partner-pos` function, internal routing, only accepts `pos` keys):
-- `GET   /v1/orders` — list with filters and pagination.
-- `GET   /v1/orders/:id` — single order with items + modifiers + table number (no diner PII — only a stable `diner_handle` token).
-- `PATCH /v1/orders/:id/status` — push status update; maps to `venue_order_statuses`.
-- `POST  /v1/menu` — publish full menu snapshot; upserts `menu_categories`, `menu_items`, `modifier_groups` keyed by `plu`/`pos_id`.
-- `PATCH /v1/products/:plu/snooze` — set `snooze_until`; auto-clears `is_available`.
-- `PATCH /v1/locations/:venue_id/busy-mode` — adjust `extra_wait_minutes` venue-wide.
+## 5. Doshii reference adapter
 
-**CRM/Loyalty endpoints** (`partner-crm` function, internal routing, only accepts `crm` keys):
-- `GET  /v1/contacts` — diner profiles where `marketing_consent = true`.
-- `GET  /v1/contacts/:id` — single diner.
-- `GET  /v1/contacts/:id/visits` — derived from `orders` (totals + dates only, **no line items** — those belong to POS).
-- `POST /v1/vouchers` — issue voucher (loyalty redemption).
-- `GET  /v1/vouchers/:id` — voucher status.
+Doshii is the cleanest Aussie POS aggregator (covers Lightspeed, Impos, Idealpos, etc.) — building the adapter once gives us multi-POS reach. Use it as the canonical pattern for all future adapters.
 
-**Webhook dispatcher** (`partner-webhook-dispatch`):
-- Triggered by DB-side enqueue on `orders` insert/update (POS events) and `loyalty_balances`/`diner_profiles` changes (CRM events).
-- Routes events to webhooks of the matching partner type only.
-- HMAC SHA-256 signs payload, POSTs, retries 1m/5m/30m/2h/12h on non-2xx.
+**Edge functions** (new `supabase/functions/adapters/doshii/`):
+- `auth.ts` — JWT signing with Doshii client secret (stored as Supabase secret `DOSHII_CLIENT_SECRET`)
+- `menu-push.ts` — POST our `menu_items` (with `plu`) → Doshii `/menu`
+- `orders-poll.ts` — pulls order updates (cron, 30s)
+- `orders-webhook.ts` — receives Doshii webhooks (order accepted/rejected/ready), updates our `orders` table
+- `snooze.ts` — toggles availability via Doshii product API
 
----
+Wire into existing `pos-product-sync` and `pos-order-webhook` as the dispatch target when `provider.slug === 'doshii'`.
 
-## 3. Admin UI — Partner Management
+**Adapter contract** (so future providers slot in cleanly): each adapter exports `{ authenticate, pushMenu, pullOrders, updateOrderStatus, snoozeProduct }`. The generic `pos-*` functions look up the provider and call the matching adapter module.
 
-New page `src/pages/AdminPartners.tsx` (linked from admin sidebar):
+## 6. Secret storage
 
-- **Partners tab**: list partners, **must select POS or CRM at creation (immutable)**, contact email, active toggle.
-- **Keys tab**: per partner, issue scoped keys for specific venues. Scope picker is filtered to the partner's type. Show full key once on creation (modal + copy + warning), then only `key_prefix`. Revoke action.
-- **Webhooks tab**: per partner+venue, register webhook URLs. Event picker filtered by partner type. View delivery log + retry/replay.
-- **Request log**: searchable log of recent calls per partner (status, latency, path).
+Per-venue secrets (e.g. each venue's Doshii location token) stored via `client_secret_ref` pointing at a Supabase secret name like `DOSHII_VENUE_<uuid>`. Shared vendor app credentials (Shyndig's Doshii client ID/secret) stored once as `DOSHII_CLIENT_ID` / `DOSHII_CLIENT_SECRET`.
 
-Gate: existing `tabless_admin` role.
+Admin UI surfaces "Set credential" buttons that call `admin-set-pos-credentials` edge fn (mirrors existing `admin-set-payment-credentials` pattern) — never round-trips secrets to the browser.
 
----
+## 7. Out of scope (next phases)
 
-## 4. Public docs page
+- Square / Lightspeed / H&L Exceed concrete adapters (scaffolded only)
+- Two-way menu reconciliation UI (drift detection between our menu and POS)
+- Per-provider analytics dashboards
 
-New route `/developers` (public, no auth) — `src/pages/Developers.tsx`:
+## Technical summary
 
-- Shyndig-branded layout (matches landing, not operator dark theme).
-- Sections: Introduction, Authentication, Versioning, Rate limits, Errors, Idempotency, Filtering & Pagination, Webhooks.
-- **Two clearly separated reference sections**: "POS API" and "CRM API", each with its own auth note explaining keys are not interchangeable.
-- cURL + JS samples per endpoint.
-- "Get API access" CTA → mailto for v1.
+**New files**
+- `src/pages/AdminIntegrations.tsx` (3-tab page)
+- `src/components/admin/integrations/{ProvidersTab,ConnectionsTab,ActivityTab,ConnectVenueDialog,ProviderConfigForm}.tsx`
+- `supabase/functions/adapters/doshii/{auth,menu-push,orders-poll,orders-webhook,snooze}.ts`
+- `supabase/functions/_shared/pos-adapter.ts` (adapter contract + dispatcher)
+- `supabase/functions/pos-test-connection/index.ts`
+- `supabase/functions/admin-set-pos-credentials/index.ts`
 
-OpenAPI spec served from `/openapi.json` edge function (one combined spec, two tag groups).
+**Migrations**
+- Create `pos_providers` + RLS, seed 5 rows
+- Create `pos_sync_log` + RLS
+- Alter `venue_pos_integrations` (add provider_id, status, config, sync metadata)
 
----
+**Modified**
+- `src/components/DashboardLayout.tsx` (add nav link)
+- `src/components/venue/IntegrationsSettingsTab.tsx` (dynamic provider rendering)
+- `src/App.tsx` (route)
+- `supabase/functions/pos-product-sync/index.ts` & `pos-order-webhook/index.ts` (dispatch via adapter contract)
 
-## 5. API conventions (the style guide)
+**Secrets to request after approval**
+- `DOSHII_CLIENT_ID`, `DOSHII_CLIENT_SECRET` (one-off, shared)
 
-- **Base URL**: `https://api.shyndig.io/v1` (Phase 1: `https://<project>.supabase.co/functions/v1/partner-{pos|crm}/v1` until custom domain is set up).
-- **Auth**: `Authorization: Bearer sk_pos_live_xxx` or `sk_crm_live_xxx`. Wrong-type key on wrong endpoint → `403 invalid_key_type`.
-- **Versioning**: `Accept-Version: 1.0` header; URL `/v1` stays stable.
-- **Pagination**: `?page=1&pageSize=50`; response `meta.totalCount/page/pageSize`.
-- **Filtering**: `?status__in=received,preparing&created_at__gte=2026-05-01`.
-- **Sorting**: `?sortBy=created_at:desc`.
-- **Idempotency**: `Idempotency-Key: <uuid>` on POST/PATCH; 24h replay.
-- **Errors**: `{ "error": { "code": "invalid_scope", "message": "...", "request_id": "..." } }`.
-- **Rate limits**: 600 req/min per key; `X-RateLimit-Remaining` header.
+## Question
 
----
-
-## 6. Build order
-
-1. Migration: 6 new tables + `verify_api_key` function + `partner_type` enum + `snooze_until` column on `menu_items`.
-2. Shared `_shared/api-auth.ts` module with strict type-check.
-3. `partner-pos` edge function (6 endpoints).
-4. `partner-crm` edge function (5 endpoints).
-5. Webhook dispatcher + cron tick for retries.
-6. Admin UI: partners + keys + webhooks tabs.
-7. `/developers` public docs page + `/openapi.json`.
-8. Existing `pos-order-webhook` stays as-is (internal direct integrations); this is an additive partner-facing layer.
-
-## Out of scope / future
-
-- Self-serve developer signup, billing, usage dashboards.
-- OAuth2 authorization-code flow for end-user-initiated installs.
-- Sandbox environment with mock data.
-- Official SDKs.
+Doshii sandbox credentials — do you already have a Doshii partner account, or should I scaffold the adapter against their public sandbox docs and we wire real creds when you sign up?
