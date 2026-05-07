@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { BrandProvider } from "@/contexts/BrandContext";
 import { VenueProvider, useVenue } from "@/contexts/VenueContext";
+import { VenueChooserModal } from "@/components/VenueChooserModal";
 import { AuditDateProvider } from "@/contexts/AuditDateContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import Auth from "@/pages/Auth";
