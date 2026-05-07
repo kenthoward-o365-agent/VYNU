@@ -238,7 +238,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   const hasProvisioningResolved = !user || resolvedAccessUserId === user.id;
 
   return (
-    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, hasProvisioningResolved, venueRole, loading, setVenue, switchVenue, refetch: fetchVenues }}>
+    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, hasProvisioningResolved, needsVenueChoice, venueRole, loading, setVenue, switchVenue, setPrimaryVenue, refetch: fetchVenues }}>
       {children}
     </VenueContext.Provider>
   );
