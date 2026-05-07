@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { BrandProvider } from "@/contexts/BrandContext";
 import { VenueProvider, useVenue } from "@/contexts/VenueContext";
 import { AuditDateProvider } from "@/contexts/AuditDateContext";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -166,13 +167,15 @@ function RootRoutes() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <RootRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
+      <BrandProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <RootRoutes />
+          </BrowserRouter>
+        </TooltipProvider>
+      </BrandProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
