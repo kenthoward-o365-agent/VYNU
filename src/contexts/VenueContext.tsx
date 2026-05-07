@@ -38,10 +38,12 @@ interface VenueContextType {
   isGroupAdmin: boolean;
   isTablessAdmin: boolean;
   hasProvisioningResolved: boolean;
+  needsVenueChoice: boolean;
   venueRole: string | null;
   loading: boolean;
   setVenue: (v: Venue | null) => void;
   switchVenue: (venueId: string) => void;
+  setPrimaryVenue: (venueId: string) => Promise<void>;
   refetch: () => Promise<void>;
 }
 
