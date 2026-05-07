@@ -339,6 +339,45 @@ export type Database = {
         }
         Relationships: []
       }
+      api_request_log_y2026m07: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          method: string
+          partner_id: string | null
+          path: string
+          request_id: string | null
+          status_code: number
+          venue_id: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method: string
+          partner_id?: string | null
+          path: string
+          request_id?: string | null
+          status_code: number
+          venue_id?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method?: string
+          partner_id?: string | null
+          path?: string
+          request_id?: string | null
+          status_code?: number
+          venue_id?: string | null
+        }
+        Relationships: []
+      }
       api_webhook_deliveries: {
         Row: {
           attempt_count: number
@@ -2047,6 +2086,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_sync_log_y2026m07: {
+        Row: {
+          created_at: string
+          direction: string
+          error_message: string | null
+          event_type: string
+          id: string
+          items_synced: number | null
+          payload_hash: string | null
+          result: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id?: string
+        }
+        Relationships: []
+      }
       pricing_rule_items: {
         Row: {
           created_at: string
@@ -3135,6 +3210,7 @@ export type Database = {
           timezone: string | null
           updated_at: string
           venue_type: string
+          white_label_brand_id: string | null
         }
         Insert: {
           address?: string | null
@@ -3161,6 +3237,7 @@ export type Database = {
           timezone?: string | null
           updated_at?: string
           venue_type?: string
+          white_label_brand_id?: string | null
         }
         Update: {
           address?: string | null
@@ -3187,6 +3264,7 @@ export type Database = {
           timezone?: string | null
           updated_at?: string
           venue_type?: string
+          white_label_brand_id?: string | null
         }
         Relationships: [
           {
@@ -3196,7 +3274,116 @@ export type Database = {
             referencedRelation: "venue_groups"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "venues_white_label_brand_id_fkey"
+            columns: ["white_label_brand_id"]
+            isOneToOne: false
+            referencedRelation: "white_label_brands"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      white_label_brands: {
+        Row: {
+          api_host: string | null
+          app_host: string | null
+          app_icon_url: string | null
+          auth_email_from: string | null
+          auth_email_reply_to: string | null
+          consumer_host: string | null
+          created_at: string
+          enabled_pos_providers: string[]
+          favicon_url: string | null
+          id: string
+          is_default: boolean
+          kb_overrides: Json
+          legal_company_name: string | null
+          logo_mono_black_url: string | null
+          logo_mono_white_url: string | null
+          logo_primary_url: string | null
+          marketing_host: string | null
+          name: string
+          og_image_url: string | null
+          privacy_url: string | null
+          product_name: string
+          show_developers_page: boolean
+          show_knowledge_base: boolean
+          show_powered_by: boolean
+          slug: string
+          support_email: string | null
+          support_url: string | null
+          tagline: string | null
+          terms_url: string | null
+          theme: Json
+          updated_at: string
+        }
+        Insert: {
+          api_host?: string | null
+          app_host?: string | null
+          app_icon_url?: string | null
+          auth_email_from?: string | null
+          auth_email_reply_to?: string | null
+          consumer_host?: string | null
+          created_at?: string
+          enabled_pos_providers?: string[]
+          favicon_url?: string | null
+          id?: string
+          is_default?: boolean
+          kb_overrides?: Json
+          legal_company_name?: string | null
+          logo_mono_black_url?: string | null
+          logo_mono_white_url?: string | null
+          logo_primary_url?: string | null
+          marketing_host?: string | null
+          name: string
+          og_image_url?: string | null
+          privacy_url?: string | null
+          product_name: string
+          show_developers_page?: boolean
+          show_knowledge_base?: boolean
+          show_powered_by?: boolean
+          slug: string
+          support_email?: string | null
+          support_url?: string | null
+          tagline?: string | null
+          terms_url?: string | null
+          theme?: Json
+          updated_at?: string
+        }
+        Update: {
+          api_host?: string | null
+          app_host?: string | null
+          app_icon_url?: string | null
+          auth_email_from?: string | null
+          auth_email_reply_to?: string | null
+          consumer_host?: string | null
+          created_at?: string
+          enabled_pos_providers?: string[]
+          favicon_url?: string | null
+          id?: string
+          is_default?: boolean
+          kb_overrides?: Json
+          legal_company_name?: string | null
+          logo_mono_black_url?: string | null
+          logo_mono_white_url?: string | null
+          logo_primary_url?: string | null
+          marketing_host?: string | null
+          name?: string
+          og_image_url?: string | null
+          privacy_url?: string | null
+          product_name?: string
+          show_developers_page?: boolean
+          show_knowledge_base?: boolean
+          show_powered_by?: boolean
+          slug?: string
+          support_email?: string | null
+          support_url?: string | null
+          tagline?: string | null
+          terms_url?: string | null
+          theme?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
