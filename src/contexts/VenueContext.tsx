@@ -208,6 +208,19 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setPrimaryVenue = async (venueId: string) => {
+    const { error } = await supabase.rpc("set_primary_venue", { _venue_id: venueId });
+    if (error) throw error;
+    switchVenue(venueId);
+  };
+
+  const needsVenueChoice =
+    !!user &&
+    resolvedAccessUserId === user.id &&
+    !venue &&
+    !isTablessAdmin &&
+    venues.length > 1;
+
   useEffect(() => {
     if (authLoading) {
       setLoading(true);
