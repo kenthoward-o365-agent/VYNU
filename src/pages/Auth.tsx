@@ -96,7 +96,26 @@ export default function Auth() {
         return;
       }
 
-      localStorage.setItem("tabless_active_venue", venueData[0].venue_id);
+      const targetVenueId = venueData[0].venue_id;
+
+      // Verify the user actually has access to that venue before pinning it
+      const { data: staffRow } = await sessionClient
+        .from("venue_staff")
+        .select("venue_id")
+        .eq("user_id", data.user.id)
+        .eq("venue_id", targetVenueId)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!staffRow) {
+        await supabase.auth.signOut();
+        toast.error("You don't have access to that Site ID.");
+        return;
+      }
+
+      // Pin as primary so future logins land here automatically
+      await sessionClient.rpc("set_primary_venue", { _venue_id: targetVenueId });
+      localStorage.setItem("tabless_active_venue", targetVenueId);
       toast.success("Welcome back!");
     } catch (err: any) {
       toast.error(err.message ?? "Unable to sign in");
