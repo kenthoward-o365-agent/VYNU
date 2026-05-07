@@ -158,6 +158,7 @@ function RootRoutes() {
           <VenueProvider>
             <AuditDateProvider>
               <AppRoutes />
+              <VenueChooserModal />
             </AuditDateProvider>
           </VenueProvider>
         </AuthProvider>
