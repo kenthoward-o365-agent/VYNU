@@ -38,10 +38,12 @@ interface VenueContextType {
   isGroupAdmin: boolean;
   isTablessAdmin: boolean;
   hasProvisioningResolved: boolean;
+  needsVenueChoice: boolean;
   venueRole: string | null;
   loading: boolean;
   setVenue: (v: Venue | null) => void;
   switchVenue: (venueId: string) => void;
+  setPrimaryVenue: (venueId: string) => Promise<void>;
   refetch: () => Promise<void>;
 }
 
@@ -101,13 +103,14 @@ export function VenueProvider({ children }: { children: ReactNode }) {
 
     const { data: staffData } = await queryClient
       .from("venue_staff")
-      .select("venue_id, role")
+      .select("venue_id, role, is_primary")
       .eq("user_id", user.id)
       .eq("is_active", true);
 
     const staffRoles = Object.fromEntries((staffData || []).map((s) => [s.venue_id, s.role]));
     setStaffRolesMap(staffRoles);
     const venueIds = (staffData || []).map((s) => s.venue_id);
+    const primaryVenueId = (staffData || []).find((s: any) => s.is_primary)?.venue_id ?? null;
 
     const { data: roleData } = await queryClient
       .from("user_roles")
@@ -134,9 +137,17 @@ export function VenueProvider({ children }: { children: ReactNode }) {
 
       const savedId = localStorage.getItem("tabless_active_venue");
       const saved = allVenues.find((v) => v.id === savedId);
-      // For tabless_admin: only use a saved selection, never auto-pick the first venue.
-      // Admins land on /admin/dashboard with no active venue until they explicitly choose one.
-      const active = saved || (adminFlag ? null : allVenues[0]) || null;
+      const primary = primaryVenueId ? allVenues.find((v) => v.id === primaryVenueId) : null;
+
+      // Resolution order:
+      //  1. Explicit saved selection in this browser (only if user still has access)
+      //  2. Server-side primary venue (`venue_staff.is_primary`)
+      //  3. Auto-pick only when the user has exactly one venue
+      //  4. Otherwise leave null and force a chooser (admins also start null)
+      let active: Venue | null = saved || primary || null;
+      if (!active && !adminFlag && allVenues.length === 1) {
+        active = allVenues[0];
+      }
       setVenue(active);
       setVenueRole(active ? staffRoles[active.id] || (adminFlag ? "owner" : null) : null);
 
@@ -197,6 +208,19 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setPrimaryVenue = async (venueId: string) => {
+    const { error } = await supabase.rpc("set_primary_venue", { _venue_id: venueId });
+    if (error) throw error;
+    switchVenue(venueId);
+  };
+
+  const needsVenueChoice =
+    !!user &&
+    resolvedAccessUserId === user.id &&
+    !venue &&
+    !isTablessAdmin &&
+    venues.length > 1;
+
   useEffect(() => {
     if (authLoading) {
       setLoading(true);
@@ -214,7 +238,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
   const hasProvisioningResolved = !user || resolvedAccessUserId === user.id;
 
   return (
-    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, hasProvisioningResolved, venueRole, loading, setVenue, switchVenue, refetch: fetchVenues }}>
+    <VenueContext.Provider value={{ venue, venues, group, groups, isGroupAdmin, isTablessAdmin, hasProvisioningResolved, needsVenueChoice, venueRole, loading, setVenue, switchVenue, setPrimaryVenue, refetch: fetchVenues }}>
       {children}
     </VenueContext.Provider>
   );
