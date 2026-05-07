@@ -3086,6 +3086,7 @@ export type Database = {
           display_name: string | null
           id: string
           is_active: boolean | null
+          is_primary: boolean
           role: Database["public"]["Enums"]["venue_staff_role"]
           role_id: string | null
           updated_at: string
@@ -3100,6 +3101,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_active?: boolean | null
+          is_primary?: boolean
           role?: Database["public"]["Enums"]["venue_staff_role"]
           role_id?: string | null
           updated_at?: string
@@ -3114,6 +3116,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_active?: boolean | null
+          is_primary?: boolean
           role?: Database["public"]["Enums"]["venue_staff_role"]
           role_id?: string | null
           updated_at?: string
@@ -3603,6 +3606,7 @@ export type Database = {
         Args: { _field: string; _value: string; _venue_id: string }
         Returns: string
       }
+      set_primary_venue: { Args: { _venue_id: string }; Returns: undefined }
       unpair_display_terminal: {
         Args: { _terminal_id: string }
         Returns: boolean
