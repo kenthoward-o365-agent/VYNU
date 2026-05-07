@@ -122,6 +122,7 @@ function AppRoutes() {
         <Route path="/admin/staff" element={<AdminStaff />} />
         <Route path="/admin/partners" element={<AdminPartners />} />
         <Route path="/admin/integrations" element={<AdminIntegrations />} />
+        <Route path="/admin/white-label" element={<AdminWhiteLabel />} />
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />
         <Route path="/reporting" element={<Reporting />} />
