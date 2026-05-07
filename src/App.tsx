@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { BrandProvider } from "@/contexts/BrandContext";
 import { VenueProvider, useVenue } from "@/contexts/VenueContext";
 import { AuditDateProvider } from "@/contexts/AuditDateContext";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -30,6 +31,7 @@ import AdminStaff from "@/pages/AdminStaff";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminPartners from "@/pages/AdminPartners";
 import AdminIntegrations from "@/pages/AdminIntegrations";
+import AdminWhiteLabel from "@/pages/AdminWhiteLabel";
 import Developers from "@/pages/Developers";
 import NotFound from "@/pages/NotFound";
 import ConsumerOrder from "@/pages/ConsumerOrder";
@@ -120,6 +122,7 @@ function AppRoutes() {
         <Route path="/admin/staff" element={<AdminStaff />} />
         <Route path="/admin/partners" element={<AdminPartners />} />
         <Route path="/admin/integrations" element={<AdminIntegrations />} />
+        <Route path="/admin/white-label" element={<AdminWhiteLabel />} />
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />
         <Route path="/reporting" element={<Reporting />} />
@@ -166,13 +169,15 @@ function RootRoutes() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <RootRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
+      <BrandProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <RootRoutes />
+          </BrowserRouter>
+        </TooltipProvider>
+      </BrandProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

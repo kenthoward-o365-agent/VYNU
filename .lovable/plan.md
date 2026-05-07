@@ -1,109 +1,132 @@
-# Plan: Outbound POS Integrations Hub + Doshii Reference Adapter
+# White Label Foundation for Shyndig
 
-Build the management surface and reference implementation for **outbound** POS connections — the side where Shyndig builds adapters to vendor APIs (Doshii, H&L Exceed, Lightspeed, Square, etc.). This is the counterpart to `/admin/partners` (inbound, where third parties build to our spec).
+Goal: turn Shyndig into a true multi-tenant white-label platform so any POS vendor (or reseller) can ship the operator console, consumer ordering app, QR codes, and Knowledge Base under their own brand, domain, and copy — without code changes.
 
-## 1. Provider Registry (new table)
+This plan covers the foundation. Per-feature copy polish across every page is staged afterwards.
 
-New table `pos_providers` — the catalogue of every POS Shyndig has built an adapter for.
+---
 
-Columns: `id`, `slug` (e.g. `doshii`, `hl_exceed`, `lightspeed`, `square`), `name`, `logo_url`, `auth_type` (`oauth2` | `api_key` | `hmac`), `capabilities` (jsonb: `{menu_push, menu_pull, orders_push, orders_pull, snooze, payments, loyalty}`), `config_schema` (jsonb describing what credentials each venue must supply), `webhook_url_template`, `docs_url`, `status` (`alpha`|`beta`|`ga`|`deprecated`), `is_active`.
+## 1. Data model — `white_label_brands`
 
-Seeded rows: `doshii` (GA reference), `hl_exceed` (alpha), `lightspeed` (alpha), `square` (alpha), `mock` (for dev/testing).
+New table (migration) keyed by **host** (the domain the request comes in on). One row = one brand.
 
-Admin-only RLS for write; readable by venue managers (so settings UI can render the catalogue).
+Columns (high level):
+- `id uuid pk`, `slug text unique` (e.g. `shyndig`, `posvendor-x`)
+- `name text` (display name, e.g. "PosVendor X")
+- `is_default boolean` — exactly one row, used as fallback when host doesn't match
+- **Hosts**: `app_host text unique` (operator console), `consumer_host text unique` (QR / diner app), `api_host text` (docs only), `marketing_host text`
+- **Brand assets**: `logo_primary_url`, `logo_mono_white_url`, `logo_mono_black_url`, `favicon_url`, `app_icon_url`, `og_image_url`
+- **Theme**: `theme jsonb` — HSL tokens overriding `src/index.css` variables (primary, accent, sidebar, etc.)
+- **Copy**: `product_name text`, `tagline text`, `support_email text`, `support_url text`, `legal_company_name text`, `privacy_url`, `terms_url`
+- **Feature toggles**: `show_developers_page bool`, `show_knowledge_base bool`, `show_powered_by bool`, `enabled_pos_providers text[]` (filters Integrations dialog)
+- **Knowledge base**: `kb_overrides jsonb` — section-level title/body overrides (sections that aren't overridden fall back to defaults)
+- **Auth**: `auth_email_from text`, `auth_email_reply_to text` (passed to email infra)
+- `created_at`, `updated_at`
 
-## 2. Extend `venue_pos_integrations`
+RLS:
+- `select` — public (the site needs it before login).
+- `insert/update/delete` — `tabless_admin` only.
 
-Add columns:
-- `provider_id uuid references pos_providers(id)` — replaces ad-hoc string identifiers
-- `connection_status` (`disconnected`|`connecting`|`connected`|`error`)
-- `last_sync_at`, `last_sync_status`, `last_error`
-- `config jsonb` — provider-specific (e.g. Doshii `locationId`)
-- Keep existing `client_id`, `client_secret_ref`, `endpoint_url`, `token_cache`
+Add nullable `white_label_brand_id uuid` to `venues` so a venue can be **pinned** to a brand for QR generation; falls back to the venue's group brand or platform default.
 
-Backfill existing rows to point at correct `provider_id`.
+Seed Shyndig as the default brand.
 
-## 3. `/admin/integrations` (new page)
+## 2. Brand resolution
 
-Three tabs:
-
-**a. Providers** — Grid of registry cards (logo, capabilities chips, status badge, docs link). Admin can toggle `is_active` and edit metadata.
-
-**b. Connections** — Cross-venue table:
-```text
-Venue            Provider     Status      Last sync    Actions
-─────────────────────────────────────────────────────────────
-The Local Bar    Doshii       Connected   2m ago       View · Sync · Disconnect
-Surf Club        H&L Exceed   Error       1h ago       View · Reconnect
-Beach Cafe       —            —           —            Connect…
+New helper `src/lib/white-label.ts`:
+```ts
+export async function resolveBrandByHost(host: string): Promise<Brand>
 ```
-Filters: provider, status, group. "Connect…" opens provider picker → credential form (driven by `config_schema`) → test connection → save.
+- Match `app_host` or `consumer_host` exactly.
+- Fall back to `is_default = true`.
+- Cached in memory + localStorage; invalidated on version bump.
 
-**c. Activity** — Tail of `pos_sync_log` (new table: timestamped sync events, errors, payload sizes per venue/provider) for debugging.
+New `BrandProvider` (`src/contexts/BrandContext.tsx`) wraps the app at the very top of `App.tsx` (above `RootRoutes`). Exposes `useBrand()` returning `{ brand, surface }` where `surface` is `'operator' | 'consumer'` based on host.
 
-Add nav link **POS Integrations** (icon `Cable`) in admin sidebar, below **API Partners**.
+On mount it:
+1. Resolves brand from `window.location.host`.
+2. Injects CSS variables from `theme` into `:root` (override the tokens in `src/index.css`).
+3. Sets `<title>`, `<link rel="icon">`, `<meta name="theme-color">`, OpenGraph tags.
+4. Stores brand in context for components to read.
 
-## 4. Refactor venue-side `IntegrationsSettingsTab`
+## 3. QR code & deep-link URLs (CRITICAL — preserve memory rule)
 
-Currently shows hard-coded provider buttons. Replace with:
-- Read enabled providers from `pos_providers`
-- Render dynamic credential form from `config_schema`
-- "Test connection" button calls new `pos-test-connection` edge fn
-- Show capability chips so the venue manager knows what will sync
+Memory says QR URLs are **permanent stickers**: existing `https://shyndig.lovable.app/order/{venueId}/{tableId}` URLs must keep working. We do NOT regenerate.
 
-Venue managers can self-serve connect/disconnect; admins can do it on their behalf from `/admin/integrations`.
+Approach:
+- `PUBLISHED_BASE_URL` in `src/pages/Tables.tsx` becomes a function:
+  `getQrBaseUrl(venue)` → returns the **brand's `consumer_host`** for the venue's pinned brand if set; otherwise returns `https://shyndig.lovable.app` (unchanged default).
+- New venues under a non-default brand emit QR URLs on that brand's host.
+- Existing Shyndig stickers continue to resolve at `shyndig.lovable.app`.
+- The consumer route `/order/:venueId/:tableId` is host-agnostic — same code, different brand applied via `BrandProvider`.
 
-## 5. Doshii reference adapter
+Add a "Brand" column to `Tables` so operators can confirm what host their printed QR will use before printing.
 
-Doshii is the cleanest Aussie POS aggregator (covers Lightspeed, Impos, Idealpos, etc.) — building the adapter once gives us multi-POS reach. Use it as the canonical pattern for all future adapters.
+## 4. Themed UI surface
 
-**Edge functions** (new `supabase/functions/adapters/doshii/`):
-- `auth.ts` — JWT signing with Doshii client secret (stored as Supabase secret `DOSHII_CLIENT_SECRET`)
-- `menu-push.ts` — POST our `menu_items` (with `plu`) → Doshii `/menu`
-- `orders-poll.ts` — pulls order updates (cron, 30s)
-- `orders-webhook.ts` — receives Doshii webhooks (order accepted/rejected/ready), updates our `orders` table
-- `snooze.ts` — toggles availability via Doshii product API
+- `src/index.css` already uses HSL CSS variables. Brand `theme` JSON keys map 1:1 to the variables (`--primary`, `--accent`, `--sidebar-*`, etc.). Unset keys keep defaults.
+- Replace hard-coded logo `<img src="/brand/shyndig-icon.png">` in `DashboardLayout.tsx` with `<img src={brand.logo_primary_url}>`. Same for Auth, Onboarding, ResetPassword, ConsumerLayout, Receipt, VenueLanding, AIChatOverlay header.
+- Replace literal "Shyndig" strings with `{brand.product_name}` in all 30+ files identified in the audit (Auth header, footers, toasts, email copy, Knowledge Base headings, Developers page, ReceiptView, etc.). Done as a sweep after the foundation lands.
+- "Powered by Shyndig" small-print footer shown only when `brand.show_powered_by`.
 
-Wire into existing `pos-product-sync` and `pos-order-webhook` as the dispatch target when `provider.slug === 'doshii'`.
+## 5. Knowledge Base & Developers white-labeling
 
-**Adapter contract** (so future providers slot in cleanly): each adapter exports `{ authenticate, pushMenu, pullOrders, updateOrderStatus, snoozeProduct }`. The generic `pos-*` functions look up the provider and call the matching adapter module.
+- `KnowledgeBase.tsx` renders sections from a config array. For each section, if `brand.kb_overrides[sectionId]` exists, use the override `{ title?, body? }`; otherwise default text.
+- Hide `/knowledge-base` nav link when `brand.show_knowledge_base = false`.
+- Hide `/developers` route entirely when `brand.show_developers_page = false`. API docs `api_host` and partner contact email come from brand.
 
-## 6. Secret storage
+## 6. POS provider filtering
 
-Per-venue secrets (e.g. each venue's Doshii location token) stored via `client_secret_ref` pointing at a Supabase secret name like `DOSHII_VENUE_<uuid>`. Shared vendor app credentials (Shyndig's Doshii client ID/secret) stored once as `DOSHII_CLIENT_ID` / `DOSHII_CLIENT_SECRET`.
+`IntegrationsSettingsTab` and `PosConnectDialog` already list providers from `pos_providers`. Filter the list by `brand.enabled_pos_providers` so a vendor only sees their own POS (or whatever subset they re-sell).
 
-Admin UI surfaces "Set credential" buttons that call `admin-set-pos-credentials` edge fn (mirrors existing `admin-set-payment-credentials` pattern) — never round-trips secrets to the browser.
+## 7. Admin White Label page
 
-## 7. Out of scope (next phases)
+New route `/admin/white-label` (admin only), two tabs:
 
-- Square / Lightspeed / H&L Exceed concrete adapters (scaffolded only)
-- Two-way menu reconciliation UI (drift detection between our menu and POS)
-- Per-provider analytics dashboards
+**Brands list** — table of brands, columns: name, app host, consumer host, default, # venues. Actions: Create, Edit, Set default.
 
-## Technical summary
+**Brand editor** (modal/drawer):
+- Identity: name, slug, hosts (app, consumer, api, marketing)
+- Brand assets: upload logo set, favicon, app icon, OG image (uses existing `venue-assets` bucket under `white-label/{slug}/`)
+- Theme: color pickers for primary, accent, sidebar bg/fg, with a live preview pane
+- Copy: product name, tagline, support email, legal company, privacy/terms URLs
+- Toggles: show Developers, show Knowledge Base, show "Powered by", POS provider multi-select
+- Knowledge Base overrides: section picker + rich text editor for per-section overrides
+- Auth email from/reply-to
 
-**New files**
-- `src/pages/AdminIntegrations.tsx` (3-tab page)
-- `src/components/admin/integrations/{ProvidersTab,ConnectionsTab,ActivityTab,ConnectVenueDialog,ProviderConfigForm}.tsx`
-- `supabase/functions/adapters/doshii/{auth,menu-push,orders-poll,orders-webhook,snooze}.ts`
-- `supabase/functions/_shared/pos-adapter.ts` (adapter contract + dispatcher)
-- `supabase/functions/pos-test-connection/index.ts`
-- `supabase/functions/admin-set-pos-credentials/index.ts`
+New nav entry under Admin: "White Label" (gear icon) — visible to `tabless_admin` only.
 
-**Migrations**
-- Create `pos_providers` + RLS, seed 5 rows
-- Create `pos_sync_log` + RLS
-- Alter `venue_pos_integrations` (add provider_id, status, config, sync metadata)
+A small "Pin venue to brand" control on `AdminVenueDetail` so admins can move a venue between brands without touching SQL.
 
-**Modified**
-- `src/components/DashboardLayout.tsx` (add nav link)
-- `src/components/venue/IntegrationsSettingsTab.tsx` (dynamic provider rendering)
-- `src/App.tsx` (route)
-- `supabase/functions/pos-product-sync/index.ts` & `pos-order-webhook/index.ts` (dispatch via adapter contract)
+## 8. DNS / hosting
 
-**Secrets to request after approval**
-- `DOSHII_CLIENT_ID`, `DOSHII_CLIENT_SECRET` (one-off, shared)
+White-label hosts are real custom domains added via Lovable's existing custom-domain flow. Each vendor's domain is connected once in Project Settings → Domains, then registered as a brand row. We document this in the Admin White Label intro panel with a link to the docs.
 
-## Question
+## 9. Out of scope (this round)
 
-Doshii sandbox credentials — do you already have a Doshii partner account, or should I scaffold the adapter against their public sandbox docs and we wire real creds when you sign up?
+- Per-brand auth providers (e.g. white-label Google OAuth client) — needs Supabase Auth multi-config; deferred.
+- Per-brand outbound transactional email templates — scaffold hooks but actual template editor is a follow-up.
+- Per-brand billing/Stripe accounts — deferred.
+
+---
+
+## Technical notes
+
+- Files added: `supabase/migrations/<ts>_white_label_brands.sql`, `src/lib/white-label.ts`, `src/contexts/BrandContext.tsx`, `src/pages/AdminWhiteLabel.tsx`, `src/components/admin/BrandEditorDialog.tsx`.
+- Files edited: `src/App.tsx` (wrap with `BrandProvider`, inject head tags), `src/pages/Tables.tsx` (host resolver), `src/components/DashboardLayout.tsx` (logo + product name + nav filtering), `src/pages/KnowledgeBase.tsx` (override-aware), `src/pages/Developers.tsx` (brand-aware copy + toggle), `src/components/venue/IntegrationsSettingsTab.tsx` + `PosConnectDialog.tsx` (provider filter), plus the brand-string sweep across consumer/operator components.
+- The `BrandProvider` runs **before** `AuthProvider` so auth screens are already themed.
+- Caching: brand is fetched once per session via React Query with a 10-min stale time; an admin "Save" invalidates it via realtime broadcast on a `white_label_brands` channel so connected operator tabs re-theme without reload.
+- QR memory constraint preserved: default brand keeps `shyndig.lovable.app`; new brands only affect newly generated QR URLs for venues pinned to them.
+
+---
+
+## Suggested execution order
+
+1. Migration + seed Shyndig as default brand.
+2. `BrandContext` + theme/head injection (no UI changes visible yet — Shyndig defaults still apply).
+3. Logo / product-name sweep across operator + consumer surfaces.
+4. QR host resolver in `Tables.tsx` + Brand column.
+5. Knowledge Base + Developers gating and overrides.
+6. POS provider filter.
+7. Admin White Label page (list + editor + venue pinning).
+8. Docs panel explaining custom-domain setup per brand.
