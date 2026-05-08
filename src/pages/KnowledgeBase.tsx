@@ -18,7 +18,7 @@ interface TocItem {
 const tocItems: TocItem[] = [
   { id: "getting-started", label: "Getting Started", icon: Rocket },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "shyndig-ai-analytics", label: "L.O.U. AI Analytics", icon: BarChart3 },
+  { id: "shyndig-ai-analytics", label: "Spark AI Analytics", icon: BarChart3 },
   { id: "menu-builder", label: "Menu Builder", icon: UtensilsCrossed },
   { id: "pricing", label: "Pricing", icon: Tag },
   { id: "tables-qr", label: "Tables & QR", icon: QrCode },
@@ -168,10 +168,10 @@ export default function KnowledgeBase() {
           <Tip>Use the date picker in the top-right to compare different time periods.</Tip>
         </Section>
 
-        {/* L.O.U. AI Analytics */}
-        <Section id="shyndig-ai-analytics" title="L.O.U. AI Analytics" icon={BarChart3}>
+        {/* Spark AI Analytics */}
+        <Section id="shyndig-ai-analytics" title="Spark AI Analytics" icon={BarChart3}>
           <SubSection title="What the AI Tracks">
-            <p>L.O.U. AI Analytics shows you how diners interact with your AI assistant:</p>
+            <p>Spark AI Analytics shows you how diners interact with your AI assistant:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Chat Sessions</strong> — Total conversations started.</li>
               <li><strong>Conversion Rate</strong> — Percentage of chats that led to an order.</li>
