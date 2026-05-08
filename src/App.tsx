@@ -57,15 +57,17 @@ const queryClient = new QueryClient({
 
 function AppRoutes() {
   const { user, loading: authLoading } = useAuth();
-  const { venue, loading: venueLoading, isTablessAdmin, hasProvisioningResolved } = useVenue();
+  const { venue, venues, loading: venueLoading, isTablessAdmin, hasProvisioningResolved, needsVenueChoice } = useVenue();
   const hasVenueContext = !!venue;
 
   useEffect(() => {
     if (!user || !hasProvisioningResolved || venue || isTablessAdmin) return;
+    // User has multiple venues but hasn't picked one yet — let the chooser handle it.
+    if (needsVenueChoice || venues.length > 0) return;
 
     sessionStorage.setItem("shyndig_not_provisioned", "1");
     void supabase.auth.signOut();
-  }, [user?.id, hasProvisioningResolved, venue?.id, isTablessAdmin]);
+  }, [user?.id, hasProvisioningResolved, venue?.id, isTablessAdmin, needsVenueChoice, venues.length]);
 
   if (authLoading || venueLoading || !hasProvisioningResolved) {
     return (
@@ -87,6 +89,17 @@ function AppRoutes() {
   }
 
   if (!venue && !isTablessAdmin) {
+    // Multi-venue user awaiting selection — VenueChooserModal will display.
+    if (needsVenueChoice || venues.length > 0) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-semibold text-foreground">Choose a venue</h2>
+            <p className="text-muted-foreground">Select a venue to continue.</p>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center space-y-2">
