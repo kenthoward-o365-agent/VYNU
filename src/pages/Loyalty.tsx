@@ -72,7 +72,7 @@ export default function Loyalty() {
     if (!shyndigProgramId) { setEditorOpen(true); return; }
     const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", shyndigProgramId);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    toast({ title: next ? "H&L OrderNow Loyalty enabled" : "H&L OrderNow Loyalty paused" });
+    toast({ title: next ? "H&L OrderNOW Loyalty enabled" : "H&L OrderNOW Loyalty paused" });
     fetchPrograms();
   };
 
@@ -125,21 +125,21 @@ export default function Loyalty() {
 
   return (
     <div className="space-y-6">
-      {/* H&L OrderNow Loyalty (built-in) */}
+      {/* H&L OrderNOW Loyalty (built-in) */}
       <Card className="border-primary/30">
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                H&L OrderNow Loyalty
+                H&L OrderNOW Loyalty
                 <Badge variant="outline" className="ml-1 text-[10px]">Built-in · Free</Badge>
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                H&L OrderNow's free built-in loyalty program. When ON, this becomes the active program for diners — your custom programs below are paused.
+                H&L OrderNOW's free built-in loyalty program. When ON, this becomes the active program for diners — your custom programs below are paused.
               </p>
             </div>
-            <Switch checked={shyndigActive} onCheckedChange={toggleShyndigActive} aria-label="Toggle H&L OrderNow Loyalty" />
+            <Switch checked={shyndigActive} onCheckedChange={toggleShyndigActive} aria-label="Toggle H&L OrderNOW Loyalty" />
           </div>
         </CardHeader>
         <CardContent>
@@ -150,8 +150,8 @@ export default function Loyalty() {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Configure H&L OrderNow Loyalty</DialogTitle></DialogHeader>
-              {venue && <ShyndigLoyaltyEditor scope={{ type: "venue", venue_id: venue.id }} menuVenueId={venue.id} defaultName="H&L OrderNow Loyalty" />}
+              <DialogHeader><DialogTitle>Configure H&L OrderNOW Loyalty</DialogTitle></DialogHeader>
+              {venue && <ShyndigLoyaltyEditor scope={{ type: "venue", venue_id: venue.id }} menuVenueId={venue.id} defaultName="H&L OrderNOW Loyalty" />}
             </DialogContent>
           </Dialog>
         </CardContent>
@@ -159,7 +159,7 @@ export default function Loyalty() {
 
       {shyndigActive && (
         <p className="text-xs text-muted-foreground italic px-1">
-          H&L OrderNow Loyalty is your active program. Custom programs below are paused for diners.
+          H&L OrderNOW Loyalty is your active program. Custom programs below are paused for diners.
         </p>
       )}
 

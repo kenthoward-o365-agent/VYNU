@@ -74,7 +74,7 @@ export default function Onboarding() {
         <Card>
           <CardHeader>
             <CardTitle>Venue Details</CardTitle>
-            <CardDescription>We'll use this to configure your H&L OrderNow experience</CardDescription>
+            <CardDescription>We'll use this to configure your H&L OrderNOW experience</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

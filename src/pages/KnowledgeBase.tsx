@@ -126,15 +126,15 @@ export default function KnowledgeBase() {
       <div className="flex-1 space-y-8 min-w-0">
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-1">Knowledge Base</h1>
-          <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on H&L OrderNow.</p>
+          <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on H&L OrderNOW.</p>
         </div>
 
         <Separator />
 
         {/* Getting Started */}
         <Section id="getting-started" title="Getting Started" icon={Rocket}>
-          <SubSection title="Welcome to H&L OrderNow">
-            <p>H&L OrderNow replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue&apos;s AI assistant, and place orders — no app download required.</p>
+          <SubSection title="Welcome to H&L OrderNOW">
+            <p>H&L OrderNOW replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue&apos;s AI assistant, and place orders — no app download required.</p>
           </SubSection>
           <SubSection title="First-Time Setup Checklist">
             <StepList steps={[
@@ -142,9 +142,9 @@ export default function KnowledgeBase() {
               "Build your menu: create categories, add items with descriptions and prices.",
               "Use AI Import to upload an existing menu (PDF or photo) and auto-populate items.",
               "Set up your tables and generate QR codes in Tables &amp; QR.",
-              "Set up H&L OrderNow Pay payments in Settings → Payments.",
+              "Set up H&L OrderNOW Pay payments in Settings → Payments.",
               "Set up tax rules in Settings → Taxes.",
-              "Customise your H&L OrderNow AI agent personality in Settings → H&L OrderNow AI.",
+              "Customise your H&L OrderNOW AI agent personality in Settings → H&L OrderNOW AI.",
               "Print and place QR stickers on each table — you're live!",
             ]} />
           </SubSection>
@@ -180,7 +180,7 @@ export default function KnowledgeBase() {
             </ul>
           </SubSection>
           <SubSection title="Reading the Insights">
-            <p>A high conversion rate means your AI personality and menu descriptions are working well. If diners are chatting a lot but not ordering, consider simplifying your menu descriptions or adjusting the AI&apos;s tone in Settings → H&L OrderNow AI.</p>
+            <p>A high conversion rate means your AI personality and menu descriptions are working well. If diners are chatting a lot but not ordering, consider simplifying your menu descriptions or adjusting the AI&apos;s tone in Settings → H&L OrderNOW AI.</p>
           </SubSection>
         </Section>
 
@@ -196,7 +196,7 @@ export default function KnowledgeBase() {
             ]} />
           </SubSection>
           <SubSection title="AI Import">
-            <p>Upload a photo or PDF of your existing menu. H&L OrderNow&apos;s AI will read it and create categories and items automatically. Review and adjust before saving.</p>
+            <p>Upload a photo or PDF of your existing menu. H&L OrderNOW&apos;s AI will read it and create categories and items automatically. Review and adjust before saving.</p>
             <StepList steps={[
               "Go to Menu Builder → Settings → AI Features → Import.",
               "Upload your menu file (PDF, JPG, PNG).",
@@ -315,7 +315,7 @@ export default function KnowledgeBase() {
             <p>On finished orders (terminal statuses), operators with permission see <strong>&quot;Re-open &amp; Refund&quot;</strong>. This:</p>
             <ol className="list-decimal list-inside space-y-1 pl-1">
               <li>Moves the order back to a working status (Selected → Re-opened).</li>
-              <li>Processes a full or partial refund through H&L OrderNow Pay.</li>
+              <li>Processes a full or partial refund through H&L OrderNOW Pay.</li>
             </ol>
             <p>Use this workflow when a diner changes their mind after paying or something was wrong with the order. If you just need to move the order back in the kitchen flow without money changing hands, use the dimmed status button to step back to a non-terminal status.</p>
           </SubSection>
@@ -401,7 +401,7 @@ export default function KnowledgeBase() {
               <li><strong>Kitchen</strong> — Mac mini + 27&quot; wall-mounted monitor in landscape, OR an iPad Pro 12.9&quot; in a kitchen-grade splash-proof case.</li>
               <li><strong>Bar</strong> — iPad 10.9&quot; in a counter mount with a charging cable run.</li>
               <li><strong>Expo / pass</strong> — a large TV (43&quot;+) driven by an Intel NUC or Mac mini, browser launched in fullscreen kiosk mode.</li>
-              <li><strong>For all stations</strong> — disable display sleep in the OS, set the browser to auto-launch on reboot, and bookmark the H&L OrderNow URL on the home screen.</li>
+              <li><strong>For all stations</strong> — disable display sleep in the OS, set the browser to auto-launch on reboot, and bookmark the H&L OrderNOW URL on the home screen.</li>
             </ul>
             <Tip>iPads in kitchens take a beating. Always pair a device with a code — never share the URL alone — and keep a printed list of active terminals near the manager&apos;s office for quick &quot;is everything online?&quot; checks.</Tip>
           </SubSection>
@@ -662,7 +662,7 @@ export default function KnowledgeBase() {
             <p>Update your venue name, type, address, contact information, logo, and operating hours. This information is displayed to diners and used by the AI assistant.</p>
           </SubSection>
           <SubSection title="Users &amp; Roles">
-            <p>Permissions in H&L OrderNow work in <strong>two layers</strong>: a <em>role</em> controls which sidebar areas a user can see, and <em>per-user toggles</em> refine what they can actually do inside Orders.</p>
+            <p>Permissions in H&L OrderNOW work in <strong>two layers</strong>: a <em>role</em> controls which sidebar areas a user can see, and <em>per-user toggles</em> refine what they can actually do inside Orders.</p>
 
             <p className="font-semibold mt-3">Layer 1 — Roles (sidebar access)</p>
             <p>Each venue defines its own roles under <strong>Settings → Users → Roles</strong>. Three system roles are seeded automatically and cannot be deleted: <strong>Owner</strong>, <strong>Manager</strong>, and <strong>Staff</strong>. You can create additional roles like &quot;Bar Staff&quot;, &quot;Floor Lead&quot;, or &quot;Kitchen Only&quot;.</p>
@@ -677,7 +677,7 @@ export default function KnowledgeBase() {
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Update Order Status</strong> — show or hide the status buttons on each order card (Received → Preparing → Ready → …).</li>
               <li><strong>Re-open Closed Orders</strong> — show a <em>Re-open</em> button on closed orders (Paid / Served / Cancelled) that lets the user move it back to an active status. <strong>No money is moved.</strong></li>
-              <li><strong>Process Refunds</strong> — show the <em>Re-open &amp; Refund</em> button that re-opens the order <em>and</em> processes a refund through H&L OrderNow Pay.</li>
+              <li><strong>Process Refunds</strong> — show the <em>Re-open &amp; Refund</em> button that re-opens the order <em>and</em> processes a refund through H&L OrderNOW Pay.</li>
             </ul>
 
             <p className="mt-3"><strong>Worked examples:</strong></p>
@@ -698,7 +698,7 @@ export default function KnowledgeBase() {
               "Toggle the programme active when ready.",
             ]} />
           </SubSection>
-          <SubSection title="H&L OrderNow AI">
+          <SubSection title="H&L OrderNOW AI">
             <p>Customise your AI dining assistant:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Agent Name</strong> — What your AI introduces itself as.</li>
@@ -708,13 +708,13 @@ export default function KnowledgeBase() {
               <li><strong>Agent Icon</strong> — Custom avatar for the chat interface.</li>
             </ul>
           </SubSection>
-          <SubSection title="Payments — H&L OrderNow Pay">
-            <p>H&L OrderNow Pay is H&L OrderNow&apos;s built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don&apos;t need a separate processor account or API keys.</p>
+          <SubSection title="Payments — H&L OrderNOW Pay">
+            <p>H&L OrderNOW Pay is H&L OrderNOW&apos;s built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don&apos;t need a separate processor account or API keys.</p>
             <SubSection title="Onboarding flow">
               <ol className="list-decimal list-inside space-y-1 pl-1">
                 <li><strong>Application</strong> — submit your venue and business details.</li>
                 <li><strong>Underwriting</strong> — our risk team reviews your application (usually 1–3 business days).</li>
-                <li><strong>Approval</strong> — once approved, your H&L OrderNow Pay merchant ID is issued and Settings → Payments shows the &quot;Approved&quot; badge.</li>
+                <li><strong>Approval</strong> — once approved, your H&L OrderNOW Pay merchant ID is issued and Settings → Payments shows the &quot;Approved&quot; badge.</li>
                 <li><strong>Funding</strong> — settled funds land in your nominated bank account on a daily rolling schedule.</li>
               </ol>
             </SubSection>
@@ -727,7 +727,7 @@ export default function KnowledgeBase() {
               </ul>
             </SubSection>
             <SubSection title="Wallets — Apple Pay &amp; Google Pay">
-              <p>Apple Pay and Google Pay are enabled automatically on your H&L OrderNow Pay account, including domain verification. Diners on Safari (iPhone/Mac) see Apple Pay; diners on Chrome/Android see Google Pay. Anonymous guests can pay with their wallet too — no account or card entry required.</p>
+              <p>Apple Pay and Google Pay are enabled automatically on your H&L OrderNOW Pay account, including domain verification. Diners on Safari (iPhone/Mac) see Apple Pay; diners on Chrome/Android see Google Pay. Anonymous guests can pay with their wallet too — no account or card entry required.</p>
             </SubSection>
             <Tip>Use the test card numbers shown in Settings → Payments to verify your full ordering and payment flow before going live.</Tip>
           </SubSection>

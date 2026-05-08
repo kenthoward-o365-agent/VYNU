@@ -27,7 +27,7 @@ interface AdyenDropinProps {
 }
 
 /**
- * Mounts a H&L OrderNow Pay payment Drop-in instance.
+ * Mounts a H&L OrderNOW Pay payment Drop-in instance.
  * - Renders Apple Pay / Google Pay buttons natively when supported
  * - Falls back to a hosted (PCI SAQ A) card form
  */
@@ -35,7 +35,7 @@ export default function ShyndigPayDropin({
   paymentMethodsResponse,
   amount,
   currency,
-  merchantName = "H&L OrderNow Pay",
+  merchantName = "H&L OrderNOW Pay",
   countryCode = "AU",
   environment = "test",
   clientKey,
@@ -93,7 +93,7 @@ export default function ShyndigPayDropin({
             onPaymentCompleted?.(result);
           },
           onError: (error: any) => {
-            console.error("[H&L OrderNow Pay Drop-in] error:", error);
+            console.error("[H&L OrderNOW Pay Drop-in] error:", error);
             onError?.(error);
           },
         });
@@ -127,7 +127,7 @@ export default function ShyndigPayDropin({
         dropin.mount(containerRef.current);
         dropinRef.current = dropin;
       } catch (e: any) {
-        console.error("[H&L OrderNow Pay Drop-in] mount failed:", e);
+        console.error("[H&L OrderNOW Pay Drop-in] mount failed:", e);
         setMountError(e?.message || "Failed to load payment form");
       }
     }

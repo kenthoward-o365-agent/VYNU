@@ -12,7 +12,7 @@ import { Plus, QrCode, Trash2, Download, Printer, Smartphone, ExternalLink } fro
 import MobilePreviewFrame from "@/components/landing-editor/MobilePreviewFrame";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-// Permanent QR host. Existing H&L OrderNow QR stickers point here and must keep working.
+// Permanent QR host. Existing H&L OrderNOW QR stickers point here and must keep working.
 const DEFAULT_QR_BASE_URL = "https://shyndig.lovable.app";
 
 interface Table {

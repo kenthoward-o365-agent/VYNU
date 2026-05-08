@@ -10,7 +10,7 @@ interface LoyaltyJoinPromptProps {
   /** When true, render the prompt (subject to internal eligibility checks). */
   show: boolean;
   /**
-   * Diner profile id when signed in (H&L OrderNow ID holder). When provided,
+   * Diner profile id when signed in (H&L OrderNOW ID holder). When provided,
    * the prompt becomes a one-tap join (no signup form needed).
    */
   dinerId?: string | null;
@@ -132,7 +132,7 @@ const LoyaltyJoinPrompt = ({
             <div>
               <h3 className="font-bold text-base leading-tight">Join {program.name}</h3>
               <p className="text-xs text-muted-foreground">
-                {isOneTap ? "One tap with your H&L OrderNow ID" : "Free rewards program"}
+                {isOneTap ? "One tap with your H&L OrderNOW ID" : "Free rewards program"}
               </p>
             </div>
           </div>
@@ -154,7 +154,7 @@ const LoyaltyJoinPrompt = ({
             </li>
             <li className="flex items-center gap-2">
               <Gift className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span>{isOneTap ? "Rewards stack on top of your other H&L OrderNow memberships" : "Faster checkout with saved details"}</span>
+              <span>{isOneTap ? "Rewards stack on top of your other H&L OrderNOW memberships" : "Faster checkout with saved details"}</span>
             </li>
             <li className="flex items-center gap-2">
               <Gift className="h-3.5 w-3.5 text-primary shrink-0" />

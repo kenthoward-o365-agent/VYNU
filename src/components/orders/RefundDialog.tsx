@@ -43,7 +43,7 @@ export default function RefundDialog({
 
     setSubmitting(true);
     try {
-      // Call H&L OrderNow Pay refund
+      // Call H&L OrderNOW Pay refund
       const { data, error } = await supabase.functions.invoke("adyen-payment", {
         body: { action: "refund", venue_id: venueId, order_id: orderId, amount: value, reason },
       });
@@ -90,7 +90,7 @@ export default function RefundDialog({
         <DialogHeader>
           <DialogTitle>Re-open & Refund Order</DialogTitle>
           <DialogDescription>
-            Process a refund through H&L OrderNow Pay. The order will be re-opened so staff can update it. Fully-refunded orders are marked Refunded.
+            Process a refund through H&L OrderNOW Pay. The order will be re-opened so staff can update it. Fully-refunded orders are marked Refunded.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">

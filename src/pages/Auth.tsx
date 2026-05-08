@@ -75,7 +75,7 @@ export default function Auth() {
 
       if (isAdmin) {
         localStorage.removeItem("tabless_active_venue");
-        toast.success("Welcome, H&L OrderNow admin");
+        toast.success("Welcome, H&L OrderNOW admin");
         return;
       }
 
@@ -128,14 +128,14 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-3">
-          <img src={logoSrc} alt="H&L OrderNow" className="h-14 w-auto max-w-[280px] mx-auto object-contain" />
+          <img src={logoSrc} alt="H&L OrderNOW" className="h-14 w-auto max-w-[280px] mx-auto object-contain" />
           <p className="text-muted-foreground">The world's first agentic Ordering Platform</p>
         </div>
         <Card>
           <CardHeader>
             <CardTitle>Sign in</CardTitle>
             <CardDescription>
-              Sign in to your venue dashboard or H&L OrderNow admin console
+              Sign in to your venue dashboard or H&L OrderNOW admin console
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -155,7 +155,7 @@ export default function Auth() {
                   onChange={(e) => setSiteId(e.target.value)}
                   className="font-mono tracking-wider"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Operators: enter your venue's Site ID. H&L OrderNow staff: leave blank.</p>
+                <p className="text-xs text-muted-foreground mt-1">Operators: enter your venue's Site ID. H&L OrderNOW staff: leave blank.</p>
               </div>
               <Input
                 id="email"
