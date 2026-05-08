@@ -85,7 +85,7 @@ export default function AdminVenues() {
   const fetchData = async () => {
     setLoading(true);
     const [{ data: venueData }, { data: groupData }, { data: billingData }] = await Promise.all([
-      supabase.from("venues").select("id, name, venue_type, city, state, is_active, subscription_status, subscription_plan, group_id, created_at").order("name"),
+      supabase.from("venues").select("id, name, venue_type, city, state, is_active, subscription_status, subscription_plan, group_id, created_at").not("name", "ilike", "LOADTEST_%").order("name"),
       supabase.from("venue_groups").select("id, name"),
       supabase.from("venue_billing_config").select("venue_id, commission_percent"),
     ]);
