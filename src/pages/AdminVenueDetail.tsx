@@ -475,20 +475,80 @@ export default function AdminVenueDetail() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {staff.map((s) => (
-                <Card key={s.id}>
-                  <CardContent className="flex items-center justify-between py-4">
-                    <div>
-                      <p className="font-medium text-sm">{s.display_name || "No name"}</p>
-                      <p className="text-xs text-muted-foreground">{s.user_id.slice(0, 8)}...</p>
-                    </div>
-                    <div className="flex items-center gap-2">
+                <Card key={s.id} className={s.is_active ? "" : "opacity-60"}>
+                  <CardContent className="py-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{s.display_name || "No name"}</p>
+                        <p className="text-xs text-muted-foreground truncate">{s.email || `${s.user_id.slice(0, 8)}...`}</p>
+                      </div>
                       <Badge variant={s.is_active ? "default" : "secondary"}>{s.role}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1 border-t">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => openEditUser(s)}>Edit</Button>
+                      <Button variant="ghost" size="sm" onClick={() => toggleActive(s)}>
+                        {s.is_active ? "Disable" : "Enable"}
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUser(s, true)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           )}
+
+          {/* Edit User Dialog */}
+          <Dialog open={editUserDialog} onOpenChange={setEditUserDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit User</DialogTitle>
+              </DialogHeader>
+              {editingStaff && (
+                <div className="space-y-3">
+                  <div>
+                    <Label>Email</Label>
+                    <Input value={editingStaff.email || ""} disabled className="mt-1" />
+                  </div>
+                  <div>
+                    <Label>Display Name</Label>
+                    <Input value={editForm.display_name} onChange={(e) => setEditForm({ ...editForm, display_name: e.target.value })} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label>Role</Label>
+                    <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="owner">Owner</SelectItem>
+                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="staff">Staff</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Reset Password (optional)</Label>
+                    <div className="relative mt-1">
+                      <Input
+                        type={showEditPassword ? "text" : "password"}
+                        value={editForm.password}
+                        onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                        placeholder="Leave blank to keep current"
+                        className="pr-10"
+                      />
+                      <button type="button" onClick={() => setShowEditPassword(!showEditPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Min 8 characters if changing.</p>
+                  </div>
+                  <Button onClick={saveEditUser} disabled={savingEdit} className="w-full">
+                    {savingEdit ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="billing">
