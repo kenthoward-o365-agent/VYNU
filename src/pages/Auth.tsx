@@ -129,7 +129,7 @@ export default function Auth() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-3">
           <img src={logoSrc} alt="H&L OrderNOW" className="h-14 w-auto max-w-[280px] mx-auto object-contain" />
-          <p className="text-muted-foreground">The world's first agentic Ordering Platform</p>
+          <p className="text-muted-foreground">OrderNOW</p>
         </div>
         <Card>
           <CardHeader>
