@@ -111,11 +111,91 @@ export default function AdminVenueDetail() {
   const fetchStaff = async () => {
     if (!venueId) return;
     const { data } = await supabase.from("venue_staff").select("*").eq("venue_id", venueId);
-    setStaff((data || []) as StaffMember[]);
+    const list = (data || []) as StaffMember[];
+    // Resolve emails
+    if (list.length > 0) {
+      try {
+        const res = await supabase.functions.invoke("admin-create-user", {
+          body: { action: "list_emails", user_ids: list.map((s) => s.user_id), venue_id: venueId },
+        });
+        const emails: Record<string, string> = res.data?.emails || {};
+        list.forEach((s) => { s.email = emails[s.user_id]; });
+      } catch { /* ignore */ }
+    }
+    setStaff(list);
   };
 
 
   useEffect(() => { fetchVenue(); fetchStaff(); }, [venueId]);
+
+  const openEditUser = (s: StaffMember) => {
+    setEditingStaff(s);
+    setEditForm({ display_name: s.display_name || "", role: s.role, password: "" });
+    setShowEditPassword(false);
+    setEditUserDialog(true);
+  };
+
+  const saveEditUser = async () => {
+    if (!editingStaff || !venueId) return;
+    setSavingEdit(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: {
+          action: "update",
+          staff_id: editingStaff.id,
+          venue_id: venueId,
+          display_name: editForm.display_name,
+          role: editForm.role,
+        },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || "Failed to update");
+
+      if (editForm.password) {
+        if (editForm.password.length < 8) throw new Error("Password must be at least 8 characters");
+        const pw = await supabase.functions.invoke("admin-create-user", {
+          body: { action: "set_password", staff_id: editingStaff.id, venue_id: venueId, password: editForm.password },
+        });
+        if (pw.error || pw.data?.error) throw new Error(pw.data?.error || pw.error?.message || "Failed to set password");
+      }
+
+      toast({ title: "User updated" });
+      setEditUserDialog(false);
+      setEditingStaff(null);
+      fetchStaff();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setSavingEdit(false);
+  };
+
+  const toggleActive = async (s: StaffMember) => {
+    if (!venueId) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: { action: "toggle_active", staff_id: s.id, venue_id: venueId, is_active: !s.is_active },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      toast({ title: s.is_active ? "User deactivated" : "User activated" });
+      fetchStaff();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const deleteUser = async (s: StaffMember, deleteAuth: boolean) => {
+    if (!venueId) return;
+    if (!confirm(`Remove ${s.display_name || s.email || "this user"} from the venue?${deleteAuth ? "\n\nThis will ALSO delete their login account permanently." : ""}`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: { action: "delete", staff_id: s.id, venue_id: venueId, delete_auth: deleteAuth },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      toast({ title: "User removed" });
+      fetchStaff();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
 
   const saveDetails = async () => {
     if (!venueId) return;
