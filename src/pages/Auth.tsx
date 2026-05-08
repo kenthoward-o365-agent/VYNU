@@ -128,7 +128,7 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-3">
-          <img src={logoSrc} alt="H&L OrderNOW" className="h-24 w-auto max-w-[320px] mx-auto object-contain" />
+          <img src={logoSrc} alt="H&L OrderNOW" className="h-48 w-auto max-w-[640px] mx-auto object-contain" />
         </div>
         <Card>
           <CardHeader>
