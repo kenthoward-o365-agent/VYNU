@@ -83,7 +83,7 @@ export default function TopItemsCharts({ venueId, auditDate }: Props) {
                 <XAxis type="number" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis type="category" dataKey="name" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => truncate(v)} width={75} />
                 <Tooltip formatter={(v: number) => [v, "Qty"]} />
-                <Bar dataKey="qty" fill="hsl(217, 91%, 60%)" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="qty" fill="hsl(198, 70%, 55%)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -98,7 +98,7 @@ export default function TopItemsCharts({ venueId, auditDate }: Props) {
                 <XAxis type="number" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
                 <YAxis type="category" dataKey="name" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => truncate(v)} width={75} />
                 <Tooltip formatter={(v: number) => [`$${v.toFixed(2)}`, "Revenue"]} />
-                <Bar dataKey="revenue" fill="hsl(142, 71%, 45%)" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="revenue" fill="hsl(87, 50%, 51%)" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
