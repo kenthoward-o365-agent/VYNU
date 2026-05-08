@@ -28,6 +28,7 @@ interface StaffMember {
   role: string;
   display_name: string | null;
   is_active: boolean;
+  email?: string;
 }
 
 
@@ -68,6 +69,13 @@ export default function AdminVenueDetail() {
   const [creatingUser, setCreatingUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Edit user
+  const [editUserDialog, setEditUserDialog] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [editForm, setEditForm] = useState({ display_name: "", role: "staff", password: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
+
 
   const fetchVenue = async () => {
     if (!venueId) return;
@@ -103,11 +111,91 @@ export default function AdminVenueDetail() {
   const fetchStaff = async () => {
     if (!venueId) return;
     const { data } = await supabase.from("venue_staff").select("*").eq("venue_id", venueId);
-    setStaff((data || []) as StaffMember[]);
+    const list = (data || []) as StaffMember[];
+    // Resolve emails
+    if (list.length > 0) {
+      try {
+        const res = await supabase.functions.invoke("admin-create-user", {
+          body: { action: "list_emails", user_ids: list.map((s) => s.user_id), venue_id: venueId },
+        });
+        const emails: Record<string, string> = res.data?.emails || {};
+        list.forEach((s) => { s.email = emails[s.user_id]; });
+      } catch { /* ignore */ }
+    }
+    setStaff(list);
   };
 
 
   useEffect(() => { fetchVenue(); fetchStaff(); }, [venueId]);
+
+  const openEditUser = (s: StaffMember) => {
+    setEditingStaff(s);
+    setEditForm({ display_name: s.display_name || "", role: s.role, password: "" });
+    setShowEditPassword(false);
+    setEditUserDialog(true);
+  };
+
+  const saveEditUser = async () => {
+    if (!editingStaff || !venueId) return;
+    setSavingEdit(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: {
+          action: "update",
+          staff_id: editingStaff.id,
+          venue_id: venueId,
+          display_name: editForm.display_name,
+          role: editForm.role,
+        },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || "Failed to update");
+
+      if (editForm.password) {
+        if (editForm.password.length < 8) throw new Error("Password must be at least 8 characters");
+        const pw = await supabase.functions.invoke("admin-create-user", {
+          body: { action: "set_password", staff_id: editingStaff.id, venue_id: venueId, password: editForm.password },
+        });
+        if (pw.error || pw.data?.error) throw new Error(pw.data?.error || pw.error?.message || "Failed to set password");
+      }
+
+      toast({ title: "User updated" });
+      setEditUserDialog(false);
+      setEditingStaff(null);
+      fetchStaff();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setSavingEdit(false);
+  };
+
+  const toggleActive = async (s: StaffMember) => {
+    if (!venueId) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: { action: "toggle_active", staff_id: s.id, venue_id: venueId, is_active: !s.is_active },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      toast({ title: s.is_active ? "User deactivated" : "User activated" });
+      fetchStaff();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const deleteUser = async (s: StaffMember, deleteAuth: boolean) => {
+    if (!venueId) return;
+    if (!confirm(`Remove ${s.display_name || s.email || "this user"} from the venue?${deleteAuth ? "\n\nThis will ALSO delete their login account permanently." : ""}`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: { action: "delete", staff_id: s.id, venue_id: venueId, delete_auth: deleteAuth },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      toast({ title: "User removed" });
+      fetchStaff();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
 
   const saveDetails = async () => {
     if (!venueId) return;
@@ -387,20 +475,80 @@ export default function AdminVenueDetail() {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {staff.map((s) => (
-                <Card key={s.id}>
-                  <CardContent className="flex items-center justify-between py-4">
-                    <div>
-                      <p className="font-medium text-sm">{s.display_name || "No name"}</p>
-                      <p className="text-xs text-muted-foreground">{s.user_id.slice(0, 8)}...</p>
-                    </div>
-                    <div className="flex items-center gap-2">
+                <Card key={s.id} className={s.is_active ? "" : "opacity-60"}>
+                  <CardContent className="py-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{s.display_name || "No name"}</p>
+                        <p className="text-xs text-muted-foreground truncate">{s.email || `${s.user_id.slice(0, 8)}...`}</p>
+                      </div>
                       <Badge variant={s.is_active ? "default" : "secondary"}>{s.role}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1 border-t">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => openEditUser(s)}>Edit</Button>
+                      <Button variant="ghost" size="sm" onClick={() => toggleActive(s)}>
+                        {s.is_active ? "Disable" : "Enable"}
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => deleteUser(s, true)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           )}
+
+          {/* Edit User Dialog */}
+          <Dialog open={editUserDialog} onOpenChange={setEditUserDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit User</DialogTitle>
+              </DialogHeader>
+              {editingStaff && (
+                <div className="space-y-3">
+                  <div>
+                    <Label>Email</Label>
+                    <Input value={editingStaff.email || ""} disabled className="mt-1" />
+                  </div>
+                  <div>
+                    <Label>Display Name</Label>
+                    <Input value={editForm.display_name} onChange={(e) => setEditForm({ ...editForm, display_name: e.target.value })} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label>Role</Label>
+                    <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="owner">Owner</SelectItem>
+                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="staff">Staff</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Reset Password (optional)</Label>
+                    <div className="relative mt-1">
+                      <Input
+                        type={showEditPassword ? "text" : "password"}
+                        value={editForm.password}
+                        onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                        placeholder="Leave blank to keep current"
+                        className="pr-10"
+                      />
+                      <button type="button" onClick={() => setShowEditPassword(!showEditPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                        {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">Min 8 characters if changing.</p>
+                  </div>
+                  <Button onClick={saveEditUser} disabled={savingEdit} className="w-full">
+                    {savingEdit ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="billing">
