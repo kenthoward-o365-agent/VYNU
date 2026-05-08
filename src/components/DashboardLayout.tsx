@@ -115,7 +115,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               alt="H&L OrderNOW"
               className={cn(
                 "object-contain",
-                pinned ? "h-8 w-auto max-w-[48px]" : "h-14 w-auto max-w-[180px]"
+                pinned ? "h-10 w-auto max-w-[56px]" : "h-28 w-auto max-w-[220px]"
               )}
             />
             {!pinned && (
