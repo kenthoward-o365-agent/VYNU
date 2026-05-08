@@ -84,7 +84,7 @@ const CheckoutPanel = ({
   const [gratuityDecline, setGratuityDecline] = useState("No thanks");
   const [selectedTip, setSelectedTip] = useState<number | null>(null);
 
-  // ShyndigPay Drop-in state
+  // H&L OrderNow Pay Drop-in state
   const [paymentMethodsResponse, setPaymentMethodsResponse] = useState<any>(null);
   const [shyndigPayClientKey, setShyndigPayClientKey] = useState<string | null>(null);
   const [isMockMode, setIsMockMode] = useState(false);
@@ -165,7 +165,7 @@ const CheckoutPanel = ({
       if (data?.paymentMethods) {
         setPaymentMethodsResponse(data);
       }
-      // Read client key returned by the ShyndigPay backend (per-venue)
+      // Read client key returned by the H&L OrderNow Pay backend (per-venue)
       const key = data?.client_key || (import.meta as any).env?.VITE_ADYEN_CLIENT_KEY || null;
       setShyndigPayClientKey(key);
       setIsMockMode(!!data?.mock_mode);
@@ -313,7 +313,7 @@ const CheckoutPanel = ({
           spend_excl_tax: taxResult.subtotalExTax,
         } as any)
         .maybeSingle();
-      // Award Shyndig Rewards points (group/venue-aware) — fire and forget.
+      // Award H&L OrderNow Rewards points (group/venue-aware) — fire and forget.
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const headers: any = {
@@ -668,8 +668,8 @@ const CheckoutPanel = ({
             {storedCards.length > 0 && (
               <div className="space-y-3">
                 <div className="space-y-0.5">
-                  <Label className="text-sm font-semibold">Your Shyndig wallet</Label>
-                  <p className="text-[11px] text-muted-foreground">Cards you've saved travel with your Shyndig ID — usable at every Shyndig venue.</p>
+                  <Label className="text-sm font-semibold">Your H&L OrderNow wallet</Label>
+                  <p className="text-[11px] text-muted-foreground">Cards you've saved travel with your H&L OrderNow ID — usable at every H&L OrderNow venue.</p>
                 </div>
                 {storedCards.map((sc) => (
                   <div
@@ -719,7 +719,7 @@ const CheckoutPanel = ({
               </div>
             )}
 
-            {/* ShyndigPay Drop-in — Apple Pay / Google Pay / hosted card */}
+            {/* H&L OrderNow Pay Drop-in — Apple Pay / Google Pay / hosted card */}
             {showDropin && (
               <div className="space-y-3">
                 <Label className="text-sm font-semibold flex items-center gap-2">
@@ -733,11 +733,11 @@ const CheckoutPanel = ({
                   countryCode="AU"
                   environment={paymentEnvironment}
                   clientKey={shyndigPayClientKey || undefined}
-                  merchantName="ShyndigPay"
+                  merchantName="H&L OrderNow Pay"
                   onSubmit={handleDropinSubmit}
                   onAdditionalDetails={handleDropinAdditionalDetails}
                   onError={(e) => {
-                    console.error("ShyndigPay error:", e);
+                    console.error("H&L OrderNow Pay error:", e);
                   }}
                 />
               </div>
@@ -759,7 +759,7 @@ const CheckoutPanel = ({
                 </Label>
                 {isMockMode && (
                   <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[11px] text-warning-foreground">
-                    <strong>ShyndigPay test mode.</strong> Use card{" "}
+                    <strong>H&L OrderNow Pay test mode.</strong> Use card{" "}
                     <code className="font-mono">4111 1111 1111 1111</code>, any future expiry, any CVC.
                   </div>
                 )}
@@ -833,7 +833,7 @@ const CheckoutPanel = ({
                     <div>
                       <p className="text-sm font-medium">Save card for next time</p>
                       <p className="text-xs text-muted-foreground">
-                        Securely stored by ShyndigPay — we never see your full card number
+                        Securely stored by H&L OrderNow Pay — we never see your full card number
                       </p>
                     </div>
                     <Switch checked={saveCard} onCheckedChange={setSaveCard} />
@@ -844,7 +844,7 @@ const CheckoutPanel = ({
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Secured by ShyndigPay</span>
+              <span>Secured by H&L OrderNow Pay</span>
             </div>
           </>
         )}

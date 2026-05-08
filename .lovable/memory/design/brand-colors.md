@@ -1,20 +1,21 @@
 ---
-name: Shyndig brand colors
-description: Midnight + Gold + Coral palette from Shyndig Brand Book v1.0 (Apr 2026). Includes Slate and Cream supporting tones.
+name: H&L OrderNow brand colors
+description: H&L OrderNow palette (blue + green) sampled from H&L POS system. Replaces previous Shyndig Midnight/Gold/Coral palette.
 type: design
 ---
-Brand: Shyndig — "We earn when you earn."
-Palette mood: premium, warm, alive — Midnight rooftop sky + candlelight Gold + evening Coral.
+Brand: H&L OrderNow — QR ordering app for the H&L POS ecosystem.
+Palette mood: clean, bright, hospitality — matches H&L POS login screen.
 
-| Token   | Hex      | HSL              | Usage |
-|---------|----------|------------------|-------|
-| Midnight| #111827  | 222 39% 11%      | Primary dark — backgrounds, headers, foundation. Dominates ~55% |
-| Slate   | #1E293B  | 217 33% 17%      | Secondary dark — cards, depth, layering |
-| Gold    | #DBBE4F  | 46 67% 58%       | Primary accent — CTAs, highlights, lead confetti dot. ~10% |
-| Coral   | #E8845A  | 17 76% 63%       | Secondary accent — warmth moments, alternating dots. ~7% |
-| Cream   | #FAF7F2  | 38 43% 97%       | Light backgrounds, ivory canvas. ~25% breathing room |
+| Token         | Hex      | HSL              | Usage |
+|---------------|----------|------------------|-------|
+| H&L Blue      | #3BAEDC  | 198 70% 55%      | Primary — CTAs, links, headers, active nav, brand |
+| H&L Blue Dark | #2A8FB8  | 199 63% 44%      | Primary hover / pressed |
+| H&L Green     | #7FC242  |  87 50% 51%      | Accent — success, confirm states, secondary highlights |
+| Ink           | #1F3B4D  | 203 42% 21%      | Text on light surfaces, sidebar background |
+| Surface       | #FFFFFF  |   0  0% 100%     | App background (POS feels light/white) |
+| Muted Surface | #F4F8FB  | 204 38% 97%      | Cards, panels, subtle fills |
 
 Rules:
-- Gold leads, Coral supports — never compete in same element.
-- Sidebar stays Midnight even in light mode (operator UI feels premium dark).
-- Mark = "Confetti S" (5 fading dots: Gold, Coral, Gold, Coral, Gold).
+- Blue leads, Green supports — never compete in the same element.
+- Sidebar stays Ink (dark) with H&L blue active states for premium operator feel.
+- Logo lockup: `/brand/hl-ordernow-logo.png` and `/brand/shyndig-icon.png` (legacy path, now H&L mark).

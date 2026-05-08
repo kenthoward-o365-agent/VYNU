@@ -30,7 +30,7 @@ interface MenuFeedProps {
   tableNumber?: string;
   sessionMode?: "solo" | "group";
   pricingIndex?: RuleIndex | null;
-  /** Allergen tags to auto-apply on first render (from signed-in diner's Shyndig ID profile). */
+  /** Allergen tags to auto-apply on first render (from signed-in diner's H&L OrderNow ID profile). */
   defaultAllergens?: string[];
 }
 
@@ -247,7 +247,7 @@ const MenuFeed = ({
         onSelect={setActiveCategory}
       />
 
-      {/* Allergen avoidance row (auto-applied from Shyndig ID profile) */}
+      {/* Allergen avoidance row (auto-applied from H&L OrderNow ID profile) */}
       {activeAllergenAvoid.length > 0 && (
         <div className="px-4 pb-2 shrink-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -268,7 +268,7 @@ const MenuFeed = ({
             ))}
             {allergensFromProfile && (
               <span className="text-[10px] text-muted-foreground italic">
-                from your Shyndig ID
+                from your H&L OrderNow ID
               </span>
             )}
             <button

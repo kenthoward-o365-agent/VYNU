@@ -33,7 +33,7 @@ export default function Developers() {
       {/* Top bar */}
       <header className="border-b border-border sticky top-0 bg-background/80 backdrop-blur z-10">
         <div className="container mx-auto px-6 py-3 flex items-center justify-between">
-          <Link to="/" className="text-xl font-bold tracking-tight">Shyndig <span className="text-primary">Developers</span></Link>
+          <Link to="/" className="text-xl font-bold tracking-tight">H&L OrderNow <span className="text-primary">Developers</span></Link>
           <Button asChild variant="outline" size="sm">
             <a href="mailto:partners@shyndig.com.au?subject=API%20access%20request">Get API access</a>
           </Button>
@@ -64,8 +64,8 @@ export default function Developers() {
         </aside>
 
         <main className="space-y-12 max-w-3xl">
-          <Section id="intro" title="Shyndig Public API v1">
-            <p>The Shyndig Public API lets POS vendors and CRM/loyalty platforms integrate with venues running on Shyndig. The API is split into two strictly separated surfaces:</p>
+          <Section id="intro" title="H&L OrderNow Public API v1">
+            <p>The H&L OrderNow Public API lets POS vendors and CRM/loyalty platforms integrate with venues running on H&L OrderNow. The API is split into two strictly separated surfaces:</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 not-prose">
               <Card className="p-4 space-y-1">
                 <Badge>POS API</Badge>
@@ -119,9 +119,9 @@ sk_crm_live_xxxxxxxxxxxx.SECRET   # CRM partner`}</Code>
           </Section>
 
           <Section id="webhooks" title="Webhooks">
-            <p>Shyndig pushes events to URLs you register. Each request includes:</p>
-            <Code>{`X-Shyndig-Event: order.status_changed
-X-Shyndig-Signature: <hex HMAC-SHA256 of body using webhook secret>`}</Code>
+            <p>H&L OrderNow pushes events to URLs you register. Each request includes:</p>
+            <Code>{`X-H&L OrderNow-Event: order.status_changed
+X-H&L OrderNow-Signature: <hex HMAC-SHA256 of body using webhook secret>`}</Code>
             <p>Verify signatures before trusting payloads. Failed deliveries (non-2xx) retry at 1m, 5m, 30m, 2h, 12h.</p>
           </Section>
 

@@ -74,7 +74,7 @@ export default function GroupLoyaltyManager({ groupId, groupName }: GroupLoyalty
     if (!shyndigProgramId) { setEditorOpen(true); return; }
     const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", shyndigProgramId);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    toast({ title: next ? "Shyndig Loyalty enabled" : "Shyndig Loyalty paused" });
+    toast({ title: next ? "H&L OrderNow Loyalty enabled" : "H&L OrderNow Loyalty paused" });
     fetchPrograms();
   };
 
@@ -111,21 +111,21 @@ export default function GroupLoyaltyManager({ groupId, groupName }: GroupLoyalty
 
   return (
     <div className="space-y-6">
-      {/* Shyndig Loyalty (built-in, group-scoped) */}
+      {/* H&L OrderNow Loyalty (built-in, group-scoped) */}
       <Card className="border-primary/30">
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                Shyndig Loyalty
+                H&L OrderNow Loyalty
                 <Badge variant="outline" className="ml-1 text-[10px]">Built-in · Free</Badge>
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Shyndig's free built-in loyalty program for {groupName || "this group"}. When ON, this becomes the active program for diners across every venue — your custom group programs below are paused.
+                H&L OrderNow's free built-in loyalty program for {groupName || "this group"}. When ON, this becomes the active program for diners across every venue — your custom group programs below are paused.
               </p>
             </div>
-            <Switch checked={shyndigActive} onCheckedChange={toggleShyndigActive} aria-label="Toggle Shyndig Loyalty" />
+            <Switch checked={shyndigActive} onCheckedChange={toggleShyndigActive} aria-label="Toggle H&L OrderNow Loyalty" />
           </div>
         </CardHeader>
         <CardContent>
@@ -136,8 +136,8 @@ export default function GroupLoyaltyManager({ groupId, groupName }: GroupLoyalty
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Configure Shyndig Loyalty</DialogTitle></DialogHeader>
-              <ShyndigLoyaltyEditor scope={{ type: "group", group_id: groupId }} defaultName="Shyndig Loyalty" />
+              <DialogHeader><DialogTitle>Configure H&L OrderNow Loyalty</DialogTitle></DialogHeader>
+              <ShyndigLoyaltyEditor scope={{ type: "group", group_id: groupId }} defaultName="H&L OrderNow Loyalty" />
             </DialogContent>
           </Dialog>
         </CardContent>
@@ -145,7 +145,7 @@ export default function GroupLoyaltyManager({ groupId, groupName }: GroupLoyalty
 
       {shyndigActive && (
         <p className="text-xs text-muted-foreground italic px-1">
-          Shyndig Loyalty is your active group program. Custom group programs below are paused for diners.
+          H&L OrderNow Loyalty is your active group program. Custom group programs below are paused for diners.
         </p>
       )}
 

@@ -101,7 +101,7 @@ const VenueLanding = ({
             inlineActions={<ChooserOrActions />}
           />
           <p className="text-center text-white/40 text-xs py-4">
-            Powered by <span className="font-semibold text-white/60">Shyndig</span>
+            Powered by <span className="font-semibold text-white/60">H&L OrderNow</span>
           </p>
         </div>
       );
@@ -151,7 +151,7 @@ const VenueLanding = ({
         </div>
       )}
       <p className="text-muted-foreground text-xs mt-4">
-        No account needed · Powered by <span className="font-semibold text-primary">Shyndig</span>
+        No account needed · Powered by <span className="font-semibold text-primary">H&L OrderNow</span>
       </p>
     </div>
   );

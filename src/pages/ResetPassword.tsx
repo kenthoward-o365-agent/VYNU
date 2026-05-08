@@ -119,7 +119,7 @@ const ResetPassword = () => {
     <div className="flex items-center justify-center min-h-screen px-6">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-4">
-          <img src="/brand/shyndig-icon.png" alt="Shyndig" className="h-16 w-16 mx-auto" />
+          <img src="/brand/shyndig-icon.png" alt="H&L OrderNow" className="h-16 w-16 mx-auto" />
           <div>
             <h1 className="text-2xl font-bold text-foreground">Set New Password</h1>
             <p className="text-sm text-muted-foreground mt-1">Choose a secure new password for your account.</p>

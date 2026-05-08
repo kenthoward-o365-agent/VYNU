@@ -264,11 +264,11 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
           <button onClick={onBack} className="p-1 -ml-1">
             <ArrowLeft className="h-5 w-5 text-muted-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">Welcome back to Shyndig</h1>
+          <h1 className="text-xl font-bold text-foreground">Welcome back to H&L OrderNow</h1>
         </div>
 
         <p className="text-sm text-muted-foreground mb-6">
-          Sign in to your <span className="font-medium text-foreground">Shyndig ID</span> to use your saved preferences, wallet, and rewards at every Shyndig venue.
+          Sign in to your <span className="font-medium text-foreground">H&L OrderNow ID</span> to use your saved preferences, wallet, and rewards at every H&L OrderNow venue.
         </p>
 
         {error && (
@@ -352,11 +352,11 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
         <button onClick={onBack} className="p-1 -ml-1">
           <ArrowLeft className="h-5 w-5 text-muted-foreground" />
         </button>
-        <h1 className="text-xl font-bold text-foreground">Create your Shyndig ID</h1>
+        <h1 className="text-xl font-bold text-foreground">Create your H&L OrderNow ID</h1>
       </div>
 
       <p className="text-sm text-muted-foreground mb-6">
-        One profile. Every Shyndig venue. Earn rewards, save your wallet, and skip the signup form everywhere you go.
+        One profile. Every H&L OrderNow venue. Earn rewards, save your wallet, and skip the signup form everywhere you go.
       </p>
 
       {error && (
@@ -485,7 +485,7 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
         </div>
 
         <Button onClick={handleSubmit} disabled={!isSignupValid || submitting} className="w-full h-12 text-base rounded-xl mt-2">
-          {submitting ? "Creating your Shyndig ID..." : "Create my Shyndig ID"}
+          {submitting ? "Creating your H&L OrderNow ID..." : "Create my H&L OrderNow ID"}
         </Button>
 
         <p className="text-sm text-center text-muted-foreground">

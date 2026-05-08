@@ -1,5 +1,5 @@
 // Shared authentication, scope, filtering, idempotency, and logging helpers
-// for the Shyndig Public API (POS + CRM partner surfaces).
+// for the H&L OrderNow Public API (POS + CRM partner surfaces).
 
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
