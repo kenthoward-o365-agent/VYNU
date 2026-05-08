@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
-import { useBrand } from "@/contexts/BrandContext";
+
 import { usePermissions } from "@/hooks/use-permissions";
 import {
   ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Sliders, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug, Cable, Monitor, Pin, PinOff
@@ -68,13 +68,13 @@ const adminNavItems = [
   { path: "/admin/staff", label: "Platform Staff", icon: Shield },
   { path: "/admin/partners", label: "API Partners", icon: Plug },
   { path: "/admin/integrations", label: "POS Integrations", icon: Cable },
-  { path: "/admin/white-label", label: "White Label", icon: Settings },
+  
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { signOut, user } = useAuth();
   const { venue, venues, group, isGroupAdmin, isTablessAdmin, switchVenue } = useVenue();
-  const brand = useBrand();
+  
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -111,8 +111,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className={cn("border-b border-sidebar-border", pinned ? "p-2" : "p-4")}>
           <div className={cn("flex items-center mb-2", pinned ? "justify-center" : "justify-between")}> 
             <div className={cn("flex items-center gap-2", pinned && "justify-center")}> 
-              <img src={brand?.logo_primary_url || "/brand/shyndig-icon.png"} alt={brand?.product_name || "Shyndig"} className="h-8 w-8" />
-              {!pinned && <span className="text-lg font-bold text-sidebar-foreground">{brand?.product_name || "Shyndig"}</span>}
+              <img src="/brand/shyndig-icon.png" alt="Shyndig" className="h-8 w-8" />
+              {!pinned && <span className="text-lg font-bold text-sidebar-foreground">Shyndig</span>}
             </div>
             {!pinned && (
               <div className="flex items-center gap-1">
@@ -551,14 +551,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Menu className="h-5 w-5 text-foreground" />
           </button>
           <h1 className="text-lg font-semibold text-foreground">
-            {location.pathname === "/knowledge-base" ? "Knowledge Base" : location.pathname === "/orders/statuses" ? "Order Display System" : allNavItems.find((i) => i.path === location.pathname)?.label || (brand?.product_name || "Shyndig")}
+            {location.pathname === "/knowledge-base" ? "Knowledge Base" : location.pathname === "/orders/statuses" ? "Order Display System" : allNavItems.find((i) => i.path === location.pathname)?.label || "Shyndig"}
           </h1>
           <div className="ml-auto">
-            {brand?.show_knowledge_base !== false && (
-              <Link to="/knowledge-base" className="inline-flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors" title="Knowledge Base">
-                <HelpCircle className="h-5 w-5" />
-              </Link>
-            )}
+            <Link to="/knowledge-base" className="inline-flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors" title="Knowledge Base">
+              <HelpCircle className="h-5 w-5" />
+            </Link>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
