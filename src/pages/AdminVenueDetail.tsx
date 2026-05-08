@@ -28,6 +28,7 @@ interface StaffMember {
   role: string;
   display_name: string | null;
   is_active: boolean;
+  email?: string;
 }
 
 
