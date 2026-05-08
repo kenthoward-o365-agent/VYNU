@@ -68,7 +68,7 @@ interface Props {
 export default function ShyndigAISettings({ venueId }: Props) {
   const [config, setConfig] = useState<ShyndigConfig>({
     venue_id: venueId,
-    agent_name: "H&L OrderNow",
+    agent_name: "H&L OrderNOW",
     agent_icon_url: null,
     opening_message: "Hey! 👋 I'm your AI server. Tell me what you're in the mood for and I'll find the perfect dish.",
     tone: "aussie",
@@ -124,7 +124,7 @@ export default function ShyndigAISettings({ venueId }: Props) {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("H&L OrderNow AI configured!");
+        toast.success("H&L OrderNOW AI configured!");
         setIsNew(false);
       }
     } else {
@@ -162,7 +162,7 @@ export default function ShyndigAISettings({ venueId }: Props) {
 
   const selectedTone = toneOptions.find((t) => t.value === config.tone);
 
-  if (loading) return <p className="text-muted-foreground">Loading H&L OrderNow AI settings...</p>;
+  if (loading) return <p className="text-muted-foreground">Loading H&L OrderNOW AI settings...</p>;
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -181,7 +181,7 @@ export default function ShyndigAISettings({ venueId }: Props) {
             <Input
               value={config.agent_name}
               onChange={(e) => setConfig((c) => ({ ...c, agent_name: e.target.value }))}
-              placeholder="H&L OrderNow"
+              placeholder="H&L OrderNOW"
               className="mt-1 max-w-xs"
             />
             <p className="text-xs text-muted-foreground mt-1">This name is shown to diners in the chat header</p>
@@ -356,7 +356,7 @@ export default function ShyndigAISettings({ venueId }: Props) {
       <div className="flex justify-end">
         <Button onClick={save} disabled={saving} size="lg">
           <Sparkles className="h-4 w-4 mr-2" />
-          {saving ? "Saving..." : "Save H&L OrderNow AI Settings"}
+          {saving ? "Saving..." : "Save H&L OrderNOW AI Settings"}
         </Button>
       </div>
     </div>

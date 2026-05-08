@@ -113,7 +113,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <div className={cn("flex items-center", pinned && "justify-center")}>
               <img
                 src="/brand/shyndig-icon.png"
-                alt="H&L OrderNow"
+                alt="H&L OrderNOW"
                 className={cn(
                   "object-contain",
                   pinned ? "h-6 w-auto max-w-[48px]" : "h-8 w-auto max-w-[180px]"
@@ -214,7 +214,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 { to: "/settings?tab=details", label: "Details", icon: Settings },
                 { to: "/settings?tab=users", label: "Users", icon: Users },
                 { to: "/settings?tab=loyalty", label: "Loyalty", icon: Gift },
-                { to: "/settings?tab=sippa", label: "H&L OrderNow AI", icon: Bot },
+                { to: "/settings?tab=sippa", label: "H&L OrderNOW AI", icon: Bot },
                 { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
                 { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
                 { to: "/settings?tab=surcharges", label: "Surcharges", icon: Percent },
@@ -363,7 +363,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       { to: "/settings?tab=details", label: "Details", icon: Settings },
                       { to: "/settings?tab=users", label: "Users", icon: Users },
                       { to: "/settings?tab=loyalty", label: "Loyalty", icon: Gift },
-                      { to: "/settings?tab=sippa", label: "H&L OrderNow AI", icon: Bot },
+                      { to: "/settings?tab=sippa", label: "H&L OrderNOW AI", icon: Bot },
                       { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
                       { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
                       { to: "/settings?tab=surcharges", label: "Surcharges", icon: Percent },
@@ -557,7 +557,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Menu className="h-5 w-5 text-foreground" />
           </button>
           <h1 className="text-lg font-semibold text-foreground">
-            {location.pathname === "/knowledge-base" ? "Knowledge Base" : location.pathname === "/orders/statuses" ? "Order Display System" : allNavItems.find((i) => i.path === location.pathname)?.label || "H&L OrderNow"}
+            {location.pathname === "/knowledge-base" ? "Knowledge Base" : location.pathname === "/orders/statuses" ? "Order Display System" : allNavItems.find((i) => i.path === location.pathname)?.label || "H&L OrderNOW"}
           </h1>
           <div className="ml-auto">
             <Link to="/knowledge-base" className="inline-flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors" title="Knowledge Base">

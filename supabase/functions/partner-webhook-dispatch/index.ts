@@ -41,8 +41,8 @@ async function deliver(supabase: any, deliveryId: string, webhook: Webhook, even
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-H&L OrderNow-Signature": signature,
-        "X-H&L OrderNow-Event": eventType,
+        "X-H&L OrderNOW-Signature": signature,
+        "X-H&L OrderNOW-Event": eventType,
       },
       body,
     });
