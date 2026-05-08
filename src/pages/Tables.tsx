@@ -12,10 +12,7 @@ import { Plus, QrCode, Trash2, Download, Printer, Smartphone, ExternalLink } fro
 import MobilePreviewFrame from "@/components/landing-editor/MobilePreviewFrame";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { getQrBaseUrlForVenue } from "@/lib/white-label";
-
-// Default QR host. Existing Shyndig QR stickers point here and must keep working.
-// Venues pinned to a non-default white-label brand will emit QR URLs on that brand's host instead.
+// Permanent QR host. Existing Shyndig QR stickers point here and must keep working.
 const DEFAULT_QR_BASE_URL = "https://shyndig.lovable.app";
 
 interface Table {
@@ -60,8 +57,7 @@ export default function Tables() {
       pos_table_id: form.pos_table_id || null,
     } as any).select().single();
     if (error) { toast.error(error.message); return; }
-    const baseUrl = await getQrBaseUrlForVenue(venue as any);
-    const qrUrl = `${baseUrl}/order/${venue.id}/${data.id}`;
+    const qrUrl = `${DEFAULT_QR_BASE_URL}/order/${venue.id}/${data.id}`;
     await supabase.from("tables").update({ qr_code: qrUrl }).eq("id", data.id);
     toast.success("Table added");
     setDialogOpen(false);

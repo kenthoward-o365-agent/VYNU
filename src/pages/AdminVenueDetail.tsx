@@ -17,7 +17,7 @@ import ProcessorCredentialsTab from "@/components/admin/ProcessorCredentialsTab"
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import ChildVenueLoyaltyViewer from "@/components/venue/ChildVenueLoyaltyViewer";
 import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
-import BrandPinCard from "@/components/admin/BrandPinCard";
+
 
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
@@ -277,8 +277,6 @@ export default function AdminVenueDetail() {
               </div>
             </CardContent>
           </Card>
-
-          <BrandPinCard venueId={venueId!} />
 
           <Button onClick={saveDetails} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
         </TabsContent>
