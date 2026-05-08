@@ -1,4 +1,4 @@
-// Shyndig CRM/Loyalty Partner API v1
+// H&L OrderNow CRM/Loyalty Partner API v1
 // Bearer auth with sk_crm_* keys only. Strict separation from POS.
 //
 // Routes:

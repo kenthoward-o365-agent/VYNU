@@ -14,7 +14,7 @@ const json = (data: any, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// ── ShyndigPay — Mock Responses ──
+// ── H&L OrderNow Pay — Mock Responses ──
 // In mock mode we expose card + applepay + googlepay so the Drop-in UI
 // renders the wallet buttons even without real processor credentials.
 const MOCK_PAYMENT_METHODS = {
@@ -29,7 +29,7 @@ const MOCK_PAYMENT_METHODS = {
       name: "Apple Pay",
       configuration: {
         merchantId: "MOCK_APPLEPAY",
-        merchantName: "ShyndigPay (Test)",
+        merchantName: "H&L OrderNow Pay (Test)",
       },
     },
     {
@@ -37,7 +37,7 @@ const MOCK_PAYMENT_METHODS = {
       name: "Google Pay",
       configuration: {
         merchantId: "MOCK_GOOGLEPAY",
-        merchantName: "ShyndigPay (Test)",
+        merchantName: "H&L OrderNow Pay (Test)",
         gatewayMerchantId: "MOCK_GATEWAY",
       },
     },
@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
 
     // Mock whenever we're in test mode AND the venue isn't fully provisioned
     // (no test API key, no client key, or merchant_account looks invalid).
-    // This lets venues demo the full payment flow before ShyndigPay credentials land.
+    // This lets venues demo the full payment flow before H&L OrderNow Pay credentials land.
     const merchantAccountLooksValid =
       !!config.merchant_account &&
       !config.merchant_account.includes("@") &&
@@ -221,12 +221,12 @@ Deno.serve(async (req) => {
       if (isMock) {
         return json({
           success: true,
-          message: "ShyndigPay test mode active — test cards will simulate payments.",
+          message: "H&L OrderNow Pay test mode active — test cards will simulate payments.",
         });
       }
 
       if (!apiKey || !merchantAccount) {
-        return json({ error: "ShyndigPay account not yet provisioned for this venue" }, 400);
+        return json({ error: "H&L OrderNow Pay account not yet provisioned for this venue" }, 400);
       }
 
       const resp = await fetch(`${baseUrl}/paymentMethods`, {
@@ -245,12 +245,12 @@ Deno.serve(async (req) => {
         const methods = (data.paymentMethods || []).map((m: any) => m.name || m.type);
         return json({
           success: true,
-          message: `Connected to ShyndigPay. Available methods: ${methods.join(", ")}`,
+          message: `Connected to H&L OrderNow Pay. Available methods: ${methods.join(", ")}`,
           methods: data.paymentMethods || [],
         });
       } else {
         const err = await resp.text();
-        return json({ success: false, error: `ShyndigPay returned ${resp.status}: ${err}` }, 400);
+        return json({ success: false, error: `H&L OrderNow Pay returned ${resp.status}: ${err}` }, 400);
       }
     }
 
@@ -263,7 +263,7 @@ Deno.serve(async (req) => {
         return json({ ...MOCK_PAYMENT_METHODS, client_key: clientKey || null, mock_mode: true });
       }
 
-      if (!apiKey || !merchantAccount) return json({ error: "ShyndigPay not configured" }, 400);
+      if (!apiKey || !merchantAccount) return json({ error: "H&L OrderNow Pay not configured" }, 400);
 
       const reqBody: any = {
         merchantAccount,
@@ -474,7 +474,7 @@ Deno.serve(async (req) => {
     }
 
     // ═══ REFUND ═══
-    // Re-open & refund a (partially) closed order via ShyndigPay.
+    // Re-open & refund a (partially) closed order via H&L OrderNow Pay.
     // Body: { venue_id, order_id, amount, reason? }
     if (action === "refund") {
       const { order_id, amount, reason } = body;
@@ -507,12 +507,12 @@ Deno.serve(async (req) => {
 
       if (!order.payment_psp_reference) {
         return json({
-          error: "This order has no recorded ShyndigPay payment reference and cannot be refunded automatically. Please process this refund manually.",
+          error: "This order has no recorded H&L OrderNow Pay payment reference and cannot be refunded automatically. Please process this refund manually.",
         }, 400);
       }
 
       if (!apiKey || !merchantAccount) {
-        return json({ error: "ShyndigPay not configured for this venue" }, 400);
+        return json({ error: "H&L OrderNow Pay not configured for this venue" }, 400);
       }
 
       const refundResp = await fetch(
@@ -535,7 +535,7 @@ Deno.serve(async (req) => {
       const refundResult = await refundResp.json();
       if (!refundResp.ok) {
         return json({
-          error: refundResult?.message || "ShyndigPay refund failed",
+          error: refundResult?.message || "H&L OrderNow Pay refund failed",
           details: refundResult,
         }, 400);
       }
@@ -551,6 +551,6 @@ Deno.serve(async (req) => {
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err: any) {
     console.error("ordrpay error:", err);
-    return json({ error: err.message || "ShyndigPay processing error" }, 500);
+    return json({ error: err.message || "H&L OrderNow Pay processing error" }, 500);
   }
 });

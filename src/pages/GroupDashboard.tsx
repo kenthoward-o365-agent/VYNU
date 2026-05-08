@@ -293,7 +293,7 @@ function SettingsTab({ group, onSaved }: { group: any; onSaved: () => Promise<vo
           </div>
           <Separator />
           <p className="text-xs text-muted-foreground">
-            → Configure your loyalty program (Shyndig Loyalty or your own custom programs) in the <strong>Loyalty</strong> tab.
+            → Configure your loyalty program (H&L OrderNow Loyalty or your own custom programs) in the <strong>Loyalty</strong> tab.
           </p>
         </CardContent>
       </Card>
@@ -363,7 +363,7 @@ function GroupLoyaltyTab({ group }: { group: any }) {
 
   const [shyndigActive, setShyndigActive] = useState(false);
   const [shyndigProgramId, setShyndigProgramId] = useState<string | null>(null);
-  const [shyndigName, setShyndigName] = useState("Shyndig Loyalty");
+  const [shyndigName, setShyndigName] = useState("H&L OrderNow Loyalty");
   const [editorOpen, setEditorOpen] = useState(false);
 
   const fetchPrograms = async () => {
@@ -377,7 +377,7 @@ function GroupLoyaltyTab({ group }: { group: any }) {
     const builtin = all.find((p: any) => p.is_ordrup_builtin);
     setShyndigActive(!!builtin?.is_active);
     setShyndigProgramId(builtin?.id ?? null);
-    setShyndigName(builtin?.name || "Shyndig Loyalty");
+    setShyndigName(builtin?.name || "H&L OrderNow Loyalty");
     // Custom programs only — never show the built-in row in the list (it's controlled by the card above).
     setPrograms(all.filter((p: any) => !p.is_ordrup_builtin));
     setLoading(false);
@@ -392,7 +392,7 @@ function GroupLoyaltyTab({ group }: { group: any }) {
     const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", shyndigProgramId);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     setShyndigActive(next);
-    toast({ title: next ? "Shyndig Loyalty enabled" : "Shyndig Loyalty paused" });
+    toast({ title: next ? "H&L OrderNow Loyalty enabled" : "H&L OrderNow Loyalty paused" });
     fetchPrograms();
   };
 
@@ -426,21 +426,21 @@ function GroupLoyaltyTab({ group }: { group: any }) {
 
   return (
     <div className="space-y-6">
-      {/* Shyndig Loyalty (built-in) — top of Loyalty tab */}
+      {/* H&L OrderNow Loyalty (built-in) — top of Loyalty tab */}
       <Card className="border-primary/30">
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                Shyndig Loyalty
+                H&L OrderNow Loyalty
                 <Badge variant="outline" className="ml-1 text-[10px]">Built-in · Free</Badge>
               </CardTitle>
               <CardDescription>
-                Shyndig's free built-in loyalty program. When ON, this is the active program for diners — your custom programs below are paused.
+                H&L OrderNow's free built-in loyalty program. When ON, this is the active program for diners — your custom programs below are paused.
               </CardDescription>
             </div>
-            <Switch checked={shyndigActive} onCheckedChange={toggleShyndigActive} aria-label="Toggle Shyndig Loyalty" />
+            <Switch checked={shyndigActive} onCheckedChange={toggleShyndigActive} aria-label="Toggle H&L OrderNow Loyalty" />
           </div>
         </CardHeader>
         <CardContent>
@@ -452,9 +452,9 @@ function GroupLoyaltyTab({ group }: { group: any }) {
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Configure Shyndig Loyalty</DialogTitle>
+                <DialogTitle>Configure H&L OrderNow Loyalty</DialogTitle>
               </DialogHeader>
-              <ShyndigLoyaltyEditor scope={{ type: "group", group_id: group.id }} defaultName="Shyndig Loyalty" />
+              <ShyndigLoyaltyEditor scope={{ type: "group", group_id: group.id }} defaultName="H&L OrderNow Loyalty" />
             </DialogContent>
           </Dialog>
         </CardContent>
@@ -462,7 +462,7 @@ function GroupLoyaltyTab({ group }: { group: any }) {
 
       {shyndigActive && (
         <p className="text-xs text-muted-foreground italic px-1">
-          Shyndig Loyalty is your active program. Custom programs below are paused for diners.
+          H&L OrderNow Loyalty is your active program. Custom programs below are paused for diners.
         </p>
       )}
 

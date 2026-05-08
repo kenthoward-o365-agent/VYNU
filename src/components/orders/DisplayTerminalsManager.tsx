@@ -330,7 +330,7 @@ export default function DisplayTerminalsManager({ venueId }: Props) {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              On the physical device, sign into Shyndig, open the Orders page, click "Pair this Terminal", and enter this code:
+              On the physical device, sign into H&L OrderNow, open the Orders page, click "Pair this Terminal", and enter this code:
             </p>
             <div className="flex items-center justify-center gap-2 py-4 bg-muted rounded-lg">
               <code className="text-3xl font-mono font-bold tracking-widest text-foreground">

@@ -6,7 +6,7 @@ const CORS = {
     "authorization, x-client-info, apikey, content-type, x-signature",
 };
 
-// Shyndig API status codes → our order_status enum
+// H&L OrderNow API status codes → our order_status enum
 const STATUS_MAP: Record<number, string> = {
   1: "received",
   2: "preparing",
@@ -200,7 +200,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Format order per Shyndig API spec
+      // Format order per H&L OrderNow API spec
       const posOrder = {
         orderId: order.id,
         locationId: integration.location_id,
