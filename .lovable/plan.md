@@ -1,57 +1,53 @@
-## H&L OrderNow Rebrand
+## The problem
 
-Rename product from **Shyndig** → **H&L OrderNow** across the admin panel, operator app, consumer web app, and Knowledge Base. Replace logo + color palette to match the H&L POS system.
+The H&L OrderNow logo file (`public/brand/shyndig-icon.png` and `src/assets/brand/hl-ordernow-logo.png`) is a **horizontal lockup** that already contains the H&L mark **and** the "OrderNow" wordmark. Its real dimensions are **318 × 66 px** (roughly 4.8:1).
 
-### 1. Brand assets
+Today it's rendered into square boxes, which forces the browser to squash it:
 
-- Save the uploaded H&L logo to `src/assets/brand/hl-ordernow-logo.png` and `public/brand/hl-ordernow-logo.png`.
-- Replace existing favicons (`/favicon-*.png`, `apple-touch-icon.png`) with H&L mark.
-- Replace/retire the Shyndig SVGs in `src/assets/brand/` (logo-primary, mono-black, mono-white, reversed, icon) with H&L equivalents (recolored versions of the new logo and a mono variant for dark sidebar).
-- Update `public/shyndig-icon.svg` and `src/assets/brand/shyndig-icon.svg` → H&L icon.
+- `src/components/DashboardLayout.tsx` line 114 — `className="h-8 w-8"` (32×32 square) inside the sidebar header, with a duplicate "H&L OrderNow" text label next to it.
+- `src/pages/Auth.tsx` line 131 — `className="h-16 w-16 mx-auto"` (64×64 square) above the sign-in card.
+- `src/pages/ResetPassword.tsx` line 122 — same `h-16 w-16` square.
 
-### 2. Color system (H&L palette)
+There is no separate square icon-only asset in the repo, so the fix is to treat the logo as the wide lockup it actually is and give it room.
 
-Sampled from the POS screenshot + logo:
+## Plan
 
-| Token | Hex | HSL | Role |
-|-------|-----|-----|------|
-| H&L Blue | #3BAEDC | 198 70% 55% | Primary — CTAs, links, headers, sidebar accents |
-| H&L Blue Dark | #2A8FB8 | 199 63% 44% | Primary hover / pressed |
-| H&L Green | #7FC242 | 87 50% 51% | Secondary accent — success, confirm dot, ring |
-| Ink | #1F3B4D | 203 42% 21% | Text on light surfaces |
-| Surface | #FFFFFF | 0 0% 100% | App background (POS feels light/white) |
-| Muted Surface | #F4F8FB | 204 38% 97% | Cards / panels |
+### 1. Auth and ResetPassword screens
 
-- Rewrite the brand tokens in `src/index.css` (`:root` and `.dark`) and `tailwind.config.ts` so `--primary`, `--accent`, `--ring`, `--sidebar-*`, gradients, and shadows use the H&L blue/green pair instead of Shyndig Midnight/Gold/Coral.
-- Sidebar shifts from "always Midnight" to a clean H&L look — choose: white sidebar with blue accents (matches POS) **or** keep dark sidebar with H&L blue accents (see Q1).
-- Update `mem://design/brand-colors.md` with the new palette.
+Replace the square sizing with height-only sizing so the natural aspect ratio is preserved, and bump the size so it reads well on the login screen.
 
-### 3. Product name copy
+- `Auth.tsx` and `ResetPassword.tsx`: change `className="h-16 w-16 mx-auto"` to `className="h-14 w-auto mx-auto"` (≈ 270 × 56 px rendered).
+- Since the logo already contains the "H&L OrderNow" wordmark, also remove the redundant `<h1>H&L OrderNow</h1>` heading directly under it on both screens (keep the tagline). This avoids the wordmark appearing twice.
 
-Global find/replace `Shyndig` → `H&L OrderNow` (and `shyndig` → `h&l ordernow` where it's prose, not URLs/identifiers). Affected surfaces:
+### 2. DashboardLayout sidebar (expanded state)
 
-- `index.html` `<title>`, meta description, OG/Twitter tags, `meta[name=author]`.
-- `src/components/DashboardLayout.tsx` — sidebar product name.
-- `src/pages/Auth.tsx`, `ResetPassword.tsx`, `Onboarding.tsx` — auth screens.
-- Admin pages: `AdminStaff.tsx`, `AdminVenueDetail.tsx`, `GroupDashboard.tsx`, `Developers.tsx`.
-- Operator pages: `VenueSettings.tsx`, `Tables.tsx`, `Orders.tsx`, `Loyalty.tsx`, `Pricing.tsx`.
-- Consumer surfaces: `ConsumerOrder.tsx`, `MenuFeed.tsx`, `VenueLanding.tsx`, `CheckoutPanel.tsx`, `ReceiptView.tsx`, `LoyaltyJoinPrompt.tsx`, `DinerProfile.tsx`, `DinerSignup.tsx`, `AIChatOverlay.tsx`, `AdyenDropin.tsx`.
-- Settings/components mentioning "Shyndig Loyalty", "Shyndig AI", "Shyndig Analytics" → "H&L OrderNow Loyalty / AI / Analytics" (filenames can stay, only display strings change).
-- `src/pages/KnowledgeBase.tsx` — every article body, headings, examples.
-- Edge functions: only user-facing strings (email subjects, receipts, chat system prompts in `diner-chat`, `adyen-payment`, `partner-*`, `pos-*`, `admin-create-user`). Internal log lines and code identifiers left as-is unless trivial.
+The expanded sidebar is 256 px wide (`w-64`) — plenty of room for the lockup.
 
-### 4. Things deliberately NOT changed
+- Replace `<img className="h-8 w-8" />` plus the adjacent `<span>H&L OrderNow</span>` with a single `<img className="h-8 w-auto max-w-[180px] object-contain" />`. The image already says "H&L OrderNow", so the duplicate text label goes away.
 
-- **QR code URLs / `shyndig.lovable.app` host** — printed stickers are permanent (per `mem://constraints/qr-codes-permanent`). New domain only added if/when user provides one (see Q2).
-- Database column names, table names, edge function names, env var names, file/component names containing "shyndig" or "sippa" — non-user-visible.
-- Lovable Cloud / Supabase project ref.
+### 3. DashboardLayout sidebar (collapsed/pinned state, 64 px wide)
 
-### 5. Verification
+A 4.8:1 lockup cannot fit legibly in a 64 px rail. Two acceptable options:
 
-- Build passes.
-- Spot-check: Auth screen, Admin sidebar, Venue detail, Tables/QR page, Knowledge Base, consumer `/order/...` flow — all show H&L logo + blue/green palette + "H&L OrderNow" wording.
-- `rg -i 'shyndig'` returns only intentional leftovers (host URL, internal identifiers, memory files).
+- **Option A (recommended, no new asset):** in pinned mode render the same image but smaller and centered: `className="h-6 w-auto max-w-[48px] object-contain"`. The "H&L" portion remains readable; the wordmark scales down with it. No squish because we keep the aspect ratio.
+- **Option B (better long-term):** ask the user to supply (or we generate) a square H&L mark PNG at `public/brand/hl-ordernow-mark.png` and use it only when `pinned`. This requires a new asset, so I'll only do it if the user wants it.
 
-### Open questions
+I'll implement Option A unless the user asks for Option B.
 
-See follow-up below.
+### 4. Asset cleanup (optional, not blocking)
+
+`public/brand/shyndig-icon.png` and `public/brand/hl-ordernow-logo.png` are byte-identical (both 318×66). The codebase still references the `shyndig-icon.png` path. I'll leave the filename alone in this change to keep the diff small — renaming is a separate cleanup.
+
+## Files touched
+
+- `src/components/DashboardLayout.tsx` — single `<img>`, drop duplicate text label, handle pinned state.
+- `src/pages/Auth.tsx` — resize logo, drop duplicate H1.
+- `src/pages/ResetPassword.tsx` — resize logo, drop duplicate H1 (if present).
+
+No CSS token, Tailwind config, or backend changes.
+
+## Out of scope
+
+- Creating a new square icon asset (Option B above).
+- Renaming `shyndig-icon.png` → `hl-ordernow-logo.png` references.
+- Favicons (those are already separate square PNGs and not affected).
