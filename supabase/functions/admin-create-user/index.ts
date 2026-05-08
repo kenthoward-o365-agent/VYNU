@@ -229,6 +229,25 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    // ── SET PASSWORD ──
+    if (action === "set_password") {
+      const { staff_id, venue_id, password } = body;
+      if (!staff_id || !venue_id || !password) return json({ error: "staff_id, venue_id and password are required" }, 400);
+      if (password.length < 8) return json({ error: "Password must be at least 8 characters" }, 400);
+      if (!(await isVenueManager(venue_id))) return json({ error: "Forbidden" }, 403);
+
+      const { data: staffRow } = await adminClient
+        .from("venue_staff")
+        .select("user_id, venue_id")
+        .eq("id", staff_id)
+        .single();
+      if (!staffRow || staffRow.venue_id !== venue_id) return json({ error: "Staff not found" }, 404);
+
+      const { error: pwErr } = await adminClient.auth.admin.updateUserById(staffRow.user_id, { password });
+      if (pwErr) return json({ error: pwErr.message }, 400);
+      return json({ success: true });
+    }
+
     // ── TOGGLE ACTIVE ──
     if (action === "toggle_active") {
       const { staff_id, venue_id, is_active } = body;
