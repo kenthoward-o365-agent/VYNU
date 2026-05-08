@@ -50,16 +50,16 @@
 
     --radius: 0.75rem;
 
-    /* Light-mode sidebar: keep dark for operator polish, with H&L blue accents. */
-    --sidebar-background: 203 42% 18%;
-    --sidebar-foreground: 0 0% 100%;
+    /* Light-mode sidebar: matches app background for a clean unified look. */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 203 42% 21%;
     --sidebar-primary: 198 70% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 203 42% 24%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 203 42% 24%;
+    --sidebar-accent: 204 38% 97%;
+    --sidebar-accent-foreground: 203 42% 21%;
+    --sidebar-border: 204 30% 90%;
     --sidebar-ring: 198 70% 55%;
-    --sidebar-muted: 204 20% 70%;
+    --sidebar-muted: 203 20% 45%;
   }
 
   .dark {
