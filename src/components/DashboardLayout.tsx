@@ -108,20 +108,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         pinned ? "w-16" : "w-64",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className={cn("border-b border-sidebar-border", pinned ? "p-2" : "p-4")}>
-          <div className={cn("flex items-center mb-2", pinned ? "justify-center" : "justify-between")}> 
-            <div className={cn("flex items-center", pinned && "justify-center")}>
-              <img
-                src="/brand/shyndig-icon.png"
-                alt="H&L OrderNOW"
-                className={cn(
-                  "object-contain",
-                  pinned ? "h-6 w-auto max-w-[48px]" : "h-8 w-auto max-w-[180px]"
-                )}
-              />
-            </div>
+        <div className={cn("border-b border-sidebar-border relative", pinned ? "p-2" : "p-4")}>
+          <div className="flex items-center justify-center mb-2"> 
+            <img
+              src="/brand/shyndig-icon.png"
+              alt="H&L OrderNOW"
+              className={cn(
+                "object-contain",
+                pinned ? "h-8 w-auto max-w-[48px]" : "h-14 w-auto max-w-[180px]"
+              )}
+            />
             {!pinned && (
-              <div className="flex items-center gap-1">
+              <div className="absolute right-3 top-3 flex items-center gap-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
