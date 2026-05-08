@@ -69,6 +69,13 @@ export default function AdminVenueDetail() {
   const [creatingUser, setCreatingUser] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Edit user
+  const [editUserDialog, setEditUserDialog] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
+  const [editForm, setEditForm] = useState({ display_name: "", role: "staff", password: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
+
 
   const fetchVenue = async () => {
     if (!venueId) return;
