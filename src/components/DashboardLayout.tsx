@@ -88,7 +88,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem("shyndig_sidebar_pinned", pinned ? "1" : "0");
   }, [pinned]);
-  const perms = usePermissions();
+  // PCI DSS / SOC 2 inactivity logout: 15 min idle, 60s warning.
+  const handleIdleLogout = useCallback(async () => {
+    try {
+      sessionStorage.setItem("idle_logout", "1");
+    } catch {}
+    await signOut();
+  }, [signOut]);
+
+  const idle = useIdleLogout({
+    idleSeconds: 15 * 60,
+    warningSeconds: 60,
+    enabled: !!user,
+    onTimeout: handleIdleLogout,
+  });
+
+  const perms2 = perms;
 
   const showVenueNav = !!venue;
   const showGroupNav = showVenueNav && !isTablessAdmin && isGroupAdmin;
