@@ -137,9 +137,6 @@ export default function Auth() {
         <Card>
           <CardHeader>
             <CardTitle>Sign in</CardTitle>
-            <CardDescription>
-              Sign in to your venue dashboard or H&L OrderNOW admin console
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {notProvisioned && (
@@ -158,7 +155,7 @@ export default function Auth() {
                   onChange={(e) => setSiteId(e.target.value)}
                   className="font-mono tracking-wider"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Operators: enter your venue's Site ID. H&L OrderNOW staff: leave blank.</p>
+                
               </div>
               <Input
                 id="email"
