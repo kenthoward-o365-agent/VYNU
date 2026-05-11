@@ -1,4 +1,7 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
+import { useIdleLogout } from "@/hooks/use-idle-logout";
+import IdleTimeoutModal from "@/components/consumer/IdleTimeoutModal";
+import { toast } from "sonner";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
