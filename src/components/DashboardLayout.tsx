@@ -587,5 +587,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </main>
       </div>
     </div>
+    <IdleTimeoutModal
+      open={idle.warningOpen}
+      secondsLeft={idle.secondsLeft}
+      totalSeconds={idle.warningSeconds}
+      onStay={idle.reset}
+      onEnd={idle.endNow}
+    />
+    </>
   );
 }
