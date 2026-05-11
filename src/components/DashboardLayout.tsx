@@ -1,4 +1,7 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
+import { useIdleLogout } from "@/hooks/use-idle-logout";
+import IdleTimeoutModal from "@/components/consumer/IdleTimeoutModal";
+
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
@@ -87,6 +90,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [pinned]);
   const perms = usePermissions();
 
+  // PCI DSS / SOC 2 inactivity logout: 15 min idle, 60s warning.
+  const handleIdleLogout = useCallback(async () => {
+    try {
+      sessionStorage.setItem("idle_logout", "1");
+    } catch {}
+    await signOut();
+  }, [signOut]);
+
+  const idle = useIdleLogout({
+    idleSeconds: 15 * 60,
+    warningSeconds: 60,
+    enabled: !!user,
+    onTimeout: handleIdleLogout,
+  });
+
   const showVenueNav = !!venue;
   const showGroupNav = showVenueNav && !isTablessAdmin && isGroupAdmin;
   const filteredVenueNav = venueNavItems.filter((item) => perms.can(item.navKey));
@@ -97,6 +115,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
+    <>
     <div className="flex h-screen overflow-hidden">
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
@@ -568,5 +587,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </main>
       </div>
     </div>
+    <IdleTimeoutModal
+      open={idle.warningOpen}
+      secondsLeft={idle.secondsLeft}
+      totalSeconds={idle.warningSeconds}
+      onStay={idle.reset}
+      onEnd={idle.endNow}
+    />
+    </>
   );
 }

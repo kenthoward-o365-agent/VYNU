@@ -34,6 +34,10 @@ export default function Auth() {
       setNotProvisioned(true);
       sessionStorage.removeItem("shyndig_not_provisioned");
     }
+    if (sessionStorage.getItem("idle_logout") === "1") {
+      sessionStorage.removeItem("idle_logout");
+      toast.info("You were signed out due to inactivity. Please sign in again.");
+    }
   }, []);
 
   const handleResetPassword = async () => {
