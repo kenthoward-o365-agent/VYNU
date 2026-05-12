@@ -178,7 +178,10 @@ Deno.serve(async (req) => {
       .slice(0, 10);
 
     const summary = {
-      windowDays: days,
+      windowDays,
+      rangeLabel: rangeLabel ?? null,
+      fromIso: sinceIso,
+      toIso: untilIso,
       orderCount: orders?.length ?? 0,
       totalRevenue,
       totalUnitsSold: totalQty,
