@@ -252,11 +252,11 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
-          {agentIcon ? (
-            <img src={agentIcon} alt={agentName} className="h-7 w-7 rounded-full object-cover" />
-          ) : (
-            <Sparkles className="h-5 w-5 text-primary" />
-          )}
+          <img
+            src={agentIcon || "/brand/ai-agent-default.svg"}
+            alt={agentName}
+            className="h-7 w-7 rounded-full object-cover"
+          />
           <h2 className="font-semibold">{agentName}</h2>
         </div>
         <button onClick={onClose} className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-secondary transition-colors">

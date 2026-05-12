@@ -14,7 +14,7 @@ const BottomNav = ({ active, onNavigate, cartCount = 0, agentName, agentIconUrl 
 
   const tabs = [
     { id: "feed" as const, icon: Utensils, label: "Menu", customIcon: null },
-    { id: "chat" as const, icon: MessageCircle, label: chatLabel, customIcon: agentIconUrl },
+    { id: "chat" as const, icon: MessageCircle, label: chatLabel, customIcon: agentIconUrl || "/brand/ai-agent-default.svg" },
     { id: "cart" as const, icon: ShoppingCart, label: "Cart", customIcon: null },
     { id: "profile" as const, icon: User, label: "Profile", customIcon: null },
   ];
