@@ -60,7 +60,15 @@ Deno.serve(async (req) => {
     const isAdmin = (roles ?? []).some((r) => r.role === "tabless_admin");
     if (!staff && !isAdmin) return json({ error: "forbidden" }, 403);
 
-    const sinceIso = new Date(Date.now() - days * 86400000).toISOString();
+    // Resolve window: explicit from/to range takes precedence over `days`
+    const fromDate = fromIso ? new Date(fromIso) : new Date(Date.now() - days * 86400000);
+    const toDate = toIso ? new Date(toIso) : new Date();
+    const windowDays = Math.max(
+      1,
+      Math.round((toDate.getTime() - fromDate.getTime()) / 86400000),
+    );
+    const sinceIso = fromDate.toISOString();
+    const untilIso = toDate.toISOString();
 
     // Fetch completed orders within window
     const { data: orders, error: ordersErr } = await supabase
@@ -68,7 +76,8 @@ Deno.serve(async (req) => {
       .select("id, total, created_at, status")
       .eq("venue_id", venueId)
       .in("status", ["served", "paid"])
-      .gte("created_at", sinceIso);
+      .gte("created_at", sinceIso)
+      .lte("created_at", untilIso);
     if (ordersErr) throw ordersErr;
 
     const orderIds = (orders ?? []).map((o) => o.id);
