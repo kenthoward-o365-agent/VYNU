@@ -121,16 +121,7 @@ export default function Analytics() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {[7, 30, 90].map((d) => (
-            <Button
-              key={d}
-              size="sm"
-              variant={days === d ? "default" : "outline"}
-              onClick={() => setDays(d)}
-            >
-              {d}d
-            </Button>
-          ))}
+          <AuditDatePicker value={range} onChange={setRange} auditDateOverride={venueAuditDate} />
           <Button size="sm" variant="outline" onClick={load} disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-1 ${loading ? "animate-spin" : ""}`} />
             Refresh
