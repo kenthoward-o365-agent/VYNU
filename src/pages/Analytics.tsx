@@ -51,15 +51,45 @@ const fmtPct = (n: number | null | undefined) =>
 
 export default function Analytics() {
   const { venue } = useVenue();
+  const { auditDate: venueAuditDate } = useAuditDate();
   const [data, setData] = useState<Insights | null>(null);
   const [loading, setLoading] = useState(false);
-  const [days, setDays] = useState(30);
+  const [range, setRange] = useState<DateRange>(() => {
+    // Default: Last 30 Days, anchored to venue audit date when available
+    const today = venueAuditDate ? new Date(venueAuditDate) : new Date();
+    const from = new Date(today);
+    from.setDate(from.getDate() - 29);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(today);
+    to.setHours(23, 59, 59, 999);
+    return { from, to, label: "Last 30 Days" };
+  });
+
+  // When venue audit date loads, re-anchor default range
+  useEffect(() => {
+    if (!venueAuditDate) return;
+    setRange((prev) => {
+      if (prev.label !== "Last 30 Days") return prev;
+      const today = new Date(venueAuditDate);
+      const from = new Date(today);
+      from.setDate(from.getDate() - 29);
+      from.setHours(0, 0, 0, 0);
+      const to = new Date(today);
+      to.setHours(23, 59, 59, 999);
+      return { from, to, label: "Last 30 Days" };
+    });
+  }, [venueAuditDate]);
 
   const load = async () => {
     if (!venue) return;
     setLoading(true);
     const { data: res, error } = await supabase.functions.invoke("ai-insights", {
-      body: { venueId: venue.id, days },
+      body: {
+        venueId: venue.id,
+        fromIso: range.from.toISOString(),
+        toIso: range.to.toISOString(),
+        rangeLabel: range.label,
+      },
     });
     setLoading(false);
     if (error) {
@@ -76,7 +106,7 @@ export default function Analytics() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [venue?.id, days]);
+  }, [venue?.id, range.from.getTime(), range.to.getTime()]);
 
   const s = data?.summary;
   const avg = s && s.orderCount ? s.totalRevenue / s.orderCount : 0;
