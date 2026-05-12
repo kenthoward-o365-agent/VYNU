@@ -142,7 +142,7 @@ export default function ShyndigAISettings({ venueId }: Props) {
     }
     setUploading(true);
     const ext = file.name.split(".").pop();
-    const path = `shyndig-icons/${venueId}.${ext}`;
+    const path = `agent-icons/${venueId}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from("venue-assets")
@@ -190,25 +190,22 @@ export default function ShyndigAISettings({ venueId }: Props) {
           <div>
             <Label>Agent Icon</Label>
             <div className="flex items-center gap-4 mt-2">
-              {config.agent_icon_url ? (
-                <div className="relative">
-                  <img
-                    src={config.agent_icon_url}
-                    alt="Agent icon"
-                    className="w-14 h-14 rounded-full object-cover border-2 border-border"
-                  />
+              <div className="relative">
+                <img
+                  src={config.agent_icon_url || "/brand/ai-agent-default.svg"}
+                  alt="Agent icon"
+                  className="w-14 h-14 rounded-full object-cover border-2 border-border bg-background"
+                />
+                {config.agent_icon_url && (
                   <button
                     onClick={() => setConfig((c) => ({ ...c, agent_icon_url: null }))}
                     className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5"
+                    title="Remove custom icon (revert to default)"
                   >
                     <X className="h-3 w-3" />
                   </button>
-                </div>
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="h-6 w-6 text-primary" />
-                </div>
-              )}
+                )}
+              </div>
               <div>
                 <input
                   ref={fileRef}
