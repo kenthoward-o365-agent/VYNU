@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { venueId, days = 30 } = await req.json();
+    const { venueId, days = 30, fromIso, toIso, rangeLabel } = await req.json();
     if (!venueId) {
       return json({ error: "venueId required" }, 400);
     }
