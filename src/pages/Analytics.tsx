@@ -143,7 +143,7 @@ export default function Analytics() {
             Spark Recommendations
           </CardTitle>
           <CardDescription>
-            AI-generated, prioritised actions based on the last {days} days.
+            AI-generated, prioritised actions for {range.label.toLowerCase()}.
           </CardDescription>
         </CardHeader>
         <CardContent>
