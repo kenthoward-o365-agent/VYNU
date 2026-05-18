@@ -84,7 +84,7 @@ const CheckoutPanel = ({
   const [gratuityDecline, setGratuityDecline] = useState("No thanks");
   const [selectedTip, setSelectedTip] = useState<number | null>(null);
 
-  // H&L OrderNOW Pay Drop-in state
+  // H&L Pay Drop-in state
   const [paymentMethodsResponse, setPaymentMethodsResponse] = useState<any>(null);
   const [shyndigPayClientKey, setShyndigPayClientKey] = useState<string | null>(null);
   const [isMockMode, setIsMockMode] = useState(false);
@@ -165,7 +165,7 @@ const CheckoutPanel = ({
       if (data?.paymentMethods) {
         setPaymentMethodsResponse(data);
       }
-      // Read client key returned by the H&L OrderNOW Pay backend (per-venue)
+      // Read client key returned by the H&L Pay backend (per-venue)
       const key = data?.client_key || (import.meta as any).env?.VITE_ADYEN_CLIENT_KEY || null;
       setShyndigPayClientKey(key);
       setIsMockMode(!!data?.mock_mode);
@@ -719,7 +719,7 @@ const CheckoutPanel = ({
               </div>
             )}
 
-            {/* H&L OrderNOW Pay Drop-in — Apple Pay / Google Pay / hosted card */}
+            {/* H&L Pay Drop-in — Apple Pay / Google Pay / hosted card */}
             {showDropin && (
               <div className="space-y-3">
                 <Label className="text-sm font-semibold flex items-center gap-2">
@@ -733,11 +733,11 @@ const CheckoutPanel = ({
                   countryCode="AU"
                   environment={paymentEnvironment}
                   clientKey={shyndigPayClientKey || undefined}
-                  merchantName="H&L OrderNOW Pay"
+                  merchantName="H&L Pay"
                   onSubmit={handleDropinSubmit}
                   onAdditionalDetails={handleDropinAdditionalDetails}
                   onError={(e) => {
-                    console.error("H&L OrderNOW Pay error:", e);
+                    console.error("H&L Pay error:", e);
                   }}
                 />
               </div>
@@ -759,7 +759,7 @@ const CheckoutPanel = ({
                 </Label>
                 {isMockMode && (
                   <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[11px] text-warning-foreground">
-                    <strong>H&L OrderNOW Pay test mode.</strong> Use card{" "}
+                    <strong>H&L Pay test mode.</strong> Use card{" "}
                     <code className="font-mono">4111 1111 1111 1111</code>, any future expiry, any CVC.
                   </div>
                 )}
@@ -833,7 +833,7 @@ const CheckoutPanel = ({
                     <div>
                       <p className="text-sm font-medium">Save card for next time</p>
                       <p className="text-xs text-muted-foreground">
-                        Securely stored by H&L OrderNOW Pay — we never see your full card number
+                        Securely stored by H&L Pay — we never see your full card number
                       </p>
                     </div>
                     <Switch checked={saveCard} onCheckedChange={setSaveCard} />
@@ -844,7 +844,7 @@ const CheckoutPanel = ({
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Secured by H&L OrderNOW Pay</span>
+              <span>Secured by H&L Pay</span>
             </div>
           </>
         )}
