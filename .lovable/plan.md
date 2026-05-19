@@ -1,53 +1,89 @@
-## The problem
 
-The H&L OrderNow logo file (`public/brand/shyndig-icon.png` and `src/assets/brand/hl-ordernow-logo.png`) is a **horizontal lockup** that already contains the H&L mark **and** the "OrderNow" wordmark. Its real dimensions are **318 × 66 px** (roughly 4.8:1).
+## Gap analysis: H&L POS spec vs. what we have today
 
-Today it's rendered into square boxes, which forces the browser to squash it:
+Our POS framework (`venue_pos_integrations` + `pos_providers` + adapter loader in `supabase/functions/_shared/pos-adapter.ts`) was designed around **Doshii's model**: one outbound JWT-authed cloud API, pull-style. H&L POS (Exceed) is a different shape and needs four pieces the current framework doesn't cover.
 
-- `src/components/DashboardLayout.tsx` line 114 — `className="h-8 w-8"` (32×32 square) inside the sidebar header, with a duplicate "H&L OrderNow" text label next to it.
-- `src/pages/Auth.tsx` line 131 — `className="h-16 w-16 mx-auto"` (64×64 square) above the sign-in card.
-- `src/pages/ResetPassword.tsx` line 122 — same `h-16 w-16` square.
+| H&L POS requirement | Have today? | Gap |
+|---|---|---|
+| Adapter abstraction, breaker, secrets in Vault | ✅ `pos-adapter.ts`, `pos-context.ts`, `read/set_pos_credential` | None |
+| Per-venue config + onboarding UI | ✅ `PosConnectDialog`, `admin-set-pos-credentials` | Add H&L-specific fields |
+| **Inbound webhook receiver** (H&L POS pushes menu-change events to us, HMAC-signed) | ❌ Doshii is pull-only — no inbound signed-webhook endpoint exists | New public edge function |
+| **Scheduled + on-demand menu pull** from H&L Menu Management cloud | Partial — adapter has `pushMenu` but no `pullMenu` | Add `pullMenu` to adapter interface |
+| **Order push to on-prem Portal Service** (per-venue URL, PLU-based payload) | Partial — adapter has no `sendOrder`; orders today go via `pos-outbound-worker` to Doshii | Add `sendOrder` to adapter; H&L impl |
+| **Reverse menu sync** (H&L OrderNOW → POS) with approval queue | ❌ No approval-queue table or UI | New table + UI tab |
+| Two-direction sync toggles per venue | ❌ | Add toggles to `venue_pos_integrations` |
+| Idempotency, dedupe by event id, replay protection | Partial — `api_idempotency` exists for inbound API | Reuse for webhook dedupe |
+| Backup printing fallback when POS unreachable | ✅ Display terminals exist as fallback path | Wire failure → terminal route |
 
-There is no separate square icon-only asset in the repo, so the fix is to treat the logo as the wide lockup it actually is and give it room.
+The architecture stays — H&L POS becomes one more adapter slug. The new pieces (webhook receiver, scheduled menu sync, sendOrder) are general additions that also benefit future adapters.
 
 ## Plan
 
-### 1. Auth and ResetPassword screens
+### 1. Extend the POS framework (provider-agnostic)
 
-Replace the square sizing with height-only sizing so the natural aspect ratio is preserved, and bump the size so it reads well on the login screen.
+- Add to `PosAdapter` interface in `_shared/pos-adapter.ts`:
+  - `pullMenu(ctx)` → returns normalised menu snapshot
+  - `sendOrder(ctx, order)` → returns `{ posOrderId, accepted }`
+  - `verifyWebhook(ctx, headers, rawBody)` → boolean (HMAC check)
+- Register slug `hl_exceed` in the `KNOWN` loader map.
 
-- `Auth.tsx` and `ResetPassword.tsx`: change `className="h-16 w-16 mx-auto"` to `className="h-14 w-auto mx-auto"` (≈ 270 × 56 px rendered).
-- Since the logo already contains the "H&L OrderNow" wordmark, also remove the redundant `<h1>H&L OrderNow</h1>` heading directly under it on both screens (keep the tagline). This avoids the wordmark appearing twice.
+### 2. New schema (migration)
 
-### 2. DashboardLayout sidebar (expanded state)
+- `pos_providers` row: `{ slug: "hl_exceed", name: "H&L Exceed POS", config_schema: [...] }` with fields:
+  - secrets: `shared_secret`, `service_account_token`
+  - config: `organisation_id`, `tenant_id` (venueId on their side), `location_id`, `menu_service_base_url`, `subscription_service_base_url`, `portal_service_url` (on-prem, per venue), `fail_notification_email`
+- Add columns to `venue_pos_integrations`:
+  - `sync_pos_to_us boolean default true`
+  - `sync_us_to_pos boolean default false`
+  - `last_menu_pull_at timestamptz`, `last_webhook_at timestamptz`
+- New table `pos_menu_change_queue` (approval queue for our→POS pushes): venue_id, menu_item_id, pos_id, payload jsonb, status (`pending|approved|sent|failed`), created_at, reviewed_by, error.
+- New table `pos_webhook_events` (dedupe + audit): venue_id, event_id (unique), topic, received_at, processed_at, signature_valid, raw jsonb.
 
-The expanded sidebar is 256 px wide (`w-64`) — plenty of room for the lockup.
+### 3. H&L Exceed adapter (`supabase/functions/adapters/hl_exceed/index.ts`)
 
-- Replace `<img className="h-8 w-8" />` plus the adjacent `<span>H&L OrderNow</span>` with a single `<img className="h-8 w-auto max-w-[180px] object-contain" />`. The image already says "H&L OrderNow", so the duplicate text label goes away.
+- `authenticate` — bearer token from `secrets.service_account_token` against H&L Menu Management
+- `testConnection` — GET `{menu_service_base_url}/locations/{location_id}` and assert non-empty
+- `pullMenu` — paginated GET of menu items, modifier groups, dietary, item↔modifier links; normalise into our schema with `pos_id` = PLU
+- `pushMenu` — PUT linked items to POS (price/availability/modifiers only; new-item creation gated behind feature flag per spec §4.2 uncertainty)
+- `sendOrder` — POST to `portal_service_url` with PLU-based line items, table id, charges, member discount
+- `verifyWebhook` — HMAC-SHA256 of raw body with `shared_secret`, constant-time compare
 
-### 3. DashboardLayout sidebar (collapsed/pinned state, 64 px wide)
+### 4. New edge functions
 
-A 4.8:1 lockup cannot fit legibly in a 64 px rail. Two acceptable options:
+- **`pos-hl-webhook`** (public, `verify_jwt = false` — H&L POS calls it directly)
+  - URL pattern: `/pos-hl-webhook/{our_location_id}`
+  - Steps: load integration by our_location_id → verify HMAC via adapter → insert into `pos_webhook_events` (unique event_id dedupes retries) → ack 200 immediately → enqueue `jobs_pos_outbound` job `{ kind: "menu_pull", venue_id }`
+- **`pos-menu-pull`** (scheduled + on-demand)
+  - Called by cron (hourly) and by webhook-triggered job
+  - Loads adapter, calls `pullMenu`, upserts into `menu_items`/`menu_categories`/modifiers by `pos_id`
+- **`pos-menu-push`** (worker for our→POS direction)
+  - Reads `pos_menu_change_queue` where status = `approved`, calls `adapter.pushMenu`, marks sent/failed
+- Extend existing **`pos-outbound-worker`** to dispatch `kind: "send_order"` → `adapter.sendOrder`, with fallback to print terminal on failure
 
-- **Option A (recommended, no new asset):** in pinned mode render the same image but smaller and centered: `className="h-6 w-auto max-w-[48px] object-contain"`. The "H&L" portion remains readable; the wordmark scales down with it. No squish because we keep the aspect ratio.
-- **Option B (better long-term):** ask the user to supply (or we generate) a square H&L mark PNG at `public/brand/hl-ordernow-mark.png` and use it only when `pinned`. This requires a new asset, so I'll only do it if the user wants it.
+### 5. Operator UI
 
-I'll implement Option A unless the user asks for Option B.
+- New tab in venue Settings → POS: **H&L Pay-style "H&L POS" panel** with:
+  - Connection fields (org id, tenant id, location id, base URLs, portal URL, shared secret, service token)
+  - Sync direction toggles (POS→us, us→POS)
+  - "Test connection" button → calls `pos-test-connection`
+  - "Sync menu now" button → calls `pos-menu-pull`
+  - Onboarding checklist showing: our identifiers to share with H&L, status of role grant, status of subscription, last webhook received
+- New admin page **Pending Menu Changes** listing `pos_menu_change_queue` items with approve/reject
 
-### 4. Asset cleanup (optional, not blocking)
+### 6. Documentation + onboarding values
 
-`public/brand/shyndig-icon.png` and `public/brand/hl-ordernow-logo.png` are byte-identical (both 318×66). The codebase still references the `shyndig-icon.png` path. I'll leave the filename alone in this change to keep the diff small — renaming is a separate cleanup.
+- Generate per-venue **integration sheet** showing the three values H&L POS needs from us: `client_id`, `our_location_id`, fully-formed `callbackUrl` (`https://jsbxivkgfekcgvtyqnek.supabase.co/functions/v1/pos-hl-webhook/{our_location_id}`)
+- Document in `KnowledgeBase.tsx` under a new "H&L POS Integration" section
 
-## Files touched
+### Out of scope (per spec §1)
 
-- `src/components/DashboardLayout.tsx` — single `<img>`, drop duplicate text label, handle pinned state.
-- `src/pages/Auth.tsx` — resize logo, drop duplicate H1.
-- `src/pages/ResetPassword.tsx` — resize logo, drop duplicate H1 (if present).
+- Pickup, delivery, counter ordering (table-only for v1)
+- New-item creation from H&L OrderNOW → POS (flagged uncertain in spec §4.2; ship update-only, add create later)
+- Member discount lookup against POS Order Service (separate follow-up; spec §10)
 
-No CSS token, Tailwind config, or backend changes.
+### Technical notes
 
-## Out of scope
-
-- Creating a new square icon asset (Option B above).
-- Renaming `shyndig-icon.png` → `hl-ordernow-logo.png` references.
-- Favicons (those are already separate square PNGs and not affected).
+- Webhook endpoint is the only new **public** edge function; everything else is service-role
+- Idempotency: `pos_webhook_events.event_id` unique constraint + 24h cleanup via existing `purge_api_idempotency` pattern
+- All H&L secrets stored via existing `set_pos_credential` RPC → Vault; nothing in plain config
+- Backup printing already exists via `display_terminals` — `sendOrder` failure path enqueues the order to the terminal queue so the kitchen still gets it
