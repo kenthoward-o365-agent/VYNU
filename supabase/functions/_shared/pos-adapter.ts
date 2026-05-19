@@ -17,20 +17,70 @@ export interface PosOrderUpdate {
   raw?: unknown;
 }
 
+// Normalised menu snapshot returned by pullMenu(). Adapters convert their
+// vendor-specific shape into this so pos-menu-pull can upsert generically.
+export interface NormalisedMenu {
+  categories: Array<{ pos_id: string; name: string; display_order?: number }>;
+  items: Array<{
+    pos_id: string;                 // PLU / vendor product id
+    name: string;
+    description?: string | null;
+    price: number;                  // dollars
+    category_pos_id?: string | null;
+    is_available?: boolean;
+    dietary_tags?: string[];
+    allergens?: string[];
+  }>;
+  modifierGroups?: Array<{
+    pos_id: string;
+    name: string;
+    min_selection?: number;
+    max_selection?: number;
+    options: Array<{ pos_id: string; name: string; price: number }>;
+  }>;
+}
+
+// Order payload passed to sendOrder(). Adapters translate to vendor format.
+export interface OutboundOrder {
+  orderId: string;                  // our internal order id
+  tableExternalId?: string | null;  // POS table identifier
+  diner?: { name?: string | null; memberRef?: string | null } | null;
+  lineItems: Array<{
+    posId: string;                  // PLU on the POS
+    quantity: number;
+    unitPrice: number;
+    notes?: string | null;
+    modifiers?: Array<{ posId: string; quantity: number; unitPrice: number }>;
+  }>;
+  serviceCharges?: Array<{ posId: string; amount: number; label?: string }>;
+  payment?: {
+    method: string;
+    amount: number;
+    posPlu?: string | null;
+    reference?: string | null;
+  } | null;
+  totals: { subtotal: number; tax: number; total: number; tip?: number };
+}
+
 export interface PosAdapter {
   slug: string;
   authenticate(ctx: PosAdapterContext): Promise<{ token: string; expiresAt: number }>;
   pushMenu?(ctx: PosAdapterContext, menu: unknown): Promise<{ ok: true } | { ok: false; error: string }>;
+  pullMenu?(ctx: PosAdapterContext): Promise<NormalisedMenu>;
   pullOrders?(ctx: PosAdapterContext, sinceIso: string): Promise<PosOrderUpdate[]>;
   updateOrderStatus?(ctx: PosAdapterContext, externalOrderId: string, status: string): Promise<void>;
   snoozeProduct?(ctx: PosAdapterContext, plu: string, snoozeUntilIso: string | null): Promise<void>;
+  sendOrder?(ctx: PosAdapterContext, order: OutboundOrder): Promise<{ posOrderId: string; accepted: boolean; raw?: unknown }>;
+  // Verify an inbound webhook signature. Receives raw bytes + headers.
+  verifyWebhook?(ctx: PosAdapterContext, headers: Headers, rawBody: string): boolean;
   testConnection(ctx: PosAdapterContext): Promise<{ ok: boolean; message: string }>;
 }
 
 // Whitelisted slugs; prevents arbitrary path imports.
 const KNOWN: Record<string, () => Promise<{ default: PosAdapter }>> = {
-  doshii: () => import("../adapters/doshii/index.ts"),
-  mock:   () => import("../adapters/mock/index.ts"),
+  doshii:    () => import("../adapters/doshii/index.ts"),
+  hl_exceed: () => import("../adapters/hl_exceed/index.ts"),
+  mock:      () => import("../adapters/mock/index.ts"),
 };
 
 const cache = new Map<string, PosAdapter>();

@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Plug, RefreshCw, AlertTriangle, Copy, CheckCircle, XCircle, Clock, Cable } from "lucide-react";
 import PosConnectDialog from "./PosConnectDialog";
+import HLPosPanel from "./HLPosPanel";
 
 const posProviders = [
   { value: "hl_exceed", label: "H&L Exceed POS" },
@@ -381,6 +382,8 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
               </CardContent>
             </Card>
           )}
+
+          {provider === "hl_exceed" && <HLPosPanel venueId={venueId} />}
         </>
       )}
 

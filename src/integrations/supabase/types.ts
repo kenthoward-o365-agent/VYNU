@@ -1878,6 +1878,59 @@ export type Database = {
           },
         ]
       }
+      pos_menu_change_queue: {
+        Row: {
+          change_kind: string
+          created_at: string
+          error: string | null
+          id: string
+          menu_item_id: string | null
+          payload: Json
+          pos_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sent_at: string | null
+          status: string
+          venue_id: string
+        }
+        Insert: {
+          change_kind: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          menu_item_id?: string | null
+          payload?: Json
+          pos_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sent_at?: string | null
+          status?: string
+          venue_id: string
+        }
+        Update: {
+          change_kind?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          menu_item_id?: string | null
+          payload?: Json
+          pos_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sent_at?: string | null
+          status?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_menu_change_queue_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pos_providers: {
         Row: {
           auth_type: string
@@ -2121,6 +2174,53 @@ export type Database = {
           venue_id?: string
         }
         Relationships: []
+      }
+      pos_webhook_events: {
+        Row: {
+          event_id: string
+          id: string
+          process_error: string | null
+          processed_at: string | null
+          provider_slug: string
+          raw: Json
+          received_at: string
+          signature_valid: boolean
+          topic: string | null
+          venue_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          process_error?: string | null
+          processed_at?: string | null
+          provider_slug: string
+          raw?: Json
+          received_at?: string
+          signature_valid: boolean
+          topic?: string | null
+          venue_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          process_error?: string | null
+          processed_at?: string | null
+          provider_slug?: string
+          raw?: Json
+          received_at?: string
+          signature_valid?: boolean
+          topic?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_webhook_events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pricing_rule_items: {
         Row: {
@@ -2917,12 +3017,16 @@ export type Database = {
           endpoint_url: string | null
           id: string
           last_error: string | null
+          last_menu_pull_at: string | null
           last_sync_at: string | null
+          last_webhook_at: string | null
           location_id: string | null
           pos_provider: string
           provider_id: string | null
           secrets_map: Json
+          sync_pos_to_us: boolean
           sync_status: string
+          sync_us_to_pos: boolean
           token_cache: Json | null
           updated_at: string
           venue_id: string
@@ -2942,12 +3046,16 @@ export type Database = {
           endpoint_url?: string | null
           id?: string
           last_error?: string | null
+          last_menu_pull_at?: string | null
           last_sync_at?: string | null
+          last_webhook_at?: string | null
           location_id?: string | null
           pos_provider: string
           provider_id?: string | null
           secrets_map?: Json
+          sync_pos_to_us?: boolean
           sync_status?: string
+          sync_us_to_pos?: boolean
           token_cache?: Json | null
           updated_at?: string
           venue_id: string
@@ -2967,12 +3075,16 @@ export type Database = {
           endpoint_url?: string | null
           id?: string
           last_error?: string | null
+          last_menu_pull_at?: string | null
           last_sync_at?: string | null
+          last_webhook_at?: string | null
           location_id?: string | null
           pos_provider?: string
           provider_id?: string | null
           secrets_map?: Json
+          sync_pos_to_us?: boolean
           sync_status?: string
+          sync_us_to_pos?: boolean
           token_cache?: Json | null
           updated_at?: string
           venue_id?: string
