@@ -143,6 +143,14 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
       default_currency: config.default_currency,
     };
 
+    // Snapshot the previous state (for PCI audit log) before writing
+    const { data: prev } = await supabase
+      .from("venue_payment_config" as any)
+      .select("environment,is_active,capture_mode,statement_descriptor,country_code,default_currency")
+      .eq("venue_id", venueId)
+      .eq("provider", "ordrpayments")
+      .maybeSingle();
+
     let error;
     if (config.id) {
       ({ error } = await supabase
@@ -159,10 +167,46 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
       if (data) setConfig((c) => ({ ...c, id: (data as any).id }));
     }
 
-    if (error) toast.error(error.message);
-    else toast.success("H&L Pay settings saved");
+    if (error) {
+      toast.error(error.message);
+    } else {
+      // PCI DSS Req 10 — write per-field audit rows
+      try {
+        const { data: sess } = await supabase.auth.getSession();
+        const actorId = sess?.session?.user?.id ?? null;
+        const actorEmail = sess?.session?.user?.email ?? null;
+        const action = config.id ? "update" : "create";
+        const tracked: (keyof typeof payload)[] = [
+          "environment",
+          "is_active",
+          "capture_mode",
+          "statement_descriptor",
+          "country_code",
+          "default_currency",
+        ];
+        const rows = tracked
+          .filter((k) => String((prev as any)?.[k] ?? "") !== String((payload as any)[k] ?? ""))
+          .map((k) => ({
+            venue_id: venueId,
+            actor_id: actorId,
+            actor_email: actorEmail,
+            action,
+            field: String(k),
+            old_value: (prev as any)?.[k] == null ? null : String((prev as any)[k]),
+            new_value: payload[k] == null ? null : String(payload[k]),
+            user_agent: navigator.userAgent,
+          }));
+        if (rows.length > 0) {
+          await supabase.from("payment_config_audit" as any).insert(rows);
+        }
+      } catch (e) {
+        console.warn("[PCI audit] failed to record audit entries", e);
+      }
+      toast.success("H&L Pay settings saved");
+    }
     setSaving(false);
   };
+
 
   const testConnection = async () => {
     setTesting(true);
