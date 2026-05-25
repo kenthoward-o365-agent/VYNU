@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.pos-hl-webhook]
 verify_jwt = false
+
+[functions.csp-report]
+verify_jwt = false
+
+[functions.pci-page-integrity-check]
+verify_jwt = false

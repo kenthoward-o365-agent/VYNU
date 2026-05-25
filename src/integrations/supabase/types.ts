@@ -1878,6 +1878,84 @@ export type Database = {
           },
         ]
       }
+      payment_config_audit: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          created_at: string
+          field: string
+          id: string
+          ip: string | null
+          new_value: string | null
+          old_value: string | null
+          user_agent: string | null
+          venue_id: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          field: string
+          id?: string
+          ip?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          user_agent?: string | null
+          venue_id: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          created_at?: string
+          field?: string
+          id?: string
+          ip?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          user_agent?: string | null
+          venue_id?: string
+        }
+        Relationships: []
+      }
+      pci_script_baseline: {
+        Row: {
+          alert_sent_at: string | null
+          first_seen_at: string
+          id: string
+          integrity_hash: string
+          is_authorised: boolean
+          justification: string | null
+          last_seen_at: string
+          script_src: string
+          url: string
+        }
+        Insert: {
+          alert_sent_at?: string | null
+          first_seen_at?: string
+          id?: string
+          integrity_hash: string
+          is_authorised?: boolean
+          justification?: string | null
+          last_seen_at?: string
+          script_src: string
+          url: string
+        }
+        Update: {
+          alert_sent_at?: string | null
+          first_seen_at?: string
+          id?: string
+          integrity_hash?: string
+          is_authorised?: boolean
+          justification?: string | null
+          last_seen_at?: string
+          script_src?: string
+          url?: string
+        }
+        Relationships: []
+      }
       pos_menu_change_queue: {
         Row: {
           change_kind: string
