@@ -55,13 +55,18 @@ export default function ShyndigPayDropin({
       if (!containerRef.current) return;
 
       try {
-        // For test/mock mode without a real client key we still need *something*;
-        // Adyen Drop-in requires a client key for live HMAC, but in test env
-        // the public test client key works for tokenisation only.
-        // If no key, we render a fallback message.
+        // PCI DSS SAQ A: never accept raw card input outside the hosted Drop-in.
+        // In LIVE mode, missing client key = hard fail (no fallback form).
+        // In TEST + DEV builds only, show a message; raw-card fallback is forbidden in production bundles.
         if (!clientKey) {
+          if (environment === "live") {
+            setMountError(
+              "Payment form unavailable. Please contact the venue — do not enter card details here."
+            );
+            return;
+          }
           setMountError(
-            "Payments are in test mode — use the test card form below."
+            "Payments are in test mode — configure a client key to load the secure card form."
           );
           return;
         }
