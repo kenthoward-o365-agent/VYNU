@@ -32,6 +32,7 @@ import AdminStaff from "@/pages/AdminStaff";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminPartners from "@/pages/AdminPartners";
 import AdminIntegrations from "@/pages/AdminIntegrations";
+import AdminKnowledgeBase from "@/pages/AdminKnowledgeBase";
 
 import Developers from "@/pages/Developers";
 import NotFound from "@/pages/NotFound";
@@ -136,6 +137,7 @@ function AppRoutes() {
         <Route path="/admin/staff" element={<AdminStaff />} />
         <Route path="/admin/partners" element={<AdminPartners />} />
         <Route path="/admin/integrations" element={<AdminIntegrations />} />
+        <Route path="/admin/knowledge-base" element={<AdminKnowledgeBase />} />
         
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />
