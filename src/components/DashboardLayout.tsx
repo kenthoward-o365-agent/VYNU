@@ -8,7 +8,7 @@ import { useVenue } from "@/contexts/VenueContext";
 
 import { usePermissions } from "@/hooks/use-permissions";
 import {
-  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Sliders, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug, Cable, Monitor, Pin, PinOff
+  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Sliders, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug, Cable, Monitor, Pin, PinOff, BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -71,7 +71,7 @@ const adminNavItems = [
   { path: "/admin/staff", label: "Platform Staff", icon: Shield },
   { path: "/admin/partners", label: "API Partners", icon: Plug },
   { path: "/admin/integrations", label: "POS Integrations", icon: Cable },
-  
+  { path: "/admin/knowledge-base", label: "Knowledge Base", icon: BookOpen },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
