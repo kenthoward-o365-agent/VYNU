@@ -13,6 +13,21 @@ interface UseDinerSessionArgs {
 
 const ACTIVITY_EVENTS = ["pointerdown", "keydown", "scroll", "touchstart"];
 
+const SESSION_UPDATE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/web-session-update`;
+
+async function postSessionUpdate(payload: Record<string, unknown>) {
+  try {
+    await fetch(SESSION_UPDATE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    });
+  } catch {
+    /* ignore */
+  }
+}
+
 export function useDinerSession({
   venueId,
   tableId,
@@ -31,7 +46,7 @@ export function useDinerSession({
   const endedRef = useRef(false);
   const sessionIdRef = useRef<string | null>(null);
 
-  // Create session row on mount
+  // Create session row on mount (INSERT is still allowed for anon by RLS)
   useEffect(() => {
     if (!venueId) return;
     let cancelled = false;
@@ -54,7 +69,6 @@ export function useDinerSession({
     return () => {
       cancelled = true;
     };
-    // Intentionally only on venue/table mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venueId, tableId]);
 
@@ -84,11 +98,7 @@ export function useDinerSession({
     const now = Date.now();
     if (now - lastPingRef.current < 15_000) return; // throttle
     lastPingRef.current = now;
-    await supabase
-      .from("diner_web_sessions")
-      .update({ last_activity_at: new Date().toISOString() })
-      .eq("id", sessionIdRef.current)
-      .is("ended_at", null);
+    await postSessionUpdate({ session_id: sessionIdRef.current, action: "ping" });
   }, []);
 
   const endSession = useCallback(
@@ -98,11 +108,11 @@ export function useDinerSession({
       clearIdleTimer();
       clearGraceTimer();
       setShowIdleModal(false);
-      await supabase
-        .from("diner_web_sessions")
-        .update({ ended_at: new Date().toISOString(), end_reason: reason })
-        .eq("id", sessionIdRef.current)
-        .is("ended_at", null);
+      await postSessionUpdate({
+        session_id: sessionIdRef.current,
+        action: "end",
+        end_reason: reason,
+      });
       if (reason !== "ordered") onSessionEnd?.(reason);
     },
     [onSessionEnd],
@@ -170,36 +180,16 @@ export function useDinerSession({
   // Funnel markers
   const markAddToCart = useCallback(async (cartValueCents?: number) => {
     if (!sessionIdRef.current || endedRef.current) return;
-    const { data: row } = await supabase
-      .from("diner_web_sessions")
-      .select("first_add_to_cart_at, items_added_count, cart_value_peak_cents")
-      .eq("id", sessionIdRef.current)
-      .maybeSingle();
-    if (!row) return;
-    const update: {
-      items_added_count: number;
-      first_add_to_cart_at?: string;
-      cart_value_peak_cents?: number;
-    } = {
-      items_added_count: (row.items_added_count ?? 0) + 1,
-    };
-    if (!row.first_add_to_cart_at) update.first_add_to_cart_at = new Date().toISOString();
-    if (cartValueCents != null && cartValueCents > (row.cart_value_peak_cents ?? 0)) {
-      update.cart_value_peak_cents = cartValueCents;
-    }
-    await supabase
-      .from("diner_web_sessions")
-      .update(update)
-      .eq("id", sessionIdRef.current);
+    await postSessionUpdate({
+      session_id: sessionIdRef.current,
+      action: "add_to_cart",
+      cart_value_cents: cartValueCents ?? null,
+    });
   }, []);
 
   const markCheckout = useCallback(async () => {
     if (!sessionIdRef.current || endedRef.current) return;
-    await supabase
-      .from("diner_web_sessions")
-      .update({ reached_checkout_at: new Date().toISOString() })
-      .eq("id", sessionIdRef.current)
-      .is("reached_checkout_at", null);
+    await postSessionUpdate({ session_id: sessionIdRef.current, action: "checkout" });
   }, []);
 
   const markOrderPlaced = useCallback(async (orderId: string) => {
@@ -207,15 +197,11 @@ export function useDinerSession({
     endedRef.current = true;
     clearIdleTimer();
     clearGraceTimer();
-    await supabase
-      .from("diner_web_sessions")
-      .update({
-        order_placed_at: new Date().toISOString(),
-        order_id: orderId,
-        ended_at: new Date().toISOString(),
-        end_reason: "ordered",
-      })
-      .eq("id", sessionIdRef.current);
+    await postSessionUpdate({
+      session_id: sessionIdRef.current,
+      action: "order_placed",
+      order_id: orderId,
+    });
   }, []);
 
   const stayActive = useCallback(() => {
