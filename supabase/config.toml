@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.pci-page-integrity-check]
 verify_jwt = false
+
+[functions.web-session-update]
+verify_jwt = false
+
+[functions.web-session-ping]
+verify_jwt = false
