@@ -37,6 +37,7 @@ export default function AdminIntegrations() {
   const [connections, setConnections] = useState<ConnectionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState<string | null>(null);
+  const [configVenueId, setConfigVenueId] = useState<string | null>(null);
 
   useEffect(() => { void load(); }, []);
 
