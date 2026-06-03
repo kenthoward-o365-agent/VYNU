@@ -189,15 +189,3 @@ export default function AdminIntegrations() {
     </div>
   );
 }
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
