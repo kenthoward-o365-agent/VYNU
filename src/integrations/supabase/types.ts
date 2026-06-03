@@ -1637,6 +1637,73 @@ export type Database = {
         }
         Relationships: []
       }
+      onboarding_chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          parts: Json
+          role: string
+          user_id: string | null
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parts: Json
+          role: string
+          user_id?: string | null
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parts?: Json
+          role?: string
+          user_id?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_chat_messages_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_test_runs: {
+        Row: {
+          id: string
+          passed: boolean
+          ran_at: string
+          steps: Json
+          venue_id: string
+        }
+        Insert: {
+          id?: string
+          passed?: boolean
+          ran_at?: string
+          steps: Json
+          venue_id: string
+        }
+        Update: {
+          id?: string
+          passed?: boolean
+          ran_at?: string
+          steps?: Json
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_test_runs_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -3025,6 +3092,53 @@ export type Database = {
         }
         Relationships: []
       }
+      venue_onboarding_state: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          dismissed_at: string | null
+          first_dayend_at: string | null
+          pos_choice: string | null
+          pos_vendor: string | null
+          readiness_snapshot: Json | null
+          status: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          first_dayend_at?: string | null
+          pos_choice?: string | null
+          pos_vendor?: string | null
+          readiness_snapshot?: Json | null
+          status?: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          first_dayend_at?: string | null
+          pos_choice?: string | null
+          pos_vendor?: string | null
+          readiness_snapshot?: Json | null
+          status?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_onboarding_state_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: true
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_order_statuses: {
         Row: {
           color: string
@@ -3474,6 +3588,7 @@ export type Database = {
           group_id: string | null
           id: string
           is_active: boolean | null
+          is_live: boolean
           landing_page_html: string | null
           logo_url: string | null
           menu_source: string
@@ -3490,6 +3605,7 @@ export type Database = {
           timezone: string | null
           updated_at: string
           venue_type: string
+          went_live_at: string | null
         }
         Insert: {
           address?: string | null
@@ -3500,6 +3616,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           is_active?: boolean | null
+          is_live?: boolean
           landing_page_html?: string | null
           logo_url?: string | null
           menu_source?: string
@@ -3516,6 +3633,7 @@ export type Database = {
           timezone?: string | null
           updated_at?: string
           venue_type?: string
+          went_live_at?: string | null
         }
         Update: {
           address?: string | null
@@ -3526,6 +3644,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           is_active?: boolean | null
+          is_live?: boolean
           landing_page_html?: string | null
           logo_url?: string | null
           menu_source?: string
@@ -3542,6 +3661,7 @@ export type Database = {
           timezone?: string | null
           updated_at?: string
           venue_type?: string
+          went_live_at?: string | null
         }
         Relationships: [
           {

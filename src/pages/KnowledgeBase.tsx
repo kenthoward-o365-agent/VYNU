@@ -149,6 +149,14 @@ export default function KnowledgeBase() {
               "Print and place QR stickers on each table — you're live!",
             ]} />
           </SubSection>
+          <SubSection title="Self Onboard Agent (recommended)">
+            <p>The fastest way to go live is the <strong>Self Onboard</strong> button in the top bar (sparkle icon, next to the help icon). It opens a full-screen AI specialist that walks you through every step, answers questions, and can perform safe actions for you (add tables in bulk, set GST, configure your AI agent, record your POS strategy, etc.).</p>
+            <ul className="list-disc pl-5 space-y-1 mt-2">
+              <li>Live readiness score with blockers highlighted.</li>
+              <li>One-click <strong>Go Live</strong> button enabled once every required step is complete.</li>
+              <li>Hides itself after you go live. You can reopen it any time from Settings.</li>
+            </ul>
+          </SubSection>
           <Tip>QR codes are permanent — once printed, they never change. You can safely order stickers.</Tip>
         </Section>
 
