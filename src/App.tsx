@@ -44,6 +44,7 @@ import KnowledgeBase from "@/pages/KnowledgeBase";
 import Reporting from "@/pages/Reporting";
 import OrderStatuses from "@/pages/OrderStatuses";
 import OrderThrottling from "@/pages/OrderThrottling";
+import SelfOnboard from "@/pages/SelfOnboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -143,6 +144,7 @@ function AppRoutes() {
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />
         <Route path="/reporting" element={<Reporting />} />
         <Route path="/knowledge-base" element={<KnowledgeBase />} />
+        <Route path="/self-onboard" element={<SelfOnboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </DashboardLayout>
