@@ -5,6 +5,7 @@ import IdleTimeoutModal from "@/components/consumer/IdleTimeoutModal";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
+import { supabase } from "@/integrations/supabase/client";
 
 import { usePermissions } from "@/hooks/use-permissions";
 import {
