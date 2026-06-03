@@ -10,10 +10,10 @@ import { toast } from "@/hooks/use-toast";
 import { ShieldAlert, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 /**
- * INTERNAL — visible only to tabless_admin.
+ * INTERNAL — visible only to platform admins.
  *
- * Lets a Tab-Less platform admin paste the underlying processor credentials
- * (Adyen test/live API + client keys, merchant account, HMAC) for a venue.
+ * Lets an H&L Pay platform admin paste the underlying processor credentials
+ * (test/live API + client keys, merchant account, HMAC) for a venue.
  * These never appear in the venue-facing Settings → Payments tab.
  *
  * Without these, the consumer checkout silently runs in mock mode and
