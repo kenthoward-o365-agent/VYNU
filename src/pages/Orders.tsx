@@ -64,6 +64,10 @@ interface Order {
   session_id: string | null;
   session_mode: string | null;
   fired_at: string | null;
+  pos_order_id?: string | null;
+  pos_push_status?: string | null;
+  pos_pushed_at?: string | null;
+  pos_push_error?: string | null;
 }
 
 interface SessionRow {
