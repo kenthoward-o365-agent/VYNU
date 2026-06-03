@@ -267,8 +267,43 @@ export default function Orders() {
     })();
   }, [terminal?.terminal_id, terminalOverride, JSON.stringify(terminal?.area_ids)]);
 
-  useEffect(() => { fetchVenueStatuses(); fetchVenueSettings(); }, [venue?.id]);
+  useEffect(() => { fetchVenueStatuses(); fetchVenueSettings(); fetchPosIntegration(); }, [venue?.id]);
   useEffect(() => { fetchOrders(); fetchSessions(); }, [venue, filter, auditDate, venueStatuses]);
+
+  const fetchPosIntegration = async () => {
+    if (!venue) return setPosIntegration(null);
+    const { data } = await (supabase as any).from("venue_pos_integrations")
+      .select("pos_provider, connection_status")
+      .eq("venue_id", venue.id).maybeSingle();
+    if (!data) { setPosIntegration(null); return; }
+    setPosIntegration({
+      slug: data.pos_provider,
+      connected: data.connection_status === "connected",
+    });
+  };
+
+  const pushOrderToPos = async (orderId: string) => {
+    if (!venue) return;
+    setPushingOrderId(orderId);
+    const { data, error } = await supabase.functions.invoke("pos-order-push", {
+      body: { venue_id: venue.id, order_id: orderId },
+    });
+    setPushingOrderId(null);
+    if (error) { toast.error(error.message); return; }
+    if ((data as any)?.ok) toast.success("Queued for POS"); else toast.error((data as any)?.error ?? "Push failed");
+    fetchOrders();
+  };
+
+  const refreshOrderFromPos = async (orderId: string) => {
+    if (!venue || posIntegration?.slug !== "hl_exceed") return;
+    setPushingOrderId(orderId);
+    const { data, error } = await supabase.functions.invoke("pos-hl-order-get", {
+      body: { venue_id: venue.id, order_id: orderId },
+    });
+    setPushingOrderId(null);
+    if (error) { toast.error(error.message); return; }
+    if ((data as any)?.ok) toast.success("Refreshed from POS"); else toast.error((data as any)?.error ?? "Refresh failed");
+  };
 
   // Realtime subscription — patch in place instead of full re-fetch (Phase 3 scaling).
   // Avoids N×fetchOrders per event when many orders are flowing through the kitchen.
