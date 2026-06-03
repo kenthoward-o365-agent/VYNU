@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Cable, ExternalLink, RefreshCw } from "lucide-react";
+import { Cable, ExternalLink, RefreshCw, Settings } from "lucide-react";
+import HLPosPanel from "@/components/venue/HLPosPanel";
 
 interface Provider {
   id: string;
