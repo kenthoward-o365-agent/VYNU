@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   BookOpen, LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
   TrendingUp, Users, Settings, BarChart3, ChevronRight, Rocket, Sparkles,
-  SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X, Monitor, Sliders
+  SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X, Monitor, Sliders, Plug
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,7 @@ const tocItems: TocItem[] = [
   { id: "analytics", label: "Analytics", icon: TrendingUp },
   { id: "diners", label: "Diners", icon: Users },
   { id: "settings", label: "Settings", icon: Settings },
+  { id: "pos-integration", label: "POS Integration (H&L)", icon: Plug },
   { id: "test-cards", label: "Test Cards", icon: CreditCard },
 ];
 
@@ -622,6 +623,140 @@ export default function KnowledgeBase() {
               <li><strong>Personalised Welcome</strong> — Custom greeting based on loyalty tier with merge fields (</li>
             </ul>
           </SubSection>
+        </Section>
+
+        {/* POS Integration — H&L Exceed Web Orders */}
+        <Section id="pos-integration" title="POS Integration — H&L Exceed Web Orders" icon={Plug}>
+          <SubSection title="What this integration does">
+            <p>
+              When a diner places an order through H&L OrderNOW, we can push that order straight into your H&L Exceed POS via the <strong>H&L Web Orders API</strong>. The order opens on the POS exactly as if a staff member had keyed it in — same docket, same PLUs, same tender, same table. No double-handling, no re-keying at end of service.
+            </p>
+            <p>
+              This is opt-in per venue. Until it's switched on, orders stay in the H&L OrderNOW Orders screen only. Once on, every new order is queued for push within seconds of being placed, and you can manually push or refresh any order from the order card.
+            </p>
+            <p className="text-xs">
+              Reference: <a className="underline" href="https://developer.hlpos.com/reference/addorder" target="_blank" rel="noreferrer">developer.hlpos.com/reference/addorder</a>
+            </p>
+          </SubSection>
+
+          <SubSection title="How it works end-to-end">
+            <ol className="list-decimal list-inside space-y-1 pl-1">
+              <li>Diner checks out in H&L OrderNOW → order row is written to our database and charged via H&L Pay.</li>
+              <li>A database trigger checks the venue's POS integration. If it's <em>connected</em> and <em>auto-push</em> is on, a <code>send_order</code> job is enqueued on our background worker.</li>
+              <li>The worker fetches an OAuth bearer token from H&L (cached for ~24h), maps our order to the H&L Web Orders payload, and POSTs to <code>https://weborders.hlcloud.com.au/api/order</code>.</li>
+              <li>H&L returns a success/failure. We write <code>pos_push_status</code>, <code>pos_pushed_at</code>, and any error back onto the order, and log the full request/response to <code>pos_sync_log</code>.</li>
+              <li>The Orders screen shows a coloured POS badge per order (<em>queued / sent / error / failed</em>). Managers can tap <strong>Push to POS</strong> to retry or <strong>Refresh</strong> to pull current status from H&L by reference.</li>
+            </ol>
+          </SubSection>
+
+          <SubSection title="Data we need from H&L (per venue)">
+            <p>H&L assigns these per venue/site. Capture them once in <strong>Settings → Integrations → H&L POS → Configure</strong>:</p>
+            <div className="rounded-lg border overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/50">
+                  <tr className="text-left">
+                    <th className="py-2 pr-3 pl-3 font-medium">Field</th>
+                    <th className="py-2 pr-3 font-medium">Source</th>
+                    <th className="py-2 font-medium">What it's for</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  <tr><td className="py-2 pr-3 pl-3"><code>client_id</code></td><td className="py-2 pr-3">H&L (secret)</td><td className="py-2">OAuth2 client credentials — identifies our integration to H&L's auth server.</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3"><code>client_secret</code></td><td className="py-2 pr-3">H&L (secret)</td><td className="py-2">OAuth2 secret. Stored encrypted; never displayed once saved.</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3"><code>integrator_id</code></td><td className="py-2 pr-3">H&L</td><td className="py-2">Numeric ID H&L issues to identify H&L OrderNOW as the originating integrator on this site.</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3"><code>recipient_id</code></td><td className="py-2 pr-3">H&L</td><td className="py-2">Numeric ID of the receiving POS/site within H&L's system. Routes our orders to the right venue.</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3"><code>station_no</code></td><td className="py-2 pr-3">H&L / venue</td><td className="py-2">Logical station the order is keyed against (used for sales reporting and docket routing on the POS).</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3"><code>shared_secret</code></td><td className="py-2 pr-3">H&L (secret)</td><td className="py-2">HMAC-SHA256 key H&L uses to sign webhooks back to us (status updates). Required if you want async status reconciliation.</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3"><code>default_tender_code</code></td><td className="py-2 pr-3">Venue choice</td><td className="py-2">PLU tender used for fast-tender orders (no table). Defaults to <code>63</code> = card.</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3"><code>serving_type</code> / <code>interface_type</code></td><td className="py-2 pr-3">H&L / venue</td><td className="py-2">Optional flags for service style (dine-in, takeaway, etc.) and interface channel. Defaults to <code>0</code>.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p>Server URLs (<code>oauth_token_url</code>, <code>oauth_audience</code>, <code>web_orders_base_url</code>) are pre-filled with H&L production defaults and only need to change for sandbox testing.</p>
+          </SubSection>
+
+          <SubSection title="Authentication (OAuth2 client credentials)">
+            <p>
+              On every push, the worker calls <code>POST https://auth.hlcloud.com.au/oauth/token</code> with the venue's <code>client_id</code>, <code>client_secret</code>, and <code>audience</code>, gets back a bearer token (valid ~24h), and caches it on the venue row. The next push reuses the cached token until ~5 min before expiry, then refreshes automatically. If H&L returns 401, we drop the cache and re-auth.
+            </p>
+          </SubSection>
+
+          <SubSection title="Order mapping — what we send">
+            <p>Each push to <code>POST /api/order</code> contains four blocks:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>header</strong> — <code>test</code> flag, <code>device_time</code>, generated <code>docket_no</code>, <code>integrator_id</code>, <code>recipient_id</code>, <code>station_no</code>, our order UUID as <code>reference</code>, and <code>table_no</code> when the diner is dining in.</li>
+              <li><strong>sale_items</strong> — one entry per cart line: <code>plu</code> (from the menu item's <em>POS ID</em>), <code>price</code>, <code>qty</code>, <code>description</code> (notes), and <code>modifier_items</code> with their own PLUs and prices.</li>
+              <li><strong>tenders</strong> — depends on the order mode (see below).</li>
+              <li><strong>customer</strong> — diner's first name and mobile (when provided), used by H&L for guest charges and loyalty.</li>
+            </ul>
+            <p>
+              <strong>Important:</strong> the <code>plu</code> we send is the value in the menu item's <em>POS ID</em> field (and the modifier's POS ID for modifiers). If a PLU is missing or wrong, H&L will reject the order. Keep POS IDs in sync with H&L Exceed's product file.
+            </p>
+          </SubSection>
+
+          <SubSection title="The four order modes">
+            <ul className="list-disc list-inside space-y-2 pl-1">
+              <li><strong>Fast tender (card)</strong> — no table, paid by H&L Pay. We send <code>tenders: [{`{ tendercode: 63, amount }`}]</code> (or whatever you've set as the default tender).</li>
+              <li><strong>Charge to table</strong> — order has a <code>table_no</code>. We send <code>tenders: []</code> and H&L opens / appends to the table tab.</li>
+              <li><strong>Guest charge (room/hotel)</strong> — payment method <em>guest_charge</em>. We send <code>tendercode: 15</code>.</li>
+              <li><strong>Debtor charge (house account)</strong> — payment method <em>debtor</em>. We send <code>tendercode: 17</code> with the diner's <code>account_id</code>.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Status reconciliation — webhooks + GET fallback">
+            <p>
+              When H&L's POS finishes a key step on a docket (accepted, voided, etc.) it can POST a webhook to our <code>pos-hl-webhook</code> endpoint. We verify the HMAC-SHA256 signature using the venue's <code>shared_secret</code> and update the matching order.
+            </p>
+            <p>
+              As a safety net — webhooks can be missed if the POS loses internet, or skipped entirely during initial setup — we also support a manual <strong>Refresh</strong> button on every order. It calls <code>GET /api/order/{`{reference}`}</code> using our order UUID as the reference and writes the live H&L status back onto the order row.
+            </p>
+          </SubSection>
+
+          <SubSection title="Setting it up (operator walkthrough)">
+            <StepList steps={[
+              "Get integrator_id, recipient_id, station_no, client_id, client_secret, and shared_secret from H&L for the venue.",
+              "In H&L OrderNOW, go to Settings → Integrations and click Connect on H&L POS.",
+              "Click Configure on the venue row to open the H&L panel.",
+              "Paste in the credentials, set Station No and default tender (leave at 63 unless H&L says otherwise).",
+              "Leave Test mode ON for the first push. Click Send test order — this fires a $0.01, PLU 1 test docket with test:true so H&L's environment knows to discard it.",
+              "Confirm the request/response panel shows a 2xx and the docket appears on the H&L side.",
+              "Flip Test mode OFF and toggle Auto-push orders to POS on. From this point, every new H&L OrderNOW order pushes automatically.",
+              "Optionally give H&L the webhook URL (Settings → Integrations shows the per-venue webhook endpoint) so status updates flow back.",
+            ]} />
+          </SubSection>
+
+          <SubSection title="Operating the integration day-to-day">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>The Orders page shows a POS badge on every order: <em>queued</em> (waiting for the worker), <em>sent</em> (accepted by H&L), <em>error</em> (push failed — see the error message), <em>failed</em> (retries exhausted).</li>
+              <li><strong>Push to POS</strong> — manually queues a send for any order. Use this to retry after an error, or to push an order that was placed while auto-push was off.</li>
+              <li><strong>Refresh</strong> — pulls current status for that order from H&L by reference. Useful when a webhook was missed or to confirm a docket landed.</li>
+              <li>Full request/response logs for every push and webhook live in <code>pos_sync_log</code> and are visible under Settings → Integrations → Activity for troubleshooting.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Troubleshooting">
+            <div className="rounded-lg border overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/50">
+                  <tr className="text-left">
+                    <th className="py-2 pr-3 pl-3 font-medium">Symptom</th>
+                    <th className="py-2 pr-3 font-medium">Likely cause</th>
+                    <th className="py-2 font-medium">Fix</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  <tr><td className="py-2 pr-3 pl-3">Test order fails with 401</td><td className="py-2 pr-3">Bad client_id / client_secret, or wrong audience</td><td className="py-2">Re-paste credentials. Confirm audience matches H&L's environment.</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3">400 &quot;invalid PLU&quot;</td><td className="py-2 pr-3">Menu item POS ID doesn't exist on H&L</td><td className="py-2">Update the POS ID on the item / modifier to match the H&L PLU.</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3">Order accepted but never appears on docket printer</td><td className="py-2 pr-3">Wrong station_no for this site</td><td className="py-2">Confirm the station number with H&L and update under Configure.</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3">Auto-push not firing</td><td className="py-2 pr-3">Toggle off, or integration status not Connected</td><td className="py-2">Turn auto-push back on under Configure; re-run Test connection.</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3">Webhook signature errors in log</td><td className="py-2 pr-3">shared_secret mismatch</td><td className="py-2">Rotate the shared secret with H&L and re-save under Configure.</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3">Table order pushed but bill went to a different table</td><td className="py-2 pr-3">QR sticker on the wrong table</td><td className="py-2">Check Tables &amp; QR — the H&L <code>table_no</code> mirrors the table number the diner scanned.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </SubSection>
+
+          <Tip>Always send at least one test order (Test mode ON, <code>test:true</code> header) and confirm H&L's environment received it before flipping auto-push on for a live venue. The first real push is the riskiest one — verify it once and the rest just work.</Tip>
         </Section>
 
         {/* Test Cards */}
