@@ -226,7 +226,7 @@ export default function ProcessorCredentialsTab({ venueId }: { venueId: string }
           <div>
             <Label className="text-sm">Merchant account</Label>
             <Input
-              placeholder="e.g. ShyndigPaymentsAUECOM"
+              placeholder="e.g. HLPayAUECOM"
               value={merchantAccount}
               onChange={(e) => setMerchantAccount(e.target.value)}
               className="font-mono text-sm mt-1.5"
