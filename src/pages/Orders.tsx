@@ -127,6 +127,8 @@ export default function Orders() {
   const [terminalAreaItemIds, setTerminalAreaItemIds] = useState<Set<string> | null>(null);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [fireGraceSeconds, setFireGraceSeconds] = useState(90);
+  const [posIntegration, setPosIntegration] = useState<{ slug: string; connected: boolean } | null>(null);
+  const [pushingOrderId, setPushingOrderId] = useState<string | null>(null);
 
   const statusByName = (name: string) => {
     const vs = venueStatuses.find((s) => s.name === name);
