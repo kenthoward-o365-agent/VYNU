@@ -10,10 +10,10 @@ import { toast } from "@/hooks/use-toast";
 import { ShieldAlert, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 /**
- * INTERNAL — visible only to tabless_admin.
+ * INTERNAL — visible only to platform admins.
  *
- * Lets a Tab-Less platform admin paste the underlying processor credentials
- * (Adyen test/live API + client keys, merchant account, HMAC) for a venue.
+ * Lets an H&L Pay platform admin paste the underlying processor credentials
+ * (test/live API + client keys, merchant account, HMAC) for a venue.
  * These never appear in the venue-facing Settings → Payments tab.
  *
  * Without these, the consumer checkout silently runs in mock mode and
@@ -207,7 +207,7 @@ export default function ProcessorCredentialsTab({ venueId }: { venueId: string }
         <CardContent className="pt-4 flex gap-3 text-sm">
           <ShieldAlert className="h-5 w-5 text-warning shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <p className="font-semibold">Internal credentials — Tab-Less staff only</p>
+            <p className="font-semibold">Internal credentials — H&amp;L Pay admins only</p>
             <p className="text-muted-foreground">
               These configure the underlying payment processor for this venue. Without them, the
               consumer checkout runs in <strong>simulated mode</strong> and never charges any card.
@@ -226,7 +226,7 @@ export default function ProcessorCredentialsTab({ venueId }: { venueId: string }
           <div>
             <Label className="text-sm">Merchant account</Label>
             <Input
-              placeholder="e.g. ShyndigPaymentsAUECOM"
+              placeholder="e.g. HLPayAUECOM"
               value={merchantAccount}
               onChange={(e) => setMerchantAccount(e.target.value)}
               className="font-mono text-sm mt-1.5"
