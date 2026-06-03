@@ -38,6 +38,8 @@ export default function HLPosPanel({ venueId }: Props) {
   const [sendingOrder, setSendingOrder] = useState(false);
   const [lastResult, setLastResult] = useState<unknown>(null);
   const [status, setStatus] = useState<string>("disconnected");
+  const [autoPush, setAutoPush] = useState<boolean>(false);
+  const [savingAutoPush, setSavingAutoPush] = useState(false);
 
   useEffect(() => { void load(); /* eslint-disable-next-line */ }, [venueId]);
 
@@ -46,7 +48,7 @@ export default function HLPosPanel({ venueId }: Props) {
     const [{ data: provider }, { data: integ }] = await Promise.all([
       (supabase as any).from("pos_providers").select("config_schema").eq("slug", "hl_exceed").maybeSingle(),
       (supabase as any).from("venue_pos_integrations")
-        .select("config, secrets_map, connection_status").eq("venue_id", venueId).maybeSingle(),
+        .select("config, secrets_map, connection_status, auto_push_orders").eq("venue_id", venueId).maybeSingle(),
     ]);
     const fields = (provider?.config_schema ?? []) as Field[];
     setSchema(fields);
@@ -56,8 +58,20 @@ export default function HLPosPanel({ venueId }: Props) {
     const sm = (integ?.secrets_map ?? {}) as Record<string, string>;
     setSecretsSet(Object.fromEntries(Object.keys(sm).map((k) => [k, true])));
     setStatus(integ?.connection_status ?? "disconnected");
+    setAutoPush(Boolean(integ?.auto_push_orders));
     setLoading(false);
   }
+
+  async function toggleAutoPush(next: boolean) {
+    setSavingAutoPush(true);
+    setAutoPush(next);
+    const { error } = await (supabase as any).from("venue_pos_integrations")
+      .update({ auto_push_orders: next }).eq("venue_id", venueId);
+    setSavingAutoPush(false);
+    if (error) { toast.error(error.message); setAutoPush(!next); return; }
+    toast.success(next ? "Auto-push enabled" : "Auto-push disabled");
+  }
+
 
   function setField(key: string, value: unknown) {
     setConfig((c) => ({ ...c, [key]: value }));
