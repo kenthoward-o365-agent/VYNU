@@ -1,89 +1,117 @@
 
-## Gap analysis: H&L POS spec vs. what we have today
+## Goal
 
-Our POS framework (`venue_pos_integrations` + `pos_providers` + adapter loader in `supabase/functions/_shared/pos-adapter.ts`) was designed around **Doshii's model**: one outbound JWT-authed cloud API, pull-style. H&L POS (Exceed) is a different shape and needs four pieces the current framework doesn't cover.
+Re-target our H&L integration to the actual **H&L Web Orders API** (`https://weborders.hlcloud.com.au/api/order`) using documented OAuth2 client-credentials auth, and implement both **POST order** (send) and **GET order** (status lookup). Build against the spec now; sandbox credentials can be plugged in per venue later. After this lands, we'll review triggers/settings (auto-push on order insert, status reconciliation).
 
-| H&L POS requirement | Have today? | Gap |
-|---|---|---|
-| Adapter abstraction, breaker, secrets in Vault | ✅ `pos-adapter.ts`, `pos-context.ts`, `read/set_pos_credential` | None |
-| Per-venue config + onboarding UI | ✅ `PosConnectDialog`, `admin-set-pos-credentials` | Add H&L-specific fields |
-| **Inbound webhook receiver** (H&L POS pushes menu-change events to us, HMAC-signed) | ❌ Doshii is pull-only — no inbound signed-webhook endpoint exists | New public edge function |
-| **Scheduled + on-demand menu pull** from H&L Menu Management cloud | Partial — adapter has `pushMenu` but no `pullMenu` | Add `pullMenu` to adapter interface |
-| **Order push to on-prem Portal Service** (per-venue URL, PLU-based payload) | Partial — adapter has no `sendOrder`; orders today go via `pos-outbound-worker` to Doshii | Add `sendOrder` to adapter; H&L impl |
-| **Reverse menu sync** (H&L OrderNOW → POS) with approval queue | ❌ No approval-queue table or UI | New table + UI tab |
-| Two-direction sync toggles per venue | ❌ | Add toggles to `venue_pos_integrations` |
-| Idempotency, dedupe by event id, replay protection | Partial — `api_idempotency` exists for inbound API | Reuse for webhook dedupe |
-| Backup printing fallback when POS unreachable | ✅ Display terminals exist as fallback path | Wire failure → terminal route |
+---
 
-The architecture stays — H&L POS becomes one more adapter slug. The new pieces (webhook receiver, scheduled menu sync, sendOrder) are general additions that also benefit future adapters.
+## Confirmed decisions
 
-## Plan
+1. **Build blind against the spec** — no live sandbox creds yet. All HTTP calls behind a venue-level "POS push enabled" flag, default **off**, and a `test: true` flag in the H&L header until real creds are wired.
+2. **`integrator_id` / `recipient_id` / `station_no` are per-venue** — captured in the connect dialog via `pos_providers.config_schema`.
+3. **Default tender code = 63 (card)** for fast-tender orders. When the order has a `table_no`, send `tenders: []` (charge-to-table mode).
 
-### 1. Extend the POS framework (provider-agnostic)
+---
 
-- Add to `PosAdapter` interface in `_shared/pos-adapter.ts`:
-  - `pullMenu(ctx)` → returns normalised menu snapshot
-  - `sendOrder(ctx, order)` → returns `{ posOrderId, accepted }`
-  - `verifyWebhook(ctx, headers, rawBody)` → boolean (HMAC check)
-- Register slug `hl_exceed` in the `KNOWN` loader map.
+## Spec recap (what we're building to)
 
-### 2. New schema (migration)
+**Auth** — `POST https://auth.hlcloud.com.au/oauth/token` (sandbox: `handl-sandbox.au.auth0.com`)
+- Body: `{ client_id, client_secret, audience, grant_type: "client_credentials" }`
+- Returns: `{ access_token, token_type, expires_in (~86400), scope }`
 
-- `pos_providers` row: `{ slug: "hl_exceed", name: "H&L Exceed POS", config_schema: [...] }` with fields:
-  - secrets: `shared_secret`, `service_account_token`
-  - config: `organisation_id`, `tenant_id` (venueId on their side), `location_id`, `menu_service_base_url`, `subscription_service_base_url`, `portal_service_url` (on-prem, per venue), `fail_notification_email`
-- Add columns to `venue_pos_integrations`:
-  - `sync_pos_to_us boolean default true`
-  - `sync_us_to_pos boolean default false`
-  - `last_menu_pull_at timestamptz`, `last_webhook_at timestamptz`
-- New table `pos_menu_change_queue` (approval queue for our→POS pushes): venue_id, menu_item_id, pos_id, payload jsonb, status (`pending|approved|sent|failed`), created_at, reviewed_by, error.
-- New table `pos_webhook_events` (dedupe + audit): venue_id, event_id (unique), topic, received_at, processed_at, signature_valid, raw jsonb.
+**Send order** — `POST https://weborders.hlcloud.com.au/api/order` with `Authorization: Bearer …`
+```
+{
+  "header": { test, device_time, docket_no, serving_type, interface_type,
+              integrator_id, recipient_id, reference, station_no, table_no? },
+  "sale_items": [ { plu, price, qty, description, modifier_items: [...] } ],
+  "tenders":    [ { tendercode, amount, surcharge?, account_id? } ],
+  "customer":   { first_name, mobile }
+}
+```
+Four order modes — fast tender / charge to table / guest charge (code 15) / debtor charge (code 17 + account_id).
 
-### 3. H&L Exceed adapter (`supabase/functions/adapters/hl_exceed/index.ts`)
+**Get order** — by `reference` (UUID we send). Used for status reconciliation alongside webhooks.
 
-- `authenticate` — bearer token from `secrets.service_account_token` against H&L Menu Management
-- `testConnection` — GET `{menu_service_base_url}/locations/{location_id}` and assert non-empty
-- `pullMenu` — paginated GET of menu items, modifier groups, dietary, item↔modifier links; normalise into our schema with `pos_id` = PLU
-- `pushMenu` — PUT linked items to POS (price/availability/modifiers only; new-item creation gated behind feature flag per spec §4.2 uncertainty)
-- `sendOrder` — POST to `portal_service_url` with PLU-based line items, table id, charges, member discount
-- `verifyWebhook` — HMAC-SHA256 of raw body with `shared_secret`, constant-time compare
+---
 
-### 4. New edge functions
+## Implementation
 
-- **`pos-hl-webhook`** (public, `verify_jwt = false` — H&L POS calls it directly)
-  - URL pattern: `/pos-hl-webhook/{our_location_id}`
-  - Steps: load integration by our_location_id → verify HMAC via adapter → insert into `pos_webhook_events` (unique event_id dedupes retries) → ack 200 immediately → enqueue `jobs_pos_outbound` job `{ kind: "menu_pull", venue_id }`
-- **`pos-menu-pull`** (scheduled + on-demand)
-  - Called by cron (hourly) and by webhook-triggered job
-  - Loads adapter, calls `pullMenu`, upserts into `menu_items`/`menu_categories`/modifiers by `pos_id`
-- **`pos-menu-push`** (worker for our→POS direction)
-  - Reads `pos_menu_change_queue` where status = `approved`, calls `adapter.pushMenu`, marks sent/failed
-- Extend existing **`pos-outbound-worker`** to dispatch `kind: "send_order"` → `adapter.sendOrder`, with fallback to print terminal on failure
+### 1. Shared client — `supabase/functions/_shared/hl-weborders-client.ts`
+Single source of truth. Exports:
+- `getHLToken(ctx)` — OAuth2 client-credentials call; caches `access_token` + `expires_at` in `venue_pos_integrations.token_cache` (refresh 5 min before expiry).
+- `mapOutboundOrder(order, ctx)` — converts our `OutboundOrder` → H&L payload. Branches:
+  - `tableExternalId` present → `header.table_no` set, `tenders: []`
+  - else → fast tender using `default_tender_code` (63) and `payment.amount`
+  - `payment.method === 'guest_charge'` → `tendercode: 15`
+  - `payment.method === 'debtor'` → `tendercode: 17, account_id`
+- `postOrder(ctx, payload)` — POST with bearer token, returns `{ status, body }`.
+- `getOrder(ctx, reference)` — GET status by reference.
+- `verifyHLSignature(secret, rawBody, hex)` — HMAC-SHA256 (move the working helper out of the adapter file).
 
-### 5. Operator UI
+### 2. Rewrite `supabase/functions/adapters/hl_exceed/index.ts`
+- `authenticate()` → `getHLToken()` (returns token + expiresAt).
+- `sendOrder()` → `mapOutboundOrder` + `postOrder`; returns `{ posOrderId: reference, accepted, raw }`.
+- `testConnection()` → try `getHLToken()`; success = creds valid. Drop the obsolete Menu Service / Portal Service URL checks.
+- `verifyWebhook()` → delegate to `verifyHLSignature`.
+- Remove `pullMenu` / `pushMenu` for now (this spec doesn't expose menu endpoints publicly) — leave a stub returning empty so existing callers don't crash.
 
-- New tab in venue Settings → POS: **H&L Pay-style "H&L POS" panel** with:
-  - Connection fields (org id, tenant id, location id, base URLs, portal URL, shared secret, service token)
-  - Sync direction toggles (POS→us, us→POS)
-  - "Test connection" button → calls `pos-test-connection`
-  - "Sync menu now" button → calls `pos-menu-pull`
-  - Onboarding checklist showing: our identifiers to share with H&L, status of role grant, status of subscription, last webhook received
-- New admin page **Pending Menu Changes** listing `pos_menu_change_queue` items with approve/reject
+### 3. New edge function — `supabase/functions/pos-hl-order-get/index.ts`
+- Verifies JWT, checks `is_venue_manager`.
+- Body: `{ venue_id, order_id }`. Loads order → `pos_order_id` (= our reference UUID) → `adapter.getOrder()` → logs to `pos_sync_log`, returns H&L status.
+- Used by operator "Refresh from POS" button.
 
-### 6. Documentation + onboarding values
+### 4. New edge function — `supabase/functions/pos-hl-test-order/index.ts`
+- Manager-only. Builds a hard-coded test payload (`test: true`, fake PLU, $0.01) and calls `postOrder`. Returns full request/response for the connect dialog's "Send test order" button.
 
-- Generate per-venue **integration sheet** showing the three values H&L POS needs from us: `client_id`, `our_location_id`, fully-formed `callbackUrl` (`https://jsbxivkgfekcgvtyqnek.supabase.co/functions/v1/pos-hl-webhook/{our_location_id}`)
-- Document in `KnowledgeBase.tsx` under a new "H&L POS Integration" section
+### 5. Update `pos-outbound-worker`
+- On successful `send_order`, enqueue a deferred `pull_order_status` job (~60s later) as a safety net if the webhook is missed.
 
-### Out of scope (per spec §1)
+### 6. Migration — `supabase/migrations/<ts>_hl_weborders_config.sql`
+- Update `pos_providers` row where `slug = 'hl_exceed'` with new `config_schema`:
+  - `oauth_token_url` (text, default `https://auth.hlcloud.com.au/oauth/token`)
+  - `oauth_audience` (text, default `handl-production-api`)
+  - `web_orders_base_url` (text, default `https://weborders.hlcloud.com.au/api/order`)
+  - `integrator_id` (number, required) — per-venue
+  - `recipient_id` (number, required) — per-venue
+  - `station_no` (number, required) — per-venue
+  - `default_tender_code` (number, default 63)
+  - `serving_type` (number, default 0)
+  - `interface_type` (number, default 0)
+  - **Secrets:** `client_id`, `client_secret`, `shared_secret` (webhook HMAC)
+- Add `token_cache jsonb` column on `venue_pos_integrations` if missing.
 
-- Pickup, delivery, counter ordering (table-only for v1)
-- New-item creation from H&L OrderNOW → POS (flagged uncertain in spec §4.2; ship update-only, add create later)
-- Member discount lookup against POS Order Service (separate follow-up; spec §10)
+### 7. UI — `src/components/venue/HLPosPanel.tsx`
+- Render the new config fields (integrator_id, recipient_id, station_no, default tender).
+- "Send test order" button → `pos-hl-test-order`, shows request/response JSON.
+- Status pill: latest `pos_sync_log` entry for `outbound_send_order`.
 
-### Technical notes
+### 8. `supabase/config.toml`
+- Register `pos-hl-order-get` and `pos-hl-test-order` (default — JWT required).
 
-- Webhook endpoint is the only new **public** edge function; everything else is service-role
-- Idempotency: `pos_webhook_events.event_id` unique constraint + 24h cleanup via existing `purge_api_idempotency` pattern
-- All H&L secrets stored via existing `set_pos_credential` RPC → Vault; nothing in plain config
-- Backup printing already exists via `display_terminals` — `sendOrder` failure path enqueues the order to the terminal queue so the kitchen still gets it
+---
+
+## Out of scope (next iteration — triggers & settings review)
+
+After this lands and we've smoke-tested against H&L sandbox:
+- `venue_pos_integrations.auto_push_orders` boolean.
+- DB trigger on `orders` insert → enqueue `send_order` when flag is on.
+- Per-order "Push to POS" / "Refresh from POS" buttons on the Orders page.
+- Webhook → status reconciliation refinement against H&L's real event topics.
+
+---
+
+## Files
+
+**New**
+- `supabase/functions/_shared/hl-weborders-client.ts`
+- `supabase/functions/pos-hl-order-get/index.ts`
+- `supabase/functions/pos-hl-test-order/index.ts`
+- migration: update `pos_providers` for `hl_exceed`, add `token_cache` column
+
+**Edited**
+- `supabase/functions/adapters/hl_exceed/index.ts`
+- `supabase/functions/pos-hl-webhook/index.ts` (use shared verifier)
+- `supabase/functions/pos-outbound-worker/index.ts` (deferred status-pull)
+- `src/components/venue/HLPosPanel.tsx`
+- `supabase/config.toml`

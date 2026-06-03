@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Cable, ExternalLink, RefreshCw } from "lucide-react";
+import { Cable, ExternalLink, RefreshCw, Settings } from "lucide-react";
+import HLPosPanel from "@/components/venue/HLPosPanel";
 
 interface Provider {
   id: string;
@@ -35,6 +37,7 @@ export default function AdminIntegrations() {
   const [connections, setConnections] = useState<ConnectionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState<string | null>(null);
+  const [configVenueId, setConfigVenueId] = useState<string | null>(null);
 
   useEffect(() => { void load(); }, []);
 
@@ -152,7 +155,13 @@ export default function AdminIntegrations() {
                         <TableCell className="max-w-[280px] truncate text-xs text-destructive">
                           {c.last_error ?? ""}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right space-x-2">
+                          {c.pos_providers?.slug === "hl_exceed" && (
+                            <Button size="sm" variant="outline" onClick={() => setConfigVenueId(c.venue_id)}>
+                              <Settings className="h-3 w-3 mr-1" />
+                              Configure
+                            </Button>
+                          )}
                           <Button size="sm" variant="outline" disabled={testing === c.venue_id}
                                   onClick={() => testConnection(c.venue_id)}>
                             <RefreshCw className={`h-3 w-3 mr-1 ${testing === c.venue_id ? "animate-spin" : ""}`} />
@@ -168,6 +177,15 @@ export default function AdminIntegrations() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!configVenueId} onOpenChange={(o) => !o && setConfigVenueId(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>H&L Exceed configuration</DialogTitle>
+          </DialogHeader>
+          {configVenueId && <HLPosPanel venueId={configVenueId} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
