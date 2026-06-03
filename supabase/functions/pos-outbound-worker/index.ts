@@ -106,14 +106,61 @@ Deno.serve(async (req) => {
 
           case "send_order": {
             if (!adapter.sendOrder) throw new Error("sendOrder unsupported");
-            const sent = await adapter.sendOrder(ctx, payload.order);
-            // Record the POS order id on our order row if present
-            if (payload.order?.orderId && sent.posOrderId) {
-              await supabase.from("orders").update({ pos_order_id: sent.posOrderId } as any)
-                .eq("id", payload.order.orderId);
+            let orderPayload: any = payload.order;
+            let dbOrderId: string | null = payload.order?.orderId ?? payload.order_id ?? null;
+
+            // If only order_id was provided, build an OutboundOrder from the DB.
+            if (!orderPayload && payload.order_id) {
+              const { data: ord } = await supabase
+                .from("orders")
+                .select("id, table_id, total, customer_notes, gratuity_amount, " +
+                        "tables ( table_number ), " +
+                        "order_items ( quantity, unit_price, notes, modifiers, " +
+                        "  menu_items ( plu, pos_id, name ) )")
+                .eq("id", payload.order_id).maybeSingle();
+              if (!ord) throw new Error(`order ${payload.order_id} not found`);
+              const items = (ord as any).order_items ?? [];
+              const subtotal = items.reduce(
+                (s: number, li: any) => s + Number(li.unit_price) * Number(li.quantity), 0,
+              );
+              orderPayload = {
+                orderId: ord.id,
+                tableExternalId: (ord as any).tables?.table_number ?? null,
+                lineItems: items.map((li: any) => ({
+                  posId: li.menu_items?.plu || li.menu_items?.pos_id || "",
+                  quantity: Number(li.quantity),
+                  unitPrice: Number(li.unit_price),
+                  notes: li.notes ?? null,
+                  modifiers: Array.isArray(li.modifiers)
+                    ? li.modifiers.map((m: any) => ({
+                        posId: m.plu || m.pos_id || "",
+                        quantity: Number(m.quantity ?? 1),
+                        unitPrice: Number(m.price ?? 0),
+                      }))
+                    : [],
+                })),
+                totals: {
+                  subtotal,
+                  tax: 0,
+                  total: Number((ord as any).total ?? subtotal),
+                  tip: Number((ord as any).gratuity_amount ?? 0),
+                },
+              };
+              dbOrderId = ord.id;
+            }
+
+            const sent = await adapter.sendOrder(ctx, orderPayload);
+            if (dbOrderId) {
+              await supabase.from("orders").update({
+                pos_order_id: sent.posOrderId ?? dbOrderId,
+                pos_push_status: sent.accepted ? "sent" : "error",
+                pos_pushed_at: new Date().toISOString(),
+                pos_push_error: sent.accepted ? null : "POS did not accept order",
+              } as any).eq("id", dbOrderId);
             }
             return { ok: true };
           }
+
 
           default:
             throw new Error(`unknown kind: ${payload.kind}`);
@@ -133,6 +180,14 @@ Deno.serve(async (req) => {
       result: ok ? "success" : "error",
       error_message: ok ? null : errMsg,
     });
+
+    if (!ok && payload.kind === "send_order" && (payload.order_id || payload.order?.orderId)) {
+      const oid = payload.order_id ?? payload.order?.orderId;
+      await supabase.from("orders").update({
+        pos_push_status: m.read_ct >= MAX_ATTEMPTS ? "failed" : "error",
+        pos_push_error: errMsg,
+      } as any).eq("id", oid);
+    }
 
     if (ok) {
       await supabase.rpc("ack_job", { _queue: QUEUE, _msg_id: m.msg_id });

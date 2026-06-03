@@ -1842,6 +1842,9 @@ export type Database = {
           payment_is_mock: boolean
           payment_psp_reference: string | null
           pos_order_id: string | null
+          pos_push_error: string | null
+          pos_push_status: string | null
+          pos_pushed_at: string | null
           session_id: string | null
           session_mode: string | null
           status: Database["public"]["Enums"]["order_status"]
@@ -1863,6 +1866,9 @@ export type Database = {
           payment_is_mock?: boolean
           payment_psp_reference?: string | null
           pos_order_id?: string | null
+          pos_push_error?: string | null
+          pos_push_status?: string | null
+          pos_pushed_at?: string | null
           session_id?: string | null
           session_mode?: string | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -1884,6 +1890,9 @@ export type Database = {
           payment_is_mock?: boolean
           payment_psp_reference?: string | null
           pos_order_id?: string | null
+          pos_push_error?: string | null
+          pos_push_status?: string | null
+          pos_pushed_at?: string | null
           session_id?: string | null
           session_mode?: string | null
           status?: Database["public"]["Enums"]["order_status"]
@@ -3159,6 +3168,7 @@ export type Database = {
         Row: {
           account_id: string | null
           api_key_ref: string | null
+          auto_push_orders: boolean
           breaker_failures: number
           breaker_opened_at: string | null
           breaker_state: string
@@ -3188,6 +3198,7 @@ export type Database = {
         Insert: {
           account_id?: string | null
           api_key_ref?: string | null
+          auto_push_orders?: boolean
           breaker_failures?: number
           breaker_opened_at?: string | null
           breaker_state?: string
@@ -3217,6 +3228,7 @@ export type Database = {
         Update: {
           account_id?: string | null
           api_key_ref?: string | null
+          auto_push_orders?: boolean
           breaker_failures?: number
           breaker_opened_at?: string | null
           breaker_state?: string

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Clock, ChefHat, CheckCircle, DollarSign, ShoppingCart, XCircle, RotateCcw, Undo2, Monitor, Link2 } from "lucide-react";
+import { ClipboardList, Clock, ChefHat, CheckCircle, DollarSign, ShoppingCart, XCircle, RotateCcw, Undo2, Monitor, Link2, Send, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
 import OrderAgeBadge from "@/components/orders/OrderAgeBadge";
@@ -64,6 +64,10 @@ interface Order {
   session_id: string | null;
   session_mode: string | null;
   fired_at: string | null;
+  pos_order_id?: string | null;
+  pos_push_status?: string | null;
+  pos_pushed_at?: string | null;
+  pos_push_error?: string | null;
 }
 
 interface SessionRow {
@@ -123,6 +127,8 @@ export default function Orders() {
   const [terminalAreaItemIds, setTerminalAreaItemIds] = useState<Set<string> | null>(null);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [fireGraceSeconds, setFireGraceSeconds] = useState(90);
+  const [posIntegration, setPosIntegration] = useState<{ slug: string; connected: boolean } | null>(null);
+  const [pushingOrderId, setPushingOrderId] = useState<string | null>(null);
 
   const statusByName = (name: string) => {
     const vs = venueStatuses.find((s) => s.name === name);
@@ -261,8 +267,43 @@ export default function Orders() {
     })();
   }, [terminal?.terminal_id, terminalOverride, JSON.stringify(terminal?.area_ids)]);
 
-  useEffect(() => { fetchVenueStatuses(); fetchVenueSettings(); }, [venue?.id]);
+  useEffect(() => { fetchVenueStatuses(); fetchVenueSettings(); fetchPosIntegration(); }, [venue?.id]);
   useEffect(() => { fetchOrders(); fetchSessions(); }, [venue, filter, auditDate, venueStatuses]);
+
+  const fetchPosIntegration = async () => {
+    if (!venue) return setPosIntegration(null);
+    const { data } = await (supabase as any).from("venue_pos_integrations")
+      .select("pos_provider, connection_status")
+      .eq("venue_id", venue.id).maybeSingle();
+    if (!data) { setPosIntegration(null); return; }
+    setPosIntegration({
+      slug: data.pos_provider,
+      connected: data.connection_status === "connected",
+    });
+  };
+
+  const pushOrderToPos = async (orderId: string) => {
+    if (!venue) return;
+    setPushingOrderId(orderId);
+    const { data, error } = await supabase.functions.invoke("pos-order-push", {
+      body: { venue_id: venue.id, order_id: orderId },
+    });
+    setPushingOrderId(null);
+    if (error) { toast.error(error.message); return; }
+    if ((data as any)?.ok) toast.success("Queued for POS"); else toast.error((data as any)?.error ?? "Push failed");
+    fetchOrders();
+  };
+
+  const refreshOrderFromPos = async (orderId: string) => {
+    if (!venue || posIntegration?.slug !== "hl_exceed") return;
+    setPushingOrderId(orderId);
+    const { data, error } = await supabase.functions.invoke("pos-hl-order-get", {
+      body: { venue_id: venue.id, order_id: orderId },
+    });
+    setPushingOrderId(null);
+    if (error) { toast.error(error.message); return; }
+    if ((data as any)?.ok) toast.success("Refreshed from POS"); else toast.error((data as any)?.error ?? "Refresh failed");
+  };
 
   // Realtime subscription — patch in place instead of full re-fetch (Phase 3 scaling).
   // Avoids N×fetchOrders per event when many orders are flowing through the kitchen.
@@ -481,6 +522,47 @@ export default function Orders() {
                   <RotateCcw className="h-3.5 w-3.5 mr-1" />Re-open & Refund
                 </Button>
               )}
+            </div>
+          )}
+          {posIntegration && (
+            <div className="flex flex-col gap-1.5 pt-1 border-t border-border">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">POS</span>
+                {order.pos_push_status ? (
+                  <Badge
+                    variant={
+                      order.pos_push_status === "sent" ? "default" :
+                      order.pos_push_status === "queued" ? "secondary" :
+                      "destructive"
+                    }
+                    className="text-[10px]"
+                    title={order.pos_push_error ?? undefined}
+                  >
+                    {order.pos_push_status}
+                  </Badge>
+                ) : (
+                  <span className="text-muted-foreground text-[10px]">not pushed</span>
+                )}
+              </div>
+              <div className="flex gap-1.5">
+                <Button
+                  className="flex-1" size="sm" variant="outline"
+                  disabled={!posIntegration.connected || pushingOrderId === order.id}
+                  onClick={() => pushOrderToPos(order.id)}
+                >
+                  <Send className="h-3.5 w-3.5 mr-1" />
+                  {order.pos_push_status === "sent" ? "Re-push" : "Push to POS"}
+                </Button>
+                {posIntegration.slug === "hl_exceed" && (
+                  <Button
+                    className="flex-1" size="sm" variant="outline"
+                    disabled={!posIntegration.connected || pushingOrderId === order.id}
+                    onClick={() => refreshOrderFromPos(order.id)}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
