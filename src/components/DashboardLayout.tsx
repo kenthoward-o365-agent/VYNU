@@ -106,6 +106,23 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     onTimeout: handleIdleLogout,
   });
 
+  // Self Onboard button visibility — show until status is completed or dismissed.
+  const [onboardingStatus, setOnboardingStatus] = useState<string | null>(null);
+  useEffect(() => {
+    if (!venue?.id || !perms.can("settings")) { setOnboardingStatus(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("venue_onboarding_state")
+        .select("status")
+        .eq("venue_id", venue.id)
+        .maybeSingle();
+      if (!cancelled) setOnboardingStatus((data?.status as string) ?? "in_progress");
+    })();
+    return () => { cancelled = true; };
+  }, [venue?.id, perms, location.pathname]);
+  const showSelfOnboard = !!venue && perms.can("settings") && onboardingStatus !== "completed" && onboardingStatus !== "dismissed";
+
   const showVenueNav = !!venue;
   const showGroupNav = showVenueNav && !isTablessAdmin && isGroupAdmin;
   const filteredVenueNav = venueNavItems.filter((item) => perms.can(item.navKey));
@@ -577,7 +594,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <h1 className="text-lg font-semibold text-foreground">
             {location.pathname === "/knowledge-base" ? "Knowledge Base" : location.pathname === "/orders/statuses" ? "Order Display System" : allNavItems.find((i) => i.path === location.pathname)?.label || "H&L OrderNOW"}
           </h1>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            {showSelfOnboard && (
+              <Link
+                to="/self-onboard"
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                title="Self Onboard"
+              >
+                <Sparkles className="h-4 w-4" />
+                Self Onboard
+              </Link>
+            )}
             <Link to="/knowledge-base" className="inline-flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors" title="Knowledge Base">
               <HelpCircle className="h-5 w-5" />
             </Link>
