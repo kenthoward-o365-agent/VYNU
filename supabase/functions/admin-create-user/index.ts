@@ -305,6 +305,9 @@ Deno.serve(async (req) => {
         const existing = listData?.users?.find((u: any) => u.email === email);
         if (!existing) return json({ error: "User exists but could not be found" }, 400);
         userId = existing.id;
+        // Reset password to whatever the admin typed so the form behaves as advertised.
+        const { error: pwErr } = await adminClient.auth.admin.updateUserById(userId, { password });
+        if (pwErr) return json({ error: `User existed; password reset failed: ${pwErr.message}` }, 400);
       } else {
         return json({ error: createError.message }, 400);
       }
