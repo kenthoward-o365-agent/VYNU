@@ -524,6 +524,47 @@ export default function Orders() {
               )}
             </div>
           )}
+          {posIntegration && (
+            <div className="flex flex-col gap-1.5 pt-1 border-t border-border">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">POS</span>
+                {order.pos_push_status ? (
+                  <Badge
+                    variant={
+                      order.pos_push_status === "sent" ? "default" :
+                      order.pos_push_status === "queued" ? "secondary" :
+                      "destructive"
+                    }
+                    className="text-[10px]"
+                    title={order.pos_push_error ?? undefined}
+                  >
+                    {order.pos_push_status}
+                  </Badge>
+                ) : (
+                  <span className="text-muted-foreground text-[10px]">not pushed</span>
+                )}
+              </div>
+              <div className="flex gap-1.5">
+                <Button
+                  className="flex-1" size="sm" variant="outline"
+                  disabled={!posIntegration.connected || pushingOrderId === order.id}
+                  onClick={() => pushOrderToPos(order.id)}
+                >
+                  <Send className="h-3.5 w-3.5 mr-1" />
+                  {order.pos_push_status === "sent" ? "Re-push" : "Push to POS"}
+                </Button>
+                {posIntegration.slug === "hl_exceed" && (
+                  <Button
+                    className="flex-1" size="sm" variant="outline"
+                    disabled={!posIntegration.connected || pushingOrderId === order.id}
+                    onClick={() => refreshOrderFromPos(order.id)}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
