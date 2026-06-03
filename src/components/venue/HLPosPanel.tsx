@@ -207,6 +207,34 @@ export default function HLPosPanel({ venueId }: Props) {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Auto-push orders to POS</CardTitle>
+          <CardDescription>
+            When enabled, every new order at this venue is automatically queued
+            to be sent to H&amp;L. Disable to keep orders in the in-app feed only.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="auto-push">Auto-push enabled</Label>
+              <p className="text-xs text-muted-foreground">
+                Requires a connected H&amp;L integration. Status: <span className="font-medium">{status}</span>
+              </p>
+            </div>
+            <Switch
+              id="auto-push"
+              checked={autoPush}
+              disabled={savingAutoPush || status !== "connected"}
+              onCheckedChange={toggleAutoPush}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+
+
       {lastResult !== null && (
         <Card>
           <CardHeader><CardTitle>Last test order</CardTitle></CardHeader>
