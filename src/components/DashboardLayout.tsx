@@ -8,7 +8,7 @@ import { useVenue } from "@/contexts/VenueContext";
 
 import { usePermissions } from "@/hooks/use-permissions";
 import {
-  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Sliders, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug, Cable, Monitor, Pin, PinOff, BookOpen
+  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Sliders, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug, Cable, Monitor, Pin, PinOff, BookOpen, Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
