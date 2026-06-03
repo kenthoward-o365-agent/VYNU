@@ -181,6 +181,14 @@ Deno.serve(async (req) => {
       error_message: ok ? null : errMsg,
     });
 
+    if (!ok && payload.kind === "send_order" && (payload.order_id || payload.order?.orderId)) {
+      const oid = payload.order_id ?? payload.order?.orderId;
+      await supabase.from("orders").update({
+        pos_push_status: m.read_ct >= MAX_ATTEMPTS ? "failed" : "error",
+        pos_push_error: errMsg,
+      } as any).eq("id", oid);
+    }
+
     if (ok) {
       await supabase.rpc("ack_job", { _queue: QUEUE, _msg_id: m.msg_id });
       processed++;
