@@ -180,7 +180,7 @@ export default function AdminVenues() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Manage Venues</h2>
-          <p className="text-muted-foreground">{filtered.length} of {venues.length} venues</p>
+          <p className="text-muted-foreground">{total} venues</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
