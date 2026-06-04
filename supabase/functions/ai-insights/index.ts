@@ -1,6 +1,7 @@
 // AI Insights edge function: produces product mix, loss leaders, food cost alerts,
 // and pricing optimisation recommendations for a venue using Lovable AI.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { logAiUsage } from "../_shared/ai-usage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
