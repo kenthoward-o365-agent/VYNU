@@ -47,6 +47,7 @@ const CartSuggestions = ({
             cart_items: cartItems,
             menu_items: menuItems,
             venue_name: venueName,
+            venue_id: venueId,
           }),
         }
       );

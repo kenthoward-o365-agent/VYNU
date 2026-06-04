@@ -437,6 +437,7 @@ const ConsumerOrder = () => {
             added_item: item,
             menu_items: menuItems,
             venue_name: venue.name,
+            venue_id: venue.id,
           }),
         }
       );
