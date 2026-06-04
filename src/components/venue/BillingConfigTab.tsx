@@ -49,6 +49,7 @@ const defaultConfig: BillingConfig = {
   contract_end_date: null,
   billing_day_of_month: 1,
   estimated_annual_gmv: 0,
+  qr_gmv_percent: 100,
   auto_renew: true,
   renewal_term_months: 12,
   notice_period_days: 30,
