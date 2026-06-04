@@ -384,10 +384,10 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
               <p>
                 <span className="text-muted-foreground">Forecast annual commission: </span>
                 <span className="font-semibold">
-                  ${((config.estimated_annual_gmv * (isInheriting ? effectiveCommission : config.commission_percent)) / 100).toFixed(2)}
+                  ${((config.estimated_annual_gmv * (config.qr_gmv_percent / 100) * (isInheriting ? effectiveCommission : config.commission_percent)) / 100).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <span className="text-xs text-muted-foreground ml-1">
-                  (Est. GMV × {(isInheriting ? effectiveCommission : config.commission_percent).toFixed(2)}%)
+                  (Est. GMV × {config.qr_gmv_percent}% QR × {(isInheriting ? effectiveCommission : config.commission_percent).toFixed(2)}%)
                 </span>
               </p>
               {config.contract_end_date && (
