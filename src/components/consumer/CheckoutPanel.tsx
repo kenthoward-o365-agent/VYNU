@@ -288,6 +288,8 @@ const CheckoutPanel = ({
       unit_price: item.price,
       modifiers: item.modifiers as any,
       notes: item.notes || null,
+      ai_source: item.aiSource ?? null,
+      ai_session_id: item.aiSessionId ?? null,
     }));
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
     if (itemsError) throw itemsError;

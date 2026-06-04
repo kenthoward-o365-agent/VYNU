@@ -471,6 +471,7 @@ const ConsumerOrder = () => {
       quantity: number,
       modifiers: SelectedModifier[],
       notes: string,
+      ai?: { aiSource?: "chat" | "upsell"; aiSessionId?: string | null },
     ) => {
       const lineKey = buildLineKey(item.id, modifiers, notes);
       const resolved = resolvePrice(item.id, Number(item.price) || 0, pricingIndex);
@@ -493,6 +494,8 @@ const ConsumerOrder = () => {
             quantity,
             modifiers,
             notes,
+            aiSource: ai?.aiSource ?? null,
+            aiSessionId: ai?.aiSessionId ?? null,
           },
         ];
       });
@@ -506,7 +509,10 @@ const ConsumerOrder = () => {
 
   /** Quick-add (used by AI chat / upsell prompts) — no modifiers, no notes. */
   const addToCart = useCallback(
-    (item: { id: string; name: string; price: number }) => {
+    (
+      item: { id: string; name: string; price: number },
+      opts?: { aiSource?: "chat" | "upsell"; aiSessionId?: string | null },
+    ) => {
       const menuItem = menuItems.find((m) => m.id === item.id);
       addConfiguredToCart(
         {
@@ -523,6 +529,7 @@ const ConsumerOrder = () => {
         1,
         [],
         "",
+        opts,
       );
     },
     [menuItems, addConfiguredToCart],
@@ -781,7 +788,7 @@ const ConsumerOrder = () => {
         <UpsellPrompt
           suggestion={upsellSuggestion}
           onAdd={(item) => {
-            addToCart(item);
+            addToCart(item, { aiSource: "upsell" });
             dismissedSuggestions.add(item.id);
             setUpsellSuggestion(null);
           }}
@@ -797,7 +804,7 @@ const ConsumerOrder = () => {
         <AIChatOverlay
           venueId={venueId}
           onClose={() => setShowChat(false)}
-          onAddToCart={addToCart}
+          onAddToCart={(item) => addToCart(item, { aiSource: "chat", aiSessionId: chatSessionIdRef.current })}
           menuItems={menuItems}
           dinerId={dinerId}
           tableId={resolvedTableId}
