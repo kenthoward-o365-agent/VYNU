@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Building2, DollarSign, Receipt, TrendingUp, ShoppingCart, Users } from "lucide-react";
+import { Building2, DollarSign, TrendingUp, ShoppingCart } from "lucide-react";
 import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip,
@@ -13,19 +13,18 @@ import { format } from "date-fns";
 import PlatformFunnelCard from "@/components/admin/PlatformFunnelCard";
 import PlatformKpiStrip from "@/components/admin/PlatformKpiStrip";
 
-interface VenueRow {
-  id: string;
-  name: string;
-  venue_type: string;
-  is_active: boolean | null;
-}
-
-interface OrderRow {
-  id: string;
-  venue_id: string;
-  total: number | null;
-  status: string;
-  created_at: string;
+interface DashboardData {
+  totals: {
+    active_venues: number;
+    total_venues: number;
+    total_orders: number;
+    billable_orders: number;
+    gross_revenue: number;
+  };
+  status_counts: Record<string, number>;
+  top_venues: { venue_id: string; name: string; revenue: number }[];
+  venues: { id: string; name: string; venue_type: string; is_active: boolean | null; orders_count: number; revenue: number }[];
+  recent_orders: { id: string; venue_id: string; venue_name: string | null; total: number | null; status: string; created_at: string }[];
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -39,74 +38,50 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminDashboard() {
   const [auditDate, setAuditDate] = useState<DateRange>(getDefaultAuditDate);
-  const [venues, setVenues] = useState<VenueRow[]>([]);
-  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
+    let cancelled = false;
+    (async () => {
       setLoading(true);
-      const [venueRes, orderRes] = await Promise.all([
-        supabase.from("venues").select("id, name, venue_type, is_active"),
-        supabase
-          .from("orders")
-          .select("id, venue_id, total, status, created_at")
-          .gte("created_at", auditDate.from.toISOString())
-          .lte("created_at", auditDate.to.toISOString())
-          .order("created_at", { ascending: false }),
-      ]);
-      if (venueRes.data) setVenues(venueRes.data);
-      if (orderRes.data) setOrders(orderRes.data as OrderRow[]);
+      const { data: rpcData, error } = await supabase.rpc("get_admin_dashboard", {
+        _from: auditDate.from.toISOString(),
+        _to: auditDate.to.toISOString(),
+      });
+      if (cancelled) return;
+      if (!error && rpcData) setData(rpcData as unknown as DashboardData);
       setLoading(false);
-    };
-    fetch();
+    })();
+    return () => { cancelled = true; };
   }, [auditDate]);
 
-  // KPI calculations
-  const activeVenues = venues.filter((v) => v.is_active !== false).length;
-  const billableOrders = orders.filter((o) => o.status !== "cancelled");
-  const grossRevenue = billableOrders.reduce((s, o) => s + (Number(o.total) || 0), 0);
-  const avgOrderValue = billableOrders.length ? grossRevenue / billableOrders.length : 0;
+  const totals = data?.totals;
+  const gross = Number(totals?.gross_revenue || 0);
+  const billable = Number(totals?.billable_orders || 0);
+  const avgOrderValue = billable ? gross / billable : 0;
 
-  // Orders by status
-  const statusCounts = orders.reduce<Record<string, number>>((acc, o) => {
-    acc[o.status] = (acc[o.status] || 0) + 1;
-    return acc;
-  }, {});
-  const statusChartData = Object.entries(statusCounts)
-    .map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value, fill: STATUS_COLORS[name] || "hsl(220, 10%, 50%)" }))
+  const statusChartData = Object.entries(data?.status_counts || {})
+    .map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value: Number(value), fill: STATUS_COLORS[name] || "hsl(220, 10%, 50%)" }))
     .filter((d) => d.value > 0);
 
-  // Revenue by venue (top 10)
-  const venueMap = new Map(venues.map((v) => [v.id, v.name]));
-  const revenueByVenue = new Map<string, number>();
-  for (const o of billableOrders) {
-    revenueByVenue.set(o.venue_id, (revenueByVenue.get(o.venue_id) || 0) + (Number(o.total) || 0));
-  }
-  const revenueChartData = Array.from(revenueByVenue.entries())
-    .map(([id, rev]) => ({ name: venueMap.get(id) || id.slice(0, 8), revenue: Math.round(rev * 100) / 100 }))
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 10);
+  const revenueChartData = (data?.top_venues || []).map((v) => ({
+    name: v.name,
+    revenue: Math.round(Number(v.revenue) * 100) / 100,
+  }));
 
-  // Orders by venue (for count column)
-  const ordersByVenue = new Map<string, number>();
-  for (const o of orders) {
-    ordersByVenue.set(o.venue_id, (ordersByVenue.get(o.venue_id) || 0) + 1);
-  }
-
-  // Recent orders (last 20)
-  const recentOrders = orders.slice(0, 20);
+  const venues = data?.venues || [];
+  const recentOrders = data?.recent_orders || [];
 
   const kpis = [
-    { label: "Total Venues", value: `${activeVenues} / ${venues.length}`, sub: "active / total", icon: Building2, color: "text-primary" },
-    { label: "Total Orders", value: orders.length.toLocaleString(), sub: `${billableOrders.length} billable`, icon: ShoppingCart, color: "text-blue-500" },
-    { label: "Gross Revenue", value: `$${grossRevenue.toFixed(2)}`, sub: "excl. cancelled", icon: DollarSign, color: "text-emerald-500" },
-    { label: "Avg Order Value", value: `$${avgOrderValue.toFixed(2)}`, sub: `${billableOrders.length} orders`, icon: TrendingUp, color: "text-indigo-500" },
+    { label: "Total Venues", value: totals ? `${totals.active_venues} / ${totals.total_venues}` : "—", sub: "active / total", icon: Building2, color: "text-primary" },
+    { label: "Total Orders", value: (totals?.total_orders ?? 0).toLocaleString(), sub: `${billable} billable`, icon: ShoppingCart, color: "text-blue-500" },
+    { label: "Gross Revenue", value: `$${gross.toFixed(2)}`, sub: "excl. cancelled", icon: DollarSign, color: "text-emerald-500" },
+    { label: "Avg Order Value", value: `$${avgOrderValue.toFixed(2)}`, sub: `${billable} orders`, icon: TrendingUp, color: "text-indigo-500" },
   ];
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h2 className="text-xl font-bold text-foreground">Platform Overview</h2>
@@ -115,12 +90,11 @@ export default function AdminDashboard() {
         <AuditDatePicker value={auditDate} onChange={setAuditDate} />
       </div>
 
-      {/* KPIs */}
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {kpis.map((k) => (
           <Card key={k.label} className="shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className={`h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0`}>
+              <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
                 <k.icon className={`h-4 w-4 ${k.color}`} />
               </div>
               <div className="min-w-0">
@@ -135,11 +109,7 @@ export default function AdminDashboard() {
 
       <PlatformKpiStrip range={auditDate} />
 
-
-
-      {/* Charts row */}
       <div className="grid gap-3 lg:grid-cols-2">
-        {/* Revenue by Venue */}
         <Card className="shadow-sm">
           <CardHeader className="p-4 pb-2">
             <CardTitle className="text-base">Revenue by Venue</CardTitle>
@@ -164,14 +134,13 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Orders by Status */}
         <Card className="shadow-sm">
           <CardHeader className="p-4 pb-2">
             <CardTitle className="text-base">Orders by Status</CardTitle>
-            <p className="text-xs text-muted-foreground">{orders.length} total orders</p>
+            <p className="text-xs text-muted-foreground">{totals?.total_orders ?? 0} total orders</p>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            {orders.length === 0 ? (
+            {statusChartData.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-6">No orders for this period</p>
             ) : (
               <div className="h-[280px]">
@@ -192,14 +161,13 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Venue Performance Table */}
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-2">
           <CardTitle className="text-base">Venue Performance</CardTitle>
           <p className="text-xs text-muted-foreground">Orders and revenue by venue for selected period</p>
         </CardHeader>
         <CardContent className="p-4 pt-0">
-          <div className="rounded-md border">
+          <div className="rounded-md border max-h-[480px] overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -213,29 +181,25 @@ export default function AdminDashboard() {
               <TableBody>
                 {venues.length === 0 ? (
                   <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No venues found</TableCell></TableRow>
-                ) : venues
-                  .sort((a, b) => (revenueByVenue.get(b.id) || 0) - (revenueByVenue.get(a.id) || 0))
-                  .map((v) => (
-                    <TableRow key={v.id}>
-                      <TableCell className="font-medium">{v.name}</TableCell>
-                      <TableCell className="capitalize text-muted-foreground">{v.venue_type.replace("_", " ")}</TableCell>
-                      <TableCell>
-                        <Badge variant={v.is_active !== false ? "default" : "secondary"}>
-                          {v.is_active !== false ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{ordersByVenue.get(v.id) || 0}</TableCell>
-                      <TableCell className="text-right font-medium">${(revenueByVenue.get(v.id) || 0).toFixed(2)}</TableCell>
-                    </TableRow>
-                  ))
-                }
+                ) : venues.map((v) => (
+                  <TableRow key={v.id}>
+                    <TableCell className="font-medium">{v.name}</TableCell>
+                    <TableCell className="capitalize text-muted-foreground">{v.venue_type.replace("_", " ")}</TableCell>
+                    <TableCell>
+                      <Badge variant={v.is_active !== false ? "default" : "secondary"}>
+                        {v.is_active !== false ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">{v.orders_count}</TableCell>
+                    <TableCell className="text-right font-medium">${Number(v.revenue).toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
 
-      {/* Recent Orders */}
       <Card className="shadow-sm">
         <CardHeader className="p-4 pb-2">
           <CardTitle className="text-base">Recent Orders</CardTitle>
@@ -258,7 +222,7 @@ export default function AdminDashboard() {
                 ) : recentOrders.map((o) => (
                   <TableRow key={o.id}>
                     <TableCell className="text-muted-foreground text-sm">{format(new Date(o.created_at), "dd MMM HH:mm")}</TableCell>
-                    <TableCell className="font-medium">{venueMap.get(o.venue_id) || "Unknown"}</TableCell>
+                    <TableCell className="font-medium">{o.venue_name || "Unknown"}</TableCell>
                     <TableCell>
                       <Badge variant={o.status === "paid" ? "default" : o.status === "cancelled" ? "destructive" : "secondary"} className="capitalize">
                         {o.status}
