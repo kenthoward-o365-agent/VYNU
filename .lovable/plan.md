@@ -1,184 +1,105 @@
+# Admin analytics expansion — venue drill-down + platform rollups
 
-## Self Onboard Agent — plan
+Adds a deep "Performance" view per venue and rolls the same metrics into the Platform Overview. Tracks real AI token spend so we can show AI cost vs AI-attributed revenue per venue.
 
-A full-screen, AI-native onboarding wizard that walks a venue from "fresh account" to "live for diners" in one sitting. Powered by Lovable AI (Gemini 3 Flash) with a curated set of safe action tools, a live readiness scorecard, and a Go-Live gate.
+## What you'll see
 
-## 1. Entry point
+**Per-venue (new "Performance" tab on `/admin/venues/:id`)**
+- Financials: gross, net, tax, gratuities, AOV, refunds — for selected date range
+- AI usage: chat sessions, messages, items added via AI, upsell prompts shown/accepted
+- AI cost (USD/AUD): tokens in/out × model price, summed from new `ai_usage_log`
+- AI-attributed revenue: orders from chat sessions where `converted_to_order=true` + orders that accepted an upsell prompt
+- AI margin: AI revenue − AI cost
+- Users: count of `venue_staff` (active vs inactive, by role)
+- Diners: unique diners in range, trend vs prior period (▲/▼ %), new vs returning
+- Menu: total items, priced items (price > 0), unpriced, % categorised
+- Tables / QR codes: total tables, active QR codes
+- POS posture: provider name, connection status, "Auto-push orders" ON/OFF, last sync, route mode (Push to POS vs OrderNow Orders Screen)
 
-- New **"Self Onboard"** button in the top bar (`DashboardLayout.tsx`), immediately left of the Knowledge Base icon. Sparkle/rocket icon + label, pulsing primary highlight while onboarding is incomplete.
-- Visible only to roles with **Manage Settings** (Owners/Managers).
-- Visibility rules:
-  - **Show** while `venue_onboarding_state.status` is `in_progress`.
-  - When readiness hits 100%, agent prompts: *"You're ready — hide the Self Onboard button?"* Yes → status `completed`. No → button stays.
-  - User can always hide manually from a kebab in the wizard ("Hide for now" / "I'm done") → status `dismissed`. Re-show via Settings → Onboarding.
-  - Day-end close no longer required as the trigger (per the answers above), but we record `first_dayend_at` for analytics.
+**Platform Overview (`/admin/dashboard`)**
+- New KPI strip: total diners (with trend), total AI sessions, total AI cost, total AI-attributed revenue, total priced items, total tables/QRs
+- New table column on Venue Performance: POS provider, Push mode, AI rev, AI cost
+- New chart: top 10 venues by AI-attributed revenue
 
-## 2. Page & layout
+## Technical plan
 
-- Route: `/onboarding` (full-screen, no sidebar — own layout).
-- Two-pane:
-  - **Left (40%)** — vertical checklist of stages, each with status pill (Not started / In progress / ✅ Done / ⚠️ Needs attention), % progress bar at the top, big **Go Live** button at the bottom (disabled until all blockers green).
-  - **Right (60%)** — AI chat using the established `useChat`-style pattern (AI Elements: `Conversation`, `Message`, `MessageResponse`, `PromptInput`, `Shimmer`, `Tool`). Streaming responses, markdown, tool-call cards rendered inline.
-- On open, the agent greets the operator by venue name, runs a silent readiness scan, and suggests the highest-impact next step.
+### 1. Database (one migration)
 
-## 3. Onboarding stages (the checklist)
-
-Each item has: title, why-it-matters blurb, current status, deep-link "Open in app", and "Have the agent do it" chat shortcut.
-
-| # | Stage | Blocker for go-live? | Readiness signal |
-|---|---|---|---|
-| 1 | Venue details (name, type, address, phone, hours, timezone, logo) | Yes | `venues` row populated |
-| 2 | Menu — at least 1 category + 5 items with price | Yes | counts from `menu_categories` / `menu_items` |
-| 3 | Modifiers (optional but recommended) | No | `modifier_categories` count |
-| 4 | Tables + QR generated | Yes | `tables` count ≥ 1 |
-| 5 | Taxes configured (GST/AU default) | Yes | `venue_taxes` row exists |
-| 6 | H&L Pay onboarding submitted + approved | Yes | `venue_payment_config.status = approved` |
-| 7 | Surcharges & gratuities | No | `venue_payment_config` surcharge fields |
-| 8 | **POS decision** — "Use H&L OrderNOW Orders only" *or* "Push orders to H&L Exceed POS" | Yes | new `venue_onboarding_state.pos_choice` enum |
-| 9 | If POS push chosen → H&L credentials configured + test order succeeded | Yes (conditional) | `venue_pos_integrations.status = connected` + last `pos_sync_log.test_order = success` |
-| 10 | AI agent name, tone, opening message, venue context | Yes | `venue_ai_config` populated |
-| 11 | Order statuses & Display Areas reviewed (defaults OK) | No | seeded by default; just confirm |
-| 12 | Staff invited with roles | No | `venue_staff` count ≥ 2 |
-| 13 | Test end-to-end: scan QR → order → pay → kitchen sees it → refund | **Go-live ritual** | `onboarding_test_run.passed = true` |
-| 14 | Branding & Landing page (optional polish) | No | landing page sections count |
-
-## 4. AI agent capabilities
-
-System prompt frames the agent as "H&L OrderNOW's onboarding specialist". It can:
-
-**Answer questions** about any platform feature, using Knowledge Base content as grounded context (vector / keyword lookup over the venue KB sections we already built — including the new H&L POS section).
-
-**Read tools** (no approval needed, called automatically to ground responses):
-- `get_readiness()` → returns the checklist with status, blockers, %.
-- `get_venue()` / `get_menu_summary()` / `get_tables()` / `get_pos_status()` / `get_payment_status()`.
-
-**Action tools** (each requires user confirmation in chat — `needsApproval: true`):
-- `set_venue_details({ name?, address?, phone?, hours?, timezone? })`
-- `add_table({ number, zone?, capacity? })` (loop for bulk via `add_tables_bulk`)
-- `add_tax({ name, percent, inclusive })`
-- `set_ai_config({ agent_name, tone, opening_message, venue_context })`
-- `set_pos_choice({ choice: 'ornow_only' | 'push_to_hl' })`
-- `set_hl_pos_credentials({ integrator_id, recipient_id, station_no, client_id, client_secret, shared_secret, default_tender_code? })` — secrets handled server-side, never echoed back.
-- `send_hl_test_order()` — calls existing `pos-hl-test-order`.
-- `toggle_auto_push_orders({ enabled })`
-- `invite_staff({ email, role })`
-- `import_menu_from_file({ file_id })` — wraps existing `import-menu` function.
-- `mark_onboarding_complete()` / `dismiss_onboarding()`
-- `request_go_live()` — flips venue from test → live only when all blockers pass.
-
-Tools run server-side in the chat edge function with full RLS-scoped checks. `stopWhen: stepCountIs(50)`.
-
-## 5. Conversational flows we explicitly script
-
-The system prompt seeds opinionated openers so the agent doesn't waste time:
-
-1. *"What's your POS vendor?"* — if not H&L Exceed → ask whether they want H&L OrderNOW to be the source of truth for orders, and mark stage 8/9 N/A.
-2. *"Will orders be managed in H&L OrderNOW or pushed to your POS?"* — sets `pos_choice`, gates stage 9.
-3. *"Got an existing menu? Drop the PDF/photo here and I'll import it"* — file upload in chat → `import_menu_from_file`.
-4. *"Tell me your tables — '12 tables, 1–10 main floor, P1–P2 patio' works"* — agent parses and calls `add_tables_bulk`.
-5. *"What tax rate applies? (AU default: 10% GST inclusive)"* — one-tap accept.
-6. *"Let's give your AI agent a name and tone."*
-7. *"Want to invite your team now? Paste emails one per line with a role."*
-8. *"Ready for a test run?"* — opens guided 6-step smoke test, marks pass/fail.
-9. Go Live confirmation.
-
-At any point the operator can ask anything ("How do refunds work?", "What does throttling do?") and get a KB-grounded answer with a deep-link.
-
-## 6. Readiness score + Go-Live gate
-
-- `useOnboardingReadiness()` hook runs the checks (cached, refetches on focus + after every agent tool call).
-- Score = blockers complete / total blockers; 100% required for Go Live.
-- **Go Live** button:
-  - Disabled with tooltip listing missing blockers when <100%.
-  - On click: confirmation modal → flips `venues.is_live = true`, `venue_payment_config.mode = 'live'` (if approved), logs `onboarding_go_live` event, and shows celebration screen.
-- Test-mode banner shown across the operator app until Go Live.
-
-## 7. Backend — new tables, functions, edge functions
-
-### Migration
 ```sql
--- 1. Onboarding state per venue
-create table public.venue_onboarding_state (
-  venue_id uuid primary key references public.venues(id) on delete cascade,
-  status text not null default 'in_progress',          -- in_progress | completed | dismissed
-  pos_choice text,                                      -- ornow_only | push_to_hl | other_pos
-  pos_vendor_other text,
-  readiness_snapshot jsonb,                             -- last computed checklist
-  first_dayend_at timestamptz,
-  completed_at timestamptz,
-  dismissed_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+-- AI cost tracking
+CREATE TABLE public.ai_usage_log (
+  id uuid PK,
+  venue_id uuid NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+  feature text NOT NULL,            -- 'diner_chat' | 'upsell' | 'menu_import' | 'image_gen' | 'onboarding' | 'insights'
+  model text NOT NULL,              -- e.g. 'google/gemini-3-flash-preview'
+  prompt_tokens int NOT NULL DEFAULT 0,
+  completion_tokens int NOT NULL DEFAULT 0,
+  total_tokens int GENERATED ALWAYS AS (prompt_tokens+completion_tokens) STORED,
+  cost_usd numeric(12,6) NOT NULL DEFAULT 0,
+  request_id text,                  -- X-Lovable-AIG-Run-ID
+  session_id uuid,                  -- chat_sessions.id when applicable
+  order_id uuid,                    -- when AI directly produced an order
+  created_at timestamptz DEFAULT now()
 );
-grant select, insert, update on public.venue_onboarding_state to authenticated;
-grant all on public.venue_onboarding_state to service_role;
-alter table public.venue_onboarding_state enable row level security;
-create policy "managers read/write own venue onboarding"
-  on public.venue_onboarding_state for all to authenticated
-  using (is_venue_manager(auth.uid(), venue_id))
-  with check (is_venue_manager(auth.uid(), venue_id));
+-- Indexes on (venue_id, created_at), (feature), (session_id)
+-- GRANT SELECT,INSERT to service_role; SELECT to authenticated; RLS: admins + venue staff can read own venue.
 
--- 2. Onboarding chat history (thread per venue)
-create table public.onboarding_chat_messages (
-  id uuid primary key default gen_random_uuid(),
-  venue_id uuid not null references public.venues(id) on delete cascade,
-  user_id uuid references auth.users(id),
-  role text not null,                                   -- user | assistant | tool
-  parts jsonb not null,                                 -- UIMessage parts
-  created_at timestamptz not null default now()
-);
--- + grants + RLS scoped to is_venue_manager
--- + index on (venue_id, created_at)
+-- Upsell attribution
+ALTER TABLE public.order_items
+  ADD COLUMN ai_source text,        -- 'chat' | 'upsell' | null
+  ADD COLUMN ai_session_id uuid;
 
--- 3. Test-run results
-create table public.onboarding_test_runs (
-  id uuid primary key default gen_random_uuid(),
-  venue_id uuid not null references public.venues(id) on delete cascade,
-  steps jsonb not null,                                  -- [{step, passed, evidence}]
-  passed boolean not null default false,
-  ran_at timestamptz not null default now()
+-- Model price table (admin-editable, seeded)
+CREATE TABLE public.ai_model_prices (
+  model text PRIMARY KEY,
+  input_per_1k_usd numeric(10,6) NOT NULL,
+  output_per_1k_usd numeric(10,6) NOT NULL,
+  updated_at timestamptz DEFAULT now()
 );
--- + grants + RLS
+-- Seed gemini-3-flash-preview, gpt-5-mini, etc.
 ```
 
-### Edge functions
-- `onboarding-chat` — streaming AI SDK route. Uses Lovable AI Gateway (`google/gemini-3-flash-preview`), loads venue + readiness snapshot into system prompt, exposes the tools above, persists messages to `onboarding_chat_messages`.
-- `onboarding-readiness` — single source of truth for the readiness computation (also used by Go-Live gate).
-- `onboarding-go-live` — flips venue to live after re-validating blockers server-side.
+### 2. Edge function instrumentation
 
-All tools route through these functions; secrets like `client_secret` go straight to existing `admin-set-pos-credentials` / `HLPosPanel` save path — agent never holds them in memory.
+Wrap existing AI calls (`diner-chat`, `upsell-suggest`, `onboarding-chat`, `ai-insights`, `import-menu`, `generate-menu-image`, `enhance-menu-image`, `generate-modifiers`, `batch-generate-images`) to:
+- Read `usage` from AI SDK result
+- Compute cost via `ai_model_prices`
+- Insert one row to `ai_usage_log` per call
+Add a shared `_shared/ai-usage.ts` helper.
 
-## 8. Frontend
+When `diner-chat` adds an item to cart on the user's behalf, stamp the resulting `order_items` row with `ai_source='chat'` and `ai_session_id`. When an upsell suggestion is accepted, stamp `ai_source='upsell'`.
 
-- `src/pages/Onboarding.tsx` — new full-screen wizard, replaces the existing thin Onboarding placeholder.
-- `src/components/onboarding/`:
-  - `ChecklistPane.tsx` — stage cards, status pills, go-live button.
-  - `OnboardingChat.tsx` — AI Elements `Conversation` + tool-call cards + custom tool result renderers (e.g. table-import summary, test-order request/response, readiness table).
-  - `GoLiveDialog.tsx` — final confirmation + celebration.
-  - `useOnboardingReadiness.ts` — client cache + revalidation.
-- `DashboardLayout.tsx` — add Self Onboard button (Rocket icon), reads onboarding status, hides when `completed` or `dismissed`.
-- `KnowledgeBase.tsx` — new section "Onboarding & Going Live" explaining the agent for self-serve refresh.
+### 3. RPCs for fast aggregation
 
-## 9. Out of scope (future)
-- Multi-language onboarding.
-- Voice mode for the chat.
-- Onboarding analytics dashboard for H&L OrderNOW admins (time-to-live, drop-off stages).
-- Re-onboarding wizard for major feature launches.
+```sql
+get_venue_performance(_venue_id, _from, _to)   -- returns single JSON row of all metrics above
+get_platform_performance(_from, _to)           -- aggregate across venues
+get_venue_diner_trend(_venue_id, _from, _to)   -- current vs prior-period diner counts
+```
+All `SECURITY DEFINER`, `search_path=public`, admin-gated via `has_role(auth.uid(),'tabless_admin')`.
 
-## 10. Files (summary)
+### 4. Frontend
 
-**New**
-- migration: `venue_onboarding_state`, `onboarding_chat_messages`, `onboarding_test_runs`
-- `supabase/functions/onboarding-chat/index.ts`
-- `supabase/functions/onboarding-readiness/index.ts`
-- `supabase/functions/onboarding-go-live/index.ts`
-- `src/pages/Onboarding.tsx` (replace placeholder)
-- `src/components/onboarding/*` (4 components + hook)
+- `src/components/admin/VenuePerformanceTab.tsx` — new tab card grid, charts, deep links
+- Wire into `src/pages/AdminVenueDetail.tsx` tabs list (`Performance` between Details and Users)
+- `src/components/admin/PlatformKpiStrip.tsx` — new KPI row on `AdminDashboard`
+- Extend `AdminDashboard` venue table with POS / Push / AI Rev / AI Cost columns
+- New `TopAiRevenueChart.tsx`
+- Date range driven by existing `AuditDatePicker`
 
-**Edited**
-- `src/components/DashboardLayout.tsx` — Self Onboard button.
-- `src/App.tsx` — `/onboarding` route already exists; wire to new page.
-- `src/pages/KnowledgeBase.tsx` — new "Onboarding & Going Live" section.
-- `supabase/config.toml` — register new functions.
+### 5. Backfill
 
-Approve and I'll build it stage-by-stage: migration + readiness function first, then chat function + tools, then the wizard UI, then the Go-Live gate.
+One-time SQL to pre-populate `ai_usage_log` is impossible (no historical token counts). Show "Tracking started <date>" tooltip on AI cost cards.
+
+## Out of scope
+
+- COGS on food/menu items (confirmed not needed)
+- Per-staff productivity metrics
+- Exporting reports to CSV/PDF (can follow up)
+- Per-diner LTV view
+
+## Notes / risks
+
+- Cost figures depend on `ai_model_prices` being kept current; admins can edit. Lovable AI Gateway may change pricing — we surface the price source date.
+- `ai_source` stamping on `order_items` requires modifying cart-add paths in `diner-chat` and `upsell-suggest`; existing items remain unattributed (shown as "Direct").
+- Diner trend uses `diner_visits` (already exists) — no schema change needed.

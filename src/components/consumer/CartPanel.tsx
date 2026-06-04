@@ -17,6 +17,9 @@ export interface CartItem {
   quantity: number;
   modifiers: SelectedModifier[];
   notes: string;
+  /** AI attribution — set when an AI feature drove the add-to-cart. */
+  aiSource?: "chat" | "upsell" | null;
+  aiSessionId?: string | null;
 }
 
 interface CartPanelProps {

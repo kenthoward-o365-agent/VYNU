@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { logAiUsage } from "../_shared/ai-usage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,7 +23,7 @@ serve(async (req) => {
   }
 
   try {
-    const { trigger, added_item, cart_items, menu_items, venue_name } = await req.json();
+    const { trigger, added_item, cart_items, menu_items, venue_name, venue_id } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
@@ -127,6 +128,9 @@ serve(async (req) => {
     }
 
     const aiResult = await response.json();
+    if (venue_id) {
+      logAiUsage({ venueId: venue_id, feature: "upsell", model: "google/gemini-3-flash-preview", usage: aiResult?.usage, requestId: response.headers.get("X-Lovable-AIG-Run-ID") }).catch(() => {});
+    }
     const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall?.function?.arguments) {
       return new Response(JSON.stringify({ suggestions: [] }), {

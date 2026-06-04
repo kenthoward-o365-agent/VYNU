@@ -1,6 +1,7 @@
 // AI Insights edge function: produces product mix, loss leaders, food cost alerts,
 // and pricing optimisation recommendations for a venue using Lovable AI.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { logAiUsage } from "../_shared/ai-usage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -216,6 +217,7 @@ Deno.serve(async (req) => {
         });
         if (resp.ok) {
           const j = await resp.json();
+          logAiUsage({ venueId: venueId as string, feature: "insights", model: "google/gemini-2.5-flash", usage: j?.usage, requestId: resp.headers.get("X-Lovable-AIG-Run-ID") }).catch(() => {});
           const text = j?.choices?.[0]?.message?.content ?? "";
           const match = text.match(/\[[\s\S]*\]/);
           if (match) {

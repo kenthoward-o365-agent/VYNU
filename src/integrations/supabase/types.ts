@@ -14,6 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_model_prices: {
+        Row: {
+          input_per_1k_usd: number
+          model: string
+          notes: string | null
+          output_per_1k_usd: number
+          updated_at: string
+        }
+        Insert: {
+          input_per_1k_usd?: number
+          model: string
+          notes?: string | null
+          output_per_1k_usd?: number
+          updated_at?: string
+        }
+        Update: {
+          input_per_1k_usd?: number
+          model?: string
+          notes?: string | null
+          output_per_1k_usd?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_usage_log: {
+        Row: {
+          completion_tokens: number
+          cost_usd: number
+          created_at: string
+          feature: string
+          id: string
+          meta: Json | null
+          model: string
+          order_id: string | null
+          prompt_tokens: number
+          request_id: string | null
+          session_id: string | null
+          total_tokens: number | null
+          venue_id: string
+        }
+        Insert: {
+          completion_tokens?: number
+          cost_usd?: number
+          created_at?: string
+          feature: string
+          id?: string
+          meta?: Json | null
+          model: string
+          order_id?: string | null
+          prompt_tokens?: number
+          request_id?: string | null
+          session_id?: string | null
+          total_tokens?: number | null
+          venue_id: string
+        }
+        Update: {
+          completion_tokens?: number
+          cost_usd?: number
+          created_at?: string
+          feature?: string
+          id?: string
+          meta?: Json | null
+          model?: string
+          order_id?: string | null
+          prompt_tokens?: number
+          request_id?: string | null
+          session_id?: string | null
+          total_tokens?: number | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_log_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_idempotency: {
         Row: {
           created_at: string
@@ -1706,6 +1786,8 @@ export type Database = {
       }
       order_items: {
         Row: {
+          ai_session_id: string | null
+          ai_source: string | null
           created_at: string
           id: string
           menu_item_id: string
@@ -1716,6 +1798,8 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          ai_session_id?: string | null
+          ai_source?: string | null
           created_at?: string
           id?: string
           menu_item_id: string
@@ -1726,6 +1810,8 @@ export type Database = {
           unit_price: number
         }
         Update: {
+          ai_session_id?: string | null
+          ai_source?: string | null
           created_at?: string
           id?: string
           menu_item_id?: string
@@ -3774,6 +3860,10 @@ export type Database = {
         Args: { _table_id?: string; _venue_id: string }
         Returns: Json
       }
+      get_platform_performance: {
+        Args: { _from: string; _to: string }
+        Returns: Json
+      }
       get_terminal_by_token: {
         Args: { _token: string }
         Returns: {
@@ -3792,6 +3882,10 @@ export type Database = {
           is_active: boolean
           provider: string
         }[]
+      }
+      get_venue_performance: {
+        Args: { _from: string; _to: string; _venue_id: string }
+        Returns: Json
       }
       get_venue_public_info: {
         Args: { _venue_id: string }

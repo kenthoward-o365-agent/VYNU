@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import PlatformFunnelCard from "@/components/admin/PlatformFunnelCard";
+import PlatformKpiStrip from "@/components/admin/PlatformKpiStrip";
 
 interface VenueRow {
   id: string;
@@ -131,6 +132,10 @@ export default function AdminDashboard() {
           </Card>
         ))}
       </div>
+
+      <PlatformKpiStrip range={auditDate} />
+
+
 
       {/* Charts row */}
       <div className="grid gap-3 lg:grid-cols-2">

@@ -11,9 +11,10 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2, DollarSign, CreditCard } from "lucide-react";
+import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2, DollarSign, CreditCard, BarChart3 } from "lucide-react";
 import BillingConfigTab from "@/components/venue/BillingConfigTab";
 import ProcessorCredentialsTab from "@/components/admin/ProcessorCredentialsTab";
+import VenuePerformanceTab from "@/components/admin/VenuePerformanceTab";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import ChildVenueLoyaltyViewer from "@/components/venue/ChildVenueLoyaltyViewer";
 import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
@@ -275,6 +276,7 @@ export default function AdminVenueDetail() {
       <Tabs defaultValue="details" className="space-y-6">
         <TabsList>
           <TabsTrigger value="details"><Settings className="h-3.5 w-3.5 mr-1" />Details</TabsTrigger>
+          <TabsTrigger value="performance"><BarChart3 className="h-3.5 w-3.5 mr-1" />Performance</TabsTrigger>
           {venue?.venue_type === "parent" && (
             <TabsTrigger value="group-settings"><Building2 className="h-3.5 w-3.5 mr-1" />Group Settings</TabsTrigger>
           )}
@@ -285,6 +287,10 @@ export default function AdminVenueDetail() {
         </TabsList>
 
         {/* ── DETAILS TAB ── */}
+        <TabsContent value="performance">
+          {venueId && <VenuePerformanceTab venueId={venueId} />}
+        </TabsContent>
+
         <TabsContent value="details" className="space-y-6 max-w-2xl">
           <Card>
             <CardContent className="pt-6">
