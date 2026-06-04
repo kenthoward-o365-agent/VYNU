@@ -15,17 +15,38 @@ interface Platform {
 
 export default function PlatformKpiStrip({ range }: { range: DateRange }) {
   const [data, setData] = useState<Platform | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
+      setErrorMessage(null);
       const { data, error } = await (supabase as any).rpc("get_platform_performance", {
         _from: range.from.toISOString(),
         _to: range.to.toISOString(),
       });
-      if (error) console.error(error);
-      setData((data as Platform) || null);
+      if (cancelled) return;
+      if (error) {
+        console.error(error);
+        setData(null);
+        setErrorMessage(error.message || "Platform performance data could not be loaded.");
+      } else {
+        setData((data as Platform) || null);
+      }
     })();
+    return () => { cancelled = true; };
   }, [range]);
+
+  if (errorMessage) {
+    return (
+      <Card className="shadow-sm border-destructive/30">
+        <CardContent className="p-4">
+          <p className="text-sm font-medium text-destructive">Platform performance failed to load</p>
+          <p className="text-xs text-muted-foreground mt-1">{errorMessage}</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!data) return null;
 
