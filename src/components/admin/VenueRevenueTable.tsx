@@ -31,6 +31,8 @@ export default function VenueRevenueTable({ venues, loading }: Props) {
             <TableHead className="text-right">Min Fees Due</TableHead>
             <TableHead className="text-right">Total Billable</TableHead>
             <TableHead className="text-right">Est. GMV</TableHead>
+            <TableHead className="text-right">QR %</TableHead>
+            <TableHead className="text-right">Effective QR GMV</TableHead>
             <TableHead className="text-right">Forecast Comm.</TableHead>
           </TableRow>
         </TableHeader>
@@ -59,7 +61,9 @@ export default function VenueRevenueTable({ venues, loading }: Props) {
               <TableCell className="text-right">{fmt(v.min_fee_due)}</TableCell>
               <TableCell className="text-right font-semibold">{fmt(v.total_billable)}</TableCell>
               <TableCell className="text-right text-muted-foreground">${Number(v.estimated_annual_gmv || 0).toLocaleString()}</TableCell>
-              <TableCell className="text-right">{fmt(v.forecast_annual_commission)}</TableCell>
+              <TableCell className="text-right">{Number(v.qr_gmv_percent ?? 100).toFixed(0)}%</TableCell>
+              <TableCell className="text-right text-muted-foreground">${(Number(v.estimated_annual_gmv || 0) * Number(v.qr_gmv_percent ?? 100) / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
+              <TableCell className="text-right font-semibold">{fmt(v.forecast_annual_commission)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

@@ -21,6 +21,7 @@ export interface FinancialsVenueRow {
   contract_end_date: string | null;
   billing_day_of_month: number;
   estimated_annual_gmv: number;
+  qr_gmv_percent: number;
   auto_renew: boolean;
   renewal_term_months: number;
   net_revenue: number;
@@ -82,20 +83,20 @@ export default function AdminFinancials() {
     { label: "Min Fees Due", value: totals ? `$${Number(totals.min_fee_due).toFixed(2)}` : "—", icon: PiggyBank, color: "text-amber-500", sub: `${data?.period.months.toFixed(1)} months` },
     { label: "Total Billable", value: totals ? `$${Number(totals.total_billable).toFixed(2)}` : "—", icon: TrendingUp, color: "text-emerald-500", sub: "commission + min fees" },
     { label: "Deferred Revenue", value: totals ? `$${Number(totals.deferred_revenue).toFixed(2)}` : "—", icon: CalendarClock, color: "text-blue-500", sub: "min fees × months left" },
-    { label: "Forecast Annual Commission", value: totals ? `$${Number(totals.forecast_annual_commission).toFixed(2)}` : "—", icon: TrendingUp, color: "text-purple-500", sub: `Est. GMV $${Number(totals?.estimated_annual_gmv || 0).toLocaleString()}` },
+    { label: "Forecast Annual Commission", value: totals ? `$${Number(totals.forecast_annual_commission).toFixed(2)}` : "—", icon: TrendingUp, color: "text-purple-500", sub: `Est. GMV $${Number(totals?.estimated_annual_gmv || 0).toLocaleString()} × QR%` },
   ], [totals, data]);
 
   const exportCsv = () => {
     if (!venues.length) return;
     const headers = [
       "Venue","Type","Status","Currency","Commission %","Min Monthly Fee","Contract Start","Contract End","Billing Day",
-      "Est. Annual GMV","Auto Renew","Net Revenue","Billable Orders","Commission Earned","Min Fees Due","Total Billable",
+      "Est. Annual GMV","QR GMV %","Effective QR GMV","Auto Renew","Net Revenue","Billable Orders","Commission Earned","Min Fees Due","Total Billable",
       "Months Remaining","Deferred Revenue","Forecast Annual Commission",
     ];
     const rows = venues.map((v) => [
       v.name, v.venue_type, v.is_active === false ? "Inactive" : "Active", v.billing_currency,
       v.commission_percent, v.min_monthly_fee, v.contract_start_date ?? "", v.contract_end_date ?? "", v.billing_day_of_month,
-      v.estimated_annual_gmv, v.auto_renew ? "Yes" : "No",
+      v.estimated_annual_gmv, v.qr_gmv_percent, Number(v.estimated_annual_gmv) * Number(v.qr_gmv_percent ?? 100) / 100, v.auto_renew ? "Yes" : "No",
       v.net_revenue, v.billable_orders, v.commission_earned, v.min_fee_due, v.total_billable,
       v.months_remaining ?? "", v.deferred_min_fee_revenue, v.forecast_annual_commission,
     ]);
