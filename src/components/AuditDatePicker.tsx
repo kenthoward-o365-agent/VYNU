@@ -53,23 +53,33 @@ interface AuditDatePickerProps {
 export default function AuditDatePicker({ value, onChange, auditDateOverride }: AuditDatePickerProps) {
   const presets = useMemo(() => buildPresets(auditDateOverride), [auditDateOverride]);
   const [open, setOpen] = useState(false);
-  const [customDate, setCustomDate] = useState<Date | undefined>();
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date } | undefined>({
+    from: value.from,
+    to: value.to,
+  });
 
   const handlePreset = (preset: (typeof presets)[0]) => {
     const r = preset.getRange();
     onChange({ ...r, label: preset.label });
+    setCustomRange({ from: r.from, to: r.to });
     setOpen(false);
   };
 
-  const handleCustomDate = (date: Date | undefined) => {
-    if (!date) return;
-    setCustomDate(date);
-    onChange({
-      from: startOfDay(date),
-      to: endOfDay(date),
-      label: format(date, "dd MMM yyyy"),
-    });
-    setOpen(false);
+  const handleCustomRange = (range: { from?: Date; to?: Date } | undefined) => {
+    setCustomRange(range);
+    if (range?.from && range?.to) {
+      const from = startOfDay(range.from);
+      const to = endOfDay(range.to);
+      const sameDay = format(from, "yyyy-MM-dd") === format(to, "yyyy-MM-dd");
+      onChange({
+        from,
+        to,
+        label: sameDay
+          ? format(from, "dd MMM yyyy")
+          : `${format(from, "dd MMM yyyy")} – ${format(to, "dd MMM yyyy")}`,
+      });
+      setOpen(false);
+    }
   };
 
   const isSingleDay =
@@ -110,11 +120,14 @@ export default function AuditDatePicker({ value, onChange, auditDateOverride }: 
           ))}
         </div>
         <div className="p-2">
-          <p className="text-xs font-semibold text-muted-foreground px-2 py-1 mb-1">Custom Date</p>
+          <p className="text-xs font-semibold text-muted-foreground px-2 py-1 mb-1">
+            Custom Range {customRange?.from && !customRange?.to && "(pick end date)"}
+          </p>
           <Calendar
-            mode="single"
-            selected={customDate}
-            onSelect={handleCustomDate}
+            mode="range"
+            selected={customRange as any}
+            onSelect={handleCustomRange as any}
+            numberOfMonths={2}
             disabled={(date) => date > new Date()}
             className={cn("p-3 pointer-events-auto")}
           />
