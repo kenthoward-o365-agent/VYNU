@@ -151,6 +151,7 @@ function AppRoutes() {
         <Route path="/reporting" element={<Reporting />} />
         <Route path="/knowledge-base" element={<KnowledgeBase />} />
         <Route path="/self-onboard" element={<SelfOnboard />} />
+        <Route path="/billing" element={<VenueBilling />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </DashboardLayout>
