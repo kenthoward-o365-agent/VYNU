@@ -167,14 +167,14 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
         .update(payload)
         .eq("venue_id", venueId);
       if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-      else toast({ title: "Billing config updated" });
+      else toast({ title: "Commercials config updated" });
     } else {
       const { error } = await supabase
         .from("venue_billing_config")
         .insert({ venue_id: venueId, ...payload });
       if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
       else {
-        toast({ title: "Billing config created" });
+        toast({ title: "Commercials config created" });
         setHasExisting(true);
       }
     }
@@ -191,7 +191,7 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
     <div className="space-y-6 max-w-2xl">
       <Card>
         <CardHeader>
-          <CardTitle>{venueType === "parent" ? "Group Default Billing" : "Billing Configuration"}</CardTitle>
+          <CardTitle>{venueType === "parent" ? "Group Default Commercials" : "Commercials Configuration"}</CardTitle>
           <CardDescription>
             {venueType === "parent"
               ? "Set the default commission and fees for all child venues in this group."
@@ -302,7 +302,7 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Billing Day of Month</Label>
+                <Label>Commercials Day of Month</Label>
                 <Select value={String(config.billing_day_of_month)} onValueChange={(v) => setConfig({ ...config, billing_day_of_month: parseInt(v) })}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -412,8 +412,8 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
       {venueType === "parent" && childVenues && childVenues.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Child Venue Billing</CardTitle>
-            <CardDescription>Overview of billing configuration for each child venue.</CardDescription>
+            <CardTitle>Child Venue Commercials</CardTitle>
+            <CardDescription>Overview of commercials configuration for each child venue.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -443,7 +443,7 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
 
       <div className="pt-2">
         <Button onClick={save} disabled={saving} className="w-full sm:w-auto">
-          {saving ? "Saving..." : "Save Billing Config"}
+          {saving ? "Saving..." : "Save Commercials Config"}
         </Button>
       </div>
     </div>
