@@ -90,13 +90,13 @@ export default function AdminFinancials() {
     if (!venues.length) return;
     const headers = [
       "Venue","Type","Status","Currency","Commission %","Min Monthly Fee","Contract Start","Contract End","Billing Day",
-      "Est. Annual GMV","Auto Renew","Net Revenue","Billable Orders","Commission Earned","Min Fees Due","Total Billable",
+      "Est. Annual GMV","QR GMV %","Effective QR GMV","Auto Renew","Net Revenue","Billable Orders","Commission Earned","Min Fees Due","Total Billable",
       "Months Remaining","Deferred Revenue","Forecast Annual Commission",
     ];
     const rows = venues.map((v) => [
       v.name, v.venue_type, v.is_active === false ? "Inactive" : "Active", v.billing_currency,
       v.commission_percent, v.min_monthly_fee, v.contract_start_date ?? "", v.contract_end_date ?? "", v.billing_day_of_month,
-      v.estimated_annual_gmv, v.auto_renew ? "Yes" : "No",
+      v.estimated_annual_gmv, v.qr_gmv_percent, Number(v.estimated_annual_gmv) * Number(v.qr_gmv_percent ?? 100) / 100, v.auto_renew ? "Yes" : "No",
       v.net_revenue, v.billable_orders, v.commission_earned, v.min_fee_due, v.total_billable,
       v.months_remaining ?? "", v.deferred_min_fee_revenue, v.forecast_annual_commission,
     ]);
