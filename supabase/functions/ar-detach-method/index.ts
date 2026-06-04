@@ -53,6 +53,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Enforce: at least one active payment method must remain on file.
+    const { count: remainingActive } = await adminClient
+      .from("venue_payment_methods")
+      .select("id", { count: "exact", head: true })
+      .eq("venue_id", venue_id)
+      .eq("is_active", true)
+      .neq("id", payment_method_id);
+
+    if (!remainingActive || remainingActive < 1) {
+      return new Response(
+        JSON.stringify({
+          error: "Add a replacement payment method before removing this one. At least one active method must remain on file.",
+        }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     await stripe.paymentMethods.detach(methodRow.stripe_payment_method_id);
 
     await adminClient
