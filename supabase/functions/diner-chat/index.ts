@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { logAiUsage } from "../_shared/ai-usage.ts";
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -123,6 +124,8 @@ where N is the number of ways to split.
     }
 
     const data = await response.json();
+    const aiModel = "google/gemini-2.5-flash";
+    logAiUsage({ venueId: venue_id, feature: "diner_chat", model: aiModel, usage: data?.usage, requestId: response.headers.get("X-Lovable-AIG-Run-ID") }).catch(() => {});
     let reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that.";
 
     // Parse ADD_ITEMS
