@@ -2968,35 +2968,56 @@ export type Database = {
       }
       venue_billing_config: {
         Row: {
+          auto_renew: boolean
           billing_currency: string
+          billing_day_of_month: number
           commission_percent: number
+          contract_end_date: string | null
+          contract_start_date: string | null
           created_at: string
+          estimated_annual_gmv: number
           id: string
           inherit_from_group: boolean
           min_monthly_fee: number
           notes: string | null
+          notice_period_days: number
+          renewal_term_months: number
           updated_at: string
           venue_id: string
         }
         Insert: {
+          auto_renew?: boolean
           billing_currency?: string
+          billing_day_of_month?: number
           commission_percent?: number
+          contract_end_date?: string | null
+          contract_start_date?: string | null
           created_at?: string
+          estimated_annual_gmv?: number
           id?: string
           inherit_from_group?: boolean
           min_monthly_fee?: number
           notes?: string | null
+          notice_period_days?: number
+          renewal_term_months?: number
           updated_at?: string
           venue_id: string
         }
         Update: {
+          auto_renew?: boolean
           billing_currency?: string
+          billing_day_of_month?: number
           commission_percent?: number
+          contract_end_date?: string | null
+          contract_start_date?: string | null
           created_at?: string
+          estimated_annual_gmv?: number
           id?: string
           inherit_from_group?: boolean
           min_monthly_fee?: number
           notes?: string | null
+          notice_period_days?: number
+          renewal_term_months?: number
           updated_at?: string
           venue_id?: string
         }
@@ -3858,6 +3879,10 @@ export type Database = {
       }
       get_menu_snapshot: {
         Args: { _table_id?: string; _venue_id: string }
+        Returns: Json
+      }
+      get_platform_financials: {
+        Args: { _from: string; _to: string }
         Returns: Json
       }
       get_platform_performance: {
