@@ -87,6 +87,7 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
       contract_end_date: row.contract_end_date ?? null,
       billing_day_of_month: Number(row.billing_day_of_month ?? 1),
       estimated_annual_gmv: Number(row.estimated_annual_gmv ?? 0),
+      qr_gmv_percent: Number(row.qr_gmv_percent ?? 100),
       auto_renew: row.auto_renew ?? true,
       renewal_term_months: Number(row.renewal_term_months ?? 12),
       notice_period_days: Number(row.notice_period_days ?? 30),
