@@ -7,6 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 
 interface BillingConfigTabProps {
@@ -23,6 +29,13 @@ interface BillingConfig {
   billing_currency: string;
   inherit_from_group: boolean;
   notes: string;
+  contract_start_date: string | null;
+  contract_end_date: string | null;
+  billing_day_of_month: number;
+  estimated_annual_gmv: number;
+  auto_renew: boolean;
+  renewal_term_months: number;
+  notice_period_days: number;
 }
 
 const defaultConfig: BillingConfig = {
@@ -31,6 +44,13 @@ const defaultConfig: BillingConfig = {
   billing_currency: "AUD",
   inherit_from_group: true,
   notes: "",
+  contract_start_date: null,
+  contract_end_date: null,
+  billing_day_of_month: 1,
+  estimated_annual_gmv: 0,
+  auto_renew: true,
+  renewal_term_months: 12,
+  notice_period_days: 30,
 };
 
 export default function BillingConfigTab({ venueId, venueType, groupId, groupName, childVenues }: BillingConfigTabProps) {
