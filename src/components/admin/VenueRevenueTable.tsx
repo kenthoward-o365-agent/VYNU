@@ -61,7 +61,9 @@ export default function VenueRevenueTable({ venues, loading }: Props) {
               <TableCell className="text-right">{fmt(v.min_fee_due)}</TableCell>
               <TableCell className="text-right font-semibold">{fmt(v.total_billable)}</TableCell>
               <TableCell className="text-right text-muted-foreground">${Number(v.estimated_annual_gmv || 0).toLocaleString()}</TableCell>
-              <TableCell className="text-right">{fmt(v.forecast_annual_commission)}</TableCell>
+              <TableCell className="text-right">{Number(v.qr_gmv_percent ?? 100).toFixed(0)}%</TableCell>
+              <TableCell className="text-right text-muted-foreground">${(Number(v.estimated_annual_gmv || 0) * Number(v.qr_gmv_percent ?? 100) / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}</TableCell>
+              <TableCell className="text-right font-semibold">{fmt(v.forecast_annual_commission)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
