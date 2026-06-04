@@ -2981,6 +2981,7 @@ export type Database = {
           min_monthly_fee: number
           notes: string | null
           notice_period_days: number
+          qr_gmv_percent: number
           renewal_term_months: number
           updated_at: string
           venue_id: string
@@ -2999,6 +3000,7 @@ export type Database = {
           min_monthly_fee?: number
           notes?: string | null
           notice_period_days?: number
+          qr_gmv_percent?: number
           renewal_term_months?: number
           updated_at?: string
           venue_id: string
@@ -3017,6 +3019,7 @@ export type Database = {
           min_monthly_fee?: number
           notes?: string | null
           notice_period_days?: number
+          qr_gmv_percent?: number
           renewal_term_months?: number
           updated_at?: string
           venue_id?: string

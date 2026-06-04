@@ -33,6 +33,7 @@ interface BillingConfig {
   contract_end_date: string | null;
   billing_day_of_month: number;
   estimated_annual_gmv: number;
+  qr_gmv_percent: number;
   auto_renew: boolean;
   renewal_term_months: number;
   notice_period_days: number;
@@ -48,6 +49,7 @@ const defaultConfig: BillingConfig = {
   contract_end_date: null,
   billing_day_of_month: 1,
   estimated_annual_gmv: 0,
+  qr_gmv_percent: 100,
   auto_renew: true,
   renewal_term_months: 12,
   notice_period_days: 30,
@@ -85,6 +87,7 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
       contract_end_date: row.contract_end_date ?? null,
       billing_day_of_month: Number(row.billing_day_of_month ?? 1),
       estimated_annual_gmv: Number(row.estimated_annual_gmv ?? 0),
+      qr_gmv_percent: Number(row.qr_gmv_percent ?? 100),
       auto_renew: row.auto_renew ?? true,
       renewal_term_months: Number(row.renewal_term_months ?? 12),
       notice_period_days: Number(row.notice_period_days ?? 30),
@@ -153,6 +156,7 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
       contract_end_date: config.contract_end_date,
       billing_day_of_month: config.billing_day_of_month,
       estimated_annual_gmv: config.estimated_annual_gmv,
+      qr_gmv_percent: config.qr_gmv_percent,
       auto_renew: config.auto_renew,
       renewal_term_months: config.renewal_term_months,
       notice_period_days: config.notice_period_days,
@@ -313,10 +317,42 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
                 </Select>
               </div>
               <div>
-                <Label>Estimated Annual GMV ($)</Label>
-                <Input type="number" step="1000" min="0" value={config.estimated_annual_gmv}
-                  onChange={(e) => setConfig({ ...config, estimated_annual_gmv: parseFloat(e.target.value) || 0 })}
-                  className="mt-1" />
+                <Label>Estimated Annual GMV</Label>
+                <div className="relative mt-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={config.estimated_annual_gmv ? config.estimated_annual_gmv.toLocaleString("en-AU") : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^\d.]/g, "");
+                      setConfig({ ...config, estimated_annual_gmv: parseFloat(raw) || 0 });
+                    }}
+                    placeholder="0"
+                    className="pl-7"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Forecast % of GMV via QR Ordering</Label>
+                <div className="relative mt-1">
+                  <Input
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="100"
+                    value={config.qr_gmv_percent}
+                    onChange={(e) => setConfig({ ...config, qr_gmv_percent: Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)) })}
+                    className="pr-7"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">%</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Effective QR GMV: ${((config.estimated_annual_gmv * config.qr_gmv_percent) / 100).toLocaleString("en-AU", { maximumFractionDigits: 0 })}
+                </p>
               </div>
             </div>
 
@@ -348,10 +384,10 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
               <p>
                 <span className="text-muted-foreground">Forecast annual commission: </span>
                 <span className="font-semibold">
-                  ${((config.estimated_annual_gmv * (isInheriting ? effectiveCommission : config.commission_percent)) / 100).toFixed(2)}
+                  ${((config.estimated_annual_gmv * (config.qr_gmv_percent / 100) * (isInheriting ? effectiveCommission : config.commission_percent)) / 100).toLocaleString("en-AU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <span className="text-xs text-muted-foreground ml-1">
-                  (Est. GMV × {(isInheriting ? effectiveCommission : config.commission_percent).toFixed(2)}%)
+                  (Est. GMV × {config.qr_gmv_percent}% QR × {(isInheriting ? effectiveCommission : config.commission_percent).toFixed(2)}%)
                 </span>
               </p>
               {config.contract_end_date && (
