@@ -69,6 +69,7 @@ const adminNavItems = [
   { path: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/admin/venues", label: "Manage Venues", icon: Shield },
   { path: "/admin/financials", label: "Financials", icon: DollarSign },
+  { path: "/admin/billing", label: "H&L Pay AR", icon: Receipt },
   { path: "/admin/staff", label: "Platform Staff", icon: Shield },
   { path: "/admin/partners", label: "API Partners", icon: Plug },
   { path: "/admin/integrations", label: "POS Integrations", icon: Cable },

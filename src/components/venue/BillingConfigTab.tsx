@@ -14,6 +14,7 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import VenuePaymentMethodSection from "@/components/venue/VenuePaymentMethodSection";
 
 interface BillingConfigTabProps {
   venueId: string;
@@ -441,6 +442,8 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
         </Card>
       )}
 
+      <VenuePaymentMethodSection venueId={venueId} venueName="" />
+
       <div className="pt-2">
         <Button onClick={save} disabled={saving} className="w-full sm:w-auto">
           {saving ? "Saving..." : "Save Commercials Config"}
@@ -449,3 +452,4 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
     </div>
   );
 }
+
