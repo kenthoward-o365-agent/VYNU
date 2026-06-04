@@ -22,6 +22,9 @@ export interface CartItem {
   quantity: number;
   modifiers: SelectedModifier[];
   notes: string;
+  /** AI attribution (set when chat/upsell drove the add-to-cart). */
+  aiSource?: "chat" | "upsell" | null;
+  aiSessionId?: string | null;
 }
 
 interface StoredCard {
