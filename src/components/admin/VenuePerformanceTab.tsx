@@ -20,20 +20,27 @@ const money = (n: number) => `$${(Number(n) || 0).toFixed(2)}`;
 export default function VenuePerformanceTab({ venueId }: { venueId: string }) {
   const [range, setRange] = useState<DateRange>(getDefaultAuditDate());
   const [data, setData] = useState<Perf | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setErrorMessage(null);
       const { data, error } = await (supabase as any).rpc("get_venue_performance", {
         _venue_id: venueId,
         _from: range.from.toISOString(),
         _to: range.to.toISOString(),
       });
       if (!cancelled) {
-        if (error) console.error(error);
-        setData((data as Perf) || null);
+        if (error) {
+          console.error(error);
+          setData(null);
+          setErrorMessage(error.message || "Performance data could not be loaded.");
+        } else {
+          setData((data as Perf) || null);
+        }
         setLoading(false);
       }
     })();
@@ -60,8 +67,17 @@ export default function VenuePerformanceTab({ venueId }: { venueId: string }) {
         <AuditDatePicker value={range} onChange={setRange} />
       </div>
 
-      {loading || !data ? (
+      {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : errorMessage ? (
+        <Card className="shadow-sm border-destructive/30">
+          <CardContent className="p-4">
+            <p className="text-sm font-medium text-destructive">Performance data failed to load</p>
+            <p className="text-xs text-muted-foreground mt-1">{errorMessage}</p>
+          </CardContent>
+        </Card>
+      ) : !data ? (
+        <p className="text-sm text-muted-foreground">No performance data available for this period.</p>
       ) : (
         <>
           {/* Financials */}
