@@ -281,7 +281,7 @@ export default function AdminVenueDetail() {
             <TabsTrigger value="group-settings"><Building2 className="h-3.5 w-3.5 mr-1" />Group Settings</TabsTrigger>
           )}
           <TabsTrigger value="users"><Users className="h-3.5 w-3.5 mr-1" />Users</TabsTrigger>
-          <TabsTrigger value="billing"><DollarSign className="h-3.5 w-3.5 mr-1" />Billing</TabsTrigger>
+          <TabsTrigger value="billing"><DollarSign className="h-3.5 w-3.5 mr-1" />Commercials</TabsTrigger>
           <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>
           <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
         </TabsList>
