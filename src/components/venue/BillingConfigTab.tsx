@@ -257,6 +257,125 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
         </CardContent>
       </Card>
 
+      {/* Contract & Forecast — not for parent group defaults */}
+      {venueType !== "parent" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Contract & Forecast</CardTitle>
+            <CardDescription>Contract dates, billing cadence, and GMV forecast for deferred revenue.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Contract Start</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("mt-1 w-full justify-start text-left font-normal", !config.contract_start_date && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {config.contract_start_date ? format(new Date(config.contract_start_date), "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={config.contract_start_date ? new Date(config.contract_start_date) : undefined}
+                      onSelect={(d) => setConfig({ ...config, contract_start_date: d ? format(d, "yyyy-MM-dd") : null })}
+                      initialFocus className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label>Contract End</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className={cn("mt-1 w-full justify-start text-left font-normal", !config.contract_end_date && "text-muted-foreground")}>
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {config.contract_end_date ? format(new Date(config.contract_end_date), "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={config.contract_end_date ? new Date(config.contract_end_date) : undefined}
+                      onSelect={(d) => setConfig({ ...config, contract_end_date: d ? format(d, "yyyy-MM-dd") : null })}
+                      initialFocus className={cn("p-3 pointer-events-auto")} />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Billing Day of Month</Label>
+                <Select value={String(config.billing_day_of_month)} onValueChange={(v) => setConfig({ ...config, billing_day_of_month: parseInt(v) })}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                      <SelectItem key={d} value={String(d)}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Estimated Annual GMV ($)</Label>
+                <Input type="number" step="1000" min="0" value={config.estimated_annual_gmv}
+                  onChange={(e) => setConfig({ ...config, estimated_annual_gmv: parseFloat(e.target.value) || 0 })}
+                  className="mt-1" />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-md border p-3 bg-muted/30">
+              <div>
+                <p className="text-sm font-medium">Auto-renew</p>
+                <p className="text-xs text-muted-foreground">Automatically renew at contract end</p>
+              </div>
+              <Switch checked={config.auto_renew} onCheckedChange={(v) => setConfig({ ...config, auto_renew: v })} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Renewal Term (months)</Label>
+                <Input type="number" min="1" value={config.renewal_term_months}
+                  onChange={(e) => setConfig({ ...config, renewal_term_months: parseInt(e.target.value) || 12 })}
+                  disabled={!config.auto_renew} className="mt-1" />
+              </div>
+              <div>
+                <Label>Notice Period (days)</Label>
+                <Input type="number" min="0" value={config.notice_period_days}
+                  onChange={(e) => setConfig({ ...config, notice_period_days: parseInt(e.target.value) || 0 })}
+                  className="mt-1" />
+              </div>
+            </div>
+
+            {/* Projections */}
+            <div className="rounded-md border bg-muted/30 p-3 space-y-1 text-sm">
+              <p>
+                <span className="text-muted-foreground">Forecast annual commission: </span>
+                <span className="font-semibold">
+                  ${((config.estimated_annual_gmv * (isInheriting ? effectiveCommission : config.commission_percent)) / 100).toFixed(2)}
+                </span>
+                <span className="text-xs text-muted-foreground ml-1">
+                  (Est. GMV × {(isInheriting ? effectiveCommission : config.commission_percent).toFixed(2)}%)
+                </span>
+              </p>
+              {config.contract_end_date && (
+                <p>
+                  <span className="text-muted-foreground">Remaining contracted min-fee revenue: </span>
+                  <span className="font-semibold">
+                    ${(() => {
+                      const end = new Date(config.contract_end_date);
+                      const now = new Date();
+                      const months = Math.max(
+                        (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth()),
+                        0
+                      );
+                      const fee = isInheriting ? effectiveFee : config.min_monthly_fee;
+                      return (months * fee).toFixed(2);
+                    })()}
+                  </span>
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Parent venue: show child venue billing overview */}
       {venueType === "parent" && childVenues && childVenues.length > 0 && (
         <Card>
