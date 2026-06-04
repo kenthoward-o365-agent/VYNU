@@ -33,6 +33,7 @@ interface BillingConfig {
   contract_end_date: string | null;
   billing_day_of_month: number;
   estimated_annual_gmv: number;
+  qr_gmv_percent: number;
   auto_renew: boolean;
   renewal_term_months: number;
   notice_period_days: number;
