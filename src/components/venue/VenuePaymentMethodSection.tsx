@@ -85,7 +85,13 @@ export default function VenuePaymentMethodSection({ venueId, venueName }: { venu
                     <p className="text-xs text-muted-foreground">Expires {String(m.exp_month).padStart(2, "0")}/{m.exp_year}</p>
                   )}
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => detach(m.id)}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => detach(m.id)}
+                  disabled={activeCount <= 1}
+                  title={activeCount <= 1 ? "Add a replacement method before removing this one" : "Remove method"}
+                >
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
