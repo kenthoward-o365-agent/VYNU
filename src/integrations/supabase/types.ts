@@ -601,6 +601,98 @@ export type Database = {
           },
         ]
       }
+      ar_dunning_schedules: {
+        Row: {
+          auto_suspend: boolean
+          created_at: string
+          escalate_email: boolean
+          grace_period_days: number
+          id: string
+          in_app_alert: boolean
+          is_default: boolean
+          mark_uncollectible: boolean
+          max_attempts: number
+          name: string
+          retry_days: number[]
+          suspend_after_attempts: number | null
+          uncollectible_after_attempts: number
+          updated_at: string
+        }
+        Insert: {
+          auto_suspend?: boolean
+          created_at?: string
+          escalate_email?: boolean
+          grace_period_days?: number
+          id?: string
+          in_app_alert?: boolean
+          is_default?: boolean
+          mark_uncollectible?: boolean
+          max_attempts?: number
+          name: string
+          retry_days?: number[]
+          suspend_after_attempts?: number | null
+          uncollectible_after_attempts?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_suspend?: boolean
+          created_at?: string
+          escalate_email?: boolean
+          grace_period_days?: number
+          id?: string
+          in_app_alert?: boolean
+          is_default?: boolean
+          mark_uncollectible?: boolean
+          max_attempts?: number
+          name?: string
+          retry_days?: number[]
+          suspend_after_attempts?: number | null
+          uncollectible_after_attempts?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ar_onboarding_tokens: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          methods_allowed: string[]
+          token_hash: string
+          used_at: string | null
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          methods_allowed?: string[]
+          token_hash: string
+          used_at?: string | null
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          methods_allowed?: string[]
+          token_hash?: string
+          used_at?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ar_onboarding_tokens_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages_log: {
         Row: {
           content: string
@@ -2676,6 +2768,27 @@ export type Database = {
           },
         ]
       }
+      processed_stripe_events: {
+        Row: {
+          event_type: string
+          id: string
+          processed_at: string
+          stripe_event_id: string
+        }
+        Insert: {
+          event_type: string
+          id?: string
+          processed_at?: string
+          stripe_event_id: string
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          processed_at?: string
+          stripe_event_id?: string
+        }
+        Relationships: []
+      }
       staff_alerts: {
         Row: {
           alert_type: Database["public"]["Enums"]["alert_type"]
@@ -2966,6 +3079,59 @@ export type Database = {
           },
         ]
       }
+      venue_billing_accounts: {
+        Row: {
+          billing_address: Json | null
+          billing_email: string | null
+          billing_name: string | null
+          created_at: string
+          default_payment_method_id: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          payment_method_type: string
+          stripe_customer_id: string | null
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          billing_address?: Json | null
+          billing_email?: string | null
+          billing_name?: string | null
+          created_at?: string
+          default_payment_method_id?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          payment_method_type?: string
+          stripe_customer_id?: string | null
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          billing_address?: Json | null
+          billing_email?: string | null
+          billing_name?: string | null
+          created_at?: string
+          default_payment_method_id?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          payment_method_type?: string
+          stripe_customer_id?: string | null
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_billing_accounts_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: true
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_billing_config: {
         Row: {
           auto_renew: boolean
@@ -3029,6 +3195,117 @@ export type Database = {
             foreignKeyName: "venue_billing_config_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: true
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_billing_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          event_type: string
+          id: string
+          invoice_id: string | null
+          metadata: Json | null
+          venue_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_type: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          venue_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          event_type?: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_billing_events_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "venue_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_billing_events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_credit_notes: {
+        Row: {
+          amount: number
+          applied_to_ids: string[] | null
+          created_at: string
+          created_by: string | null
+          credit_number: string
+          currency: string
+          id: string
+          invoice_id: string | null
+          notes: string | null
+          reason: string
+          status: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          amount?: number
+          applied_to_ids?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          credit_number: string
+          currency?: string
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          reason: string
+          status?: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          amount?: number
+          applied_to_ids?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          credit_number?: string
+          currency?: string
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          reason?: string
+          status?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_credit_notes_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "venue_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venue_credit_notes_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
             referencedRelation: "venues"
             referencedColumns: ["id"]
           },
@@ -3201,6 +3478,201 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      venue_invoice_lines: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          description: string
+          display_order: number
+          id: string
+          invoice_id: string
+          line_type: string
+          metadata: Json | null
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description: string
+          display_order?: number
+          id?: string
+          invoice_id: string
+          line_type: string
+          metadata?: Json | null
+          quantity?: number
+          unit_price?: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string
+          display_order?: number
+          id?: string
+          invoice_id?: string
+          line_type?: string
+          metadata?: Json | null
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_invoice_lines_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "venue_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_invoice_payments: {
+        Row: {
+          amount: number
+          attempted_at: string
+          created_at: string
+          failure_code: string | null
+          failure_message: string | null
+          id: string
+          invoice_id: string
+          metadata: Json | null
+          method_type: string | null
+          settled_at: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+        }
+        Insert: {
+          amount?: number
+          attempted_at?: string
+          created_at?: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          invoice_id: string
+          metadata?: Json | null
+          method_type?: string | null
+          settled_at?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+        }
+        Update: {
+          amount?: number
+          attempted_at?: string
+          created_at?: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          invoice_id?: string
+          metadata?: Json | null
+          method_type?: string | null
+          settled_at?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_invoice_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "venue_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_invoices: {
+        Row: {
+          adjustments: number
+          attempt_count: number
+          commission_amount: number
+          created_at: string
+          currency: string
+          due_date: string
+          id: string
+          invoice_number: string
+          min_fee_amount: number
+          next_retry_at: string | null
+          notes: string | null
+          paid_at: string | null
+          pdf_url: string | null
+          period_end: string
+          period_start: string
+          status: string
+          stripe_payment_intent_id: string | null
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string
+          venue_id: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          adjustments?: number
+          attempt_count?: number
+          commission_amount?: number
+          created_at?: string
+          currency?: string
+          due_date: string
+          id?: string
+          invoice_number: string
+          min_fee_amount?: number
+          next_retry_at?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          pdf_url?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+          venue_id: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          adjustments?: number
+          attempt_count?: number
+          commission_amount?: number
+          created_at?: string
+          currency?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          min_fee_amount?: number
+          next_retry_at?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          pdf_url?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          stripe_payment_intent_id?: string | null
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+          venue_id?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_invoices_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       venue_onboarding_state: {
         Row: {
@@ -3381,6 +3853,86 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "venue_payment_config_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_payment_methods: {
+        Row: {
+          bank_name: string | null
+          billing_details: Json | null
+          brand: string | null
+          bsb_last4: string | null
+          created_at: string
+          exp_month: number | null
+          exp_year: number | null
+          fingerprint: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          last4: string | null
+          mandate_accepted_at: string | null
+          mandate_id: string | null
+          mandate_ip: string | null
+          mandate_status: string | null
+          routing_last4: string | null
+          stripe_payment_method_id: string
+          type: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          bank_name?: string | null
+          billing_details?: Json | null
+          brand?: string | null
+          bsb_last4?: string | null
+          created_at?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          fingerprint?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          last4?: string | null
+          mandate_accepted_at?: string | null
+          mandate_id?: string | null
+          mandate_ip?: string | null
+          mandate_status?: string | null
+          routing_last4?: string | null
+          stripe_payment_method_id: string
+          type: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          bank_name?: string | null
+          billing_details?: Json | null
+          brand?: string | null
+          bsb_last4?: string | null
+          created_at?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          fingerprint?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          last4?: string | null
+          mandate_accepted_at?: string | null
+          mandate_id?: string | null
+          mandate_ip?: string | null
+          mandate_status?: string | null
+          routing_last4?: string | null
+          stripe_payment_method_id?: string
+          type?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_payment_methods_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
@@ -3844,6 +4396,10 @@ export type Database = {
         Args: { _month: string; _parent: unknown }
         Returns: undefined
       }
+      ensure_stripe_customer_for_venue: {
+        Args: { _stripe_customer_id?: string; _venue_id: string }
+        Returns: string
+      }
       find_or_create_table_session: {
         Args: {
           _display_name?: string
@@ -3856,6 +4412,7 @@ export type Database = {
         Returns: string
       }
       fire_table_session: { Args: { _session_id: string }; Returns: boolean }
+      generate_invoice_number: { Args: never; Returns: string }
       generate_site_id: { Args: never; Returns: string }
       get_active_loyalty_program: {
         Args: { p_venue_id: string }
@@ -3873,6 +4430,7 @@ export type Database = {
         Args: { _from: string; _to: string }
         Returns: Json
       }
+      get_ar_dashboard: { Args: { _from: string; _to: string }; Returns: Json }
       get_diner_order_status: {
         Args: { _order_id: string }
         Returns: {
@@ -3962,6 +4520,33 @@ export type Database = {
       is_venue_staff: {
         Args: { _user_id: string; _venue_id: string }
         Returns: boolean
+      }
+      list_ar_invoices: {
+        Args: {
+          _from?: string
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _status?: string[]
+          _to?: string
+          _venue_id?: string
+        }
+        Returns: {
+          attempt_count: number
+          created_at: string
+          currency: string
+          due_date: string
+          id: string
+          invoice_number: string
+          paid_at: string
+          period_end: string
+          period_start: string
+          status: string
+          total: number
+          total_count: number
+          venue_id: string
+          venue_name: string
+        }[]
       }
       list_open_sessions_at_table: {
         Args: { _table_id: string; _venue_id: string }
