@@ -9,10 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { usePermissions } from "@/hooks/use-permissions";
 import {
-  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Sliders, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug, Cable, Monitor, Pin, PinOff, BookOpen, Sparkles
+  ChevronDown, Check, Sun, Moon, Shield, Upload, ImagePlus, SlidersHorizontal, Sliders, Gift, Bot, CreditCard, Receipt, HelpCircle, DollarSign, Percent, Tag, Settings, Users, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, FileText, Plug, Cable, Monitor, Pin, PinOff, BookOpen, Sparkles, User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -530,60 +529,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           )}
         </nav>
 
-        <div className={cn("border-t border-sidebar-border space-y-1", pinned ? "p-2" : "p-3")}>
-          {pinned ? (
-            <>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={toggleTheme}
-                    className="flex items-center justify-center h-10 w-full rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-                    aria-label="Toggle theme"
-                  >
-                    {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">{theme === "dark" ? "Dark mode" : "Light mode"}</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={signOut}
-                    className="flex items-center justify-center h-10 w-full rounded-lg text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-                    aria-label="Sign out"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Sign out{user?.email ? ` (${user.email})` : ""}</TooltipContent>
-              </Tooltip>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center justify-between px-3 py-2">
-                <div className="flex items-center gap-2 text-xs text-sidebar-muted">
-                  {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
-                  <span>{theme === "dark" ? "Dark" : "Light"}</span>
-                </div>
-                <Switch
-                  checked={theme === "dark"}
-                  onCheckedChange={toggleTheme}
-                  className="data-[state=checked]:bg-sidebar-primary data-[state=unchecked]:bg-sidebar-accent"
-                />
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 text-xs text-sidebar-muted">
-                <span className="truncate">{user?.email}</span>
-              </div>
-              <button
-                onClick={signOut}
-                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Sign out
-              </button>
-            </>
-          )}
-        </div>
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -594,7 +539,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <h1 className="text-lg font-semibold text-foreground">
             {location.pathname === "/knowledge-base" ? "Knowledge Base" : location.pathname === "/orders/statuses" ? "Order Display System" : allNavItems.find((i) => i.path === location.pathname)?.label || "H&L OrderNOW"}
           </h1>
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-2">
             {showSelfOnboard && (
               <Link
                 to="/self-onboard"
@@ -608,6 +553,29 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Link to="/knowledge-base" className="inline-flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors" title="Knowledge Base">
               <HelpCircle className="h-5 w-5" />
             </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="inline-flex items-center gap-2 h-9 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors">
+                  <User className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline truncate max-w-[160px]">{user?.email}</span>
+                  <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-3 py-2 text-sm font-medium text-foreground border-b border-border">
+                  {user?.email}
+                </div>
+                <DropdownMenuItem onClick={toggleTheme} className="cursor-pointer">
+                  {theme === "dark" ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
+                  {theme === "dark" ? "Switch to Light" : "Switch to Dark"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut} className="cursor-pointer text-destructive focus:text-destructive">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
