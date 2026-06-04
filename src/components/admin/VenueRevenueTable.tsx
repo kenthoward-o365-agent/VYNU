@@ -31,6 +31,8 @@ export default function VenueRevenueTable({ venues, loading }: Props) {
             <TableHead className="text-right">Min Fees Due</TableHead>
             <TableHead className="text-right">Total Billable</TableHead>
             <TableHead className="text-right">Est. GMV</TableHead>
+            <TableHead className="text-right">QR %</TableHead>
+            <TableHead className="text-right">Effective QR GMV</TableHead>
             <TableHead className="text-right">Forecast Comm.</TableHead>
           </TableRow>
         </TableHeader>
