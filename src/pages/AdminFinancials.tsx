@@ -83,7 +83,7 @@ export default function AdminFinancials() {
     { label: "Min Fees Due", value: totals ? `$${Number(totals.min_fee_due).toFixed(2)}` : "—", icon: PiggyBank, color: "text-amber-500", sub: `${data?.period.months.toFixed(1)} months` },
     { label: "Total Billable", value: totals ? `$${Number(totals.total_billable).toFixed(2)}` : "—", icon: TrendingUp, color: "text-emerald-500", sub: "commission + min fees" },
     { label: "Deferred Revenue", value: totals ? `$${Number(totals.deferred_revenue).toFixed(2)}` : "—", icon: CalendarClock, color: "text-blue-500", sub: "min fees × months left" },
-    { label: "Forecast Annual Commission", value: totals ? `$${Number(totals.forecast_annual_commission).toFixed(2)}` : "—", icon: TrendingUp, color: "text-purple-500", sub: `Est. GMV $${Number(totals?.estimated_annual_gmv || 0).toLocaleString()}` },
+    { label: "Forecast Annual Commission", value: totals ? `$${Number(totals.forecast_annual_commission).toFixed(2)}` : "—", icon: TrendingUp, color: "text-purple-500", sub: `Est. GMV $${Number(totals?.estimated_annual_gmv || 0).toLocaleString()} × QR%` },
   ], [totals, data]);
 
   const exportCsv = () => {
