@@ -254,10 +254,6 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
               className="mt-1"
             />
           </div>
-
-          <Button onClick={save} disabled={saving}>
-            {saving ? "Saving..." : "Save Billing Config"}
-          </Button>
         </CardContent>
       </Card>
 
@@ -444,6 +440,12 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
           </CardContent>
         </Card>
       )}
+
+      <div className="pt-2">
+        <Button onClick={save} disabled={saving} className="w-full sm:w-auto">
+          {saving ? "Saving..." : "Save Billing Config"}
+        </Button>
+      </div>
     </div>
   );
 }
