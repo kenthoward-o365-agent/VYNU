@@ -34,14 +34,26 @@ export default function VenuePaymentMethodSection({ venueId, venueName }: { venu
     toast({ title: "Self-serve link copied", description: "7-day expiry. Email or message it to the venue." });
   };
 
+  const activeCount = methods.length;
+
   const detach = async (id: string) => {
+    if (activeCount <= 1) {
+      toast({
+        title: "Add a replacement first",
+        description: "At least one active payment method must remain on file. Add a new method, then remove this one.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!confirm("Remove this payment method?")) return;
-    const { error } = await supabase.functions.invoke("ar-detach-method", {
+    const { data, error } = await supabase.functions.invoke("ar-detach-method", {
       body: { venue_id: venueId, payment_method_id: id },
     });
-    if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
-    else { toast({ title: "Removed" }); load(); }
+    if (error || (data as any)?.error) {
+      toast({ title: "Failed", description: error?.message || (data as any)?.error, variant: "destructive" });
+    } else { toast({ title: "Removed" }); load(); }
   };
+
 
   return (
     <Card>
