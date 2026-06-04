@@ -132,10 +132,9 @@ export default function VenueBilling() {
         <p className="text-sm text-muted-foreground">Your invoices, payments and method on file. Everything is real time — nothing is emailed.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card><CardHeader className="pb-2"><CardDescription>Outstanding</CardDescription><CardTitle className="text-2xl">{fmtMoney(summary.outstanding)}</CardTitle></CardHeader></Card>
         <Card><CardHeader className="pb-2"><CardDescription>Overdue</CardDescription><CardTitle className="text-2xl text-destructive">{fmtMoney(summary.overdue)}</CardTitle></CardHeader></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Paid (lifetime)</CardDescription><CardTitle className="text-2xl">{fmtMoney(summary.paid)}</CardTitle></CardHeader></Card>
       </div>
 
       <Tabs defaultValue="invoices">
@@ -159,7 +158,6 @@ export default function VenueBilling() {
                       <TableHead>Invoice #</TableHead>
                       <TableHead>Period</TableHead>
                       <TableHead>Due</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
@@ -170,7 +168,6 @@ export default function VenueBilling() {
                         <TableCell className="font-mono text-xs">{i.invoice_number}</TableCell>
                         <TableCell className="text-xs">{format(new Date(i.period_start), "d MMM")} – {format(new Date(i.period_end), "d MMM yyyy")}</TableCell>
                         <TableCell className="text-xs">{format(new Date(i.due_date), "d MMM yyyy")}</TableCell>
-                        <TableCell className="text-right">{fmtMoney(Number(i.total), i.currency)}</TableCell>
                         <TableCell><Badge variant={STATUS_VARIANT[i.status] || "outline"}>{i.status.replace("_", " ")}</Badge></TableCell>
                         <TableCell className="text-right">
                           <Button size="sm" variant="ghost" onClick={() => setOpenId(i.id)}>View</Button>
