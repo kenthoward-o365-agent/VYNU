@@ -317,10 +317,42 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
                 </Select>
               </div>
               <div>
-                <Label>Estimated Annual GMV ($)</Label>
-                <Input type="number" step="1000" min="0" value={config.estimated_annual_gmv}
-                  onChange={(e) => setConfig({ ...config, estimated_annual_gmv: parseFloat(e.target.value) || 0 })}
-                  className="mt-1" />
+                <Label>Estimated Annual GMV</Label>
+                <div className="relative mt-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    value={config.estimated_annual_gmv ? config.estimated_annual_gmv.toLocaleString("en-AU") : ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^\d.]/g, "");
+                      setConfig({ ...config, estimated_annual_gmv: parseFloat(raw) || 0 });
+                    }}
+                    placeholder="0"
+                    className="pl-7"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Forecast % of GMV via QR Ordering</Label>
+                <div className="relative mt-1">
+                  <Input
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="100"
+                    value={config.qr_gmv_percent}
+                    onChange={(e) => setConfig({ ...config, qr_gmv_percent: Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)) })}
+                    className="pr-7"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">%</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Effective QR GMV: ${((config.estimated_annual_gmv * config.qr_gmv_percent) / 100).toLocaleString("en-AU", { maximumFractionDigits: 0 })}
+                </p>
               </div>
             </div>
 
