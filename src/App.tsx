@@ -48,6 +48,7 @@ import Reporting from "@/pages/Reporting";
 import OrderStatuses from "@/pages/OrderStatuses";
 import OrderThrottling from "@/pages/OrderThrottling";
 import SelfOnboard from "@/pages/SelfOnboard";
+import VenueBilling from "@/pages/VenueBilling";
 
 const queryClient = new QueryClient({
   defaultOptions: {
