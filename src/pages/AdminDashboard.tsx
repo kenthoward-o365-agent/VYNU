@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import PlatformFunnelCard from "@/components/admin/PlatformFunnelCard";
+import PlatformKpiStrip from "@/components/admin/PlatformKpiStrip";
 
 interface VenueRow {
   id: string;
