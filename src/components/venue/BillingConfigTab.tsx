@@ -167,14 +167,14 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
         .update(payload)
         .eq("venue_id", venueId);
       if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-      else toast({ title: "Billing config updated" });
+      else toast({ title: "Commercials config updated" });
     } else {
       const { error } = await supabase
         .from("venue_billing_config")
         .insert({ venue_id: venueId, ...payload });
       if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
       else {
-        toast({ title: "Billing config created" });
+        toast({ title: "Commercials config created" });
         setHasExisting(true);
       }
     }
