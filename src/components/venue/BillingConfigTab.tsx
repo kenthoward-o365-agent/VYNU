@@ -143,30 +143,31 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
 
   const save = async () => {
     setSaving(true);
+    const payload = {
+      commission_percent: config.commission_percent,
+      min_monthly_fee: config.min_monthly_fee,
+      billing_currency: config.billing_currency,
+      inherit_from_group: config.inherit_from_group,
+      notes: config.notes || null,
+      contract_start_date: config.contract_start_date,
+      contract_end_date: config.contract_end_date,
+      billing_day_of_month: config.billing_day_of_month,
+      estimated_annual_gmv: config.estimated_annual_gmv,
+      auto_renew: config.auto_renew,
+      renewal_term_months: config.renewal_term_months,
+      notice_period_days: config.notice_period_days,
+    };
     if (hasExisting) {
       const { error } = await supabase
         .from("venue_billing_config")
-        .update({
-          commission_percent: config.commission_percent,
-          min_monthly_fee: config.min_monthly_fee,
-          billing_currency: config.billing_currency,
-          inherit_from_group: config.inherit_from_group,
-          notes: config.notes || null,
-        })
+        .update(payload)
         .eq("venue_id", venueId);
       if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
       else toast({ title: "Billing config updated" });
     } else {
       const { error } = await supabase
         .from("venue_billing_config")
-        .insert({
-          venue_id: venueId,
-          commission_percent: config.commission_percent,
-          min_monthly_fee: config.min_monthly_fee,
-          billing_currency: config.billing_currency,
-          inherit_from_group: config.inherit_from_group,
-          notes: config.notes || null,
-        });
+        .insert({ venue_id: venueId, ...payload });
       if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
       else {
         toast({ title: "Billing config created" });
