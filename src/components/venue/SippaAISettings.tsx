@@ -142,7 +142,7 @@ export default function ShyndigAISettings({ venueId }: Props) {
     }
     setUploading(true);
     const ext = file.name.split(".").pop();
-    const path = `agent-icons/${venueId}.${ext}`;
+    const path = `${venueId}/agent-icons/icon.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from("venue-assets")
