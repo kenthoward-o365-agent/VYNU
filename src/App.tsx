@@ -34,6 +34,8 @@ import AdminPartners from "@/pages/AdminPartners";
 import AdminIntegrations from "@/pages/AdminIntegrations";
 import AdminKnowledgeBase from "@/pages/AdminKnowledgeBase";
 import AdminFinancials from "@/pages/AdminFinancials";
+import AdminBilling from "@/pages/AdminBilling";
+import BillingSetup from "@/pages/BillingSetup";
 
 import Developers from "@/pages/Developers";
 import NotFound from "@/pages/NotFound";
@@ -141,6 +143,7 @@ function AppRoutes() {
         <Route path="/admin/integrations" element={<AdminIntegrations />} />
         <Route path="/admin/knowledge-base" element={<AdminKnowledgeBase />} />
         <Route path="/admin/financials" element={<AdminFinancials />} />
+        <Route path="/admin/billing" element={<AdminBilling />} />
         
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />
@@ -172,6 +175,9 @@ function RootRoutes() {
       <Route path="/order/:venueId/:tableId" element={<ConsumerOrder />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/developers" element={<Developers />} />
+      <Route path="/billing/setup/:token" element={<BillingSetup />} />
+      <Route path="/billing/setup/success" element={<BillingSetup />} />
+      <Route path="/billing/setup/cancelled" element={<BillingSetup />} />
       {/* All other routes go through auth */}
       <Route path="/*" element={
         <AuthProvider>
