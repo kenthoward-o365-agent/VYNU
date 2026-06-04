@@ -60,10 +60,12 @@ const PAGE_SIZE = 25;
 export default function AdminVenues() {
   const navigate = useNavigate();
   const [venues, setVenues] = useState<AdminVenue[]>([]);
-  const [groups, setGroups] = useState<VenueGroup[]>([]);
   const [billingMap, setBillingMap] = useState<Record<string, number>>({});
+  const [groups, setGroups] = useState<VenueGroup[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -82,22 +84,42 @@ export default function AdminVenues() {
     group_id: "__none__",
   });
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => { setPage(1); }, [debouncedSearch, statusFilter, typeFilter]);
+
+  const fetchGroups = async () => {
+    const { data } = await supabase.from("venue_groups").select("id, name");
+    setGroups((data || []) as VenueGroup[]);
+  };
+
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: venueData }, { data: groupData }, { data: billingData }] = await Promise.all([
-      supabase.from("venues").select("id, name, venue_type, city, state, is_active, subscription_status, subscription_plan, group_id, created_at").not("name", "ilike", "LOADTEST_%").order("name"),
-      supabase.from("venue_groups").select("id, name"),
-      supabase.from("venue_billing_config").select("venue_id, commission_percent"),
-    ]);
-    setVenues((venueData || []) as AdminVenue[]);
-    setGroups((groupData || []) as VenueGroup[]);
-    const bMap: Record<string, number> = {};
-    (billingData || []).forEach((b: any) => { bMap[b.venue_id] = Number(b.commission_percent); });
-    setBillingMap(bMap);
+    const { data, error } = await supabase.rpc("search_admin_venues", {
+      _search: debouncedSearch || null,
+      _status: statusFilter,
+      _venue_type: typeFilter,
+      _limit: PAGE_SIZE,
+      _offset: (page - 1) * PAGE_SIZE,
+    });
+    if (!error && data) {
+      const payload = data as unknown as { total: number; venues: (AdminVenue & { commission_percent: number | null })[] };
+      setVenues(payload.venues as AdminVenue[]);
+      setTotal(payload.total);
+      const bMap: Record<string, number> = {};
+      payload.venues.forEach((v) => {
+        if (v.commission_percent != null) bMap[v.id] = Number(v.commission_percent);
+      });
+      setBillingMap(bMap);
+    }
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchGroups(); }, []);
+  useEffect(() => { fetchData(); }, [debouncedSearch, statusFilter, typeFilter, page]);
 
   const createVenue = async () => {
     if (!form.name.trim()) return;
@@ -105,7 +127,6 @@ export default function AdminVenues() {
 
     let groupId = form.group_id === "__none__" ? null : form.group_id;
 
-    // If creating a parent company, auto-create a venue_groups record
     if (form.venue_type === "parent") {
       const { data: newGroup, error: groupErr } = await supabase
         .from("venue_groups")
@@ -141,6 +162,7 @@ export default function AdminVenues() {
       toast({ title: "Venue created" });
       setDialogOpen(false);
       setForm({ name: "", venue_type: "restaurant", city: "", state: "NSW", address: "", postcode: "", phone: "", email: "", group_id: "__none__" });
+      fetchGroups();
       fetchData();
     }
     setCreating(false);
@@ -148,28 +170,17 @@ export default function AdminVenues() {
 
   const groupMap = useMemo(() => Object.fromEntries(groups.map((g) => [g.id, g.name])), [groups]);
 
-  const filtered = useMemo(() => {
-    return venues.filter((v) => {
-      const matchSearch = !search || v.name.toLowerCase().includes(search.toLowerCase()) || (v.city || "").toLowerCase().includes(search.toLowerCase());
-      const matchStatus = statusFilter === "all" || v.subscription_status === statusFilter;
-      const matchType = typeFilter === "all" || v.venue_type === typeFilter;
-      return matchSearch && matchStatus && matchType;
-    });
-  }, [venues, search, statusFilter, typeFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
-  const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-  // Reset page when filters change
-  useEffect(() => { setPage(1); }, [search, statusFilter, typeFilter]);
+  const paginated = venues;
+  const filtered = venues;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Manage Venues</h2>
-          <p className="text-muted-foreground">{filtered.length} of {venues.length} venues</p>
+          <p className="text-muted-foreground">{total} venues</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -304,7 +315,7 @@ export default function AdminVenues() {
           {/* Pagination */}
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length}
+              Showing {total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, total)} of {total}
             </p>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage((p) => p - 1)}>

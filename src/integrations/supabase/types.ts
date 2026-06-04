@@ -3869,6 +3869,10 @@ export type Database = {
           venue_id: string
         }[]
       }
+      get_admin_dashboard: {
+        Args: { _from: string; _to: string }
+        Returns: Json
+      }
       get_diner_order_status: {
         Args: { _order_id: string }
         Returns: {
@@ -4008,6 +4012,16 @@ export type Database = {
       read_pos_credential: {
         Args: { _field: string; _venue_id: string }
         Returns: string
+      }
+      search_admin_venues: {
+        Args: {
+          _limit?: number
+          _offset?: number
+          _search?: string
+          _status?: string
+          _venue_type?: string
+        }
+        Returns: Json
       }
       set_pos_credential: {
         Args: { _field: string; _value: string; _venue_id: string }
