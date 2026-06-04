@@ -156,6 +156,7 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
       contract_end_date: config.contract_end_date,
       billing_day_of_month: config.billing_day_of_month,
       estimated_annual_gmv: config.estimated_annual_gmv,
+      qr_gmv_percent: config.qr_gmv_percent,
       auto_renew: config.auto_renew,
       renewal_term_months: config.renewal_term_months,
       notice_period_days: config.notice_period_days,
