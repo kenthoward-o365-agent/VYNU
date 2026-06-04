@@ -75,15 +75,24 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
       .eq("venue_id", venueId)
       .maybeSingle();
 
+    const mapRow = (row: any): BillingConfig => ({
+      commission_percent: Number(row.commission_percent ?? 0),
+      min_monthly_fee: Number(row.min_monthly_fee ?? 0),
+      billing_currency: row.billing_currency ?? "AUD",
+      inherit_from_group: row.inherit_from_group ?? true,
+      notes: row.notes || "",
+      contract_start_date: row.contract_start_date ?? null,
+      contract_end_date: row.contract_end_date ?? null,
+      billing_day_of_month: Number(row.billing_day_of_month ?? 1),
+      estimated_annual_gmv: Number(row.estimated_annual_gmv ?? 0),
+      auto_renew: row.auto_renew ?? true,
+      renewal_term_months: Number(row.renewal_term_months ?? 12),
+      notice_period_days: Number(row.notice_period_days ?? 30),
+    });
+
     if (data) {
       setHasExisting(true);
-      setConfig({
-        commission_percent: Number(data.commission_percent),
-        min_monthly_fee: Number(data.min_monthly_fee),
-        billing_currency: data.billing_currency,
-        inherit_from_group: data.inherit_from_group,
-        notes: data.notes || "",
-      });
+      setConfig(mapRow(data));
     } else {
       setHasExisting(false);
       setConfig(defaultConfig);
@@ -106,13 +115,7 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
           .maybeSingle();
 
         if (pConfig) {
-          setParentConfig({
-            commission_percent: Number(pConfig.commission_percent),
-            min_monthly_fee: Number(pConfig.min_monthly_fee),
-            billing_currency: pConfig.billing_currency,
-            inherit_from_group: pConfig.inherit_from_group,
-            notes: pConfig.notes || "",
-          });
+          setParentConfig(mapRow(pConfig));
         }
       }
     }
@@ -129,7 +132,7 @@ export default function BillingConfigTab({ venueId, venueType, groupId, groupNam
       for (const cv of childVenues) {
         const cc = cConfigs?.find((c) => c.venue_id === cv.id);
         map[cv.id] = cc
-          ? { commission_percent: Number(cc.commission_percent), min_monthly_fee: Number(cc.min_monthly_fee), billing_currency: cc.billing_currency, inherit_from_group: cc.inherit_from_group, notes: cc.notes || "", exists: true }
+          ? { ...mapRow(cc), exists: true }
           : { ...defaultConfig, exists: false };
       }
       setChildConfigs(map);
