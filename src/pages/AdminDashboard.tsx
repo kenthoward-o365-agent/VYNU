@@ -133,6 +133,10 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      <PlatformKpiStrip range={auditDate} />
+
+
+
       {/* Charts row */}
       <div className="grid gap-3 lg:grid-cols-2">
         {/* Revenue by Venue */}
