@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { paginate } from "@/lib/paginate";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
@@ -29,29 +30,36 @@ export default function ARReportsTab() {
 
   const exportCollections = async () => {
     setBusy("collections");
-    const { data } = await supabase
+    const data = await paginate<any>((from, to) => supabase
       .from("venue_invoices")
       .select("invoice_number, venue_id, total, currency, status, period_start, period_end, due_date, paid_at, attempt_count")
       .in("status", ["paid", "partially_paid"])
-      .order("paid_at", { ascending: false });
-    download("collections", data || []);
+      .order("paid_at", { ascending: false })
+      .range(from, to));
+    download("collections", data);
     setBusy(null);
   };
 
   const exportFailed = async () => {
     setBusy("failed");
-    const { data } = await supabase
+    const data = await paginate<any>((from, to) => supabase
       .from("venue_invoices")
       .select("invoice_number, venue_id, total, currency, status, due_date, attempt_count, next_retry_at")
-      .in("status", ["failed", "uncollectible"]);
-    download("failed_payments", data || []);
+      .in("status", ["failed", "uncollectible"])
+      .order("due_date", { ascending: true })
+      .range(from, to));
+    download("failed_payments", data);
     setBusy(null);
   };
 
   const exportAll = async () => {
     setBusy("all");
-    const { data } = await supabase.from("venue_invoices").select("*").order("created_at", { ascending: false });
-    download("all_invoices", data || []);
+    const data = await paginate<any>((from, to) => supabase
+      .from("venue_invoices")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .range(from, to));
+    download("all_invoices", data);
     setBusy(null);
   };
 

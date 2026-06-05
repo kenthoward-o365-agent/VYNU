@@ -280,106 +280,6 @@ export type Database = {
           },
         ]
       }
-      api_request_log_legacy: {
-        Row: {
-          api_key_id: string | null
-          created_at: string
-          id: string
-          latency_ms: number | null
-          method: string
-          partner_id: string | null
-          path: string
-          request_id: string | null
-          status_code: number
-          venue_id: string | null
-        }
-        Insert: {
-          api_key_id?: string | null
-          created_at?: string
-          id?: string
-          latency_ms?: number | null
-          method: string
-          partner_id?: string | null
-          path: string
-          request_id?: string | null
-          status_code: number
-          venue_id?: string | null
-        }
-        Update: {
-          api_key_id?: string | null
-          created_at?: string
-          id?: string
-          latency_ms?: number | null
-          method?: string
-          partner_id?: string | null
-          path?: string
-          request_id?: string | null
-          status_code?: number
-          venue_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "api_request_log_api_key_id_fkey"
-            columns: ["api_key_id"]
-            isOneToOne: false
-            referencedRelation: "api_keys"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "api_request_log_partner_id_fkey"
-            columns: ["partner_id"]
-            isOneToOne: false
-            referencedRelation: "api_partners"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "api_request_log_venue_id_fkey"
-            columns: ["venue_id"]
-            isOneToOne: false
-            referencedRelation: "venues"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      api_request_log_y2026m05: {
-        Row: {
-          api_key_id: string | null
-          created_at: string
-          id: string
-          latency_ms: number | null
-          method: string
-          partner_id: string | null
-          path: string
-          request_id: string | null
-          status_code: number
-          venue_id: string | null
-        }
-        Insert: {
-          api_key_id?: string | null
-          created_at?: string
-          id?: string
-          latency_ms?: number | null
-          method: string
-          partner_id?: string | null
-          path: string
-          request_id?: string | null
-          status_code: number
-          venue_id?: string | null
-        }
-        Update: {
-          api_key_id?: string | null
-          created_at?: string
-          id?: string
-          latency_ms?: number | null
-          method?: string
-          partner_id?: string | null
-          path?: string
-          request_id?: string | null
-          status_code?: number
-          venue_id?: string | null
-        }
-        Relationships: []
-      }
       api_request_log_y2026m06: {
         Row: {
           api_key_id: string | null
@@ -459,6 +359,45 @@ export type Database = {
         Relationships: []
       }
       api_request_log_y2026m08: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          method: string
+          partner_id: string | null
+          path: string
+          request_id: string | null
+          status_code: number
+          venue_id: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method: string
+          partner_id?: string | null
+          path: string
+          request_id?: string | null
+          status_code: number
+          venue_id?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method?: string
+          partner_id?: string | null
+          path?: string
+          request_id?: string | null
+          status_code?: number
+          venue_id?: string | null
+        }
+        Relationships: []
+      }
+      api_request_log_y2026m09: {
         Row: {
           api_key_id: string | null
           created_at: string
@@ -2394,86 +2333,6 @@ export type Database = {
           },
         ]
       }
-      pos_sync_log_legacy: {
-        Row: {
-          created_at: string
-          direction: string
-          error_message: string | null
-          event_type: string
-          id: string
-          items_synced: number | null
-          payload_hash: string | null
-          result: string
-          venue_id: string
-        }
-        Insert: {
-          created_at?: string
-          direction?: string
-          error_message?: string | null
-          event_type: string
-          id?: string
-          items_synced?: number | null
-          payload_hash?: string | null
-          result?: string
-          venue_id: string
-        }
-        Update: {
-          created_at?: string
-          direction?: string
-          error_message?: string | null
-          event_type?: string
-          id?: string
-          items_synced?: number | null
-          payload_hash?: string | null
-          result?: string
-          venue_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pos_sync_log_venue_id_fkey"
-            columns: ["venue_id"]
-            isOneToOne: false
-            referencedRelation: "venues"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pos_sync_log_y2026m05: {
-        Row: {
-          created_at: string
-          direction: string
-          error_message: string | null
-          event_type: string
-          id: string
-          items_synced: number | null
-          payload_hash: string | null
-          result: string
-          venue_id: string
-        }
-        Insert: {
-          created_at?: string
-          direction?: string
-          error_message?: string | null
-          event_type: string
-          id?: string
-          items_synced?: number | null
-          payload_hash?: string | null
-          result?: string
-          venue_id: string
-        }
-        Update: {
-          created_at?: string
-          direction?: string
-          error_message?: string | null
-          event_type?: string
-          id?: string
-          items_synced?: number | null
-          payload_hash?: string | null
-          result?: string
-          venue_id?: string
-        }
-        Relationships: []
-      }
       pos_sync_log_y2026m06: {
         Row: {
           created_at: string
@@ -2547,6 +2406,42 @@ export type Database = {
         Relationships: []
       }
       pos_sync_log_y2026m08: {
+        Row: {
+          created_at: string
+          direction: string
+          error_message: string | null
+          event_type: string
+          id: string
+          items_synced: number | null
+          payload_hash: string | null
+          result: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id?: string
+        }
+        Relationships: []
+      }
+      pos_sync_log_y2026m09: {
         Row: {
           created_at: string
           direction: string
@@ -4390,8 +4285,16 @@ export type Database = {
           read_ct: number
         }[]
       }
+      drop_old_log_partitions: {
+        Args: { retain_months?: number }
+        Returns: undefined
+      }
       enqueue_job: { Args: { _payload: Json; _queue: string }; Returns: number }
       enqueue_pos_job: { Args: { _payload: Json }; Returns: number }
+      ensure_log_partitions: {
+        Args: { months_ahead?: number }
+        Returns: undefined
+      }
       ensure_monthly_partition: {
         Args: { _month: string; _parent: unknown }
         Returns: undefined
