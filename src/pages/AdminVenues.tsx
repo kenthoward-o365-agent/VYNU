@@ -265,6 +265,7 @@ export default function AdminVenues() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Site ID</TableHead>
                   <TableHead>City</TableHead>
                   <TableHead>State</TableHead>
                   <TableHead>Type</TableHead>
