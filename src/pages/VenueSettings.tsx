@@ -100,10 +100,18 @@ export default function VenueSettings() {
       setForm({
         name: venue.name, venue_type: venue.venue_type, address: venue.address || "",
         city: venue.city || "", state: venue.state || "NSW", postcode: venue.postcode || "",
-        phone: venue.phone || "", email: venue.email || "",
+        phone: "", email: "",
+      });
+      // Sensitive contact fields are only readable via SECURITY DEFINER RPC
+      supabase.rpc("get_venue_admin_detail", { _venue_id: venue.id }).then(({ data }) => {
+        const row = Array.isArray(data) ? data[0] : null;
+        if (row) {
+          setForm((prev) => ({ ...prev, phone: row.phone || "", email: row.email || "" }));
+        }
       });
     }
   }, [venue]);
+
 
   
 
