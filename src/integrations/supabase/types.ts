@@ -4407,8 +4407,16 @@ export type Database = {
           provider: string
         }[]
       }
+      get_venue_payment_config_meta: {
+        Args: { _provider?: string; _venue_id: string }
+        Returns: Json
+      }
       get_venue_performance: {
         Args: { _from: string; _to: string; _venue_id: string }
+        Returns: Json
+      }
+      get_venue_pos_integration_meta: {
+        Args: { _venue_id: string }
         Returns: Json
       }
       get_venue_public_info: {
@@ -4454,6 +4462,22 @@ export type Database = {
       is_venue_staff: {
         Args: { _user_id: string; _venue_id: string }
         Returns: boolean
+      }
+      list_api_webhooks_safe: {
+        Args: never
+        Returns: {
+          created_at: string
+          events: string[]
+          has_secret: boolean
+          id: string
+          is_active: boolean
+          last_delivery_at: string
+          last_delivery_status: string
+          partner_id: string
+          updated_at: string
+          url: string
+          venue_id: string
+        }[]
       }
       list_ar_invoices: {
         Args: {
@@ -4550,6 +4574,14 @@ export type Database = {
       unpair_display_terminal: {
         Args: { _terminal_id: string }
         Returns: boolean
+      }
+      update_venue_pos_secret_refs: {
+        Args: {
+          _api_key_ref?: string
+          _client_secret_ref?: string
+          _venue_id: string
+        }
+        Returns: undefined
       }
       verify_api_key: {
         Args: { _full_key: string; _prefix: string }
