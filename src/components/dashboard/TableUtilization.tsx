@@ -21,14 +21,14 @@ export default function TableUtilization({ venueId, show }: Props) {
         .eq("venue_id", venueId);
       setTotal(tables?.length || 0);
 
-      const { data: activeOrders } = await supabase
-        .from("orders")
+      const { data: openSessions } = await supabase
+        .from("table_sessions")
         .select("table_id")
         .eq("venue_id", venueId)
-        .in("status", ["received", "preparing", "ready", "served"])
+        .is("closed_at", null)
         .not("table_id", "is", null);
 
-      const uniqueTables = new Set((activeOrders || []).map((o) => o.table_id));
+      const uniqueTables = new Set((openSessions || []).map((s) => s.table_id));
       setOccupied(uniqueTables.size);
     };
     fetch();
