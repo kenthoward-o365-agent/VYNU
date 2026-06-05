@@ -23,10 +23,29 @@ Deno.serve(async (req) => {
   try {
     const { message, venue_id, menu_items, conversation, diner_id, last_order_items, table_id } = await req.json();
 
+    if (!venue_id || typeof venue_id !== "string") {
+      return new Response(JSON.stringify({ error: "venue_id required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Load venue AI config
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, supabaseKey);
+
+    // Validate venue exists and is live — prevents cross-tenant AI cost fraud
+    // against arbitrary venue_ids.
+    const { data: venueRow } = await sb
+      .from("venues")
+      .select("id, is_active")
+      .eq("id", venue_id)
+      .maybeSingle();
+    if (!venueRow || venueRow.is_active === false) {
+      return new Response(JSON.stringify({ error: "Venue not available" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: aiConfig } = await sb
       .from("venue_ai_config")
