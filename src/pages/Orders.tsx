@@ -510,8 +510,13 @@ export default function Orders() {
               })}
             </div>
           )}
-          {(showReopenButton || showRefundButton) && (
+          {(showReopenButton || showRefundButton || (canUpdateOrderStatus && order.status !== "paid" && order.status !== "cancelled" && order.status !== "refunded")) && (
             <div className="flex flex-col gap-1.5">
+              {canUpdateOrderStatus && order.status !== "paid" && order.status !== "cancelled" && order.status !== "refunded" && (
+                <Button className="w-full" size="sm" variant="outline" onClick={() => updateStatus(order.id, "paid")}>
+                  <DollarSign className="h-3.5 w-3.5 mr-1" />Mark as paid
+                </Button>
+              )}
               {showReopenButton && (
                 <Button className="w-full" size="sm" variant="outline" onClick={() => setReopenOrder(order)}>
                   <Undo2 className="h-3.5 w-3.5 mr-1" />Re-open
