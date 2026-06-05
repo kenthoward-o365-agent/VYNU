@@ -28,17 +28,20 @@ interface PosIntegration {
   id: string;
   venue_id: string;
   pos_provider: string;
-  api_key_ref: string | null;
   endpoint_url: string | null;
   last_sync_at: string | null;
   sync_status: string;
   config: any;
   location_id: string | null;
   account_id: string | null;
-  webhook_secret: string | null;
   client_id: string | null;
-  client_secret_ref: string | null;
+  // Secret refs (api_key_ref, client_secret_ref, webhook_secret) are NEVER returned
+  // via the Data API. Use these flags to indicate they are set on the server.
+  has_api_key_ref: boolean;
+  has_client_secret_ref: boolean;
+  has_webhook_secret: boolean;
 }
+
 
 interface SyncLogEntry {
   id: string;
