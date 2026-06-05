@@ -72,20 +72,106 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── AUTH FIRST — before any scraping or AI work ──
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const anonClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user } } = await anonClient.auth.getUser();
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+
+    // Verify caller is a manager of the target venue
+    const { data: isMgr, error: mgrErr } = await supabase.rpc('is_venue_manager', {
+      _user_id: user.id,
+      _venue_id: venue_id,
+    });
+    if (mgrErr || !isMgr) {
+      return new Response(
+        JSON.stringify({ error: 'Not authorized for this venue' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     let menuText = text || '';
     let pdfData = pdf_base64 || null;
 
     // If URL provided, scrape it
     if (url && !pdfData) {
-      console.log('Scraping URL:', url);
       let formattedUrl = url.trim();
       if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
         formattedUrl = `https://${formattedUrl}`;
       }
 
+      // ── SSRF protection — block private/internal/metadata hosts ──
+      let parsedUrl: URL;
+      try {
+        parsedUrl = new URL(formattedUrl);
+      } catch {
+        return new Response(
+          JSON.stringify({ error: 'Invalid URL' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        return new Response(
+          JSON.stringify({ error: 'Only http(s) URLs are allowed' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const host = parsedUrl.hostname.toLowerCase();
+      const isBlocked =
+        host === 'localhost' ||
+        host === '0.0.0.0' ||
+        host.endsWith('.local') ||
+        host.endsWith('.internal') ||
+        // IPv4 private / loopback / link-local / metadata
+        /^127\./.test(host) ||
+        /^10\./.test(host) ||
+        /^192\.168\./.test(host) ||
+        /^169\.254\./.test(host) ||
+        /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host) ||
+        /^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\./.test(host) || // CGNAT
+        // IPv6 loopback / link-local / unique-local
+        host === '::1' || host.startsWith('[::1') ||
+        host.startsWith('[fc') || host.startsWith('[fd') ||
+        host.startsWith('[fe80');
+      if (isBlocked) {
+        return new Response(
+          JSON.stringify({ error: 'URL host is not allowed' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Scraping URL:', formattedUrl);
       const scrapeRes = await fetch(formattedUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TabLess/1.0)' }
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TabLess/1.0)' },
+        redirect: 'manual',
       });
+
+      if (scrapeRes.status >= 300 && scrapeRes.status < 400) {
+        return new Response(
+          JSON.stringify({ error: 'Redirects not followed (SSRF protection)' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       if (!scrapeRes.ok) {
         return new Response(
@@ -107,6 +193,7 @@ Deno.serve(async (req) => {
         .trim()
         .substring(0, 30000);
     }
+
 
     if (!menuText && !pdfData) {
       return new Response(
