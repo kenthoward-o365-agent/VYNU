@@ -82,7 +82,7 @@ export default function AdminPartners() {
     const [p, k, w, v] = await Promise.all([
       supabase.from("api_partners").select("*").order("created_at", { ascending: false }),
       supabase.from("api_keys").select("*").order("created_at", { ascending: false }),
-      supabase.from("api_webhooks").select("*").order("created_at", { ascending: false }),
+      (supabase as any).rpc("list_api_webhooks_safe"),
       supabase.from("venues").select("id, name").order("name"),
     ]);
     setPartners((p.data ?? []) as Partner[]);
