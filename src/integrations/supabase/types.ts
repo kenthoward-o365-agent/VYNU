@@ -397,6 +397,45 @@ export type Database = {
         }
         Relationships: []
       }
+      api_request_log_y2026m09: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          method: string
+          partner_id: string | null
+          path: string
+          request_id: string | null
+          status_code: number
+          venue_id: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method: string
+          partner_id?: string | null
+          path: string
+          request_id?: string | null
+          status_code: number
+          venue_id?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method?: string
+          partner_id?: string | null
+          path?: string
+          request_id?: string | null
+          status_code?: number
+          venue_id?: string | null
+        }
+        Relationships: []
+      }
       api_webhook_deliveries: {
         Row: {
           attempt_count: number
@@ -2402,6 +2441,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_sync_log_y2026m09: {
+        Row: {
+          created_at: string
+          direction: string
+          error_message: string | null
+          event_type: string
+          id: string
+          items_synced: number | null
+          payload_hash: string | null
+          result: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id?: string
+        }
+        Relationships: []
+      }
       pos_webhook_events: {
         Row: {
           event_id: string
@@ -4210,8 +4285,16 @@ export type Database = {
           read_ct: number
         }[]
       }
+      drop_old_log_partitions: {
+        Args: { retain_months?: number }
+        Returns: undefined
+      }
       enqueue_job: { Args: { _payload: Json; _queue: string }; Returns: number }
       enqueue_pos_job: { Args: { _payload: Json }; Returns: number }
+      ensure_log_partitions: {
+        Args: { months_ahead?: number }
+        Returns: undefined
+      }
       ensure_monthly_partition: {
         Args: { _month: string; _parent: unknown }
         Returns: undefined
