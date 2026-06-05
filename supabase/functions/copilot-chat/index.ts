@@ -385,7 +385,7 @@ Deno.serve(async (req) => {
 
     // Auth: any staff member of this venue. (Frontend further gates by nav permission 'copilot'.)
     const { data: isStaff } = await sbUser.rpc("is_venue_staff", { _user_id: userId, _venue_id: venue_id });
-    const { data: isPlatformAdmin } = await sbUser.rpc("has_role", { _user_id: userId, _role: "admin" });
+    const { data: isPlatformAdmin } = await sbUser.rpc("has_role", { _user_id: userId, _role: "tabless_admin" });
     if (!isStaff && !isPlatformAdmin) {
       return new Response(JSON.stringify({ error: "forbidden" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
