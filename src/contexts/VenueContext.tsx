@@ -129,10 +129,10 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       let allVenues: Venue[] = [];
 
       if (adminFlag) {
-        const { data: venueData } = await queryClient.from("venues").select("*");
+        const { data: venueData } = await queryClient.from("venues").select(VENUE_COLUMNS);
         allVenues = (venueData || []) as Venue[];
       } else {
-        const { data: venueData } = await queryClient.from("venues").select("*").in("id", venueIds);
+        const { data: venueData } = await queryClient.from("venues").select(VENUE_COLUMNS).in("id", venueIds);
         allVenues = (venueData || []) as Venue[];
       }
 
