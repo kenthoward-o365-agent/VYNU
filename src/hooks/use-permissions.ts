@@ -166,6 +166,7 @@ export const NAV_KEYS = {
   analytics: "analytics",
   sippa_analytics: "sippa_analytics",
   knowledge_base: "knowledge_base",
+  copilot: "copilot",
   settings: "settings",
 } as const;
 
@@ -181,5 +182,6 @@ export const TOP_LEVEL_NAV: Array<{ key: string; label: string }> = [
   { key: "analytics", label: "Analytics" },
   { key: "sippa_analytics", label: "Spark AI Analytics" },
   { key: "knowledge_base", label: "Knowledge Base" },
+  { key: "copilot", label: "CoPilot (AI assistant)" },
   { key: "settings", label: "Settings" },
 ];
