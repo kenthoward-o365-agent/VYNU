@@ -4329,6 +4329,17 @@ export type Database = {
           venue_id: string
         }[]
       }
+      get_active_loyalty_programs_for_venue: {
+        Args: { _venue_id: string }
+        Returns: {
+          group_id: string
+          id: string
+          name: string
+          program_type: Database["public"]["Enums"]["loyalty_program_type"]
+          rules: Json
+          venue_id: string
+        }[]
+      }
       get_admin_dashboard: {
         Args: { _from: string; _to: string }
         Returns: Json
@@ -4368,6 +4379,26 @@ export type Database = {
         }[]
       }
       get_user_diner_profile_id: { Args: never; Returns: string }
+      get_venue_admin_detail: {
+        Args: { _venue_id: string }
+        Returns: {
+          email: string
+          phone: string
+          subscription_notes: string
+          subscription_plan: string
+          subscription_status: string
+        }[]
+      }
+      get_venue_ai_config_public: {
+        Args: { _venue_id: string }
+        Returns: {
+          agent_icon_url: string
+          agent_name: string
+          chat_mode: string
+          opening_message: string
+          tone: string
+        }[]
+      }
       get_venue_audit_date: { Args: { _venue_id: string }; Returns: string }
       get_venue_payment_active: {
         Args: { _venue_id: string }
