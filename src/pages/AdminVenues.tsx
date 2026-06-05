@@ -282,18 +282,9 @@ export default function AdminVenues() {
                   <TableRow key={v.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/admin/venues/${v.id}`)}>
                     <TableCell className="font-medium">{v.name}</TableCell>
                     <TableCell>
-                      <button
-                        type="button"
-                        className="font-mono text-xs text-muted-foreground hover:text-foreground"
-                        title="Click to copy"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigator.clipboard.writeText(v.id);
-                          toast({ title: "Site ID copied", description: v.id });
-                        }}
-                      >
-                        {v.id.slice(0, 8)}…
-                      </button>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {v.site_id || "—"}
+                      </span>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{v.city || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{v.state || "—"}</TableCell>
