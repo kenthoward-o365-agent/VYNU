@@ -81,7 +81,7 @@ export default function AdminVenueDetail() {
   const fetchVenue = async () => {
     if (!venueId) return;
     setLoading(true);
-    const { data } = await supabase.from("venues").select("*").eq("id", venueId).single();
+    const { data } = await supabase.from("venues").select("id, name, venue_type, address, city, state, postcode, country, logo_url, operating_hours, timezone, settings, is_active, group_id, landing_page_html, site_id, menu_source, is_live, went_live_at, created_at, updated_at").eq("id", venueId).single();
     const { data: adminRows } = await supabase.rpc("get_venue_admin_detail", { _venue_id: venueId });
     const adminRow: any = Array.isArray(adminRows) ? adminRows[0] : null;
     if (data) {
