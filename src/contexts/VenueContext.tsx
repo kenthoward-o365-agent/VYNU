@@ -3,6 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 
+// Sensitive columns (email, phone, subscription_*) are NOT selectable by
+// authenticated/anon roles — fetch them via the get_venue_admin_detail RPC.
+const VENUE_COLUMNS =
+  "id, name, venue_type, address, city, state, postcode, country, logo_url, operating_hours, timezone, settings, is_active, group_id, landing_page_html";
+
 interface Venue {
   id: string;
   name: string;
@@ -12,8 +17,6 @@ interface Venue {
   state: string | null;
   postcode: string | null;
   country: string | null;
-  phone: string | null;
-  email: string | null;
   logo_url: string | null;
   operating_hours: any;
   timezone: string | null;
