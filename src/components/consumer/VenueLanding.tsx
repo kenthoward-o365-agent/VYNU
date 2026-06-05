@@ -109,9 +109,14 @@ const VenueLanding = ({
     }
 
     const processedHtml = venue.landing_page_html.replace(/\{\{TABLE\}\}/g, tableNumber);
+    const safeHtml = DOMPurify.sanitize(processedHtml, {
+      USE_PROFILES: { html: true },
+      FORBID_TAGS: ["script", "style", "iframe", "object", "embed", "form"],
+      FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover"],
+    });
     return (
       <div className="min-h-screen relative">
-        <div dangerouslySetInnerHTML={{ __html: processedHtml }} />
+        <div dangerouslySetInnerHTML={{ __html: safeHtml }} />
         <ChooserOrActions />
       </div>
     );
