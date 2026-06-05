@@ -170,15 +170,10 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
 
       if (profileError) throw profileError;
 
-      // Fetch venue-level loyalty programs
-      const { data: venuePrograms } = await supabase
-        .from("loyalty_programs")
-        .select("id, rules")
-        .eq("venue_id", venueId)
-        .eq("is_active", true);
-
-      // Fetch group-level loyalty programs (if venue belongs to a group with global_loyalty)
-      let groupPrograms: any[] = [];
+      // Fetch loyalty programs (venue + group) via scoped RPC
+      const { data: allProgramsRaw } = await supabase
+        .rpc("get_active_loyalty_programs_for_venue", { _venue_id: venueId });
+      let groupOptedIn = true;
       const { data: venueData } = await supabase
         .from("venues")
         .select("group_id, settings")
@@ -191,17 +186,12 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
           .eq("id", venueData.group_id)
           .single();
         const grpSettings = (grp?.settings && typeof grp.settings === "object") ? grp.settings as any : {};
-        if (grpSettings.global_loyalty) {
-          const { data: gProgs } = await supabase
-            .from("loyalty_programs")
-            .select("id, rules")
-            .eq("group_id", venueData.group_id)
-            .eq("is_active", true);
-          groupPrograms = gProgs || [];
-        }
+        groupOptedIn = !!grpSettings.global_loyalty;
       }
+      const allPrograms = (allProgramsRaw || []).filter((p: any) =>
+        p.venue_id === venueId || (p.group_id && groupOptedIn)
+      );
 
-      const allPrograms = [...(venuePrograms || []), ...groupPrograms];
       if (allPrograms.length > 0 && profile) {
         const enrollments = allPrograms.map((prog: any) => {
           const rules = prog.rules && typeof prog.rules === "object" ? prog.rules : {};
