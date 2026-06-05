@@ -30,8 +30,8 @@ Deno.serve(async (req) => {
     }
 
     if (!isAdmin) {
-      const { data: isStaff } = await adminClient.rpc("is_venue_staff", { _user_id: user.id, _venue_id: venue_id });
-      if (!isStaff) {
+      const { data: isMgr } = await adminClient.rpc("is_venue_manager", { _user_id: user.id, _venue_id: venue_id });
+      if (!isMgr) {
         return new Response(JSON.stringify({ error: "Not authorised" }), {
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
