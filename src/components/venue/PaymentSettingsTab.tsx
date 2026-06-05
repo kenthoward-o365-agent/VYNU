@@ -160,11 +160,12 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
       const { data, error: insertErr } = await supabase
         .from("venue_payment_config" as any)
         .insert(payload)
-        .select()
+        .select("id")
         .single();
       error = insertErr;
       if (data) setConfig((c) => ({ ...c, id: (data as any).id }));
     }
+
 
     if (error) {
       toast.error(error.message);
