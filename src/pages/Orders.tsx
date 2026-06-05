@@ -549,22 +549,23 @@ export default function Orders() {
                   <span className="text-muted-foreground text-[10px]">not pushed</span>
                 )}
               </div>
-              <div className="flex gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 <Button
-                  className="flex-1" size="sm" variant="outline"
+                  className="flex-1 min-w-0 basis-[120px]" size="sm" variant="outline"
                   disabled={!posIntegration.connected || pushingOrderId === order.id}
                   onClick={() => pushOrderToPos(order.id)}
                 >
-                  <Send className="h-3.5 w-3.5 mr-1" />
-                  {order.pos_push_status === "sent" ? "Re-push" : "Push to POS"}
+                  <Send className="h-3.5 w-3.5 mr-1 shrink-0" />
+                  <span className="truncate">{order.pos_push_status === "sent" ? "Re-push" : "Push to POS"}</span>
                 </Button>
                 {posIntegration.slug === "hl_exceed" && (
                   <Button
-                    className="flex-1" size="sm" variant="outline"
+                    className="flex-1 min-w-0 basis-[100px]" size="sm" variant="outline"
                     disabled={!posIntegration.connected || pushingOrderId === order.id}
                     onClick={() => refreshOrderFromPos(order.id)}
                   >
-                    <RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh
+                    <RefreshCw className="h-3.5 w-3.5 mr-1 shrink-0" />
+                    <span className="truncate">Refresh</span>
                   </Button>
                 )}
               </div>
