@@ -78,11 +78,10 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
 
   useEffect(() => {
     const loadConfig = async () => {
-      const { data } = await supabase
-        .from("venue_ai_config")
-        .select("agent_name, agent_icon_url, opening_message, tone")
-        .eq("venue_id", venueId)
-        .maybeSingle();
+      const { data: rows } = await supabase
+        .rpc("get_venue_ai_config_public", { _venue_id: venueId });
+      const data = Array.isArray(rows) ? rows[0] : null;
+
 
       const name = data?.agent_name || "H&L OrderNOW";
       const icon = data?.agent_icon_url || null;
