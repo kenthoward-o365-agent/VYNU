@@ -133,15 +133,17 @@ const CheckoutPanel = ({
   };
 
   const checkPaymentEnabled = async () => {
-    const { data } = await supabase
-      .from("venue_payment_config" as any)
-      .select("is_active, environment")
-      .eq("venue_id", venueId)
-      .eq("provider", "ordrpayments")
-      .maybeSingle();
-    setPaymentEnabled(!!(data as any)?.is_active);
-    setPaymentEnvironment(((data as any)?.environment as "test" | "live") || "test");
+    // Anon clients cannot read venue_payment_config directly.
+    // Use the SECURITY DEFINER RPC that returns only the public-safe active flag.
+    const { data } = await (supabase as any).rpc("get_venue_payment_active", {
+      _venue_id: venueId,
+    });
+    const row = Array.isArray(data) ? data[0] : data;
+    setPaymentEnabled(!!row?.is_active);
+    // Environment is no longer exposed publicly; default to test for safety.
+    setPaymentEnvironment("test");
   };
+
 
   const fetchPaymentMethods = async () => {
     setLoadingMethods(true);
