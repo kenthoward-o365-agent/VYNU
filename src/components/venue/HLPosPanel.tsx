@@ -45,22 +45,25 @@ export default function HLPosPanel({ venueId }: Props) {
 
   async function load() {
     setLoading(true);
+    // Secret values (secrets_map) are no longer readable via the Data API.
+    // Use SECURITY DEFINER RPC which returns metadata + a list of configured secret keys.
     const [{ data: provider }, { data: integ }] = await Promise.all([
       (supabase as any).from("pos_providers").select("config_schema").eq("slug", "hl_exceed").maybeSingle(),
-      (supabase as any).from("venue_pos_integrations")
-        .select("config, secrets_map, connection_status, auto_push_orders").eq("venue_id", venueId).maybeSingle(),
+      (supabase as any).rpc("get_venue_pos_integration_meta", { _venue_id: venueId }),
     ]);
     const fields = (provider?.config_schema ?? []) as Field[];
     setSchema(fields);
-    const cfg: Record<string, unknown> = { ...(integ?.config ?? {}) };
+    const integObj = (integ ?? null) as any;
+    const cfg: Record<string, unknown> = { ...(integObj?.config ?? {}) };
     for (const f of fields) if (cfg[f.key] === undefined && f.default !== undefined) cfg[f.key] = f.default;
     setConfig(cfg);
-    const sm = (integ?.secrets_map ?? {}) as Record<string, string>;
-    setSecretsSet(Object.fromEntries(Object.keys(sm).map((k) => [k, true])));
-    setStatus(integ?.connection_status ?? "disconnected");
-    setAutoPush(Boolean(integ?.auto_push_orders));
+    const secretKeys: string[] = Array.isArray(integObj?.secrets_keys) ? integObj.secrets_keys : [];
+    setSecretsSet(Object.fromEntries(secretKeys.map((k: string) => [k, true])));
+    setStatus(integObj?.connection_status ?? "disconnected");
+    setAutoPush(Boolean(integObj?.auto_push_orders));
     setLoading(false);
   }
+
 
   async function toggleAutoPush(next: boolean) {
     setSavingAutoPush(true);
