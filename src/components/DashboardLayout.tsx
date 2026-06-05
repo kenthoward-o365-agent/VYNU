@@ -1,6 +1,7 @@
 import { ReactNode, useCallback, useEffect, useState } from "react";
 import { useIdleLogout } from "@/hooks/use-idle-logout";
 import IdleTimeoutModal from "@/components/consumer/IdleTimeoutModal";
+import { CoPilotLauncher } from "@/components/copilot/CoPilotPanel";
 
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -593,6 +594,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       onStay={idle.reset}
       onEnd={idle.endNow}
     />
+    {showVenueNav && perms.can("copilot") && <CoPilotLauncher />}
     </>
   );
 }
