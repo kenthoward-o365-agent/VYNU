@@ -81,23 +81,24 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
   }, [venue, venueId]);
 
   const fetchIntegration = async () => {
-    const { data } = await supabase
-      .from("venue_pos_integrations")
-      .select("*")
-      .eq("venue_id", venueId)
-      .maybeSingle();
+    // Secret values are no longer readable via the Data API.
+    // Use SECURITY DEFINER RPC which returns metadata + has_* flags.
+    const { data } = await (supabase as any).rpc("get_venue_pos_integration_meta", {
+      _venue_id: venueId,
+    });
     if (data) {
       const d = data as any as PosIntegration;
       setIntegration(d);
       setProvider(d.pos_provider);
-      setApiKeyRef(d.api_key_ref || "");
+      setApiKeyRef(""); // never echo stored refs; managers re-enter to replace
       setEndpointUrl(d.endpoint_url || "");
       setLocationId(d.location_id || "");
       setAccountId(d.account_id || "");
       setClientId(d.client_id || "");
-      setClientSecretRef(d.client_secret_ref || "");
+      setClientSecretRef("");
     }
   };
+
 
   const fetchSyncLogs = async () => {
     const { data } = await supabase
