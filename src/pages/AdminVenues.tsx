@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast";
 
 interface AdminVenue {
   id: string;
+  site_id: string | null;
   name: string;
   venue_type: string;
   city: string | null;
