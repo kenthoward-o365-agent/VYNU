@@ -34,6 +34,23 @@ serve(async (req) => {
       });
     }
 
+    // Validate venue exists and is live before charging AI cost to it.
+    if (!venue_id || typeof venue_id !== "string") {
+      return new Response(JSON.stringify({ error: "venue_id required", suggestions: [] }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: venueRow } = await sb
+      .from("venues").select("id, is_active").eq("id", venue_id).maybeSingle();
+    if (!venueRow || venueRow.is_active === false) {
+      return new Response(JSON.stringify({ error: "Venue not available", suggestions: [] }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+
     // Build context-aware prompt based on trigger type
     let userPrompt = "";
     const menuSummary = (menu_items as MenuItem[])
