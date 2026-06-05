@@ -283,14 +283,16 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
                 <Label>API Key Reference</Label>
                 <Input
                   className="mt-1"
-                  placeholder="Secret name (e.g. LIGHTSPEED_API_KEY)"
+                  type="password"
+                  placeholder={integration?.has_api_key_ref ? "•••••• (set — enter to replace)" : "Secret name (e.g. LIGHTSPEED_API_KEY)"}
                   value={apiKeyRef}
                   onChange={(e) => setApiKeyRef(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Name of the stored secret — not the actual key
+                  Name of the stored secret — not the actual key. Leave blank to keep the current value.
                 </p>
               </div>
+
 
               <div>
                 <Label>Endpoint URL</Label>
