@@ -318,11 +318,13 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
                   <Label>Client Secret Reference</Label>
                   <Input
                     className="mt-1"
-                    placeholder="Secret name (e.g. POS_CLIENT_SECRET)"
+                    type="password"
+                    placeholder={integration?.has_client_secret_ref ? "•••••• (set — enter to replace)" : "Secret name (e.g. POS_CLIENT_SECRET)"}
                     value={clientSecretRef}
                     onChange={(e) => setClientSecretRef(e.target.value)}
                   />
                 </div>
+
               </div>
 
               <div>
