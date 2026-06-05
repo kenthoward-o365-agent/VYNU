@@ -89,21 +89,19 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
 
   const fetchConfig = async () => {
     setLoading(true);
-    let { data } = await supabase
-      .from("venue_payment_config" as any)
-      .select("*")
-      .eq("venue_id", venueId)
-      .eq("provider", "ordrpayments")
-      .maybeSingle();
+    // Use SECURITY DEFINER RPC: returns non-secret fields only.
+    // Raw API/HMAC/client keys are no longer readable via the Data API.
+    let { data } = await supabase.rpc("get_venue_payment_config_meta" as any, {
+      _venue_id: venueId,
+      _provider: "ordrpayments",
+    });
 
     if (!data) {
       // Legacy provider name fallback (internal only — never shown)
-      const { data: legacyData } = await supabase
-        .from("venue_payment_config" as any)
-        .select("*")
-        .eq("venue_id", venueId)
-        .eq("provider", "adyen")
-        .maybeSingle();
+      const { data: legacyData } = await supabase.rpc("get_venue_payment_config_meta" as any, {
+        _venue_id: venueId,
+        _provider: "adyen",
+      });
       data = legacyData;
     }
 
@@ -125,6 +123,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
     }
     setLoading(false);
   };
+
 
   const save = async () => {
     if (config.statement_descriptor.length > 22) {
@@ -161,11 +160,12 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
       const { data, error: insertErr } = await supabase
         .from("venue_payment_config" as any)
         .insert(payload)
-        .select()
+        .select("id")
         .single();
       error = insertErr;
       if (data) setConfig((c) => ({ ...c, id: (data as any).id }));
     }
+
 
     if (error) {
       toast.error(error.message);

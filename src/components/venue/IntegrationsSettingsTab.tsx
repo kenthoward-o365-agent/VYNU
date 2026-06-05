@@ -28,17 +28,20 @@ interface PosIntegration {
   id: string;
   venue_id: string;
   pos_provider: string;
-  api_key_ref: string | null;
   endpoint_url: string | null;
   last_sync_at: string | null;
   sync_status: string;
   config: any;
   location_id: string | null;
   account_id: string | null;
-  webhook_secret: string | null;
   client_id: string | null;
-  client_secret_ref: string | null;
+  // Secret refs (api_key_ref, client_secret_ref, webhook_secret) are NEVER returned
+  // via the Data API. Use these flags to indicate they are set on the server.
+  has_api_key_ref: boolean;
+  has_client_secret_ref: boolean;
+  has_webhook_secret: boolean;
 }
+
 
 interface SyncLogEntry {
   id: string;
@@ -78,23 +81,24 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
   }, [venue, venueId]);
 
   const fetchIntegration = async () => {
-    const { data } = await supabase
-      .from("venue_pos_integrations")
-      .select("*")
-      .eq("venue_id", venueId)
-      .maybeSingle();
+    // Secret values are no longer readable via the Data API.
+    // Use SECURITY DEFINER RPC which returns metadata + has_* flags.
+    const { data } = await (supabase as any).rpc("get_venue_pos_integration_meta", {
+      _venue_id: venueId,
+    });
     if (data) {
       const d = data as any as PosIntegration;
       setIntegration(d);
       setProvider(d.pos_provider);
-      setApiKeyRef(d.api_key_ref || "");
+      setApiKeyRef(""); // never echo stored refs; managers re-enter to replace
       setEndpointUrl(d.endpoint_url || "");
       setLocationId(d.location_id || "");
       setAccountId(d.account_id || "");
       setClientId(d.client_id || "");
-      setClientSecretRef(d.client_secret_ref || "");
+      setClientSecretRef("");
     }
   };
+
 
   const fetchSyncLogs = async () => {
     const { data } = await supabase
@@ -134,31 +138,40 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
 
   const saveIntegration = async () => {
     setSaving(true);
+    // Non-secret fields go through the table; secret references go through a write-only RPC.
     const payload: any = {
       venue_id: venueId,
       pos_provider: provider,
-      api_key_ref: apiKeyRef || null,
       endpoint_url: endpointUrl || null,
       location_id: locationId || null,
       account_id: accountId || null,
       client_id: clientId || null,
-      client_secret_ref: clientSecretRef || null,
     };
 
+    let error: any = null;
     if (integration) {
-      const { error } = await supabase
+      ({ error } = await supabase
         .from("venue_pos_integrations")
         .update(payload)
-        .eq("id", integration.id);
-      if (error) toast.error(error.message);
-      else toast.success("Integration updated");
+        .eq("id", integration.id));
     } else {
-      const { error } = await supabase
+      ({ error } = await supabase
         .from("venue_pos_integrations")
-        .insert(payload);
-      if (error) toast.error(error.message);
-      else toast.success("Integration created");
+        .insert(payload));
     }
+    if (error) { toast.error(error.message); setSaving(false); return; }
+
+    // Persist secret refs only when the manager entered a new value.
+    if ((apiKeyRef && apiKeyRef.length > 0) || (clientSecretRef && clientSecretRef.length > 0)) {
+      const { error: secErr } = await (supabase as any).rpc("update_venue_pos_secret_refs", {
+        _venue_id: venueId,
+        _api_key_ref: apiKeyRef || null,
+        _client_secret_ref: clientSecretRef || null,
+      });
+      if (secErr) { toast.error(secErr.message); setSaving(false); return; }
+    }
+    toast.success(integration ? "Integration updated" : "Integration created");
+
     await fetchIntegration();
     setSaving(false);
   };
@@ -270,14 +283,16 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
                 <Label>API Key Reference</Label>
                 <Input
                   className="mt-1"
-                  placeholder="Secret name (e.g. LIGHTSPEED_API_KEY)"
+                  type="password"
+                  placeholder={integration?.has_api_key_ref ? "•••••• (set — enter to replace)" : "Secret name (e.g. LIGHTSPEED_API_KEY)"}
                   value={apiKeyRef}
                   onChange={(e) => setApiKeyRef(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Name of the stored secret — not the actual key
+                  Name of the stored secret — not the actual key. Leave blank to keep the current value.
                 </p>
               </div>
+
 
               <div>
                 <Label>Endpoint URL</Label>
@@ -303,11 +318,13 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
                   <Label>Client Secret Reference</Label>
                   <Input
                     className="mt-1"
-                    placeholder="Secret name (e.g. POS_CLIENT_SECRET)"
+                    type="password"
+                    placeholder={integration?.has_client_secret_ref ? "•••••• (set — enter to replace)" : "Secret name (e.g. POS_CLIENT_SECRET)"}
                     value={clientSecretRef}
                     onChange={(e) => setClientSecretRef(e.target.value)}
                   />
                 </div>
+
               </div>
 
               <div>
