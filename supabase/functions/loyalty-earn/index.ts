@@ -88,8 +88,8 @@ Deno.serve(async (req) => {
     if (!isStaff && !isOwnerDiner) {
       return json({ error: "Not authorized for this order" }, 403);
     }
-
-
+    const wantSync =
+      body.sync === true || req.headers.get("x-sync-loyalty") === "1";
 
     if (wantSync) {
       const result = await awardLoyalty(admin, { order_id, diner_id });
