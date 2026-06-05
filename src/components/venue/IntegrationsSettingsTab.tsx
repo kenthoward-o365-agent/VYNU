@@ -138,31 +138,40 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
 
   const saveIntegration = async () => {
     setSaving(true);
+    // Non-secret fields go through the table; secret references go through a write-only RPC.
     const payload: any = {
       venue_id: venueId,
       pos_provider: provider,
-      api_key_ref: apiKeyRef || null,
       endpoint_url: endpointUrl || null,
       location_id: locationId || null,
       account_id: accountId || null,
       client_id: clientId || null,
-      client_secret_ref: clientSecretRef || null,
     };
 
+    let error: any = null;
     if (integration) {
-      const { error } = await supabase
+      ({ error } = await supabase
         .from("venue_pos_integrations")
         .update(payload)
-        .eq("id", integration.id);
-      if (error) toast.error(error.message);
-      else toast.success("Integration updated");
+        .eq("id", integration.id));
     } else {
-      const { error } = await supabase
+      ({ error } = await supabase
         .from("venue_pos_integrations")
-        .insert(payload);
-      if (error) toast.error(error.message);
-      else toast.success("Integration created");
+        .insert(payload));
     }
+    if (error) { toast.error(error.message); setSaving(false); return; }
+
+    // Persist secret refs only when the manager entered a new value.
+    if ((apiKeyRef && apiKeyRef.length > 0) || (clientSecretRef && clientSecretRef.length > 0)) {
+      const { error: secErr } = await (supabase as any).rpc("update_venue_pos_secret_refs", {
+        _venue_id: venueId,
+        _api_key_ref: apiKeyRef || null,
+        _client_secret_ref: clientSecretRef || null,
+      });
+      if (secErr) { toast.error(secErr.message); setSaving(false); return; }
+    }
+    toast.success(integration ? "Integration updated" : "Integration created");
+
     await fetchIntegration();
     setSaving(false);
   };
