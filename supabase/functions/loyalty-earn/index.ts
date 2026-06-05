@@ -41,6 +41,53 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Require authentication — prevents anonymous loyalty fraud
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "Authentication required" }, 401);
+    }
+    const caller = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: { user } } = await caller.auth.getUser();
+    if (!user) {
+      return json({ error: "Authentication required" }, 401);
+    }
+
+    // Authorize: caller must be either venue staff for the order's venue,
+    // or the diner who placed the order (matching diner_id).
+    const { data: order } = await admin
+      .from("orders")
+      .select("id, venue_id, diner_id")
+      .eq("id", order_id)
+      .maybeSingle();
+    if (!order) {
+      return json({ error: "Order not found" }, 404);
+    }
+
+    const { data: isStaff } = await admin.rpc("is_venue_manager", {
+      _user_id: user.id,
+      _venue_id: order.venue_id,
+    });
+
+    const { data: dinerProfile } = await admin
+      .from("diner_profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const callerDinerId = dinerProfile?.id || null;
+
+    const effectiveDinerId = diner_id ?? order.diner_id ?? null;
+    const isOwnerDiner =
+      !!callerDinerId &&
+      !!effectiveDinerId &&
+      callerDinerId === effectiveDinerId;
+
+    if (!isStaff && !isOwnerDiner) {
+      return json({ error: "Not authorized for this order" }, 403);
+    }
     const wantSync =
       body.sync === true || req.headers.get("x-sync-loyalty") === "1";
 

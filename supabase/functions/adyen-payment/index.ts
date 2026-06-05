@@ -447,6 +447,21 @@ Deno.serve(async (req) => {
     if (action === "list_stored_cards") {
       const { diner_id } = body;
       if (!diner_id) return json({ error: "diner_id required" }, 400);
+      if (!userId) return json({ error: "Authentication required" }, 401);
+
+      // Verify caller owns this diner profile (or is venue staff)
+      const { data: profile } = await adminClient
+        .from("diner_profiles")
+        .select("id, user_id")
+        .eq("id", diner_id)
+        .maybeSingle();
+      const { data: isStaff } = await adminClient.rpc("is_venue_manager", {
+        _user_id: userId,
+        _venue_id: venue_id,
+      });
+      if (!isStaff && profile?.user_id !== userId) {
+        return json({ error: "Not authorized" }, 403);
+      }
 
       const { data: cards } = await adminClient
         .from("diner_stored_cards")
@@ -463,6 +478,21 @@ Deno.serve(async (req) => {
     if (action === "delete_stored_card") {
       const { card_id, diner_id } = body;
       if (!card_id || !diner_id) return json({ error: "card_id and diner_id required" }, 400);
+      if (!userId) return json({ error: "Authentication required" }, 401);
+
+      // Verify caller owns this diner profile (or is venue staff)
+      const { data: profile } = await adminClient
+        .from("diner_profiles")
+        .select("id, user_id")
+        .eq("id", diner_id)
+        .maybeSingle();
+      const { data: isStaff } = await adminClient.rpc("is_venue_manager", {
+        _user_id: userId,
+        _venue_id: venue_id,
+      });
+      if (!isStaff && profile?.user_id !== userId) {
+        return json({ error: "Not authorized" }, 403);
+      }
 
       await adminClient
         .from("diner_stored_cards")
