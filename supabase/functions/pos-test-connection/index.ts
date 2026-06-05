@@ -17,10 +17,35 @@ Deno.serve(async (req) => {
       });
     }
 
+    // AUTHN/AUTHZ: must be a venue manager (or admin) for this venue.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+    const caller = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: { user } } = await caller.auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "tabless_admin" });
+    const { data: isMgr } = await supabase.rpc("is_venue_manager", { _user_id: user.id, _venue_id: venue_id });
+    if (!isAdmin && !isMgr) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
 
     const integ = await loadIntegration(supabase, venue_id);
     if (!integ) {

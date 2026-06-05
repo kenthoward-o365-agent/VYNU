@@ -29,10 +29,28 @@ Deno.serve(async (req) => {
   const venueId = body.venue_id;
   if (!venueId) return json(400, { error: "venue_id required" });
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  // AUTHN/AUTHZ: accept either the service-role bearer (cron/worker) or a
+  // venue-manager JWT (dashboard "Sync menu now" button).
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  if (!authHeader.startsWith("Bearer ")) {
+    return json(401, { error: "Unauthorized" });
+  }
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, serviceRoleKey);
+  const bearer = authHeader.slice(7).trim();
+  const isServiceRole = bearer === serviceRoleKey;
+  if (!isServiceRole) {
+    const caller = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
+    const { data: { user } } = await caller.auth.getUser();
+    if (!user) return json(401, { error: "Unauthorized" });
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "tabless_admin" });
+    const { data: isMgr } = await supabase.rpc("is_venue_manager", { _user_id: user.id, _venue_id: venueId });
+    if (!isAdmin && !isMgr) return json(403, { error: "Forbidden" });
+  }
 
   const integ = await loadIntegration(supabase, venueId);
   if (!integ) return json(404, { error: "No POS integration for venue" });
