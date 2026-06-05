@@ -248,6 +248,36 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+    // AUTHN/AUTHZ: accept service-role bearer (self re-trigger) or a venue-manager JWT.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const bearer = authHeader.slice(7).trim();
+    if (bearer !== supabaseServiceKey) {
+      const caller = createClient(
+        supabaseUrl,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const { data: { user } } = await caller.auth.getUser();
+      if (!user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: isAdmin } = await supabaseAdmin.rpc("has_role", { _user_id: user.id, _role: "tabless_admin" });
+      const { data: isMgr } = await supabaseAdmin.rpc("is_venue_manager", { _user_id: user.id, _venue_id: venueId });
+      if (!isAdmin && !isMgr) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+
     await resetStaleItems(venueId, supabaseAdmin);
 
     const { count: activeCount, error: activeError } = await supabaseAdmin
