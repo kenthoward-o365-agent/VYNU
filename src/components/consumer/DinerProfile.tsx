@@ -147,16 +147,13 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
 
       const enrolledProgramIds = new Set((balances || []).map((b) => b.program_id));
 
-      // Find all active programs this venue/group offers
-      const { data: venuePrograms } = await supabase
-        .from("loyalty_programs").select("id, name, program_type, venue_id, group_id, rules").eq("venue_id", venueId).eq("is_active", true);
-      let groupPrograms: any[] = [];
-      if (groupId) {
-        const { data: gp } = await supabase
-          .from("loyalty_programs").select("id, name, program_type, venue_id, group_id, rules").eq("group_id", groupId).eq("is_active", true);
-        groupPrograms = gp || [];
-      }
-      const allPrograms = [...(venuePrograms || []), ...groupPrograms];
+      // Find all active programs this venue/group offers (scoped RPC)
+      const { data: allProgramsRaw } = await supabase
+        .rpc("get_active_loyalty_programs_for_venue", { _venue_id: venueId });
+      const allPrograms = (allProgramsRaw || []).filter((p: any) =>
+        p.venue_id === venueId || (groupId && p.group_id === groupId)
+      );
+
       const uniquePrograms = [...new Map(allPrograms.map((p: any) => [p.id, p])).values()];
       const loyaltyGroupIdsForCount = uniquePrograms.filter((p: any) => p.group_id).map((p: any) => p.group_id);
 
