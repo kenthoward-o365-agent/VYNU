@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
 import { MapPin, Utensils, Gift, UserPlus, LogIn } from "lucide-react";
 import LandingSectionRenderer from "@/components/landing-editor/LandingSectionRenderer";
