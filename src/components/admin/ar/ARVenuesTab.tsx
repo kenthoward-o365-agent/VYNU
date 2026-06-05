@@ -16,15 +16,21 @@ export default function ARVenuesTab() {
 
   const load = async () => {
     setLoading(true);
-    const { data: venues } = await supabase.from("venues").select("id, name, is_active").order("name");
-    const { data: accts } = await supabase.from("venue_billing_accounts").select("venue_id, payment_method_type, default_payment_method_id, is_active");
-    const { data: methods } = await supabase.from("venue_payment_methods").select("venue_id, type, brand, last4, bank_name, is_default, is_active").eq("is_active", true).eq("is_default", true);
-    const { data: lastInvoices } = await supabase.from("venue_invoices").select("venue_id, total, status, due_date, paid_at").order("created_at", { ascending: false });
+    const venues = await paginate<any>((from, to) => supabase
+      .from("venues").select("id, name, is_active").order("name").range(from, to));
+    const accts = await paginate<any>((from, to) => supabase
+      .from("venue_billing_accounts").select("venue_id, payment_method_type, default_payment_method_id, is_active").range(from, to));
+    const methods = await paginate<any>((from, to) => supabase
+      .from("venue_payment_methods").select("venue_id, type, brand, last4, bank_name, is_default, is_active")
+      .eq("is_active", true).eq("is_default", true).range(from, to));
+    const lastInvoices = await paginate<any>((from, to) => supabase
+      .from("venue_invoices").select("venue_id, total, status, due_date, paid_at, created_at")
+      .order("created_at", { ascending: false }).range(from, to));
 
-    const merged = (venues || []).map(v => {
-      const acct = accts?.find(a => a.venue_id === v.id);
-      const pm = methods?.find(m => m.venue_id === v.id);
-      const last = lastInvoices?.find(i => i.venue_id === v.id);
+    const merged = venues.map(v => {
+      const acct = accts.find(a => a.venue_id === v.id);
+      const pm = methods.find(m => m.venue_id === v.id);
+      const last = lastInvoices.find(i => i.venue_id === v.id);
       return { ...v, acct, pm, last };
     });
     setRows(merged);
