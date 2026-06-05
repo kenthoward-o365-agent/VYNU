@@ -82,17 +82,21 @@ export default function AdminVenueDetail() {
     if (!venueId) return;
     setLoading(true);
     const { data } = await supabase.from("venues").select("*").eq("id", venueId).single();
+    const { data: adminRows } = await supabase.rpc("get_venue_admin_detail", { _venue_id: venueId });
+    const adminRow: any = Array.isArray(adminRows) ? adminRows[0] : null;
     if (data) {
-      setVenue(data);
+      const merged: any = { ...data, ...(adminRow || {}) };
+      setVenue(merged);
       setForm({
         name: data.name, venue_type: data.venue_type, address: data.address || "",
         city: data.city || "", state: data.state || "NSW", postcode: data.postcode || "",
-        phone: data.phone || "", email: data.email || "",
+        phone: adminRow?.phone || "", email: adminRow?.email || "",
         group_id: data.group_id || "__none__",
-        subscription_status: (data as any).subscription_status || "trial",
-        subscription_plan: (data as any).subscription_plan || "basic",
-        subscription_notes: (data as any).subscription_notes || "",
+        subscription_status: adminRow?.subscription_status || "trial",
+        subscription_plan: adminRow?.subscription_plan || "basic",
+        subscription_notes: adminRow?.subscription_notes || "",
       });
+
       // If parent venue, fetch group settings and child venues
       if (data.venue_type === "parent" && data.group_id) {
         const { data: groupRow } = await supabase.from("venue_groups").select("settings").eq("id", data.group_id).single();
