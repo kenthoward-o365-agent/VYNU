@@ -122,17 +122,7 @@ export default function ShyndigAnalytics({ venueId }: Props) {
           </h3>
           <p className="text-sm text-muted-foreground">Chat performance and diner engagement</p>
         </div>
-        <Select value={range} onValueChange={setRange}>
-          <SelectTrigger className="w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1">Today</SelectItem>
-            <SelectItem value="7">Last 7 days</SelectItem>
-            <SelectItem value="30">Last 30 days</SelectItem>
-            <SelectItem value="90">Last 90 days</SelectItem>
-          </SelectContent>
-        </Select>
+        <AuditDatePicker value={range} onChange={setRange} auditDateOverride={auditDate} />
       </div>
 
       {/* KPI Cards */}
