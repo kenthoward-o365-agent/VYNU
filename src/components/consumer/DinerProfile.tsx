@@ -28,6 +28,9 @@ interface Profile {
   display_name: string | null;
   allergens: string[] | null;
   birthday: string | null;
+  marketing_email_opt_in?: boolean | null;
+  marketing_sms_opt_in?: boolean | null;
+  marketing_push_opt_in?: boolean | null;
   created_at?: string;
 }
 
