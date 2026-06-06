@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { MessageSquare, ShoppingCart, TrendingUp, Clock, Sparkles, Users } from "lucide-react";
-import { startOfDay, endOfDay, subDays, format } from "date-fns";
+import { MessageSquare, ShoppingCart, TrendingUp, Clock, Sparkles } from "lucide-react";
+import { format } from "date-fns";
+import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
+import { useAuditDate } from "@/contexts/AuditDateContext";
 
 interface Props {
   venueId: string;
@@ -32,15 +33,15 @@ const COLORS = ["hsl(var(--primary))", "hsl(var(--muted-foreground) / 0.3)"];
 export default function ShyndigAnalytics({ venueId }: Props) {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [messages, setMessages] = useState<MessageData[]>([]);
-  const [range, setRange] = useState("7");
+  const { auditDate } = useAuditDate();
+  const [range, setRange] = useState<DateRange>(() => getDefaultAuditDate(auditDate));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const days = parseInt(range);
-      const from = startOfDay(subDays(new Date(), days)).toISOString();
-      const to = endOfDay(new Date()).toISOString();
+      const from = range.from.toISOString();
+      const to = range.to.toISOString();
 
       const [sessRes, msgRes] = await Promise.all([
         supabase
@@ -121,17 +122,7 @@ export default function ShyndigAnalytics({ venueId }: Props) {
           </h3>
           <p className="text-sm text-muted-foreground">Chat performance and diner engagement</p>
         </div>
-        <Select value={range} onValueChange={setRange}>
-          <SelectTrigger className="w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1">Today</SelectItem>
-            <SelectItem value="7">Last 7 days</SelectItem>
-            <SelectItem value="30">Last 30 days</SelectItem>
-            <SelectItem value="90">Last 90 days</SelectItem>
-          </SelectContent>
-        </Select>
+        <AuditDatePicker value={range} onChange={setRange} auditDateOverride={auditDate} />
       </div>
 
       {/* KPI Cards */}
