@@ -11,8 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Mail, Phone, AlertTriangle, Pencil, Plus, Gift, Search, Receipt, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Mail, Phone, AlertTriangle, Pencil, Plus, Gift, Search, Receipt, ChevronLeft, ChevronRight, Filter, Megaphone, BarChart3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import DinerSegments from "@/components/crm/DinerSegments";
+import DinerCampaigns from "@/components/crm/DinerCampaigns";
+import DinerInsights from "@/components/crm/DinerInsights";
 
 const PAGE_SIZE = 25;
 
@@ -288,11 +291,27 @@ export default function Diners() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Diners</h2>
-          <p className="text-muted-foreground">CRM — track guests who've dined at {venue?.name}</p>
+          <h2 className="text-2xl font-bold text-foreground">Diner CRM</h2>
+          <p className="text-muted-foreground">Profiles, segments, campaigns & insights for {venue?.name}</p>
         </div>
-        <Badge variant="secondary" className="text-sm">{filtered.length} diner{filtered.length !== 1 ? "s" : ""}</Badge>
       </div>
+
+      <Tabs defaultValue="diners" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="diners"><Users className="h-3.5 w-3.5 mr-1" />Diners</TabsTrigger>
+          <TabsTrigger value="segments"><Filter className="h-3.5 w-3.5 mr-1" />Segments</TabsTrigger>
+          <TabsTrigger value="campaigns"><Megaphone className="h-3.5 w-3.5 mr-1" />Campaigns</TabsTrigger>
+          <TabsTrigger value="insights"><BarChart3 className="h-3.5 w-3.5 mr-1" />Insights</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="segments"><DinerSegments /></TabsContent>
+        <TabsContent value="campaigns"><DinerCampaigns /></TabsContent>
+        <TabsContent value="insights"><DinerInsights /></TabsContent>
+
+        <TabsContent value="diners" className="space-y-4">
+          <div className="flex items-center justify-end">
+            <Badge variant="secondary" className="text-sm">{filtered.length} diner{filtered.length !== 1 ? "s" : ""}</Badge>
+          </div>
 
       {/* Search */}
       <div className="relative max-w-sm">
@@ -544,6 +563,8 @@ export default function Diners() {
           </Tabs>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

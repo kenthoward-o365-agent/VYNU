@@ -770,6 +770,295 @@ export type Database = {
           },
         ]
       }
+      crm_campaign_attributions: {
+        Row: {
+          attributed_at: string
+          campaign_id: string
+          diner_id: string | null
+          id: string
+          is_ai_generated: boolean
+          order_id: string
+          revenue: number
+          send_id: string | null
+          venue_id: string
+        }
+        Insert: {
+          attributed_at?: string
+          campaign_id: string
+          diner_id?: string | null
+          id?: string
+          is_ai_generated?: boolean
+          order_id: string
+          revenue?: number
+          send_id?: string | null
+          venue_id: string
+        }
+        Update: {
+          attributed_at?: string
+          campaign_id?: string
+          diner_id?: string | null
+          id?: string
+          is_ai_generated?: boolean
+          order_id?: string
+          revenue?: number
+          send_id?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_campaign_attributions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_campaign_attributions_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_campaign_attributions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_campaign_attributions_send_id_fkey"
+            columns: ["send_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaign_sends"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_campaign_attributions_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_campaign_sends: {
+        Row: {
+          bounced_at: string | null
+          campaign_id: string
+          channel: Database["public"]["Enums"]["campaign_channel"]
+          clicked_at: string | null
+          created_at: string
+          delivered_at: string | null
+          diner_id: string | null
+          error: string | null
+          id: string
+          opened_at: string | null
+          provider_message_id: string | null
+          recipient: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["campaign_send_status"]
+          tracking_token: string | null
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          bounced_at?: string | null
+          campaign_id: string
+          channel: Database["public"]["Enums"]["campaign_channel"]
+          clicked_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          diner_id?: string | null
+          error?: string | null
+          id?: string
+          opened_at?: string | null
+          provider_message_id?: string | null
+          recipient: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["campaign_send_status"]
+          tracking_token?: string | null
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          bounced_at?: string | null
+          campaign_id?: string
+          channel?: Database["public"]["Enums"]["campaign_channel"]
+          clicked_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          diner_id?: string | null
+          error?: string | null
+          id?: string
+          opened_at?: string | null
+          provider_message_id?: string | null
+          recipient?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["campaign_send_status"]
+          tracking_token?: string | null
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_campaign_sends_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_campaign_sends_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_campaign_sends_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_campaigns: {
+        Row: {
+          ai_meta: Json
+          ai_prompt: string | null
+          approved_at: string | null
+          approved_by: string | null
+          attributed_orders: number
+          attributed_revenue: number
+          body_html: string | null
+          body_text: string | null
+          channel: Database["public"]["Enums"]["campaign_channel"]
+          created_at: string
+          created_by: string | null
+          cta_label: string | null
+          cta_url: string | null
+          goal: Database["public"]["Enums"]["campaign_goal"]
+          id: string
+          is_ai_generated: boolean
+          is_instant: boolean
+          name: string
+          preheader: string | null
+          push_body: string | null
+          push_title: string | null
+          recipients_bounced: number
+          recipients_clicked: number
+          recipients_delivered: number
+          recipients_opened: number
+          recipients_sent: number
+          recipients_total: number
+          requires_approval: boolean
+          scheduled_at: string | null
+          segment_id: string | null
+          send_completed_at: string | null
+          send_started_at: string | null
+          sms_text: string | null
+          status: Database["public"]["Enums"]["campaign_status"]
+          subject: string | null
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          ai_meta?: Json
+          ai_prompt?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          attributed_orders?: number
+          attributed_revenue?: number
+          body_html?: string | null
+          body_text?: string | null
+          channel: Database["public"]["Enums"]["campaign_channel"]
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_url?: string | null
+          goal?: Database["public"]["Enums"]["campaign_goal"]
+          id?: string
+          is_ai_generated?: boolean
+          is_instant?: boolean
+          name: string
+          preheader?: string | null
+          push_body?: string | null
+          push_title?: string | null
+          recipients_bounced?: number
+          recipients_clicked?: number
+          recipients_delivered?: number
+          recipients_opened?: number
+          recipients_sent?: number
+          recipients_total?: number
+          requires_approval?: boolean
+          scheduled_at?: string | null
+          segment_id?: string | null
+          send_completed_at?: string | null
+          send_started_at?: string | null
+          sms_text?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          subject?: string | null
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          ai_meta?: Json
+          ai_prompt?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          attributed_orders?: number
+          attributed_revenue?: number
+          body_html?: string | null
+          body_text?: string | null
+          channel?: Database["public"]["Enums"]["campaign_channel"]
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_url?: string | null
+          goal?: Database["public"]["Enums"]["campaign_goal"]
+          id?: string
+          is_ai_generated?: boolean
+          is_instant?: boolean
+          name?: string
+          preheader?: string | null
+          push_body?: string | null
+          push_title?: string | null
+          recipients_bounced?: number
+          recipients_clicked?: number
+          recipients_delivered?: number
+          recipients_opened?: number
+          recipients_sent?: number
+          recipients_total?: number
+          requires_approval?: boolean
+          scheduled_at?: string | null
+          segment_id?: string | null
+          send_completed_at?: string | null
+          send_started_at?: string | null
+          sms_text?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          subject?: string | null
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_campaigns_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "diner_segments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_campaigns_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_suppression: {
         Row: {
           channel: string
@@ -801,6 +1090,65 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "crm_suppression_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_tracking_tokens: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          diner_id: string | null
+          expires_at: string
+          send_id: string | null
+          token: string
+          venue_id: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          diner_id?: string | null
+          expires_at?: string
+          send_id?: string | null
+          token: string
+          venue_id: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          diner_id?: string | null
+          expires_at?: string
+          send_id?: string | null
+          token?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tracking_tokens_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tracking_tokens_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tracking_tokens_send_id_fkey"
+            columns: ["send_id"]
+            isOneToOne: false
+            referencedRelation: "crm_campaign_sends"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tracking_tokens_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
@@ -882,6 +1230,115 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      diner_segment_members: {
+        Row: {
+          added_at: string
+          diner_id: string
+          segment_id: string
+          venue_id: string
+        }
+        Insert: {
+          added_at?: string
+          diner_id: string
+          segment_id: string
+          venue_id: string
+        }
+        Update: {
+          added_at?: string
+          diner_id?: string
+          segment_id?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diner_segment_members_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diner_segment_members_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "diner_segments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diner_segment_members_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diner_segments: {
+        Row: {
+          ai_meta: Json
+          ai_seed_segment_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_archived: boolean
+          kind: Database["public"]["Enums"]["segment_kind"]
+          last_refreshed_at: string | null
+          member_count: number
+          name: string
+          rules: Json
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          ai_meta?: Json
+          ai_seed_segment_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          kind?: Database["public"]["Enums"]["segment_kind"]
+          last_refreshed_at?: string | null
+          member_count?: number
+          name: string
+          rules?: Json
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          ai_meta?: Json
+          ai_seed_segment_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          kind?: Database["public"]["Enums"]["segment_kind"]
+          last_refreshed_at?: string | null
+          member_count?: number
+          name?: string
+          rules?: Json
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diner_segments_ai_seed_segment_id_fkey"
+            columns: ["ai_seed_segment_id"]
+            isOneToOne: false
+            referencedRelation: "diner_segments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diner_segments_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       diner_stored_cards: {
         Row: {
@@ -4505,6 +4962,10 @@ export type Database = {
         Args: { _order_id: string; _venue_id: string }
         Returns: undefined
       }
+      attribute_order_to_campaign: {
+        Args: { _order_id: string; _token: string }
+        Returns: string
+      }
       can_manage_loyalty_program_balance: {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
@@ -4551,6 +5012,13 @@ export type Database = {
       ensure_stripe_customer_for_venue: {
         Args: { _stripe_customer_id?: string; _venue_id: string }
         Returns: string
+      }
+      evaluate_diner_segment: {
+        Args: { _segment_id: string }
+        Returns: {
+          diner_id: string
+          venue_id: string
+        }[]
       }
       find_or_create_table_session: {
         Args: {
@@ -4805,6 +5273,10 @@ export type Database = {
         Args: { _field: string; _venue_id: string }
         Returns: string
       }
+      refresh_diner_segment_members: {
+        Args: { _segment_id: string }
+        Returns: number
+      }
       refresh_diner_venue_stats: {
         Args: { _diner_id: string; _venue_id: string }
         Returns: undefined
@@ -4852,6 +5324,33 @@ export type Database = {
       alert_type: "manager_request" | "assistance" | "complaint"
       api_partner_type: "pos" | "crm"
       app_role: "tabless_admin"
+      campaign_channel: "email" | "sms" | "push" | "in_app"
+      campaign_goal:
+        | "daily_special"
+        | "instant_special"
+        | "win_back"
+        | "birthday"
+        | "kitchen_load"
+        | "contest"
+        | "announcement"
+        | "custom"
+      campaign_send_status:
+        | "queued"
+        | "sent"
+        | "delivered"
+        | "opened"
+        | "clicked"
+        | "bounced"
+        | "failed"
+        | "suppressed"
+      campaign_status:
+        | "draft"
+        | "scheduled"
+        | "sending"
+        | "sent"
+        | "paused"
+        | "failed"
+        | "cancelled"
       group_staff_role: "group_admin" | "group_viewer"
       loyalty_program_type: "points" | "stamps" | "tier"
       order_status:
@@ -4862,6 +5361,7 @@ export type Database = {
         | "paid"
         | "cancelled"
         | "refunded"
+      segment_kind: "static" | "dynamic" | "ai_lookalike"
       tax_type: "percent" | "fixed" | "compound_percent"
       venue_staff_role: "owner" | "manager" | "staff"
     }
@@ -4995,6 +5495,36 @@ export const Constants = {
       alert_type: ["manager_request", "assistance", "complaint"],
       api_partner_type: ["pos", "crm"],
       app_role: ["tabless_admin"],
+      campaign_channel: ["email", "sms", "push", "in_app"],
+      campaign_goal: [
+        "daily_special",
+        "instant_special",
+        "win_back",
+        "birthday",
+        "kitchen_load",
+        "contest",
+        "announcement",
+        "custom",
+      ],
+      campaign_send_status: [
+        "queued",
+        "sent",
+        "delivered",
+        "opened",
+        "clicked",
+        "bounced",
+        "failed",
+        "suppressed",
+      ],
+      campaign_status: [
+        "draft",
+        "scheduled",
+        "sending",
+        "sent",
+        "paused",
+        "failed",
+        "cancelled",
+      ],
       group_staff_role: ["group_admin", "group_viewer"],
       loyalty_program_type: ["points", "stamps", "tier"],
       order_status: [
@@ -5006,6 +5536,7 @@ export const Constants = {
         "cancelled",
         "refunded",
       ],
+      segment_kind: ["static", "dynamic", "ai_lookalike"],
       tax_type: ["percent", "fixed", "compound_percent"],
       venue_staff_role: ["owner", "manager", "staff"],
     },
