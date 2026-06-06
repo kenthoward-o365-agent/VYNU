@@ -68,7 +68,7 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
   const [loyalty, setLoyalty] = useState<LoyaltyInfo[]>([]);
   const [venues, setVenues] = useState<LoyaltyVenue[]>([]);
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "", allergens: [] as string[], birthday: "" });
+  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "", allergens: [] as string[], birthday: "", marketing_email_opt_in: false, marketing_sms_opt_in: false });
   const [saving, setSaving] = useState(false);
   const [visitCount, setVisitCount] = useState<number>(0);
   const [isSignedIn, setIsSignedIn] = useState(false);
