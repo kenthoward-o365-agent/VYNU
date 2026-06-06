@@ -770,49 +770,114 @@ export type Database = {
           },
         ]
       }
+      crm_suppression: {
+        Row: {
+          channel: string
+          created_at: string
+          destination: string
+          id: string
+          reason: string
+          source: string | null
+          venue_id: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          destination: string
+          id?: string
+          reason: string
+          source?: string | null
+          venue_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          destination?: string
+          id?: string
+          reason?: string
+          source?: string | null
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_suppression_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       diner_profiles: {
         Row: {
           allergens: string[] | null
           birthday: string | null
+          birthday_day: number | null
+          birthday_month: number | null
           country_code: string | null
           created_at: string
+          crm_notes: string | null
           display_name: string | null
           email: string | null
           first_name: string | null
           id: string
           last_name: string | null
+          marketing_email_opt_in: boolean
+          marketing_push_opt_in: boolean
+          marketing_sms_opt_in: boolean
           phone: string | null
           preferences: Json | null
+          push_subscription: Json | null
+          sms_e164: string | null
+          unsubscribe_token: string
           updated_at: string
           user_id: string
         }
         Insert: {
           allergens?: string[] | null
           birthday?: string | null
+          birthday_day?: number | null
+          birthday_month?: number | null
           country_code?: string | null
           created_at?: string
+          crm_notes?: string | null
           display_name?: string | null
           email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
+          marketing_email_opt_in?: boolean
+          marketing_push_opt_in?: boolean
+          marketing_sms_opt_in?: boolean
           phone?: string | null
           preferences?: Json | null
+          push_subscription?: Json | null
+          sms_e164?: string | null
+          unsubscribe_token?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           allergens?: string[] | null
           birthday?: string | null
+          birthday_day?: number | null
+          birthday_month?: number | null
           country_code?: string | null
           created_at?: string
+          crm_notes?: string | null
           display_name?: string | null
           email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
+          marketing_email_opt_in?: boolean
+          marketing_push_opt_in?: boolean
+          marketing_sms_opt_in?: boolean
           phone?: string | null
           preferences?: Json | null
+          push_subscription?: Json | null
+          sms_e164?: string | null
+          unsubscribe_token?: string
           updated_at?: string
           user_id?: string
         }
@@ -874,6 +939,93 @@ export type Database = {
           },
           {
             foreignKeyName: "diner_stored_cards_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diner_venue_stats: {
+        Row: {
+          avg_ticket: number
+          churn_risk_score: number | null
+          created_at: string
+          diner_id: string
+          favourite_category_id: string | null
+          favourite_item_id: string | null
+          first_visit_at: string | null
+          id: string
+          last_refreshed_at: string
+          last_visit_at: string | null
+          lifetime_orders: number
+          lifetime_spend: number
+          preferred_daypart: string | null
+          rfm_frequency: number | null
+          rfm_monetary: number | null
+          rfm_recency: number | null
+          rfm_tier: string | null
+          spend_last_30d: number
+          updated_at: string
+          venue_id: string
+          visit_count_90d: number
+        }
+        Insert: {
+          avg_ticket?: number
+          churn_risk_score?: number | null
+          created_at?: string
+          diner_id: string
+          favourite_category_id?: string | null
+          favourite_item_id?: string | null
+          first_visit_at?: string | null
+          id?: string
+          last_refreshed_at?: string
+          last_visit_at?: string | null
+          lifetime_orders?: number
+          lifetime_spend?: number
+          preferred_daypart?: string | null
+          rfm_frequency?: number | null
+          rfm_monetary?: number | null
+          rfm_recency?: number | null
+          rfm_tier?: string | null
+          spend_last_30d?: number
+          updated_at?: string
+          venue_id: string
+          visit_count_90d?: number
+        }
+        Update: {
+          avg_ticket?: number
+          churn_risk_score?: number | null
+          created_at?: string
+          diner_id?: string
+          favourite_category_id?: string | null
+          favourite_item_id?: string | null
+          first_visit_at?: string | null
+          id?: string
+          last_refreshed_at?: string
+          last_visit_at?: string | null
+          lifetime_orders?: number
+          lifetime_spend?: number
+          preferred_daypart?: string | null
+          rfm_frequency?: number | null
+          rfm_monetary?: number | null
+          rfm_recency?: number | null
+          rfm_tier?: string | null
+          spend_last_30d?: number
+          updated_at?: string
+          venue_id?: string
+          visit_count_90d?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diner_venue_stats_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diner_venue_stats_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
@@ -3241,6 +3393,68 @@ export type Database = {
           },
         ]
       }
+      venue_crm_config: {
+        Row: {
+          ai_campaigns_enabled: boolean
+          ai_daily_send_cap: number
+          allowed_channels: string[]
+          birthday_reward_enabled: boolean
+          birthday_reward_payload: Json
+          created_at: string
+          default_sender_name: string | null
+          default_tone: string
+          max_discount_pct: number
+          per_diner_frequency_cap_7d: number
+          quiet_hours_end: number
+          quiet_hours_start: number
+          require_approval: boolean
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          ai_campaigns_enabled?: boolean
+          ai_daily_send_cap?: number
+          allowed_channels?: string[]
+          birthday_reward_enabled?: boolean
+          birthday_reward_payload?: Json
+          created_at?: string
+          default_sender_name?: string | null
+          default_tone?: string
+          max_discount_pct?: number
+          per_diner_frequency_cap_7d?: number
+          quiet_hours_end?: number
+          quiet_hours_start?: number
+          require_approval?: boolean
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          ai_campaigns_enabled?: boolean
+          ai_daily_send_cap?: number
+          allowed_channels?: string[]
+          birthday_reward_enabled?: boolean
+          birthday_reward_payload?: Json
+          created_at?: string
+          default_sender_name?: string | null
+          default_tone?: string
+          max_discount_pct?: number
+          per_diner_frequency_cap_7d?: number
+          quiet_hours_end?: number
+          quiet_hours_start?: number
+          require_approval?: boolean
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_crm_config_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: true
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_dayend_log: {
         Row: {
           audit_date: string
@@ -4590,6 +4804,10 @@ export type Database = {
       read_pos_credential: {
         Args: { _field: string; _venue_id: string }
         Returns: string
+      }
+      refresh_diner_venue_stats: {
+        Args: { _diner_id: string; _venue_id: string }
+        Returns: undefined
       }
       search_admin_venues: {
         Args: {
