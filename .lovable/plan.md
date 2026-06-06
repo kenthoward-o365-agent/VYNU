@@ -1,148 +1,146 @@
-# Diner CRM — Plan
 
-Goal: turn the Diners page into a full CRM with rich profiles, smart segments, scheduled multi-channel campaigns, AI-powered instant campaigns with guardrails, trigger-based automations, contests, and end-to-end revenue attribution that rolls into existing AI Generated Revenue.
+# H&L OrderNOW marketing site — Claude design brief
 
-Note: `diner_profiles.birthday` already exists. We extend, not replace.
+This plan delivers a single, paste-ready prompt for Claude design. No app code changes are required — this is a separate marketing site. Below are (1) the strategic decisions baked into the prompt, (2) things the original brief missed that I've added, and (3) the full prompt.
 
----
+## Strategic decisions
 
-## 1. Diner profile enrichment
+- **Audience**: Hospitality groups / enterprise operators (AU-first, NZ-ready).
+- **Primary CTA**: *Book a demo*. Secondary: *Talk to sales* / *See it live*.
+- **Tone**: Premium, AI-forward, confident — Linear/Vercel polish, not Stripe-bright.
+- **Nav (tabbed)**: Platform · AI (Spark) · H&L Pay · Diner CRM & Loyalty · POS & Standalone · Compare · Industries (Pubs / Clubs / QSR / Fine Dining) · Pricing · Book a demo.
+- **Brand lock**: H&L Blue `#3BAEDC`, H&L Blue Dark `#2A8FB8`, H&L Green `#7FC242`, Ink `#1F3B4D`, Surface white, Muted `#F4F8FB`. Logo at `/brand/hl-ordernow-logo.png` (mark at `/brand/shyndig-icon.png`).
 
-**Schema additions to `diner_profiles`:**
-- `birthday_month` / `birthday_day` (generated cols from `birthday`) — fast segment filters without exposing year.
-- `marketing_email_opt_in`, `marketing_sms_opt_in`, `marketing_push_opt_in` (default false; explicit consent).
-- `sms_e164` (normalised), `push_subscription` (jsonb — web push endpoint+keys).
-- `unsubscribe_token` (uuid, unique).
-- `crm_notes` (text, staff only).
+## What the original brief missed (added to the prompt)
 
-**Computed/materialised per (diner_id, venue_id) — `diner_venue_stats` table, refreshed by trigger on `orders`/`diner_visits`:**
-- `lifetime_spend`, `lifetime_orders`, `avg_ticket`, `last_visit_at`, `first_visit_at`, `visit_count_90d`, `favourite_category_id`, `favourite_item_id`, `preferred_daypart`, `rfm_recency`, `rfm_frequency`, `rfm_monetary`, `churn_risk_score` (0–100).
+1. **Security & compliance band** — PCI DSS SAQ-A, AU Privacy Act / APP, SOC 2 in progress, data residency in AU.
+2. **Time-to-value proof** — "Live in a weekend", QR sticker shipping, no app download for diners.
+3. **Group features** — Multi-venue dashboard, group loyalty, cross-venue reporting, role-based access.
+4. **Accessibility & inclusivity** — WCAG 2.2 AA, allergens/dietary, large-text mode, multi-language.
+5. **Reliability story** — Offline-tolerant QR, throttling/surge controls, kitchen pacing — operators care about Friday-night load.
+6. **AI revenue attribution** — Every AI-driven order tracked → "AI Revenue Generated $" tile (your existing Spark metric) shown as a hero proof bar.
+7. **Open ecosystem** — Works standalone *or* with H&L POS, plus integrations roadmap (accounting, rostering, BI).
+8. **Australian voice & social proof** — Local venue logos, AU $ pricing, AU support hours.
+9. **SEO scaffolding** — Industry landing pages (Pubs/Clubs/QSR/Fine Dining) + Compare pages individually indexable.
+10. **Trust artefacts** — Customer story carousel, uptime stat, "no lock-in" promise, ISO-style badge strip.
+11. **Sticky "book a demo" rail** + exit-intent capture.
+12. **Dark/light hero pairing** — dark hero band for premium feel, white feature surfaces for clarity.
 
-**Signup change (`DinerSignup.tsx`):** add optional birthday field with helper text "Get a birthday treat 🎂". `DinerProfile.tsx` keeps the existing prompt and adds channel opt-in toggles + a one-time "Add your birthday for a reward" nudge after first order.
+## Competitor comparison grid (rows × columns)
 
----
+Columns: **H&L OrderNOW · me&u · Mr Yum (Lightspeed) · Chewzie · Square/Toast Order & Pay**
 
-## 2. Segmentation engine
-
-**Table `diner_segments`** (per venue or group):
-- `name`, `description`, `is_dynamic` (bool), `rules` (jsonb DSL), `ai_generated` (bool), `last_evaluated_at`, `member_count`.
-
-**Rule DSL (jsonb, AND/OR groups):** any combination of —
-- Spend: `lifetime_spend >=`, `avg_ticket between`, `spend_last_30d >=`
-- Visits: `last_visit_within / before`, `visit_count >=`, `lapsed_days >=`
-- Birthday: `birthday_month = current`, `birthday_day in next 7d`, `birthday_month = X`
-- Behaviour: `favourite_category`, `dietary_tags contains`, `preferred_daypart`
-- Loyalty: `points_balance >=`, `tier =`
-- Channel eligibility (auto-applied): respects opt-in + suppression
-
-**Materialised membership:** `diner_segment_members(segment_id, diner_id, added_at)` refreshed by edge function `evaluate-segments` (cron 15 min + on-demand).
-
-**AI lookalikes / smart segments** (chosen option):
-- Edge function `ai-suggest-segments` calls `google/gemini-3-flash-preview` with anonymised aggregate stats → proposes segments like *"High-LTV wine lovers"*, *"At-risk lapsed regulars"*, *"Weekend brunch crew"*. Saved as `ai_generated=true` drafts staff can publish.
+Rows: Agentic AI ordering · AI instant campaigns · Diner CRM with birthdays & RFM · Built-in PayFac (Apple/Google Pay) · Works standalone (no POS required) · Native H&L POS integration · Multi-venue group loyalty · Order throttling & kitchen pacing · QR stickers (permanent URLs) · AI revenue attribution · AU support & data residency · Pay-per-order pricing · PCI SAQ-A · White-label landing pages · Co-pilot for managers.
 
 ---
 
-## 3. Campaigns
+## The Claude design prompt (paste this verbatim)
 
-**Table `crm_campaigns`:**
-- `venue_id`, `name`, `channel` (`email|sms|push|in_app`), `segment_id`, `status` (`draft|scheduled|sending|sent|cancelled`), `scheduled_at`, `subject`, `body_md`, `cta_url`, `image_url`, `discount_id` (FK loyalty reward), `ai_generated`, `ai_prompt_used`, `created_by`, totals (`recipients`, `sent`, `delivered`, `opened`, `clicked`, `unsubscribed`, `bounced`).
+```text
+You are designing a premium marketing website for H&L OrderNOW — an agentic, AI-powered ordering, payments, and diner-CRM platform built for the H&L POS ecosystem (Australia-first, hospitality groups and enterprise venues). The site must feel like Linear / Vercel / Arc — confident, dark hero, restrained motion, generous whitespace, crisp type — not a busy SaaS template.
 
-**Table `crm_campaign_sends`** (one row per recipient): `campaign_id`, `diner_id`, `channel`, `status`, timestamps, `message_id`, `error`. Used for both delivery tracking and revenue attribution.
+BRAND (lock these — do not invent new colors or fonts)
+- Primary: H&L Blue #3BAEDC (hover #2A8FB8)
+- Accent: H&L Green #7FC242 (success / "included" ticks)
+- Ink: #1F3B4D (headings, dark sections, footer)
+- Surface: #FFFFFF
+- Muted surface: #F4F8FB
+- Type: Inter or DM Sans for UI; a refined display face (e.g. "General Sans" or "Söhne") for hero headlines. Tight tracking on H1s.
+- Logo: /brand/hl-ordernow-logo.png (full lockup), /brand/shyndig-icon.png (mark only — legacy filename, treat as the H&L OrderNOW mark).
+- Radius 12–16px, soft shadow on cards, subtle 1px borders in #E6EEF4.
+- Motion: 200–400ms easings, hero gradient slow-shift, scroll-reveal fades only. No bouncy springs.
 
-**Channels & infra:**
-- **Email** — Lovable Emails (already configured). New React Email template `_shared/transactional-email-templates/crm-campaign.tsx` with branded header, body, CTA, unsubscribe footer (auto-appended).
-- **SMS** — Twilio connector. Edge function `send-crm-sms` with SMS Pumping Protection + geo-permission reminder. Includes STOP keyword handling → flips `marketing_sms_opt_in` off.
-- **Push** — Web push via VAPID. Service worker registered in consumer PWA; `push_subscription` stored on profile.
-- **In-app** — surfaced through existing `AIChatOverlay` + a new `CampaignBanner` shown on `VenueLanding` / `MenuFeed` when a diner in the segment opens the app.
+AUDIENCE & CTA
+- Primary audience: hospitality groups and enterprise operators in Australia.
+- Primary CTA everywhere: "Book a demo" (H&L Blue button).
+- Secondary CTAs: "Talk to sales", "See it live", "Get the brochure (PDF)".
+- Sticky bottom-right "Book a demo" pill on scroll. Exit-intent modal with email capture.
 
-**Edge function `dispatch-campaign`** — fan-out worker: pulls segment members, dedupes against suppression + opt-out, writes `crm_campaign_sends` rows, enqueues per-channel jobs through pgmq (`jobs_notifications`). pg_cron runs every minute to pick up `scheduled_at <= now()`.
+NAVIGATION (tabbed, top of page, sticky on scroll)
+Platform · AI (Spark) · H&L Pay · Diner CRM & Loyalty · POS & Standalone · Compare · Industries ▾ (Pubs, Clubs, QSR, Fine Dining) · Pricing · [Book a demo]
+Each top-level item is its own full page (see PAGE BRIEFS below). Footer carries About, Security & Compliance, Careers, Contact, Status, Knowledge Base, Login.
+
+HOMEPAGE
+1. Dark Ink hero (#1F3B4D → near-black gradient), one-line headline + 18-word sub.
+   - Headline candidates (pick the strongest, propose 3 more):
+     a) "The agentic ordering platform that pays for itself by Friday."
+     b) "Ordering, payments and diner CRM — powered by one AI."
+     c) "Replace the menu. Replace the wait. Replace the guesswork."
+   - Sub: "H&L OrderNOW turns every QR scan into a conversation, every order into revenue, and every diner into a regular."
+   - Hero visual: a stylised iPhone tilted 8°, showing the Spark AI chat ordering a steak — with floating cards around it (an "AI-generated $1,284 today" tile, a birthday-campaign card, an Apple Pay tap). Use H&L Blue glow.
+2. Logo bar of AU venue groups (placeholder, 6 monochrome logos).
+3. "One platform, four products" — 4-up grid: AI Ordering · H&L Pay · Diner CRM · Loyalty. Each card opens its page.
+4. AI revenue proof band — large counter "AI-attributed revenue across the network: $X,XXX,XXX this month" on Ink background.
+5. "Works alone. Better together." — split panel showing Standalone vs With H&L POS, with a toggle.
+6. Comparison teaser → links to /compare.
+7. Industry tiles → Pubs / Clubs / QSR / Fine Dining.
+8. Security & compliance strip: PCI DSS SAQ-A · AU Privacy Act / APP · SOC 2 (in progress) · Data hosted in AU · WCAG 2.2 AA.
+9. Testimonial carousel (2–3 quotes).
+10. Final CTA band — "Live in a weekend. Book a 20-minute demo."
+
+PAGE BRIEFS (each gets a dedicated, deep page — not a section)
+
+Platform — the agentic ordering flow end-to-end: scan → AI chat OR TikTok-style feed → upsell → pay → kitchen pacing → loyalty. Animated diagram. Reliability callouts: order throttling, surge controls, offline-tolerant QR, permanent QR sticker URLs.
+
+AI (Spark) — three pillars:
+  • Agentic ordering (intent-based chat that replaces the menu)
+  • Instant AI campaigns (daily specials, contests, birthday blasts — email/SMS/push/in-app, with guardrails)
+  • AI co-pilot for managers + AI revenue attribution (every AI-influenced order tracked into one Spark Analytics tile).
+Include a "How the AI makes you money" calculator (sliders: covers/day, avg ticket → projected uplift).
+
+H&L Pay — built-in PayFac. Apple Pay, Google Pay, stored cards, 3DS2, manual or auto-capture, AU surcharging compliance, single statement, chargeback handling. Diagram of money flow. "No third-party processor handoff" headline.
+
+Diner CRM & Loyalty — birthdays captured at signup, RFM segments, AI lookalike segments, multi-channel campaigns (Email/SMS/Push/In-app), suppression & STOP handling, group loyalty across venues, points & rewards, attribution back to AI Revenue.
+
+POS & Standalone — toggleable page: "Run H&L OrderNOW on its own" vs "Plug into H&L POS". Feature parity matrix. Migration story for venues moving off me&u / Mr Yum / Chewzie.
+
+Compare — the hero competitive grid. Sticky left column (features), competitors as columns. Use H&L Green tick, light grey dash, and "Limited" pill. Footnote each row with a source link. Columns: H&L OrderNOW · me&u · Mr Yum · Chewzie · Square/Toast Order & Pay. Rows listed below (FEATURE GRID). Above the grid: "Built for AU hospitality groups. Benchmarked against the category." Below: CTA "See the side-by-side demo".
+
+Industries (Pubs / Clubs / QSR / Fine Dining) — one page each, same template: hero photo, three pain points, three H&L OrderNOW answers, one mini case study, an industry-specific feature callout (e.g. Clubs → member loyalty + RSA prompts; Fine Dining → coursing & pacing; Pubs → big-round splitting; QSR → throughput & kiosk).
+
+Pricing — pay-per-order, transparent. Three plans: Standalone · Group · Enterprise. AUD. Show "you only pay when we make you money." FAQ accordion.
+
+Security & Compliance (footer page) — PCI SAQ-A statement, data residency, RLS-based tenancy, SSO/SAML for enterprise, role-based access, audit log, incident response, sub-processor list.
+
+About / Contact / Book a demo — standard, with AU support hours and a Calendly-style embed.
+
+FEATURE GRID (use exactly these rows, in this order)
+1. Agentic AI ordering (chat replaces the menu)
+2. AI instant campaigns (email/SMS/push/in-app, with guardrails)
+3. Diner CRM with birthdays, RFM & AI lookalike segments
+4. Built-in PayFac — Apple Pay, Google Pay, stored cards
+5. Works fully standalone (no POS required)
+6. Native H&L POS integration
+7. Multi-venue group loyalty
+8. Order throttling & kitchen pacing
+9. Permanent QR sticker URLs (never re-print)
+10. AI revenue attribution tile
+11. Australian support, data residency & AUD pricing
+12. Pay-per-order pricing (no SaaS lock-in)
+13. PCI DSS SAQ-A scope
+14. White-label landing pages per venue
+15. AI co-pilot for managers
+Mark each competitor honestly: tick / dash / "Limited" pill. Footnote with the source URL.
+
+ACCESSIBILITY & PERFORMANCE
+- WCAG 2.2 AA, prefers-reduced-motion respected, full keyboard nav, alt text on all imagery.
+- Core Web Vitals: target LCP < 2.0s. Image-light hero (SVG illustrations + one hero render). No video autoplay with sound.
+- SEO: each page has a unique 55-char title and 150-char meta description. Schema.org Organization + Product + FAQ JSON-LD.
+
+DELIVERABLES FROM YOU (Claude design)
+- Full responsive site (desktop / tablet / mobile) for every page above.
+- Three headline options per page so we can A/B.
+- A reusable component library (button, pill, tick row, comparison cell, stat tile, testimonial card, feature card, industry tile, CTA band, footer).
+- Dark hero / light body system, consistent across pages.
+- Export-ready Tailwind tokens that match the brand lock above.
+
+DO NOT
+- Do not introduce purple, pink, orange, or neon. H&L Blue + Green only.
+- Do not use generic "AI sparkle" Lucide icons as the brand mark.
+- Do not mention "Shyndig", "Sippa", "Tab-Less", "ShyndigPay", "OrdrPay", or "Adyen" anywhere on the public site. The payments product is H&L Pay.
+- Do not invent customer names — use "Group A / Group B" placeholders for testimonials until real ones are supplied.
+```
 
 ---
 
-## 4. AI instant campaigns
-
-**Venue settings (`venue_ai_config` extension or new `venue_crm_config`):**
-- `ai_campaigns_enabled`, `ai_daily_send_cap`, `quiet_hours_start/end`, `max_discount_pct`, `eligible_segment_ids[]`, `allowed_channels[]`, `default_discount_strategy`, `tone` (friendly/upscale/playful), `require_approval` (default false per user choice).
-
-**Composer (`AIInstantCampaign.tsx`):** staff picks a *goal template* — Daily special, Instant special (kitchen-load triggered), Weather boost, Slow-hour fill, Contest, Win-back. AI drafts copy + image prompt + segment + channel mix; respects guardrails; preview → Send Now or Schedule.
-
-**Trigger-based automations (`crm_automations`):**
-- Birthday (day-of, 7-day lead)
-- Welcome (24h after first visit)
-- Post-visit thank-you (2h after order completed)
-- Win-back lapsed (no visit X days)
-- Abandoned cart (cart not checked out 20 min)
-- Kitchen low-load → push instant special to nearby diners
-- Each automation row: `trigger_type`, `delay`, `segment_filter`, `template_id`, `is_active`, `guardrails`.
-
-**Contests & gamification:**
-- `contests` table: spin-to-win, scratch card, refer-a-friend, leaderboard. Rewards issued via existing `loyalty_rewards_issued`. AI can launch flash contests inside guardrails ("next 20 orders win a free coffee").
-
----
-
-## 5. Revenue attribution → rolls into AI Generated Revenue
-
-**Attribution model:**
-- Every campaign send gets a tracking token. Email/SMS/push CTAs link to `/r/:sendId` which sets a session cookie + `chat_sessions.referrer_send_id` then redirects to venue.
-- `order_items.ai_source` is already used for AI revenue. Extend enum / value set:
-  - `ai_chat` (existing)
-  - `ai_upsell` (existing)
-  - `ai_campaign` ← **new** (AI-generated instant/scheduled campaigns)
-  - `crm_campaign` (staff-authored — tracked but not counted as AI revenue)
-- On order creation, if session has `referrer_send_id` whose campaign is `ai_generated=true`, stamp items with `ai_source='ai_campaign'`.
-- `get_venue_performance` + `get_platform_performance` already SUM ai_source attributed revenue → AI campaign revenue automatically appears in the existing **AI Generated Revenue** total. SippaAnalytics gets a new breakdown row "AI Campaigns".
-
-**Campaign ROI card** on each campaign: recipients, opens, clicks, orders, attributed revenue, $/recipient, ROAS vs cost (email free, SMS = Twilio cost from `ai_usage_log`-style new `crm_cost_log`).
-
----
-
-## 6. UI — extends `/diners`
-
-Three tabs added to existing Diners page:
-1. **Diners** (existing list) + new columns: Lifetime spend, Last visit, Birthday, Tags, channels opted-in. Bulk-add to segment.
-2. **Segments** — list, builder (visual rule builder), AI suggestions panel.
-3. **Campaigns** — calendar + list, composer, AI instant button, automations manager, contests.
-4. **Insights** — leaderboards (top spenders, birthday this month, at-risk), channel performance, AI revenue attributed to CRM.
-
----
-
-## 7. Additional industry-leading features (recommended)
-
-- **Auto-RFM tiers** (Champions, Loyal, At-risk, Lost) auto-maintained, usable in segments.
-- **Predictive next-visit date** + "best time to send" per diner (AI).
-- **Group-level CRM** (uses existing `venue_groups`) — campaigns can span all venues in a group with per-venue throttle.
-- **A/B test** subject / copy / image on email & push; AI picks winner after threshold.
-- **Smart frequency capping** — never message a diner more than N times / 7d across all channels.
-- **GDPR / Privacy Act compliance**: per-channel consent log, export/delete diner data, audit trail.
-- **Webhook out** to partner CRMs (already have `partner-crm` edge function — extend with campaign events).
-- **Review request automation** post-visit with rating gate (4★+ → Google, lower → private feedback).
-- **Referral program**: unique diner code, both-sided reward, leaderboard.
-- **Geo-fenced push** for nearby lapsed diners (opt-in).
-- **Dynamic discount AI** — recommends min discount needed to re-activate a diner based on their RFM.
-
----
-
-## Technical details
-
-- **New tables**: `diner_venue_stats`, `diner_segments`, `diner_segment_members`, `crm_campaigns`, `crm_campaign_sends`, `crm_automations`, `crm_automation_runs`, `crm_suppression`, `crm_cost_log`, `contests`, `contest_entries`, `venue_crm_config`. All under RLS scoped via `is_venue_staff` / `is_venue_manager`; service_role grants for edge functions.
-- **New columns on `diner_profiles`**: opt-in flags, `sms_e164`, `push_subscription`, `unsubscribe_token`, generated `birthday_month`/`birthday_day`.
-- **Enum extension**: `ai_source` += `ai_campaign`, `crm_campaign`.
-- **New edge functions**: `evaluate-segments`, `dispatch-campaign`, `send-crm-sms`, `send-crm-push`, `ai-draft-campaign`, `ai-suggest-segments`, `crm-track-click` (`/r/:sendId`), `crm-automation-runner` (cron), `crm-unsubscribe`.
-- **Cron**: `evaluate-segments` every 15 min; `crm-automation-runner` every minute; `dispatch-campaign` picks up scheduled every minute.
-- **Connectors required**: Twilio (SMS). Email = Lovable Emails (already on). Push = VAPID keys stored as secrets `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`.
-- **Reuse**: existing `ai_usage_log` for AI cost tracking; existing `loyalty_rewards_issued` for contest/birthday rewards; existing `get_venue_performance` for revenue rollup.
-
----
-
-## Build order (phased so each step is shippable)
-
-1. **Schema + profile enrichment** (birthday already present → add opt-ins, stats table, RFM trigger, signup nudge).
-2. **Segments** (rule builder + materialised members + AI suggestions).
-3. **Email campaigns** (composer, scheduler, dispatch, tracking, attribution wired into AI revenue).
-4. **SMS + Push + In-app** channels.
-5. **AI instant campaigns + guardrails + ROI card**.
-6. **Automations** (birthday, welcome, win-back, post-visit, abandoned cart, kitchen-load).
-7. **Contests & gamification**.
-8. **Insights tab + A/B testing + frequency capping + AI lookalikes polish**.
-
-Phase 1 alone delivers immediate value; each phase is independently usable.
+Once you approve, I'll save this prompt into the project as `docs/marketing/hl-ordernow-claude-design-brief.md` so it's versioned alongside the codebase, and add a memory note pointing future sessions at it.
