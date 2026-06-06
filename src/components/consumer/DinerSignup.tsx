@@ -72,6 +72,9 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [birthday, setBirthday] = useState("");
+  const [marketingEmailOptIn, setMarketingEmailOptIn] = useState(true);
+  const [marketingSmsOptIn, setMarketingSmsOptIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
