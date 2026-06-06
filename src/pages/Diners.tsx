@@ -563,6 +563,8 @@ export default function Diners() {
           </Tabs>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
