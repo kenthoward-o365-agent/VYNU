@@ -11,8 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Mail, Phone, AlertTriangle, Pencil, Plus, Gift, Search, Receipt, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Mail, Phone, AlertTriangle, Pencil, Plus, Gift, Search, Receipt, ChevronLeft, ChevronRight, Filter, Megaphone, BarChart3 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import DinerSegments from "@/components/crm/DinerSegments";
+import DinerCampaigns from "@/components/crm/DinerCampaigns";
+import DinerInsights from "@/components/crm/DinerInsights";
 
 const PAGE_SIZE = 25;
 
