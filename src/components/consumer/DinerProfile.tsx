@@ -94,7 +94,7 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
     // Fetch profile
     const { data: prof } = await supabase
       .from("diner_profiles")
-      .select("id, first_name, last_name, email, phone, display_name, allergens, birthday, created_at")
+      .select("id, first_name, last_name, email, phone, display_name, allergens, birthday, created_at, marketing_email_opt_in, marketing_sms_opt_in, marketing_push_opt_in")
       .eq("user_id", session.user.id)
       .maybeSingle();
 
@@ -106,6 +106,8 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
         phone: prof.phone || "",
         allergens: prof.allergens || [],
         birthday: (prof as any).birthday || "",
+        marketing_email_opt_in: !!(prof as any).marketing_email_opt_in,
+        marketing_sms_opt_in: !!(prof as any).marketing_sms_opt_in,
       });
 
       // Fetch total visit count across all venues
