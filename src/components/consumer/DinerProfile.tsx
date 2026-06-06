@@ -262,6 +262,8 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
         display_name: `${editForm.first_name.trim()} ${editForm.last_name.trim()}`.trim() || null,
         allergens: editForm.allergens,
         birthday: editForm.birthday || null,
+        marketing_email_opt_in: editForm.marketing_email_opt_in,
+        marketing_sms_opt_in: editForm.marketing_sms_opt_in,
       } as any)
       .eq("id", profile.id);
     setSaving(false);
