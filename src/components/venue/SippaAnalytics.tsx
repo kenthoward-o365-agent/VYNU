@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { MessageSquare, ShoppingCart, TrendingUp, Clock, Sparkles, Users } from "lucide-react";
-import { startOfDay, endOfDay, subDays, format } from "date-fns";
+import { MessageSquare, ShoppingCart, TrendingUp, Clock, Sparkles } from "lucide-react";
+import { format } from "date-fns";
+import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
+import { useAuditDate } from "@/contexts/AuditDateContext";
 
 interface Props {
   venueId: string;
