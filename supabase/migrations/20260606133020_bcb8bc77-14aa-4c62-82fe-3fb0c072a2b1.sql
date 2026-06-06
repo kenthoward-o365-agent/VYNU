@@ -1,0 +1,1 @@
+REVOKE SELECT (throttle_enabled, throttle_mode, throttle_max_orders, throttle_window_minutes, throttle_block_timeout_minutes, throttle_block_until) ON public.venue_display_areas FROM anon;
