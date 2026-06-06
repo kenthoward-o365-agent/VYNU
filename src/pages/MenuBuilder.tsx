@@ -616,239 +616,245 @@ export default function MenuBuilder() {
 
       {/* Add/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>{editingItem ? "Edit Item" : "Add Menu Item"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <Input placeholder="Item name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-            <Textarea placeholder="Description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-sm font-medium mb-1.5 block">Price ($)</Label>
-                <Input type="number" step="0.01" min="0" placeholder="0.00" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
-                {form.price && parseFloat(form.price) > 0 && venueTaxes.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formatItemTaxBreakdown(parseFloat(form.price), venueTaxes)}
-                  </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* LEFT COLUMN */}
+            <div className="space-y-4">
+              <Input placeholder="Item name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+              <Textarea placeholder="Description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium mb-1.5 block">Price ($)</Label>
+                  <Input type="number" step="0.01" min="0" placeholder="0.00" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
+                  {form.price && parseFloat(form.price) > 0 && venueTaxes.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatItemTaxBreakdown(parseFloat(form.price), venueTaxes)}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-1.5 block">Prep time (min)</Label>
+                  <Input type="number" placeholder="e.g. 15" value={form.prep_time_minutes} onChange={(e) => setForm((f) => ({ ...f, prep_time_minutes: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium mb-1.5 block">Food cost ($)</Label>
+                  <Input type="number" step="0.01" min="0" placeholder="0.00" value={form.food_cost} onChange={(e) => setForm((f) => ({ ...f, food_cost: e.target.value }))} />
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground pt-7">
+                  {margin(form.price, form.food_cost) && <span>Margin: {margin(form.price, form.food_cost)}%</span>}
+                </div>
+              </div>
+              <Select value={form.category_id} onValueChange={(v) => setForm((f) => ({ ...f, category_id: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Display Areas (item-level override) */}
+              <div className="space-y-2 border border-border rounded-lg p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-sm font-medium">Display Areas</Label>
+                  <div className="flex items-center gap-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => { setItemAreaMode("inherit"); setItemAreaIds([]); }}
+                      className={cn("px-2 py-1 rounded", itemAreaMode === "inherit" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent")}
+                    >Inherit</button>
+                    <button
+                      type="button"
+                      onClick={() => setItemAreaMode("override")}
+                      className={cn("px-2 py-1 rounded", itemAreaMode === "override" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent")}
+                    >Override</button>
+                  </div>
+                </div>
+                {itemAreaMode === "inherit" ? (
+                  <div className="text-xs text-muted-foreground">
+                    {(() => {
+                      const inherited = (categoryAreas[form.category_id] || [])
+                        .map(id => displayAreas.find(a => a.id === id))
+                        .filter(Boolean) as DisplayAreaOption[];
+                      if (!form.category_id) return "Pick a category to inherit its display areas.";
+                      if (inherited.length === 0) return "Category has no display areas set.";
+                      return (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span>Inherits:</span>
+                          {inherited.map(a => (
+                            <span key={a.id} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 border" style={{ backgroundColor: `${a.color}22`, borderColor: `${a.color}66` }}>
+                              <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: a.color }} />
+                              {a.name}
+                            </span>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <DisplayAreaPicker
+                    available={displayAreas}
+                    selectedIds={itemAreaIds}
+                    onChange={setItemAreaIds}
+                    max={3}
+                  />
                 )}
               </div>
-              <div>
-                <Label className="text-sm font-medium mb-1.5 block">Prep time (min)</Label>
-                <Input type="number" placeholder="e.g. 15" value={form.prep_time_minutes} onChange={(e) => setForm((f) => ({ ...f, prep_time_minutes: e.target.value }))} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-sm font-medium mb-1.5 block">Food cost ($)</Label>
-                <Input type="number" step="0.01" min="0" placeholder="0.00" value={form.food_cost} onChange={(e) => setForm((f) => ({ ...f, food_cost: e.target.value }))} />
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground pt-7">
-                {margin(form.price, form.food_cost) && <span>Margin: {margin(form.price, form.food_cost)}%</span>}
-              </div>
-            </div>
-            <Select value={form.category_id} onValueChange={(v) => setForm((f) => ({ ...f, category_id: v }))}>
-              <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
-            {/* Display Areas (item-level override) */}
-            <div className="space-y-2 border border-border rounded-lg p-3">
-              <div className="flex items-center justify-between gap-2">
-                <Label className="text-sm font-medium">Display Areas</Label>
-                <div className="flex items-center gap-1 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => { setItemAreaMode("inherit"); setItemAreaIds([]); }}
-                    className={cn("px-2 py-1 rounded", itemAreaMode === "inherit" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent")}
-                  >Inherit</button>
-                  <button
-                    type="button"
-                    onClick={() => setItemAreaMode("override")}
-                    className={cn("px-2 py-1 rounded", itemAreaMode === "override" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent")}
-                  >Override</button>
+              {/* POS Integration */}
+              <details className="border border-border rounded-lg">
+                <summary className="px-4 py-2.5 text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground">POS Integration</summary>
+                <div className="px-4 pb-4 pt-2 space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium mb-1.5 block">PLU (Product Lookup Unit)</Label>
+                    <Input placeholder="e.g. 10042" value={form.plu} onChange={(e) => setForm((f) => ({ ...f, plu: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium mb-1.5 block">POS ID</Label>
+                    <Input placeholder="External system identifier" value={form.pos_id} onChange={(e) => setForm((f) => ({ ...f, pos_id: e.target.value }))} />
+                  </div>
                 </div>
-              </div>
-              {itemAreaMode === "inherit" ? (
-                <div className="text-xs text-muted-foreground">
-                  {(() => {
-                    const inherited = (categoryAreas[form.category_id] || [])
-                      .map(id => displayAreas.find(a => a.id === id))
-                      .filter(Boolean) as DisplayAreaOption[];
-                    if (!form.category_id) return "Pick a category to inherit its display areas.";
-                    if (inherited.length === 0) return "Category has no display areas set.";
-                    return (
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span>Inherits:</span>
-                        {inherited.map(a => (
-                          <span key={a.id} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 border" style={{ backgroundColor: `${a.color}22`, borderColor: `${a.color}66` }}>
-                            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: a.color }} />
-                            {a.name}
-                          </span>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-              ) : (
-                <DisplayAreaPicker
-                  available={displayAreas}
-                  selectedIds={itemAreaIds}
-                  onChange={setItemAreaIds}
-                  max={3}
-                />
-              )}
+              </details>
             </div>
 
-            {/* Image Upload */}
-            <div>
-              <p className="text-sm font-medium mb-2">Item Image</p>
-              {form.image_url ? (
-                <div className="relative w-full h-40 rounded-lg overflow-hidden border border-border">
-                  <img src={form.image_url} alt="Menu item" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
-                    className="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <label
-                  className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-border hover:border-primary cursor-pointer transition-colors"
-                >
-                  {uploadingImage ? (
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  ) : (
-                    <>
-                      <ImagePlus className="h-6 w-6 text-muted-foreground mb-1" />
-                      <span className="text-xs text-muted-foreground">Click to upload image</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    disabled={uploadingImage}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file || !venue) return;
-                      if (file.size > 5 * 1024 * 1024) {
-                        toast.error("Image must be under 5MB");
-                        return;
-                      }
-                      setUploadingImage(true);
-                      try {
-                        const webpBlob = await resizeFileToWebP(file);
-                        const path = `menu-items/${venue.id}/${Date.now()}.webp`;
-                        const { error } = await supabase.storage.from("venue-assets").upload(path, webpBlob, { contentType: "image/webp", upsert: true });
-                        if (error) {
-                          toast.error("Upload failed: " + error.message);
-                        } else {
-                          const { data: urlData } = supabase.storage.from("venue-assets").getPublicUrl(path);
-                          setForm((f) => ({ ...f, image_url: urlData.publicUrl }));
-                          toast.success("Image uploaded");
-                        }
-                      } catch (err: any) {
-                        toast.error("Image processing failed: " + (err.message || "Unknown error"));
-                      }
-                      setUploadingImage(false);
-                    }}
-                  />
-                </label>
-              )}
-            </div>
-
-            {timeFrames.length > 0 && (
+            {/* RIGHT COLUMN */}
+            <div className="space-y-4">
+              {/* Image Upload */}
               <div>
-                <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" />
-                  Menu Times
-                </p>
-                <p className="text-xs text-muted-foreground mb-2">Select when this item is available. Leave unchecked for all-day.</p>
-                <div className="flex flex-wrap gap-2">
-                  {timeFrames.map((tf) => (
-                    <Badge
-                      key={tf.id}
-                      variant={selectedTimeFrames.includes(tf.id) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() =>
-                        setSelectedTimeFrames((prev) =>
-                          prev.includes(tf.id) ? prev.filter((id) => id !== tf.id) : [...prev, tf.id]
-                        )
-                      }
+                <p className="text-sm font-medium mb-2">Item Image</p>
+                {form.image_url ? (
+                  <div className="relative w-full h-40 rounded-lg overflow-hidden border border-border">
+                    <img src={form.image_url} alt="Menu item" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, image_url: "" }))}
+                      className="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background transition-colors"
                     >
-                      {tf.name}
-                    </Badge>
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label
+                    className="flex flex-col items-center justify-center w-full h-32 rounded-lg border-2 border-dashed border-border hover:border-primary cursor-pointer transition-colors"
+                  >
+                    {uploadingImage ? (
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    ) : (
+                      <>
+                        <ImagePlus className="h-6 w-6 text-muted-foreground mb-1" />
+                        <span className="text-xs text-muted-foreground">Click to upload image</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadingImage}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !venue) return;
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast.error("Image must be under 5MB");
+                          return;
+                        }
+                        setUploadingImage(true);
+                        try {
+                          const webpBlob = await resizeFileToWebP(file);
+                          const path = `menu-items/${venue.id}/${Date.now()}.webp`;
+                          const { error } = await supabase.storage.from("venue-assets").upload(path, webpBlob, { contentType: "image/webp", upsert: true });
+                          if (error) {
+                            toast.error("Upload failed: " + error.message);
+                          } else {
+                            const { data: urlData } = supabase.storage.from("venue-assets").getPublicUrl(path);
+                            setForm((f) => ({ ...f, image_url: urlData.publicUrl }));
+                            toast.success("Image uploaded");
+                          }
+                        } catch (err: any) {
+                          toast.error("Image processing failed: " + (err.message || "Unknown error"));
+                        }
+                        setUploadingImage(false);
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+
+              {timeFrames.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    Menu Times
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-2">Select when this item is available. Leave unchecked for all-day.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {timeFrames.map((tf) => (
+                      <Badge
+                        key={tf.id}
+                        variant={selectedTimeFrames.includes(tf.id) ? "default" : "outline"}
+                        className="cursor-pointer"
+                        onClick={() =>
+                          setSelectedTimeFrames((prev) =>
+                            prev.includes(tf.id) ? prev.filter((id) => id !== tf.id) : [...prev, tf.id]
+                          )
+                        }
+                      >
+                        {tf.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="text-sm font-medium mb-2">Allergens</p>
+                <div className="flex flex-wrap gap-2">
+                  {allergenOptions.map((a) => (
+                    <Badge
+                      key={a}
+                      variant={form.allergens.includes(a) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => setForm((f) => ({ ...f, allergens: toggleTag(f.allergens, a) }))}
+                    >{a}</Badge>
                   ))}
                 </div>
               </div>
-            )}
 
-            <div>
-              <p className="text-sm font-medium mb-2">Allergens</p>
-              <div className="flex flex-wrap gap-2">
-                {allergenOptions.map((a) => (
-                  <Badge
-                    key={a}
-                    variant={form.allergens.includes(a) ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => setForm((f) => ({ ...f, allergens: toggleTag(f.allergens, a) }))}
-                  >{a}</Badge>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm font-medium mb-2">Dietary Tags</p>
-              <div className="flex flex-wrap gap-2">
-                {dietaryOptions.map((d) => (
-                  <Badge
-                    key={d}
-                    variant={form.dietary_tags.includes(d) ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => setForm((f) => ({ ...f, dietary_tags: toggleTag(f.dietary_tags, d) }))}
-                  >{d}</Badge>
-                ))}
-              </div>
-            </div>
-
-            {/* POS Integration */}
-            <details className="border border-border rounded-lg">
-              <summary className="px-4 py-2.5 text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground">POS Integration</summary>
-              <div className="px-4 pb-4 pt-2 space-y-3">
-                <div>
-                  <Label className="text-sm font-medium mb-1.5 block">PLU (Product Lookup Unit)</Label>
-                  <Input placeholder="e.g. 10042" value={form.plu} onChange={(e) => setForm((f) => ({ ...f, plu: e.target.value }))} />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium mb-1.5 block">POS ID</Label>
-                  <Input placeholder="External system identifier" value={form.pos_id} onChange={(e) => setForm((f) => ({ ...f, pos_id: e.target.value }))} />
+              <div>
+                <p className="text-sm font-medium mb-2">Dietary Tags</p>
+                <div className="flex flex-wrap gap-2">
+                  {dietaryOptions.map((d) => (
+                    <Badge
+                      key={d}
+                      variant={form.dietary_tags.includes(d) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => setForm((f) => ({ ...f, dietary_tags: toggleTag(f.dietary_tags, d) }))}
+                    >{d}</Badge>
+                  ))}
                 </div>
               </div>
-            </details>
 
-            <div className="flex items-center gap-3">
-              <Switch checked={form.is_available} onCheckedChange={(v) => setForm((f) => ({ ...f, is_available: v }))} />
-              <span className="text-sm">{form.is_available ? "Available" : "86'd — Unavailable"}</span>
-            </div>
-
-            {!form.is_available && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20">
-                <Ban className="h-4 w-4 text-destructive" />
-                <span className="text-sm text-destructive font-medium">This item is currently 86'd and hidden from diners</span>
+              <div className="flex items-center gap-3">
+                <Switch checked={form.is_available} onCheckedChange={(v) => setForm((f) => ({ ...f, is_available: v }))} />
+                <span className="text-sm">{form.is_available ? "Available" : "86'd — Unavailable"}</span>
               </div>
-            )}
 
-            <Button onClick={handleSave} className="w-full" disabled={!form.name || !form.price}>
-              {editingItem ? "Update Item" : "Add Item"}
-            </Button>
+              {!form.is_available && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <Ban className="h-4 w-4 text-destructive" />
+                  <span className="text-sm text-destructive font-medium">This item is currently 86'd and hidden from diners</span>
+                </div>
+              )}
+            </div>
           </div>
+
+          <Button onClick={handleSave} className="w-full mt-4" disabled={!form.name || !form.price}>
+            {editingItem ? "Update Item" : "Add Item"}
+          </Button>
         </DialogContent>
       </Dialog>
 
