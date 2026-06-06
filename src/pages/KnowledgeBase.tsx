@@ -618,18 +618,55 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Diners */}
-        <Section id="diners" title="Diners" icon={Users}>
+        <Section id="diners" title="Diners — CRM" icon={Users}>
           <SubSection title="Diner Directory">
-            <p>View all diners who have interacted with your venue. See their visit history, loyalty status, and order frequency.</p>
-          </SubSection>
-          <SubSection title="Loyalty Tracking">
-            <p>If you have a loyalty programme configured (Settings → Loyalty), diner profiles show their current tier, points balance, and visit count.</p>
-          </SubSection>
-          <SubSection title="Diner Preferences (Personalisation)">
-            <p>Configure how returning diners are treated when they interact with your venue:</p>
+            <p>The Diners page is a full multi-channel CRM, organised into four tabs:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Personalised Welcome</strong> — Custom greeting based on loyalty tier with merge fields (</li>
+              <li><strong>Diners</strong> — directory of every guest who has interacted with your venue, with lifetime spend, last visit, birthday, RFM tier, loyalty status, and channel opt-ins.</li>
+              <li><strong>Segments</strong> — build dynamic audiences using a visual rule builder, or accept AI-suggested lookalike segments.</li>
+              <li><strong>Campaigns</strong> — compose, schedule and send multi-channel campaigns (Email, SMS, Push, In-app). Includes an AI composer and instant-campaign launcher.</li>
+              <li><strong>Insights</strong> — RFM leaderboards, channel performance, and ROI of CRM &amp; AI campaigns.</li>
             </ul>
+          </SubSection>
+
+          <SubSection title="Enriched Diner Profile">
+            <p>On signup (and via the profile screen) diners can optionally provide their <strong>birthday</strong> and set marketing consent per channel — Email, SMS and Push are all opt-in, never on by default. We also store a normalised mobile (E.164) and Web Push subscription when granted, plus a unique unsubscribe token used in every outbound message.</p>
+            <p>Per diner per venue we automatically maintain stats: lifetime spend &amp; orders, average ticket, first/last visit, 90-day visit count, favourite category/item, preferred daypart, RFM scores and an auto-assigned <strong>RFM tier</strong> (Champion, Loyal, Potential Loyalist, At Risk, Lost). Stats refresh automatically on every completed visit.</p>
+          </SubSection>
+
+          <SubSection title="Segmentation">
+            <p>Segments are stored as a JSON rule DSL and re-evaluated on demand or on a schedule. Supported fields include lifetime spend, average ticket, visit recency &amp; frequency, RFM tier, birthday month/day, favourite category, dietary tags, loyalty tier and channel eligibility. Channel suppression and opt-out are applied automatically at send time — you never have to filter manually.</p>
+            <p><strong>AI lookalike segments</strong> use Gemini to propose named audiences like &quot;High-LTV wine lovers&quot; or &quot;At-risk weekend regulars&quot; from your aggregate stats. Review and publish the ones you like.</p>
+          </SubSection>
+
+          <SubSection title="Campaigns &amp; Channels">
+            <p>Every campaign picks a channel, a segment, content, and an optional schedule. Channels:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Email</strong> — sent via Lovable Emails with a branded template and an auto-appended unsubscribe footer.</li>
+              <li><strong>SMS</strong> — sent via Twilio with STOP keyword handling that flips the diner&apos;s SMS opt-in off automatically.</li>
+              <li><strong>Push</strong> — Web Push (VAPID) to diners who installed/allowed the consumer PWA.</li>
+              <li><strong>In-app</strong> — surfaced in the AI overlay and as a banner on the venue landing/menu when an eligible diner opens the app.</li>
+            </ul>
+            <p>Every CTA goes through a tracking token that sets a session referrer. When that diner orders, the order is attributed back to the campaign for revenue ROI.</p>
+          </SubSection>
+
+          <SubSection title="AI Instant Campaigns">
+            <p>Use the <strong>AI Composer</strong> to draft a campaign from a goal (Daily special, Instant special, Win-back, Birthday, Kitchen-load boost, Contest, Announcement, Custom). The AI writes subject/preheader/body/SMS/push copy in your brand tone and respects venue guardrails:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Daily send cap and quiet hours (no sends after 9pm etc.).</li>
+              <li>Maximum discount percentage the AI is allowed to offer.</li>
+              <li>Allowed channels and eligible segments.</li>
+              <li>Optional require-approval gate before send.</li>
+            </ul>
+            <p>Instant campaigns marked AI-generated contribute their attributed revenue to your <strong>AI Generated Revenue</strong> total in Spark Analytics — alongside AI chat and AI upsells.</p>
+          </SubSection>
+
+          <SubSection title="Loyalty Tracking">
+            <p>If you have a loyalty programme configured (Settings → Loyalty), diner profiles show their current tier, points balance, and visit count. CRM segments can target loyalty tier &amp; balance directly.</p>
+          </SubSection>
+
+          <SubSection title="Diner Preferences (Personalisation)">
+            <p>Configure how returning diners are treated when they interact with your venue — personalised welcome by loyalty tier, dietary memory, favourite item shortcuts and the marketing consent toggles described above.</p>
           </SubSection>
         </Section>
 
