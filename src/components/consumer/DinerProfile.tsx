@@ -28,6 +28,9 @@ interface Profile {
   display_name: string | null;
   allergens: string[] | null;
   birthday: string | null;
+  marketing_email_opt_in?: boolean | null;
+  marketing_sms_opt_in?: boolean | null;
+  marketing_push_opt_in?: boolean | null;
   created_at?: string;
 }
 
@@ -65,7 +68,7 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
   const [loyalty, setLoyalty] = useState<LoyaltyInfo[]>([]);
   const [venues, setVenues] = useState<LoyaltyVenue[]>([]);
   const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "", allergens: [] as string[], birthday: "" });
+  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "", allergens: [] as string[], birthday: "", marketing_email_opt_in: false, marketing_sms_opt_in: false });
   const [saving, setSaving] = useState(false);
   const [visitCount, setVisitCount] = useState<number>(0);
   const [isSignedIn, setIsSignedIn] = useState(false);
@@ -91,7 +94,7 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
     // Fetch profile
     const { data: prof } = await supabase
       .from("diner_profiles")
-      .select("id, first_name, last_name, email, phone, display_name, allergens, birthday, created_at")
+      .select("id, first_name, last_name, email, phone, display_name, allergens, birthday, created_at, marketing_email_opt_in, marketing_sms_opt_in, marketing_push_opt_in")
       .eq("user_id", session.user.id)
       .maybeSingle();
 
@@ -103,6 +106,8 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
         phone: prof.phone || "",
         allergens: prof.allergens || [],
         birthday: (prof as any).birthday || "",
+        marketing_email_opt_in: !!(prof as any).marketing_email_opt_in,
+        marketing_sms_opt_in: !!(prof as any).marketing_sms_opt_in,
       });
 
       // Fetch total visit count across all venues
@@ -257,6 +262,8 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
         display_name: `${editForm.first_name.trim()} ${editForm.last_name.trim()}`.trim() || null,
         allergens: editForm.allergens,
         birthday: editForm.birthday || null,
+        marketing_email_opt_in: editForm.marketing_email_opt_in,
+        marketing_sms_opt_in: editForm.marketing_sms_opt_in,
       } as any)
       .eq("id", profile.id);
     setSaving(false);
@@ -404,6 +411,27 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
               <p className="text-[10px] text-muted-foreground mt-1">
                 Used to send you a birthday treat from venues running H&L OrderNOW Loyalty.
               </p>
+            </div>
+            <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+              <p className="text-xs font-medium">Marketing preferences</p>
+              <label className="flex items-start gap-2 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editForm.marketing_email_opt_in}
+                  onChange={(e) => setEditForm((f) => ({ ...f, marketing_email_opt_in: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                />
+                <span className="text-muted-foreground">Email me specials, rewards & birthday treats.</span>
+              </label>
+              <label className="flex items-start gap-2 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editForm.marketing_sms_opt_in}
+                  onChange={(e) => setEditForm((f) => ({ ...f, marketing_sms_opt_in: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                />
+                <span className="text-muted-foreground">Text me instant specials & flash offers. Reply STOP anytime.</span>
+              </label>
             </div>
             <div>
               <Label className="text-xs flex items-center gap-1.5">

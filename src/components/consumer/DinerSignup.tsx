@@ -72,6 +72,9 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [birthday, setBirthday] = useState("");
+  const [marketingEmailOptIn, setMarketingEmailOptIn] = useState(true);
+  const [marketingSmsOptIn, setMarketingSmsOptIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [countrySearch, setCountrySearch] = useState("");
@@ -164,6 +167,10 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
           email: email.trim(),
           phone: fullPhone,
           country_code: selectedCountry.code,
+          birthday: birthday || null,
+          sms_e164: fullPhone,
+          marketing_email_opt_in: marketingEmailOptIn,
+          marketing_sms_opt_in: marketingSmsOptIn && !!fullPhone,
         } as any)
         .select()
         .single();
@@ -472,6 +479,38 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
               </div>
             </div>
           )}
+        </div>
+
+        <div>
+          <Label className="text-xs font-medium text-muted-foreground">Birthday <span className="text-muted-foreground/70">(optional — get a birthday treat 🎂)</span></Label>
+          <Input
+            type="date"
+            value={birthday}
+            onChange={(e) => setBirthday(e.target.value)}
+            max={new Date().toISOString().slice(0, 10)}
+            className="mt-1"
+          />
+        </div>
+
+        <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+          <label className="flex items-start gap-2 text-xs cursor-pointer">
+            <input
+              type="checkbox"
+              checked={marketingEmailOptIn}
+              onChange={(e) => setMarketingEmailOptIn(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+            />
+            <span className="text-muted-foreground">Email me specials, rewards & birthday treats from venues I visit.</span>
+          </label>
+          <label className="flex items-start gap-2 text-xs cursor-pointer">
+            <input
+              type="checkbox"
+              checked={marketingSmsOptIn}
+              onChange={(e) => setMarketingSmsOptIn(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+            />
+            <span className="text-muted-foreground">Text me instant specials & flash offers. Standard rates apply. Reply STOP anytime.</span>
+          </label>
         </div>
 
         <Button onClick={handleSubmit} disabled={!isSignupValid || submitting} className="w-full h-12 text-base rounded-xl mt-2">
