@@ -33,15 +33,15 @@ const COLORS = ["hsl(var(--primary))", "hsl(var(--muted-foreground) / 0.3)"];
 export default function ShyndigAnalytics({ venueId }: Props) {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [messages, setMessages] = useState<MessageData[]>([]);
-  const [range, setRange] = useState("7");
+  const { auditDate } = useAuditDate();
+  const [range, setRange] = useState<DateRange>(() => getDefaultAuditDate(auditDate));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const days = parseInt(range);
-      const from = startOfDay(subDays(new Date(), days)).toISOString();
-      const to = endOfDay(new Date()).toISOString();
+      const from = range.from.toISOString();
+      const to = range.to.toISOString();
 
       const [sessRes, msgRes] = await Promise.all([
         supabase
