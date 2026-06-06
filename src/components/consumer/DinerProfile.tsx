@@ -412,6 +412,27 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
                 Used to send you a birthday treat from venues running H&L OrderNOW Loyalty.
               </p>
             </div>
+            <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+              <p className="text-xs font-medium">Marketing preferences</p>
+              <label className="flex items-start gap-2 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editForm.marketing_email_opt_in}
+                  onChange={(e) => setEditForm((f) => ({ ...f, marketing_email_opt_in: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                />
+                <span className="text-muted-foreground">Email me specials, rewards & birthday treats.</span>
+              </label>
+              <label className="flex items-start gap-2 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editForm.marketing_sms_opt_in}
+                  onChange={(e) => setEditForm((f) => ({ ...f, marketing_sms_opt_in: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+                />
+                <span className="text-muted-foreground">Text me instant specials & flash offers. Reply STOP anytime.</span>
+              </label>
+            </div>
             <div>
               <Label className="text-xs flex items-center gap-1.5">
                 <AlertTriangle className="h-3 w-3 text-warning" />
