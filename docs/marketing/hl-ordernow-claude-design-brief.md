@@ -1,40 +1,39 @@
+# H&L OrderNOW — Claude Design Brief
 
-# H&L OrderNOW marketing site — Claude design brief
+Paste the prompt block below into Claude design verbatim. Strategy notes precede it.
 
-This plan delivers a single, paste-ready prompt for Claude design. No app code changes are required — this is a separate marketing site. Below are (1) the strategic decisions baked into the prompt, (2) things the original brief missed that I've added, and (3) the full prompt.
-
-## Strategic decisions
+## Strategy
 
 - **Audience**: Hospitality groups / enterprise operators (AU-first, NZ-ready).
-- **Primary CTA**: *Book a demo*. Secondary: *Talk to sales* / *See it live*.
-- **Tone**: Premium, AI-forward, confident — Linear/Vercel polish, not Stripe-bright.
-- **Nav (tabbed)**: Platform · AI (Spark) · H&L Pay · Diner CRM & Loyalty · POS & Standalone · Compare · Industries (Pubs / Clubs / QSR / Fine Dining) · Pricing · Book a demo.
-- **Brand lock**: H&L Blue `#3BAEDC`, H&L Blue Dark `#2A8FB8`, H&L Green `#7FC242`, Ink `#1F3B4D`, Surface white, Muted `#F4F8FB`. Logo at `/brand/hl-ordernow-logo.png` (mark at `/brand/shyndig-icon.png`).
+- **Primary CTA**: *Book a demo*. Secondary: *Talk to sales*, *See it live*.
+- **Tone**: Premium, AI-forward — Linear / Vercel / Arc polish.
+- **Nav**: Platform · AI (Spark) · H&L Pay · Diner CRM & Loyalty · POS & Standalone · Compare · Industries (Pubs / Clubs / QSR / Fine Dining) · Pricing · Book a demo.
+- **Brand lock**: H&L Blue `#3BAEDC`, Blue Dark `#2A8FB8`, H&L Green `#7FC242`, Ink `#1F3B4D`, Surface white, Muted `#F4F8FB`.
 
-## What the original brief missed (added to the prompt)
+## Additions beyond the original brief
 
-1. **Security & compliance band** — PCI DSS SAQ-A, AU Privacy Act / APP, SOC 2 in progress, data residency in AU.
-2. **Time-to-value proof** — "Live in a weekend", QR sticker shipping, no app download for diners.
-3. **Group features** — Multi-venue dashboard, group loyalty, cross-venue reporting, role-based access.
-4. **Accessibility & inclusivity** — WCAG 2.2 AA, allergens/dietary, large-text mode, multi-language.
-5. **Reliability story** — Offline-tolerant QR, throttling/surge controls, kitchen pacing — operators care about Friday-night load.
-6. **AI revenue attribution** — Every AI-driven order tracked → "AI Revenue Generated $" tile (your existing Spark metric) shown as a hero proof bar.
-7. **Open ecosystem** — Works standalone *or* with H&L POS, plus integrations roadmap (accounting, rostering, BI).
-8. **Australian voice & social proof** — Local venue logos, AU $ pricing, AU support hours.
-9. **SEO scaffolding** — Industry landing pages (Pubs/Clubs/QSR/Fine Dining) + Compare pages individually indexable.
-10. **Trust artefacts** — Customer story carousel, uptime stat, "no lock-in" promise, ISO-style badge strip.
-11. **Sticky "book a demo" rail** + exit-intent capture.
-12. **Dark/light hero pairing** — dark hero band for premium feel, white feature surfaces for clarity.
+1. Security & compliance band (PCI SAQ-A, AU Privacy / APP, SOC 2 in progress, AU data residency).
+2. Time-to-value proof — "Live in a weekend", QR stickers shipped, no diner app download.
+3. Group features — multi-venue dashboard, group loyalty, RBAC.
+4. Accessibility — WCAG 2.2 AA, allergens/dietary, large-text, multi-language.
+5. Reliability story — throttling, surge controls, offline-tolerant QR, kitchen pacing.
+6. AI revenue attribution tile surfaced as hero proof bar.
+7. Open ecosystem — standalone OR with H&L POS + integrations roadmap.
+8. Australian voice & social proof — AU logos, AUD pricing, AU support hours.
+9. SEO scaffolding — industry + compare pages individually indexable.
+10. Trust artefacts — uptime, no lock-in, badge strip, customer carousel.
+11. Sticky "Book a demo" rail + exit-intent capture.
+12. Dark hero / light body system.
 
-## Competitor comparison grid (rows × columns)
+## Competitor comparison
 
 Columns: **H&L OrderNOW · me&u · Mr Yum (Lightspeed) · Chewzie · Square/Toast Order & Pay**
 
-Rows: Agentic AI ordering · AI instant campaigns · Diner CRM with birthdays & RFM · Built-in PayFac (Apple/Google Pay) · Works standalone (no POS required) · Native H&L POS integration · Multi-venue group loyalty · Order throttling & kitchen pacing · QR stickers (permanent URLs) · AI revenue attribution · AU support & data residency · Pay-per-order pricing · PCI SAQ-A · White-label landing pages · Co-pilot for managers.
+Rows: Agentic AI ordering · AI instant campaigns · Diner CRM (birthdays/RFM/lookalike) · Built-in PayFac · Standalone capable · Native H&L POS · Multi-venue group loyalty · Throttling & kitchen pacing · Permanent QR stickers · AI revenue attribution · AU support & data residency · Pay-per-order · PCI SAQ-A · White-label landing pages · AI co-pilot for managers.
 
 ---
 
-## The Claude design prompt (paste this verbatim)
+## Claude Design Prompt (paste verbatim)
 
 ```text
 You are designing a premium marketing website for H&L OrderNOW — an agentic, AI-powered ordering, payments, and diner-CRM platform built for the H&L POS ecosystem (Australia-first, hospitality groups and enterprise venues). The site must feel like Linear / Vercel / Arc — confident, dark hero, restrained motion, generous whitespace, crisp type — not a busy SaaS template.
@@ -140,7 +139,3 @@ DO NOT
 - Do not mention "Shyndig", "Sippa", "Tab-Less", "ShyndigPay", "OrdrPay", or "Adyen" anywhere on the public site. The payments product is H&L Pay.
 - Do not invent customer names — use "Group A / Group B" placeholders for testimonials until real ones are supplied.
 ```
-
----
-
-Once you approve, I'll save this prompt into the project as `docs/marketing/hl-ordernow-claude-design-brief.md` so it's versioned alongside the codebase, and add a memory note pointing future sessions at it.
