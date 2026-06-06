@@ -291,11 +291,27 @@ export default function Diners() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Diners</h2>
-          <p className="text-muted-foreground">CRM — track guests who've dined at {venue?.name}</p>
+          <h2 className="text-2xl font-bold text-foreground">Diner CRM</h2>
+          <p className="text-muted-foreground">Profiles, segments, campaigns & insights for {venue?.name}</p>
         </div>
-        <Badge variant="secondary" className="text-sm">{filtered.length} diner{filtered.length !== 1 ? "s" : ""}</Badge>
       </div>
+
+      <Tabs defaultValue="diners" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="diners"><Users className="h-3.5 w-3.5 mr-1" />Diners</TabsTrigger>
+          <TabsTrigger value="segments"><Filter className="h-3.5 w-3.5 mr-1" />Segments</TabsTrigger>
+          <TabsTrigger value="campaigns"><Megaphone className="h-3.5 w-3.5 mr-1" />Campaigns</TabsTrigger>
+          <TabsTrigger value="insights"><BarChart3 className="h-3.5 w-3.5 mr-1" />Insights</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="segments"><DinerSegments /></TabsContent>
+        <TabsContent value="campaigns"><DinerCampaigns /></TabsContent>
+        <TabsContent value="insights"><DinerInsights /></TabsContent>
+
+        <TabsContent value="diners" className="space-y-4">
+          <div className="flex items-center justify-end">
+            <Badge variant="secondary" className="text-sm">{filtered.length} diner{filtered.length !== 1 ? "s" : ""}</Badge>
+          </div>
 
       {/* Search */}
       <div className="relative max-w-sm">
