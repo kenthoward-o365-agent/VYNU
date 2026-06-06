@@ -167,6 +167,10 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
           email: email.trim(),
           phone: fullPhone,
           country_code: selectedCountry.code,
+          birthday: birthday || null,
+          sms_e164: fullPhone,
+          marketing_email_opt_in: marketingEmailOptIn,
+          marketing_sms_opt_in: marketingSmsOptIn && !!fullPhone,
         } as any)
         .select()
         .single();
