@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, QrCode, Trash2, Download, Printer, Smartphone, ExternalLink } from "lucide-react";
+import { Plus, QrCode, Trash2, Download, Printer, Smartphone, ExternalLink, X } from "lucide-react";
 import MobilePreviewFrame from "@/components/landing-editor/MobilePreviewFrame";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
@@ -238,19 +238,25 @@ export default function Tables() {
       </Dialog>
 
       {/* Mobile preview dialog */}
-      <Dialog open={!!previewTable} onOpenChange={(open) => { if (!open) setPreviewTable(null); }}>
+      <Dialog open={!!previewTable} onOpenChange={(open) => { if (!open) setPreviewTable(null); }} modal={false}>
         <DialogContent
           className="max-w-[480px] h-[90vh] p-0 gap-0 overflow-hidden flex flex-col"
+          showCloseButton={false}
+          onEscapeKeyDown={(e) => e.preventDefault()}
           onPointerDownOutside={(e) => {
-            // Prevent closing when interacting with iframe
-            const target = e.target as HTMLElement;
-            if (target?.closest?.("iframe")) e.preventDefault();
+            e.preventDefault();
           }}
           onInteractOutside={(e) => e.preventDefault()}
         >
-          <DialogHeader className="p-4 pb-2">
+          <DialogHeader className="p-4 pb-2 pr-12">
             <DialogTitle>Table {previewTable?.table_number} — Mobile Preview</DialogTitle>
           </DialogHeader>
+          <DialogClose asChild>
+            <Button variant="ghost" size="icon" className="absolute right-3 top-3 h-8 w-8">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close preview</span>
+            </Button>
+          </DialogClose>
           <div className="flex-1 min-h-0 overflow-hidden">
             <MobilePreviewFrame>
               {venue && previewTable && (
