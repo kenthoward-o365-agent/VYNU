@@ -212,7 +212,7 @@ export default function DisplayTerminalsManager({ venueId }: Props) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-foreground">{t.name}</span>
                       {!t.is_active && <Badge variant="destructive" className="text-xs">Inactive</Badge>}
-                      {t.device_token ? (
+                      {t.paired_at ? (
                         online ? (
                           <Badge className="text-xs bg-emerald-500 text-white border-transparent">● Online</Badge>
                         ) : (
