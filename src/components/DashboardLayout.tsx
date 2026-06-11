@@ -558,6 +558,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Link to="/knowledge-base" className="inline-flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors" title="Knowledge Base">
               <HelpCircle className="h-5 w-5" />
             </Link>
+            {showVenueNav && perms.can("copilot") && <CoPilotButton onClick={() => setCopilotOpen(true)} />}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="inline-flex items-center gap-2 h-9 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors">
