@@ -46,25 +46,28 @@ export function useDinerSession({
   const endedRef = useRef(false);
   const sessionIdRef = useRef<string | null>(null);
 
-  // Create session row on mount (INSERT is still allowed for anon by RLS)
+  // Create session row on mount. We generate the UUID client-side so anon
+  // users don't need SELECT permission on diner_web_sessions (which would
+  // otherwise leak open sessions across venues).
   useEffect(() => {
     if (!venueId) return;
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("diner_web_sessions")
-        .insert({
-          venue_id: venueId,
-          table_id: tableId ?? null,
-          diner_id: dinerId ?? null,
-          session_mode: sessionMode ?? null,
-          user_agent: navigator.userAgent.slice(0, 255),
-        })
-        .select("id")
-        .single();
-      if (cancelled || error || !data) return;
-      setSessionId(data.id);
-      sessionIdRef.current = data.id;
+      const newId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const { error } = await supabase.from("diner_web_sessions").insert({
+        id: newId,
+        venue_id: venueId,
+        table_id: tableId ?? null,
+        diner_id: dinerId ?? null,
+        session_mode: sessionMode ?? null,
+        user_agent: navigator.userAgent.slice(0, 255),
+      });
+      if (cancelled || error) return;
+      setSessionId(newId);
+      sessionIdRef.current = newId;
     })();
     return () => {
       cancelled = true;
