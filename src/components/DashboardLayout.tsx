@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useEffect, useState } from "react";
 import { useIdleLogout } from "@/hooks/use-idle-logout";
 import IdleTimeoutModal from "@/components/consumer/IdleTimeoutModal";
-import { CoPilotLauncher } from "@/components/copilot/CoPilotPanel";
+import CoPilotPanel, { CoPilotButton } from "@/components/copilot/CoPilotPanel";
 
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -85,6 +85,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [copilotOpen, setCopilotOpen] = useState(false);
   const [pinned, setPinned] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("shyndig_sidebar_pinned") === "1";
@@ -557,6 +558,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Link to="/knowledge-base" className="inline-flex items-center justify-center h-9 w-9 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors" title="Knowledge Base">
               <HelpCircle className="h-5 w-5" />
             </Link>
+            {showVenueNav && perms.can("copilot") && <CoPilotButton onClick={() => setCopilotOpen(true)} />}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="inline-flex items-center gap-2 h-9 px-3 rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors">
@@ -594,7 +596,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       onStay={idle.reset}
       onEnd={idle.endNow}
     />
-    {showVenueNav && perms.can("copilot") && <CoPilotLauncher />}
+    {showVenueNav && perms.can("copilot") && (
+      <CoPilotPanel open={copilotOpen} onOpenChange={setCopilotOpen} />
+    )}
     </>
   );
 }

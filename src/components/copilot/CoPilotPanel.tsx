@@ -232,6 +232,24 @@ export default function CoPilotPanel({ open, onOpenChange }: { open: boolean; on
   );
 }
 
+export function CoPilotButton({ onClick }: { onClick: () => void }) {
+  const { venue } = useVenue();
+  if (!venue) return null;
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Open CoPilot"
+      title="CoPilot"
+      className={cn(
+        "inline-flex items-center justify-center h-9 w-9 rounded-md",
+        "text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
+      )}
+    >
+      <img src={copilotIcon} alt="" className="h-5 w-5" width={20} height={20} />
+    </button>
+  );
+}
+
 export function CoPilotLauncher() {
   const [open, setOpen] = useState(false);
   const { venue } = useVenue();
