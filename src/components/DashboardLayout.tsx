@@ -596,7 +596,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       onStay={idle.reset}
       onEnd={idle.endNow}
     />
-    {showVenueNav && perms.can("copilot") && <CoPilotLauncher />}
+    {showVenueNav && perms.can("copilot") && (
+      <CoPilotPanel open={copilotOpen} onOpenChange={setCopilotOpen} />
+    )}
     </>
   );
 }
