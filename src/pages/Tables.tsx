@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,8 @@ interface Table {
   status: string | null;
 }
 
+type TableInsert = Database["public"]["Tables"]["tables"]["Insert"];
+
 export default function Tables() {
   const { venue } = useVenue();
   const [tables, setTables] = useState<Table[]>([]);
@@ -39,23 +42,24 @@ export default function Tables() {
     return `${DEFAULT_QR_BASE_URL}/order/${venue.id}/${table.id}`;
   };
 
-  const fetchTables = async () => {
+  const fetchTables = useCallback(async () => {
     if (!venue) return;
     const { data } = await supabase.from("tables").select("*").eq("venue_id", venue.id).order("table_number");
     setTables((data as Table[]) || []);
-  };
+  }, [venue]);
 
-  useEffect(() => { fetchTables(); }, [venue]);
+  useEffect(() => { fetchTables(); }, [fetchTables]);
 
   const addTable = async () => {
     if (!venue) return;
-    const { data, error } = await supabase.from("tables").insert({
+    const newTable: TableInsert = {
       venue_id: venue.id,
       table_number: form.table_number,
       zone: form.zone || null,
       capacity: parseInt(form.capacity) || 4,
       pos_table_id: form.pos_table_id || null,
-    } as any).select().single();
+    };
+    const { data, error } = await supabase.from("tables").insert(newTable).select().single();
     if (error) { toast.error(error.message); return; }
     const qrUrl = `${DEFAULT_QR_BASE_URL}/order/${venue.id}/${data.id}`;
     await supabase.from("tables").update({ qr_code: qrUrl }).eq("id", data.id);
