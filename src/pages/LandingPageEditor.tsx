@@ -4,7 +4,7 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Plus } from "lucide-react";
+import { ArrowLeft, Save, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { SortableSection } from "@/components/landing-editor/SectionList";
@@ -12,6 +12,7 @@ import SectionEditPanel from "@/components/landing-editor/SectionEditPanel";
 import SectionAddModal from "@/components/landing-editor/SectionAddModal";
 import LandingSectionRenderer from "@/components/landing-editor/LandingSectionRenderer";
 import MobilePreviewFrame from "@/components/landing-editor/MobilePreviewFrame";
+import AIBuildFromUrlDialog from "@/components/landing-editor/AIBuildFromUrlDialog";
 import type { LandingSection, SectionType } from "@/components/landing-editor/types";
 import { createDefaultSection } from "@/components/landing-editor/types";
 
@@ -51,6 +52,7 @@ export default function LandingPageEditor() {
   }, [venue?.landing_page_html]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -113,10 +115,16 @@ export default function LandingPageEditor() {
           </Button>
           <h2 className="text-sm font-semibold">Landing Page Editor</h2>
         </div>
-        <Button onClick={handleSave} disabled={saving} size="sm">
-          <Save className="h-4 w-4 mr-1" />
-          {saving ? "Saving..." : "Save & Publish"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setAiOpen(true)}>
+            <Sparkles className="h-4 w-4 mr-1 text-primary" />
+            Build from website
+          </Button>
+          <Button onClick={handleSave} disabled={saving} size="sm">
+            <Save className="h-4 w-4 mr-1" />
+            {saving ? "Saving..." : "Save & Publish"}
+          </Button>
+        </div>
       </div>
 
       {/* Editor Layout */}
@@ -166,6 +174,16 @@ export default function LandingPageEditor() {
       </div>
 
       <SectionAddModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={handleAdd} />
+      <AIBuildFromUrlDialog
+        open={aiOpen}
+        onClose={() => setAiOpen(false)}
+        venueId={venue?.id}
+        onGenerated={(newSections, mode) => {
+          setSections((prev) => (mode === "replace" ? newSections : [...prev, ...newSections]));
+          setSelectedId(null);
+          toast.message("Remember to click Save & Publish to keep your new landing page.");
+        }}
+      />
     </div>
   );
 }
