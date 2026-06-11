@@ -245,12 +245,12 @@ export default function DisplayTerminalsManager({ venueId }: Props) {
                       </p>
                     )}
                   </div>
-                  {!t.device_token && (
+                  {!t.paired_at && (
                     <Button variant="ghost" size="icon" onClick={() => regenerateCode(t)} aria-label="Generate code" title="Generate pairing code">
                       <RefreshCcw className="h-4 w-4" />
                     </Button>
                   )}
-                  {t.device_token && (
+                  {t.paired_at && (
                     <Button variant="ghost" size="icon" onClick={() => unpair(t)} aria-label="Unpair" title="Unpair device">
                       <Unplug className="h-4 w-4" />
                     </Button>
