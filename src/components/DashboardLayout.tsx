@@ -1,7 +1,7 @@
 import { ReactNode, useCallback, useEffect, useState } from "react";
 import { useIdleLogout } from "@/hooks/use-idle-logout";
 import IdleTimeoutModal from "@/components/consumer/IdleTimeoutModal";
-import { CoPilotLauncher } from "@/components/copilot/CoPilotPanel";
+import CoPilotPanel, { CoPilotButton } from "@/components/copilot/CoPilotPanel";
 
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
