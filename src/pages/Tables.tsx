@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Plus, QrCode, Trash2, Download, Printer, Smartphone, ExternalLink, X } from "lucide-react";
@@ -241,48 +241,44 @@ export default function Tables() {
         </DialogContent>
       </Dialog>
 
-      {/* Mobile preview dialog */}
-      <Dialog open={!!previewTable} onOpenChange={(open) => { if (!open) setPreviewTable(null); }} modal={false}>
-        <DialogContent
-          className="max-w-[480px] h-[90vh] p-0 gap-0 overflow-hidden flex flex-col"
-          showCloseButton={false}
-          onEscapeKeyDown={(e) => e.preventDefault()}
-          onPointerDownOutside={(e) => {
-            e.preventDefault();
-          }}
-          onInteractOutside={(e) => e.preventDefault()}
-        >
-          <DialogHeader className="p-4 pb-2 pr-12">
-            <DialogTitle>Table {previewTable?.table_number} — Mobile Preview</DialogTitle>
-          </DialogHeader>
-          <DialogClose asChild>
-            <Button variant="ghost" size="icon" className="absolute right-3 top-3 h-8 w-8">
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close preview</span>
-            </Button>
-          </DialogClose>
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <MobilePreviewFrame>
-              {venue && previewTable && (
-                <iframe
-                  src={getLiveUrl(previewTable)}
-                  className="w-full border-0"
-                  style={{ height: "100%" }}
-                  title={`Mobile preview for table ${previewTable.table_number}`}
-                />
-              )}
-            </MobilePreviewFrame>
-          </div>
-          {previewTable && (
-            <div className="px-4 pb-4 flex flex-col gap-2">
-              <p className="text-xs text-muted-foreground text-center break-all">{getLiveUrl(previewTable)}</p>
+      {/* Mobile preview overlay: intentionally not a Dialog so it cannot auto-dismiss from iframe/focus events. */}
+      {previewTable && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-3 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="table-preview-title"
+            className="relative flex h-[90vh] w-full max-w-[480px] flex-col overflow-hidden rounded-lg border border-border bg-background shadow-lg"
+          >
+            <div className="flex items-center justify-between border-b border-border p-4">
+              <h3 id="table-preview-title" className="text-lg font-semibold leading-none text-foreground">
+                Table {previewTable.table_number} — Mobile Preview
+              </h3>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewTable(null)}>
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close preview</span>
+              </Button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <MobilePreviewFrame>
+                {venue && (
+                  <iframe
+                    src={getLiveUrl(previewTable)}
+                    className="h-full w-full border-0"
+                    title={`Mobile preview for table ${previewTable.table_number}`}
+                  />
+                )}
+              </MobilePreviewFrame>
+            </div>
+            <div className="flex flex-col gap-2 border-t border-border p-4">
+              <p className="text-center text-xs break-all text-muted-foreground">{getLiveUrl(previewTable)}</p>
               <Button variant="outline" size="sm" className="w-full" onClick={() => window.open(getLiveUrl(previewTable), '_blank')}>
                 <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open live page
               </Button>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
