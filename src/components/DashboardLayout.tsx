@@ -85,6 +85,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [copilotOpen, setCopilotOpen] = useState(false);
   const [pinned, setPinned] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("shyndig_sidebar_pinned") === "1";
