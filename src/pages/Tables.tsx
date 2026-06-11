@@ -209,7 +209,7 @@ export default function Tables() {
       )}
 
       {/* QR code zoom dialog with print */}
-      <Dialog open={!!qrDialogTable} onOpenChange={() => setQrDialogTable(null)}>
+      <Dialog open={!!qrDialogTable} onOpenChange={(open) => { if (!open) setQrDialogTable(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Table {qrDialogTable?.table_number} QR Code</DialogTitle>
@@ -238,7 +238,7 @@ export default function Tables() {
       </Dialog>
 
       {/* Mobile preview dialog */}
-      <Dialog open={!!previewTable} onOpenChange={() => setPreviewTable(null)}>
+      <Dialog open={!!previewTable} onOpenChange={(open) => { if (!open) setPreviewTable(null); }}>
         <DialogContent
           className="max-w-[480px] h-[90vh] p-0 gap-0 overflow-hidden flex flex-col"
           onPointerDownOutside={(e) => {
