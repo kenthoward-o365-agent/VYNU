@@ -20,10 +20,9 @@ interface DisplayArea {
 interface Terminal {
   id: string;
   name: string;
-  device_token: string | null;
+  paired_at: string | null;
   pairing_code: string | null;
   pairing_code_expires_at: string | null;
-  paired_at: string | null;
   last_seen_at: string | null;
   is_active: boolean;
   area_ids: string[];
