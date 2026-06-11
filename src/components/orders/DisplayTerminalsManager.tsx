@@ -60,7 +60,7 @@ export default function DisplayTerminalsManager({ venueId }: Props) {
     setLoading(true);
     const [areasRes, termsRes] = await Promise.all([
       supabase.from("venue_display_areas").select("id, name, color").eq("venue_id", venueId).eq("is_active", true).order("display_order"),
-      supabase.from("display_terminals" as any).select("*, display_terminal_areas(display_area_id)").eq("venue_id", venueId).order("created_at"),
+      supabase.from("display_terminals" as any).select("id, venue_id, name, pairing_code, pairing_code_expires_at, paired_at, last_seen_at, is_active, created_at, updated_at, display_terminal_areas(display_area_id)").eq("venue_id", venueId).order("created_at"),
     ]);
     setAreas((areasRes.data as DisplayArea[]) || []);
     const list = ((termsRes.data as any[]) || []).map((t) => ({
