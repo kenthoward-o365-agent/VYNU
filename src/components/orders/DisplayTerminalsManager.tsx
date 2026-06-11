@@ -20,10 +20,9 @@ interface DisplayArea {
 interface Terminal {
   id: string;
   name: string;
-  device_token: string | null;
+  paired_at: string | null;
   pairing_code: string | null;
   pairing_code_expires_at: string | null;
-  paired_at: string | null;
   last_seen_at: string | null;
   is_active: boolean;
   area_ids: string[];
@@ -60,7 +59,7 @@ export default function DisplayTerminalsManager({ venueId }: Props) {
     setLoading(true);
     const [areasRes, termsRes] = await Promise.all([
       supabase.from("venue_display_areas").select("id, name, color").eq("venue_id", venueId).eq("is_active", true).order("display_order"),
-      supabase.from("display_terminals" as any).select("*, display_terminal_areas(display_area_id)").eq("venue_id", venueId).order("created_at"),
+      supabase.from("display_terminals" as any).select("id, venue_id, name, pairing_code, pairing_code_expires_at, paired_at, last_seen_at, is_active, created_at, updated_at, display_terminal_areas(display_area_id)").eq("venue_id", venueId).order("created_at"),
     ]);
     setAreas((areasRes.data as DisplayArea[]) || []);
     const list = ((termsRes.data as any[]) || []).map((t) => ({
@@ -213,7 +212,7 @@ export default function DisplayTerminalsManager({ venueId }: Props) {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-foreground">{t.name}</span>
                       {!t.is_active && <Badge variant="destructive" className="text-xs">Inactive</Badge>}
-                      {t.device_token ? (
+                      {t.paired_at ? (
                         online ? (
                           <Badge className="text-xs bg-emerald-500 text-white border-transparent">● Online</Badge>
                         ) : (
@@ -246,12 +245,12 @@ export default function DisplayTerminalsManager({ venueId }: Props) {
                       </p>
                     )}
                   </div>
-                  {!t.device_token && (
+                  {!t.paired_at && (
                     <Button variant="ghost" size="icon" onClick={() => regenerateCode(t)} aria-label="Generate code" title="Generate pairing code">
                       <RefreshCcw className="h-4 w-4" />
                     </Button>
                   )}
-                  {t.device_token && (
+                  {t.paired_at && (
                     <Button variant="ghost" size="icon" onClick={() => unpair(t)} aria-label="Unpair" title="Unpair device">
                       <Unplug className="h-4 w-4" />
                     </Button>
