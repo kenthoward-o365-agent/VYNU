@@ -22,6 +22,8 @@ import { formatItemTaxBreakdown, type TaxConfig } from "@/lib/tax-utils";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import SectionLinks from "@/components/SectionLinks";
+import { Upload, ImagePlus, SlidersHorizontal } from "lucide-react";
 
 interface MenuItem {
   id: string;

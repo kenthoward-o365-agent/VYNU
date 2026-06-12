@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Tag, Trash2, Pencil } from "lucide-react";
+import SectionLinks from "@/components/SectionLinks";
 import { toast } from "sonner";
 
 interface PricingRule {

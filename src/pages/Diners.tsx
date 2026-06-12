@@ -17,6 +17,8 @@ import { toast } from "@/hooks/use-toast";
 import DinerSegments from "@/components/crm/DinerSegments";
 import DinerCampaigns from "@/components/crm/DinerCampaigns";
 import DinerInsights from "@/components/crm/DinerInsights";
+import SectionLinks from "@/components/SectionLinks";
+import { Settings as SettingsIcon } from "lucide-react";
 
 const PAGE_SIZE = 25;
 
