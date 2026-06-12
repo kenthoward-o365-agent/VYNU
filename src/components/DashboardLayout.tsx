@@ -268,17 +268,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 { to: "/diners/preferences", label: "Diner Preferences", icon: Settings },
               ] : isDayEnd ? [
                 { to: "/reporting", label: "Reporting", icon: FileText },
-              ] : isSettings ? [
-                { to: "/settings?tab=details", label: "Details", icon: Settings },
-                { to: "/settings?tab=users", label: "Users", icon: Users },
-                { to: "/settings?tab=loyalty", label: "Loyalty", icon: Gift },
-                { to: "/settings?tab=sippa", label: "H&L OrderNOW AI", icon: Bot },
-                { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
-                { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
-                { to: "/settings?tab=surcharges", label: "Surcharges", icon: Percent },
-                { to: "/settings?tab=taxes", label: "Taxes", icon: Receipt },
-                { to: "/settings?tab=table-sessions", label: "Table Sessions", icon: Users },
-                { to: "/settings?tab=integrations", label: "Integrations", icon: Plug },
               ] : [];
 
               const linkEl = (
