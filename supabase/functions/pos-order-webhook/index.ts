@@ -85,28 +85,39 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Verify HMAC if signature present
+      // REQUIRE HMAC signature + locationId on every inbound status update.
       const signature = req.headers.get("x-signature");
-      if (signature && locationId) {
-        const { data: integration } = await supabase
-          .from("venue_pos_integrations")
-          .select("webhook_secret")
-          .eq("location_id", locationId)
-          .single();
+      if (!signature || !locationId) {
+        return new Response(
+          JSON.stringify({ error: "Signature and locationId required" }),
+          { status: 401, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
 
-        if (integration?.webhook_secret) {
-          const valid = await verifyHmac(
-            integration.webhook_secret,
-            rawBody,
-            signature
-          );
-          if (!valid) {
-            return new Response(
-              JSON.stringify({ error: "Invalid signature" }),
-              { status: 401, headers: { ...CORS, "Content-Type": "application/json" } }
-            );
-          }
-        }
+      const { data: integration } = await supabase
+        .from("venue_pos_integrations")
+        .select("venue_id")
+        .eq("location_id", locationId)
+        .single();
+
+      const { data: secretRow } = integration
+        ? await supabase.rpc("get_pos_webhook_secret", { _venue_id: integration.venue_id })
+        : { data: null as any };
+
+      const webhookSecret: string | null = (secretRow as any) ?? null;
+      if (!webhookSecret) {
+        return new Response(
+          JSON.stringify({ error: "Integration not configured" }),
+          { status: 401, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+
+      const valid = await verifyHmac(webhookSecret, rawBody, signature);
+      if (!valid) {
+        return new Response(
+          JSON.stringify({ error: "Invalid signature" }),
+          { status: 401, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
       }
 
       const newStatus = STATUS_MAP[statusCode];
