@@ -123,12 +123,9 @@ const CheckoutPanel = ({
   const tipAmount = selectedTip !== null ? selectedTip : 0;
 
   const fetchVenueTaxes = async () => {
-    const { data } = await supabase
-      .from("venue_taxes" as any)
-      .select("id, name, rate, tax_type, is_inclusive, display_order")
-      .eq("venue_id", venueId)
-      .eq("is_active", true)
-      .order("display_order");
+    const { data } = await (supabase as any).rpc("get_venue_taxes_public", {
+      _venue_id: venueId,
+    });
     setVenueTaxes((data as any as TaxConfig[]) || []);
   };
 
