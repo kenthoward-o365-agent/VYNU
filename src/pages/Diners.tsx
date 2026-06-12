@@ -301,6 +301,13 @@ export default function Diners() {
         </div>
       </div>
 
+      <SectionLinks
+        items={[
+          { key: "prefs", label: "Diner Preferences", description: "Default allergens, tags and capture rules", icon: SettingsIcon, to: "/diners/preferences" },
+        ]}
+      />
+
+
       <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="space-y-4">
         <TabsList>
           <TabsTrigger value="diners"><Users className="h-3.5 w-3.5 mr-1" />Diners</TabsTrigger>

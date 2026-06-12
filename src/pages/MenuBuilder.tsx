@@ -487,6 +487,15 @@ export default function MenuBuilder() {
         )}
       </div>
 
+      <SectionLinks
+        items={[
+          { key: "import", label: "Import Menu", description: "Bulk import items from CSV or POS", icon: Upload, to: "/menu?import=true" },
+          { key: "enhance", label: "Enhance Images", description: "Auto-improve menu item photos", icon: ImagePlus, to: "/menu?enhance=true" },
+          { key: "modifiers", label: "Modifiers", description: "Add-ons, options and customisations", icon: SlidersHorizontal, to: "/modifiers" },
+        ]}
+      />
+
+
       {/* Dietary tag filter row */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm font-medium text-muted-foreground mr-1">Filter:</span>

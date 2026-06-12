@@ -276,6 +276,13 @@ export default function Pricing() {
         <Button onClick={openAddDialog}><Plus className="h-4 w-4 mr-1" />Add Rule</Button>
       </div>
 
+      <SectionLinks
+        items={[
+          { key: "rule-types", label: "Rule Types", description: "Manage the rule categories available for pricing", icon: Tag, to: "/rule-types" },
+        ]}
+      />
+
+
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingRule(null); }}>
         <DialogContent className="max-w-lg">
