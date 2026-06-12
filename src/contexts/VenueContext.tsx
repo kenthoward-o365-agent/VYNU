@@ -230,13 +230,23 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (user && !session?.access_token) {
+    if (!user) {
+      fetchVenues();
+      return;
+    }
+
+    if (!session?.access_token) {
       setLoading(true);
       return;
     }
 
+    // Avoid refetching on token refresh (e.g. when the user returns from
+    // another browser tab) — that wipes in-flight form state on Settings
+    // pages. Only refetch when the actual user identity changes.
+    if (resolvedAccessUserId === user.id) return;
+
     fetchVenues();
-  }, [authLoading, user, session?.access_token]);
+  }, [authLoading, user?.id, session?.access_token, resolvedAccessUserId]);
 
   const hasProvisioningResolved = !user || resolvedAccessUserId === user.id;
 

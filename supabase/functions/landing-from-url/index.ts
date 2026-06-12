@@ -170,18 +170,36 @@ Deno.serve(async (req) => {
     const links: string[] = Array.isArray(data.links) ? data.links : []
     const metadataTitle = data.metadata?.title || ''
 
-    // Address fallback via Google Places when missing
+    // Pull the venue's own address as a final fallback so the hours-location
+    // section is always populated even if the website doesn't expose one.
+    const { data: venueRow } = await admin
+      .from('venues')
+      .select('name, address, city, state, postcode, country')
+      .eq('id', body.venue_id)
+      .maybeSingle()
+    const venueAddressParts = [
+      venueRow?.address, venueRow?.city, venueRow?.state, venueRow?.postcode, venueRow?.country,
+    ].filter(Boolean)
+    const venueAddress = venueAddressParts.join(', ') || undefined
+
+    // Always try Google Places when we have a key — it gives us a clean
+    // formatted address, opening hours and a map link.
     let place: Awaited<ReturnType<typeof googlePlacesLookup>> = null
-    if (!extracted.address) {
-      const query = [extracted.venue_name || metadataTitle, targetUrl.hostname].filter(Boolean).join(' ')
-      if (query) place = await googlePlacesLookup(query)
-    }
+    const placesQuery = [
+      extracted.venue_name || venueRow?.name || metadataTitle,
+      extracted.address || venueAddress || targetUrl.hostname,
+    ].filter(Boolean).join(' ')
+    if (placesQuery) place = await googlePlacesLookup(placesQuery)
+
     if (place) {
       extracted.address = extracted.address || place.address
       extracted.hours = extracted.hours || place.hours
       extracted.google_maps = extracted.google_maps || place.mapUrl
       extracted.phone = extracted.phone || place.phone
     }
+
+    // Final fallback to the venue's own stored address
+    if (!extracted.address && venueAddress) extracted.address = venueAddress
 
     // Hero image selection (never a logo)
     const heroImage = pickHeroImage(branding, links)
@@ -267,7 +285,14 @@ MAP_URL: ${extracted.google_maps || ''}`
       if (!loyalty.ctaLabel) loyalty.ctaLabel = 'Join now'
     }
 
-    const hoursLoc = sections.find((s: any) => s?.type === 'hours-location')
+    let hoursLoc = sections.find((s: any) => s?.type === 'hours-location')
+    if (!hoursLoc && extracted.address) {
+      hoursLoc = { type: 'hours-location', address: extracted.address }
+      // Insert before social-links if present, otherwise append.
+      const socialIdx = sections.findIndex((s: any) => s?.type === 'social-links')
+      if (socialIdx >= 0) sections.splice(socialIdx, 0, hoursLoc)
+      else sections.push(hoursLoc)
+    }
     if (hoursLoc) {
       if (!hoursLoc.address && extracted.address) hoursLoc.address = extracted.address
       if (!hoursLoc.hours && extracted.hours) hoursLoc.hours = extracted.hours
