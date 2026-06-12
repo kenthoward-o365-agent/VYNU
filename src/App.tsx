@@ -47,6 +47,7 @@ import KnowledgeBase from "@/pages/KnowledgeBase";
 import Reporting from "@/pages/Reporting";
 import OrderStatuses from "@/pages/OrderStatuses";
 import OrderThrottling from "@/pages/OrderThrottling";
+import OrderSettings from "@/pages/OrderSettings";
 import SelfOnboard from "@/pages/SelfOnboard";
 import VenueBilling from "@/pages/VenueBilling";
 
@@ -127,6 +128,7 @@ function AppRoutes() {
         <Route path="/modifiers" element={<Modifiers />} />
         <Route path="/tables" element={<Tables />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/orders/settings" element={<OrderSettings />} />
         <Route path="/orders/statuses" element={<OrderStatuses />} />
         <Route path="/orders/throttling" element={<OrderThrottling />} />
         <Route path="/pricing" element={<Pricing />} />
