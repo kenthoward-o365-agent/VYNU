@@ -60,7 +60,7 @@ const venueNavItems: NavItem[] = [
   { path: "/diners", label: "Diners", icon: { light: navDiners, dark: navDinersDark }, hasSub: true, navKey: "diners" },
   { path: "/reporting", label: "DayEnd", icon: CalendarCheck, hasSub: true, navKey: "settings" },
   { path: "/billing", label: "Billing", icon: Receipt, navKey: "settings" },
-  { path: "/settings", label: "Settings", icon: { light: navSettings, dark: navSettingsDark }, hasSub: true, navKey: "settings" },
+  { path: "/settings", label: "Settings", icon: { light: navSettings, dark: navSettingsDark }, navKey: "settings" },
 ];
 
 const groupNavItems = [
@@ -94,6 +94,25 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     localStorage.setItem("shyndig_sidebar_pinned", pinned ? "1" : "0");
   }, [pinned]);
   const perms = usePermissions();
+
+  // Single-open accordion: which top-level group is expanded.
+  const groupForPath = useCallback((p: string, search: string): string | null => {
+    if (p.startsWith("/diners")) return "diners";
+    if (p.startsWith("/orders/")) return "orders";
+    if (p.startsWith("/reporting")) return "reporting";
+    if (p === "/rule-types" || p === "/menu-times") return "pricing";
+    if (p === "/modifiers") return "menu";
+    if (p === "/menu") {
+      const sp = new URLSearchParams(search);
+      if (sp.get("import") || sp.get("enhance")) return "menu";
+    }
+    return null;
+  }, []);
+  const [openGroup, setOpenGroup] = useState<string | null>(() => groupForPath(location.pathname, location.search));
+  useEffect(() => {
+    const g = groupForPath(location.pathname, location.search);
+    if (g) setOpenGroup(g);
+  }, [location.pathname, location.search, groupForPath]);
 
   // PCI DSS / SOC 2 inactivity logout: 15 min idle, 60s warning.
   const handleIdleLogout = useCallback(async () => {
@@ -149,14 +168,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         pinned ? "w-16" : "w-64",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className={cn("border-b border-sidebar-border relative", pinned ? "p-2" : "p-4")}>
-          <div className="flex items-center justify-center mb-2"> 
+        <div className={cn("border-b border-sidebar-border relative", pinned ? "p-2" : "px-3 py-2")}>
+          <div className="flex items-center justify-center mb-1">
             <img
               src="/brand/shyndig-icon.png"
               alt="H&L OrderNOW"
               className={cn(
                 "object-contain",
-                pinned ? "h-10 w-auto max-w-[56px]" : "h-28 w-auto max-w-[220px]"
+                pinned ? "h-10 w-auto max-w-[56px]" : "h-14 w-auto max-w-[200px]"
               )}
             />
             {!pinned && (
@@ -221,11 +240,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners")) || (item.path === "/pricing" && location.pathname === "/menu-times") || (item.path === "/reporting" && location.pathname.startsWith("/reporting")) || (item.path === "/orders" && location.pathname.startsWith("/orders"));
             const isMenuBuilder = item.path === "/menu";
             const isDiners = item.path === "/diners";
-            const isSettings = item.path === "/settings";
             const isPricing = item.path === "/pricing";
             const isDayEnd = item.path === "/reporting";
             const isOrders = item.path === "/orders";
-            const hasSub = isMenuBuilder || isDiners || isSettings || isPricing || isDayEnd || isOrders;
+            const hasSub = isMenuBuilder || isDiners || isPricing || isDayEnd || isOrders;
+            const groupKey = isMenuBuilder ? "menu" : isDiners ? "diners" : isPricing ? "pricing" : isDayEnd ? "reporting" : isOrders ? "orders" : null;
 
             const iconEl = typeof item.icon === 'object' && 'light' in item.icon ? (
               <img src={theme === 'dark' ? item.icon.dark : item.icon.light} className="h-4 w-4 shrink-0" alt="" />
@@ -249,17 +268,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 { to: "/diners/preferences", label: "Diner Preferences", icon: Settings },
               ] : isDayEnd ? [
                 { to: "/reporting", label: "Reporting", icon: FileText },
-              ] : isSettings ? [
-                { to: "/settings?tab=details", label: "Details", icon: Settings },
-                { to: "/settings?tab=users", label: "Users", icon: Users },
-                { to: "/settings?tab=loyalty", label: "Loyalty", icon: Gift },
-                { to: "/settings?tab=sippa", label: "H&L OrderNOW AI", icon: Bot },
-                { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
-                { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
-                { to: "/settings?tab=surcharges", label: "Surcharges", icon: Percent },
-                { to: "/settings?tab=taxes", label: "Taxes", icon: Receipt },
-                { to: "/settings?tab=table-sessions", label: "Table Sessions", icon: Users },
-                { to: "/settings?tab=integrations", label: "Integrations", icon: Plug },
               ] : [];
 
               const linkEl = (
@@ -312,18 +320,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             }
 
             return (
-              <Collapsible key={item.path} defaultOpen={
-                (isDiners && location.pathname.startsWith("/diners/")) ||
-                (isSettings && location.pathname === "/settings") ||
-                (isOrders && location.pathname.startsWith("/orders/")) ||
-                false
-              }>
+              <Collapsible
+                key={item.path}
+                open={hasSub ? openGroup === groupKey : false}
+                onOpenChange={(v) => { if (hasSub && groupKey) setOpenGroup(v ? groupKey : null); }}
+              >
                 <div className="flex items-center">
                   <Link
                     to={item.path}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      "flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      "flex-1 flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
                       active
                         ? "bg-sidebar-accent text-sidebar-primary"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -345,7 +352,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   )}
                 </div>
                 {isMenuBuilder && (
-                  <CollapsibleContent className="pl-10 space-y-0.5">
+                  <CollapsibleContent className="pl-8 space-y-0.5">
                     <Link to="/menu?import=true" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
                       <Upload className="h-3 w-3" />
                       Import
@@ -361,7 +368,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </CollapsibleContent>
                 )}
                 {isOrders && (
-                  <CollapsibleContent className="pl-10 space-y-0.5">
+                  <CollapsibleContent className="pl-8 space-y-0.5">
                     <Link to="/orders/statuses" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/orders/statuses" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
                       <Monitor className="h-3 w-3" />
                       Order Display System
@@ -373,7 +380,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </CollapsibleContent>
                 )}
                 {isPricing && (
-                  <CollapsibleContent className="pl-10 space-y-0.5">
+                  <CollapsibleContent className="pl-8 space-y-0.5">
                     <Link to="/rule-types" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/rule-types" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
                       <Tag className="h-3 w-3" />
                       Rule Types
@@ -381,7 +388,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </CollapsibleContent>
                 )}
                 {isDiners && (
-                  <CollapsibleContent className="pl-10 space-y-0.5">
+                  <CollapsibleContent className="pl-8 space-y-0.5">
                     <Link to="/diners/preferences" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/diners/preferences" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
                       <Settings className="h-3 w-3" />
                       Diner Preferences
@@ -389,48 +396,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </CollapsibleContent>
                 )}
                 {isDayEnd && (
-                  <CollapsibleContent className="pl-10 space-y-0.5">
+                  <CollapsibleContent className="pl-8 space-y-0.5">
                     <Link to="/reporting" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/reporting" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
                       <FileText className="h-3 w-3" />
                       Reporting
                     </Link>
-                  </CollapsibleContent>
-                )}
-                {isSettings && (
-                  <CollapsibleContent className="pl-10 space-y-0.5">
-                    {[
-                      { to: "/settings?tab=details", label: "Details", icon: Settings },
-                      { to: "/settings?tab=users", label: "Users", icon: Users },
-                      { to: "/settings?tab=loyalty", label: "Loyalty", icon: Gift },
-                      { to: "/settings?tab=sippa", label: "H&L OrderNOW AI", icon: Bot },
-                      { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
-                      { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
-                      { to: "/settings?tab=surcharges", label: "Surcharges", icon: Percent },
-                      { to: "/settings?tab=taxes", label: "Taxes", icon: Receipt },
-                      { to: "/settings?tab=table-sessions", label: "Table Sessions", icon: Users },
-                      { to: "/settings?tab=integrations", label: "Integrations", icon: Plug },
-                    ].map((sub) => {
-                      const params = new URLSearchParams(location.search);
-                      const currentTab = params.get("tab") || "details";
-                      const subTab = new URL(sub.to, "http://x").searchParams.get("tab") || "details";
-                      const subActive = location.pathname === "/settings" && currentTab === subTab;
-                      return (
-                        <Link
-                          key={sub.to}
-                          to={sub.to}
-                          onClick={() => setSidebarOpen(false)}
-                          className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors",
-                            subActive
-                              ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                          )}
-                        >
-                          <sub.icon className="h-3 w-3" />
-                          {sub.label}
-                        </Link>
-                      );
-                    })}
                   </CollapsibleContent>
                 )}
               </Collapsible>
@@ -440,7 +410,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           {showGroupNav && (
             <>
               {!pinned && (
-                <div className="pt-3 pb-1 px-3">
+                <div className="pt-2 pb-0.5 px-3">
                   <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-muted">Group</span>
                 </div>
               )}
@@ -471,7 +441,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     to={item.path}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
                       active
                         ? "bg-sidebar-accent text-sidebar-primary"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -488,7 +458,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           {isTablessAdmin && (
             <>
               {!pinned && (
-                <div className="pt-3 pb-1 px-3">
+                <div className="pt-2 pb-0.5 px-3">
                   <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-muted">Admin</span>
                 </div>
               )}
@@ -519,7 +489,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     to={item.path}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
                       active
                         ? "bg-sidebar-accent text-sidebar-primary"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
