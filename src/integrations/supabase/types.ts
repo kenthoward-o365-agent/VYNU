@@ -5333,6 +5333,17 @@ export type Database = {
           opened_at: string
         }[]
       }
+      list_sibling_venues: {
+        Args: { _exclude_venue_id: string; _group_id: string }
+        Returns: {
+          address: string
+          city: string
+          id: string
+          logo_url: string
+          name: string
+          venue_type: string
+        }[]
+      }
       loadtest_top_queries: {
         Args: never
         Returns: {
