@@ -61,23 +61,22 @@ Deno.serve(async (req) => {
       const { data: config } = await adminClient
         .from("venue_payment_config")
         .select(
-          "id, environment, merchant_account, merchant_status, api_key_test, api_key_live, client_key_test, client_key_live, hmac_key, apple_pay_merchant_id, google_pay_merchant_id"
+          "id, environment, merchant_account, merchant_status, api_key_test, api_key_live, client_key_test, client_key_live, hmac_key, api_key_test_secret_id, api_key_live_secret_id, client_key_test_secret_id, client_key_live_secret_id, hmac_key_secret_id, apple_pay_merchant_id, google_pay_merchant_id"
         )
         .eq("venue_id", venue_id)
         .eq("provider", "ordrpayments")
         .maybeSingle();
 
       if (!config) {
-        return json({
-          exists: false,
-          environment: "test",
-          fields: {},
-        });
+        return json({ exists: false, environment: "test", fields: {} });
       }
 
-      // Mask: report presence + last 4 chars of identifiers (never of api keys)
-      const mask = (v: string | null) =>
-        v ? { set: true, preview: v.length > 4 ? `…${v.slice(-4)}` : "set" } : { set: false };
+      // A secret is "set" if EITHER the legacy column OR the Vault ref is present.
+      const presence = (legacy: string | null, vaultId: string | null) =>
+        (vaultId ? { set: true, preview: "vault" }
+          : legacy ? { set: true, preview: legacy.length > 4 ? `…${legacy.slice(-4)}` : "set" }
+          : { set: false });
+
       return json({
         exists: true,
         environment: config.environment,
@@ -86,22 +85,35 @@ Deno.serve(async (req) => {
         apple_pay_merchant_id: config.apple_pay_merchant_id || "",
         google_pay_merchant_id: config.google_pay_merchant_id || "",
         fields: {
-          api_key_test: mask(config.api_key_test),
-          api_key_live: mask(config.api_key_live),
-          client_key_test: mask(config.client_key_test),
-          client_key_live: mask(config.client_key_live),
-          hmac_key: mask(config.hmac_key),
+          api_key_test:    presence(config.api_key_test,    (config as any).api_key_test_secret_id),
+          api_key_live:    presence(config.api_key_live,    (config as any).api_key_live_secret_id),
+          client_key_test: presence(config.client_key_test, (config as any).client_key_test_secret_id),
+          client_key_live: presence(config.client_key_live, (config as any).client_key_live_secret_id),
+          hmac_key:        presence(config.hmac_key,        (config as any).hmac_key_secret_id),
         },
       });
     }
 
+
     // ── SET ──
     if (action === "set") {
+      // Fields that must be stored in Vault, not as plain columns
+      const SECRET_FIELDS = new Set([
+        "api_key_test", "api_key_live",
+        "client_key_test", "client_key_live",
+        "hmac_key",
+      ]);
       const updates: Record<string, any> = {};
+      const vaultWrites: Array<{ field: string; value: string }> = [];
       for (const [k, v] of Object.entries(body.fields || {})) {
         if (!ALLOWED_FIELDS.has(k)) continue;
-        if (v === "" || v === null || v === undefined) continue; // skip blanks (don't clobber)
-        updates[k] = String(v).trim();
+        if (v === "" || v === null || v === undefined) continue;
+        const value = String(v).trim();
+        if (SECRET_FIELDS.has(k)) {
+          vaultWrites.push({ field: k, value });
+        } else {
+          updates[k] = value;
+        }
       }
 
       // Ensure a config row exists
@@ -131,21 +143,47 @@ Deno.serve(async (req) => {
         if (updErr) return json({ error: updErr.message }, 400);
       }
 
-      return json({ success: true, updated_fields: Object.keys(updates) });
+      // Write secret fields to Vault via SECURITY DEFINER RPC
+      for (const { field, value } of vaultWrites) {
+        const { error: vErr } = await adminClient.rpc("set_payment_secret", {
+          _venue_id: venue_id,
+          _field: field,
+          _value: value,
+        });
+        if (vErr) return json({ error: `vault ${field}: ${vErr.message}` }, 400);
+        // Also null out any stale plaintext column so it can't drift.
+        await adminClient
+          .from("venue_payment_config")
+          .update({ [field]: null })
+          .eq("venue_id", venue_id)
+          .eq("provider", "ordrpayments");
+      }
+
+      return json({
+        success: true,
+        updated_fields: [...Object.keys(updates), ...vaultWrites.map(v => v.field)],
+      });
     }
+
 
     // ── CLEAR a single field ──
     if (action === "clear_field") {
       const field = body.field;
       if (!ALLOWED_FIELDS.has(field)) return json({ error: "Invalid field" }, 400);
+      const SECRET_FIELDS = new Set([
+        "api_key_test", "api_key_live", "client_key_test", "client_key_live", "hmac_key",
+      ]);
+      const patch: Record<string, any> = { [field]: null };
+      if (SECRET_FIELDS.has(field)) patch[`${field}_secret_id`] = null;
       const { error } = await adminClient
         .from("venue_payment_config")
-        .update({ [field]: null })
+        .update(patch)
         .eq("venue_id", venue_id)
         .eq("provider", "ordrpayments");
       if (error) return json({ error: error.message }, 400);
       return json({ success: true });
     }
+
 
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err: any) {

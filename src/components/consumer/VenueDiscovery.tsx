@@ -22,17 +22,15 @@ const VenueDiscovery = ({ currentVenueId, groupId }: VenueDiscoveryProps) => {
   useEffect(() => {
     if (!groupId) return;
     const fetch = async () => {
-      const { data } = await supabase
-        .from("venues")
-        .select("id, name, venue_type, address, city, logo_url")
-        .eq("group_id", groupId)
-        .eq("is_active", true)
-        .neq("id", currentVenueId)
-        .order("name");
+      const { data } = await supabase.rpc("list_sibling_venues", {
+        _group_id: groupId,
+        _exclude_venue_id: currentVenueId,
+      });
       setVenues((data || []) as SiblingVenue[]);
     };
     fetch();
   }, [groupId, currentVenueId]);
+
 
   if (!groupId || venues.length === 0) return null;
 
