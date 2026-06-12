@@ -320,18 +320,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             }
 
             return (
-              <Collapsible key={item.path} defaultOpen={
-                (isDiners && location.pathname.startsWith("/diners/")) ||
-                (isSettings && location.pathname === "/settings") ||
-                (isOrders && location.pathname.startsWith("/orders/")) ||
-                false
-              }>
+              <Collapsible
+                key={item.path}
+                open={hasSub ? openGroup === groupKey : false}
+                onOpenChange={(v) => { if (hasSub && groupKey) setOpenGroup(v ? groupKey : null); }}
+              >
                 <div className="flex items-center">
                   <Link
                     to={item.path}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      "flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      "flex-1 flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
                       active
                         ? "bg-sidebar-accent text-sidebar-primary"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
