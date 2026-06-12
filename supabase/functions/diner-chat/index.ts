@@ -195,11 +195,11 @@ where N is the number of ways to split.
       manager_reason = managerMatch[1].trim();
       reply = reply.replace(/\[CALL_MANAGER:.*?\]/, "").trim();
 
-      // Create staff alert
+      // Create staff alert — drop untrusted diner_id, only accept validated table_id
       await sb.from("staff_alerts").insert({
         venue_id,
-        table_id: table_id || null,
-        diner_id: diner_id || null,
+        table_id: validatedTableId,
+        diner_id: null,
         alert_type: "manager_request",
         message: manager_reason,
         status: "pending",
