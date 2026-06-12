@@ -7,13 +7,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import type { LandingSection } from "./types";
+import type { LandingSection, LandingTheme } from "./types";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   venueId: string | undefined;
-  onGenerated: (sections: LandingSection[], mode: "replace" | "append") => void;
+  onGenerated: (sections: LandingSection[], theme: LandingTheme | null, mode: "replace" | "append") => void;
 }
 
 export default function AIBuildFromUrlDialog({ open, onClose, venueId, onGenerated }: Props) {
@@ -29,26 +29,26 @@ export default function AIBuildFromUrlDialog({ open, onClose, venueId, onGenerat
     setLoading(true);
     setStage("Scraping site…");
     try {
-      // animate stages
       const t1 = setTimeout(() => setStage("Analysing branding…"), 4000);
-      const t2 = setTimeout(() => setStage("Composing sections…"), 9000);
+      const t2 = setTimeout(() => setStage("Looking up address…"), 8000);
+      const t3 = setTimeout(() => setStage("Composing sections…"), 12000);
 
       const { data, error } = await supabase.functions.invoke("landing-from-url", {
         body: { venue_id: venueId, url: url.trim() },
       });
       clearTimeout(t1);
       clearTimeout(t2);
+      clearTimeout(t3);
 
       if (error) throw error;
       if (!data?.sections?.length) throw new Error("No sections were generated");
 
-      // Add client-side ids
       const withIds: LandingSection[] = data.sections.map((s: any) => ({
         ...s,
         id: crypto.randomUUID(),
       }));
 
-      onGenerated(withIds, mode);
+      onGenerated(withIds, data.theme ?? null, mode);
       toast.success(`Generated ${withIds.length} sections from your website`);
       setUrl("");
       onClose();

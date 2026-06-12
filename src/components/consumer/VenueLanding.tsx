@@ -2,7 +2,7 @@ import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
 import { MapPin, Utensils, Gift, UserPlus, LogIn } from "lucide-react";
 import LandingSectionRenderer from "@/components/landing-editor/LandingSectionRenderer";
-import type { LandingSection } from "@/components/landing-editor/types";
+import { parseLandingPayload } from "@/components/landing-editor/types";
 import SessionModeChooser, { type SessionMode } from "./SessionModeChooser";
 
 interface VenueLandingProps {
@@ -22,14 +22,6 @@ interface VenueLandingProps {
   onStart: () => void;
   onSignup: () => void;
   onSignin: () => void;
-}
-
-function tryParseJsonSections(raw: string): LandingSection[] | null {
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].type) return parsed;
-  } catch {}
-  return null;
 }
 
 function InlineActions({ onStart, onSignup, onSignin }: { onStart: () => void; onSignup: () => void; onSignin: () => void }) {
@@ -87,16 +79,17 @@ const VenueLanding = ({
   };
 
   if (venue.landing_page_html) {
-    const sections = tryParseJsonSections(venue.landing_page_html);
+    const payload = parseLandingPayload(venue.landing_page_html);
 
-    if (sections) {
-      const filteredSections = sections.filter((s) => s.type !== "table-display");
+    if (payload) {
+      const filteredSections = payload.sections.filter((s) => s.type !== "table-display");
       const heroIndex = filteredSections.findIndex((s) => s.type === "hero");
 
       return (
         <div className="min-h-screen relative">
           <LandingSectionRenderer
             sections={filteredSections}
+            theme={payload.theme}
             tableNumber={tableNumber}
             inlineActionsAfterIndex={heroIndex >= 0 ? heroIndex : 0}
             inlineActions={<ChooserOrActions />}
