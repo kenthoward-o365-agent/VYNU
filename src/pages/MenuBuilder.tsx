@@ -117,16 +117,21 @@ export default function MenuBuilder() {
 
   const fetchData = async () => {
     if (!venue) return;
-    const [itemsRes, catsRes, taxesRes, tfRes, daRes, mcdaRes, midaRes] = await Promise.all([
-      supabase.from("menu_items").select("*").eq("venue_id", venue.id).order("display_order"),
+    const [itemsRes, catsRes, taxesRes, tfRes, daRes, mcdaRes, midaRes, costsRes] = await Promise.all([
+      // food_cost is staff-only (column SELECT revoked); fetch separately via RPC.
+      supabase.from("menu_items").select("id,venue_id,name,description,price,prep_time_minutes,allergens,dietary_tags,category_id,is_available,image_url,plu,pos_id,display_order,created_at,updated_at").eq("venue_id", venue.id).order("display_order"),
       supabase.from("menu_categories").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("venue_taxes" as any).select("*").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
       supabase.from("menu_time_frames").select("id, name").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
       supabase.from("venue_display_areas" as any).select("id, name, color, is_active").eq("venue_id", venue.id).order("display_order"),
       supabase.from("menu_category_display_areas" as any).select("category_id, display_area_id, menu_categories!inner(venue_id)").eq("menu_categories.venue_id", venue.id),
       supabase.from("menu_item_display_areas" as any).select("menu_item_id, display_area_id, menu_items!inner(venue_id)").eq("menu_items.venue_id", venue.id),
+      supabase.rpc("get_menu_item_food_costs", { _venue_id: venue.id }),
     ]);
-    setItems((itemsRes.data as MenuItem[]) || []);
+    const costMap: Record<string, number | null> = {};
+    ((costsRes.data as any[]) || []).forEach((r) => { costMap[r.id] = r.food_cost; });
+    const itemsWithCost = ((itemsRes.data as any[]) || []).map((it) => ({ ...it, food_cost: costMap[it.id] ?? null })) as MenuItem[];
+    setItems(itemsWithCost);
     setCategories((catsRes.data as Category[]) || []);
     setVenueTaxes((taxesRes.data as any as TaxConfig[]) || []);
     setTimeFrames((tfRes.data as any[]) || []);

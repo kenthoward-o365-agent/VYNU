@@ -5167,6 +5167,13 @@ export type Database = {
           total: number
         }[]
       }
+      get_menu_item_food_costs: {
+        Args: { _venue_id: string }
+        Returns: {
+          food_cost: number
+          id: string
+        }[]
+      }
       get_menu_snapshot: {
         Args: { _table_id?: string; _venue_id: string }
         Returns: Json
@@ -5320,6 +5327,16 @@ export type Database = {
           total_count: number
           venue_id: string
           venue_name: string
+        }[]
+      }
+      list_diner_loyalty_venues: {
+        Args: { _group_ids?: string[]; _venue_ids?: string[] }
+        Returns: {
+          city: string
+          group_id: string
+          id: string
+          name: string
+          state: string
         }[]
       }
       list_open_sessions_at_table: {

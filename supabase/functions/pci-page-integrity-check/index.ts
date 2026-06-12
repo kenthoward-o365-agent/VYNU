@@ -39,6 +39,17 @@ function extractScripts(html: string): Array<{ src: string; hash: string }> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  // Require CRON_SECRET or service-role bearer
+  const auth = req.headers.get("authorization") || "";
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!token || (token !== cronSecret && token !== svcKey)) {
+    return new Response(JSON.stringify({ error: "Unauthorised" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const baseUrl = Deno.env.get("PCI_CHECK_BASE_URL") || "https://hlordernow.lovable.app";
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,

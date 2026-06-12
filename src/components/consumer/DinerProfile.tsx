@@ -235,16 +235,14 @@ export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
       const loyaltyGroupIds = uniquePrograms.filter((p: any) => p.group_id).map((p: any) => p.group_id!);
       const loyaltyVenueIds = uniquePrograms.filter((p: any) => p.venue_id).map((p: any) => p.venue_id!);
       let allVenueIds = [...loyaltyVenueIds];
-      if (loyaltyGroupIds.length) {
-        const { data: groupVenues } = await supabase
-          .from("venues").select("id").in("group_id", loyaltyGroupIds).neq("venue_type", "parent").eq("is_active", true);
-        if (groupVenues) allVenueIds.push(...groupVenues.map((v) => v.id));
-      }
-      if (allVenueIds.length) {
-        const uniqueIds = [...new Set(allVenueIds)];
-        const { data: venueList } = await supabase
-          .from("venues").select("id, name, city, state").in("id", uniqueIds).eq("is_active", true);
-        setVenues(venueList || []);
+      if (loyaltyGroupIds.length || loyaltyVenueIds.length) {
+        const { data: venueList } = await supabase.rpc("list_diner_loyalty_venues", {
+          _group_ids: loyaltyGroupIds,
+          _venue_ids: loyaltyVenueIds,
+        });
+        setVenues((venueList as any[])?.map((v) => ({
+          id: v.id, name: v.name, city: v.city, state: v.state,
+        })) || []);
       }
     }
     setLoading(false);
