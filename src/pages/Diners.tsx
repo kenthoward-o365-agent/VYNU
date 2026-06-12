@@ -58,6 +58,8 @@ export default function Diners() {
   const { venue } = useVenue();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "diners";
+  const [diners, setDiners] = useState<DinerWithVisits[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [editingDiner, setEditingDiner] = useState<DinerWithVisits | null>(null);
