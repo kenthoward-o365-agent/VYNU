@@ -285,7 +285,14 @@ MAP_URL: ${extracted.google_maps || ''}`
       if (!loyalty.ctaLabel) loyalty.ctaLabel = 'Join now'
     }
 
-    const hoursLoc = sections.find((s: any) => s?.type === 'hours-location')
+    let hoursLoc = sections.find((s: any) => s?.type === 'hours-location')
+    if (!hoursLoc && extracted.address) {
+      hoursLoc = { type: 'hours-location', address: extracted.address }
+      // Insert before social-links if present, otherwise append.
+      const socialIdx = sections.findIndex((s: any) => s?.type === 'social-links')
+      if (socialIdx >= 0) sections.splice(socialIdx, 0, hoursLoc)
+      else sections.push(hoursLoc)
+    }
     if (hoursLoc) {
       if (!hoursLoc.address && extracted.address) hoursLoc.address = extracted.address
       if (!hoursLoc.hours && extracted.hours) hoursLoc.hours = extracted.hours
