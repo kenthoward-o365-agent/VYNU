@@ -97,11 +97,23 @@ Deno.serve(async (req) => {
 
     // ── SET ──
     if (action === "set") {
+      // Fields that must be stored in Vault, not as plain columns
+      const SECRET_FIELDS = new Set([
+        "api_key_test", "api_key_live",
+        "client_key_test", "client_key_live",
+        "hmac_key",
+      ]);
       const updates: Record<string, any> = {};
+      const vaultWrites: Array<{ field: string; value: string }> = [];
       for (const [k, v] of Object.entries(body.fields || {})) {
         if (!ALLOWED_FIELDS.has(k)) continue;
-        if (v === "" || v === null || v === undefined) continue; // skip blanks (don't clobber)
-        updates[k] = String(v).trim();
+        if (v === "" || v === null || v === undefined) continue;
+        const value = String(v).trim();
+        if (SECRET_FIELDS.has(k)) {
+          vaultWrites.push({ field: k, value });
+        } else {
+          updates[k] = value;
+        }
       }
 
       // Ensure a config row exists
@@ -131,8 +143,28 @@ Deno.serve(async (req) => {
         if (updErr) return json({ error: updErr.message }, 400);
       }
 
-      return json({ success: true, updated_fields: Object.keys(updates) });
+      // Write secret fields to Vault via SECURITY DEFINER RPC
+      for (const { field, value } of vaultWrites) {
+        const { error: vErr } = await adminClient.rpc("set_payment_secret", {
+          _venue_id: venue_id,
+          _field: field,
+          _value: value,
+        });
+        if (vErr) return json({ error: `vault ${field}: ${vErr.message}` }, 400);
+        // Also null out any stale plaintext column so it can't drift.
+        await adminClient
+          .from("venue_payment_config")
+          .update({ [field]: null })
+          .eq("venue_id", venue_id)
+          .eq("provider", "ordrpayments");
+      }
+
+      return json({
+        success: true,
+        updated_fields: [...Object.keys(updates), ...vaultWrites.map(v => v.field)],
+      });
     }
+
 
     // ── CLEAR a single field ──
     if (action === "clear_field") {
