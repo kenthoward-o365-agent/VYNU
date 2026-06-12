@@ -45,20 +45,20 @@ interface NavItem {
   path: string;
   label: string;
   icon: any;
-  hasSub?: boolean;
   navKey: string;
 }
 
 const venueNavItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: { light: navDashboard, dark: navDashboardDark }, navKey: "dashboard" },
   { path: "/sippa-analytics", label: "Spark AI Analytics", icon: { light: navAIAnalytics, dark: navAIAnalyticsDark }, navKey: "sippa_analytics" },
-  { path: "/menu", label: "Menu Builder", icon: { light: navMenuBuilder, dark: navMenuBuilderDark }, hasSub: true, navKey: "menu" },
-  { path: "/pricing", label: "Pricing", icon: { light: navPricing, dark: navPricingDark }, hasSub: true, navKey: "pricing" },
+  { path: "/menu", label: "Menu Builder", icon: { light: navMenuBuilder, dark: navMenuBuilderDark }, navKey: "menu" },
+  { path: "/pricing", label: "Pricing", icon: { light: navPricing, dark: navPricingDark }, navKey: "pricing" },
   { path: "/tables", label: "Tables & QR", icon: { light: navTablesQR, dark: navTablesQRDark }, navKey: "tables" },
   { path: "/orders", label: "Orders", icon: { light: navOrders, dark: navOrdersDark }, navKey: "orders" },
+  { path: "/orders/settings", label: "Order Settings", icon: Monitor, navKey: "orders" },
   { path: "/analytics", label: "Analytics", icon: { light: navAnalytics, dark: navAnalyticsDark }, navKey: "analytics" },
-  { path: "/diners", label: "Diners", icon: { light: navDiners, dark: navDinersDark }, hasSub: true, navKey: "diners" },
-  { path: "/reporting", label: "DayEnd", icon: CalendarCheck, hasSub: true, navKey: "settings" },
+  { path: "/diners", label: "Diners", icon: { light: navDiners, dark: navDinersDark }, navKey: "diners" },
+  { path: "/reporting", label: "DayEnd", icon: CalendarCheck, navKey: "settings" },
   { path: "/billing", label: "Billing", icon: Receipt, navKey: "settings" },
   { path: "/settings", label: "Settings", icon: { light: navSettings, dark: navSettingsDark }, navKey: "settings" },
 ];
