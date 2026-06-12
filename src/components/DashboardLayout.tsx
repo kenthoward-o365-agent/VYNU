@@ -441,7 +441,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     to={item.path}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
                       active
                         ? "bg-sidebar-accent text-sidebar-primary"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -489,7 +489,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     to={item.path}
                     onClick={() => setSidebarOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
                       active
                         ? "bg-sidebar-accent text-sidebar-primary"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
