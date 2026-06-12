@@ -23,7 +23,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import SectionLinks from "@/components/SectionLinks";
-import { Upload, ImagePlus, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 
 interface MenuItem {
   id: string;
