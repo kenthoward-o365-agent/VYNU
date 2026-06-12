@@ -61,23 +61,22 @@ Deno.serve(async (req) => {
       const { data: config } = await adminClient
         .from("venue_payment_config")
         .select(
-          "id, environment, merchant_account, merchant_status, api_key_test, api_key_live, client_key_test, client_key_live, hmac_key, apple_pay_merchant_id, google_pay_merchant_id"
+          "id, environment, merchant_account, merchant_status, api_key_test, api_key_live, client_key_test, client_key_live, hmac_key, api_key_test_secret_id, api_key_live_secret_id, client_key_test_secret_id, client_key_live_secret_id, hmac_key_secret_id, apple_pay_merchant_id, google_pay_merchant_id"
         )
         .eq("venue_id", venue_id)
         .eq("provider", "ordrpayments")
         .maybeSingle();
 
       if (!config) {
-        return json({
-          exists: false,
-          environment: "test",
-          fields: {},
-        });
+        return json({ exists: false, environment: "test", fields: {} });
       }
 
-      // Mask: report presence + last 4 chars of identifiers (never of api keys)
-      const mask = (v: string | null) =>
-        v ? { set: true, preview: v.length > 4 ? `…${v.slice(-4)}` : "set" } : { set: false };
+      // A secret is "set" if EITHER the legacy column OR the Vault ref is present.
+      const presence = (legacy: string | null, vaultId: string | null) =>
+        (vaultId ? { set: true, preview: "vault" }
+          : legacy ? { set: true, preview: legacy.length > 4 ? `…${legacy.slice(-4)}` : "set" }
+          : { set: false });
+
       return json({
         exists: true,
         environment: config.environment,
@@ -86,14 +85,15 @@ Deno.serve(async (req) => {
         apple_pay_merchant_id: config.apple_pay_merchant_id || "",
         google_pay_merchant_id: config.google_pay_merchant_id || "",
         fields: {
-          api_key_test: mask(config.api_key_test),
-          api_key_live: mask(config.api_key_live),
-          client_key_test: mask(config.client_key_test),
-          client_key_live: mask(config.client_key_live),
-          hmac_key: mask(config.hmac_key),
+          api_key_test:    presence(config.api_key_test,    (config as any).api_key_test_secret_id),
+          api_key_live:    presence(config.api_key_live,    (config as any).api_key_live_secret_id),
+          client_key_test: presence(config.client_key_test, (config as any).client_key_test_secret_id),
+          client_key_live: presence(config.client_key_live, (config as any).client_key_live_secret_id),
+          hmac_key:        presence(config.hmac_key,        (config as any).hmac_key_secret_id),
         },
       });
     }
+
 
     // ── SET ──
     if (action === "set") {
