@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Tag, Trash2, Pencil } from "lucide-react";
+import SectionLinks from "@/components/SectionLinks";
 import { toast } from "sonner";
 
 interface PricingRule {
@@ -274,6 +275,13 @@ export default function Pricing() {
         </div>
         <Button onClick={openAddDialog}><Plus className="h-4 w-4 mr-1" />Add Rule</Button>
       </div>
+
+      <SectionLinks
+        items={[
+          { key: "rule-types", label: "Rule Types", description: "Manage the rule categories available for pricing", icon: Tag, to: "/rule-types" },
+        ]}
+      />
+
 
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditingRule(null); }}>

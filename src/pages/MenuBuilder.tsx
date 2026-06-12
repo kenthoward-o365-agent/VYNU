@@ -22,6 +22,8 @@ import { formatItemTaxBreakdown, type TaxConfig } from "@/lib/tax-utils";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import SectionLinks from "@/components/SectionLinks";
+import { SlidersHorizontal } from "lucide-react";
 
 interface MenuItem {
   id: string;
@@ -464,6 +466,8 @@ export default function MenuBuilder() {
           <h2 className="text-2xl font-bold text-foreground">Menu Builder</h2>
           <p className="text-muted-foreground">{items.length} items across {categories.length} categories</p>
         </div>
+
+
         {!isPosMode && (
           <div className="flex gap-2 flex-wrap">
             <Dialog open={catDialogOpen} onOpenChange={setCatDialogOpen}>
@@ -482,6 +486,15 @@ export default function MenuBuilder() {
           </div>
         )}
       </div>
+
+      <SectionLinks
+        items={[
+          { key: "import", label: "Import Menu", description: "Bulk import items from CSV or POS", icon: Upload, to: "/menu?import=true" },
+          { key: "enhance", label: "Enhance Images", description: "Auto-improve menu item photos", icon: ImagePlus, to: "/menu?enhance=true" },
+          { key: "modifiers", label: "Modifiers", description: "Add-ons, options and customisations", icon: SlidersHorizontal, to: "/modifiers" },
+        ]}
+      />
+
 
       {/* Dietary tag filter row */}
       <div className="flex items-center gap-2 flex-wrap">

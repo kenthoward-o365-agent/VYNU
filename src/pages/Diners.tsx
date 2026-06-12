@@ -17,6 +17,8 @@ import { toast } from "@/hooks/use-toast";
 import DinerSegments from "@/components/crm/DinerSegments";
 import DinerCampaigns from "@/components/crm/DinerCampaigns";
 import DinerInsights from "@/components/crm/DinerInsights";
+import SectionLinks from "@/components/SectionLinks";
+import { Settings as SettingsIcon } from "lucide-react";
 
 const PAGE_SIZE = 25;
 
@@ -298,6 +300,13 @@ export default function Diners() {
           <p className="text-muted-foreground">Profiles, segments, campaigns & insights for {venue?.name}</p>
         </div>
       </div>
+
+      <SectionLinks
+        items={[
+          { key: "prefs", label: "Diner Preferences", description: "Default allergens, tags and capture rules", icon: SettingsIcon, to: "/diners/preferences" },
+        ]}
+      />
+
 
       <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="space-y-4">
         <TabsList>
