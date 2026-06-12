@@ -65,26 +65,14 @@ const ReceiptView = ({
   useEffect(() => {
     const fetchData = async () => {
       const [itemsRes, taxesRes] = await Promise.all([
-        supabase
-          .from("order_items")
-          .select("id, menu_item_id, quantity, unit_price, modifiers")
-          .eq("order_id", orderId),
+        (supabase as any).rpc("get_receipt_items_public", {
+          _venue_id: venueId,
+          _order_id: orderId,
+        }),
         (supabase as any).rpc("get_venue_taxes_public", { _venue_id: venueId }),
       ]);
 
-      let items: OrderItem[] = (itemsRes.data as any[]) || [];
-
-      // Fetch menu item names
-      if (items.length > 0) {
-        const menuItemIds = items.map((i) => i.menu_item_id);
-        const { data: menuItems } = await supabase
-          .from("menu_items")
-          .select("id, name")
-          .in("id", menuItemIds);
-
-        const nameMap = new Map((menuItems || []).map((m: any) => [m.id, m.name]));
-        items = items.map((i) => ({ ...i, menu_item_name: nameMap.get(i.menu_item_id) || "Item" }));
-      }
+      const items: OrderItem[] = (itemsRes.data as any[]) || [];
 
       setOrderItems(items);
       setTaxes((taxesRes.data as any as TaxConfig[]) || []);

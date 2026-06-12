@@ -5060,6 +5060,10 @@ export type Database = {
         Args: { _order_id: string; _token: string }
         Returns: string
       }
+      can_create_table_session: {
+        Args: { _table_id: string; _venue_id: string }
+        Returns: boolean
+      }
       can_manage_loyalty_program_balance: {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
@@ -5195,6 +5199,17 @@ export type Database = {
         Returns: Json
       }
       get_pos_webhook_secret: { Args: { _venue_id: string }; Returns: string }
+      get_receipt_items_public: {
+        Args: { _order_id: string; _venue_id: string }
+        Returns: {
+          id: string
+          menu_item_id: string
+          menu_item_name: string
+          modifiers: Json
+          quantity: number
+          unit_price: number
+        }[]
+      }
       get_terminal_by_token: {
         Args: { _token: string }
         Returns: {
