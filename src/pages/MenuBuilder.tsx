@@ -464,7 +464,7 @@ export default function MenuBuilder() {
           <h2 className="text-2xl font-bold text-foreground">Menu Builder</h2>
           <p className="text-muted-foreground">{items.length} items across {categories.length} categories</p>
         </div>
-        <SectionLinksInline />
+
 
         {!isPosMode && (
           <div className="flex gap-2 flex-wrap">
