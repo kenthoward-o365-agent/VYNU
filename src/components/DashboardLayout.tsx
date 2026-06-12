@@ -352,7 +352,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   )}
                 </div>
                 {isMenuBuilder && (
-                  <CollapsibleContent className="pl-10 space-y-0.5">
+                  <CollapsibleContent className="pl-8 space-y-0.5">
                     <Link to="/menu?import=true" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
                       <Upload className="h-3 w-3" />
                       Import
@@ -368,7 +368,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </CollapsibleContent>
                 )}
                 {isOrders && (
-                  <CollapsibleContent className="pl-10 space-y-0.5">
+                  <CollapsibleContent className="pl-8 space-y-0.5">
                     <Link to="/orders/statuses" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/orders/statuses" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
                       <Monitor className="h-3 w-3" />
                       Order Display System
@@ -380,7 +380,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </CollapsibleContent>
                 )}
                 {isPricing && (
-                  <CollapsibleContent className="pl-10 space-y-0.5">
+                  <CollapsibleContent className="pl-8 space-y-0.5">
                     <Link to="/rule-types" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/rule-types" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
                       <Tag className="h-3 w-3" />
                       Rule Types
@@ -388,7 +388,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </CollapsibleContent>
                 )}
                 {isDiners && (
-                  <CollapsibleContent className="pl-10 space-y-0.5">
+                  <CollapsibleContent className="pl-8 space-y-0.5">
                     <Link to="/diners/preferences" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/diners/preferences" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
                       <Settings className="h-3 w-3" />
                       Diner Preferences
@@ -396,7 +396,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </CollapsibleContent>
                 )}
                 {isDayEnd && (
-                  <CollapsibleContent className="pl-10 space-y-0.5">
+                  <CollapsibleContent className="pl-8 space-y-0.5">
                     <Link to="/reporting" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/reporting" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
                       <FileText className="h-3 w-3" />
                       Reporting
@@ -410,7 +410,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           {showGroupNav && (
             <>
               {!pinned && (
-                <div className="pt-3 pb-1 px-3">
+                <div className="pt-2 pb-0.5 px-3">
                   <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-muted">Group</span>
                 </div>
               )}
@@ -458,7 +458,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           {isTablessAdmin && (
             <>
               {!pinned && (
-                <div className="pt-3 pb-1 px-3">
+                <div className="pt-2 pb-0.5 px-3">
                   <span className="text-xs font-semibold uppercase tracking-wider text-sidebar-muted">Admin</span>
                 </div>
               )}
