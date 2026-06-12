@@ -240,11 +240,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners")) || (item.path === "/pricing" && location.pathname === "/menu-times") || (item.path === "/reporting" && location.pathname.startsWith("/reporting")) || (item.path === "/orders" && location.pathname.startsWith("/orders"));
             const isMenuBuilder = item.path === "/menu";
             const isDiners = item.path === "/diners";
-            const isSettings = item.path === "/settings";
             const isPricing = item.path === "/pricing";
             const isDayEnd = item.path === "/reporting";
             const isOrders = item.path === "/orders";
-            const hasSub = isMenuBuilder || isDiners || isSettings || isPricing || isDayEnd || isOrders;
+            const hasSub = isMenuBuilder || isDiners || isPricing || isDayEnd || isOrders;
+            const groupKey = isMenuBuilder ? "menu" : isDiners ? "diners" : isPricing ? "pricing" : isDayEnd ? "reporting" : isOrders ? "orders" : null;
 
             const iconEl = typeof item.icon === 'object' && 'light' in item.icon ? (
               <img src={theme === 'dark' ? item.icon.dark : item.icon.light} className="h-4 w-4 shrink-0" alt="" />
