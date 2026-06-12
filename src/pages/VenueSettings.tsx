@@ -309,11 +309,60 @@ export default function VenueSettings() {
     return s.role || "—";
   };
 
+  const hasTab = searchParams.has("tab");
+
+  if (!hasTab) {
+    const hubItems: { key: string; label: string; description: string; icon: any; to: string }[] = [
+      { key: "details", label: "Details", description: "Venue name, address & contact", icon: Settings, to: "/settings?tab=details" },
+      { key: "users", label: "Users & Roles", description: "Staff accounts and permissions", icon: Users, to: "/settings?tab=users" },
+      { key: "loyalty", label: "Loyalty", description: "Earning rules and rewards", icon: Gift, to: "/settings?tab=loyalty" },
+      { key: "sippa", label: "H&L OrderNOW AI", description: "AI assistant configuration", icon: Bot, to: "/settings?tab=sippa" },
+      { key: "payments", label: "Payments", description: "H&L Pay setup and payouts", icon: CreditCard, to: "/settings?tab=payments" },
+      { key: "gratuities", label: "Gratuities", description: "Tip presets and rules", icon: DollarSign, to: "/settings?tab=gratuities" },
+      { key: "surcharges", label: "Surcharges", description: "Weekend & public holiday surcharges", icon: Percent, to: "/settings?tab=surcharges" },
+      { key: "taxes", label: "Taxes", description: "GST and tax configuration", icon: Receipt, to: "/settings?tab=taxes" },
+      { key: "table-sessions", label: "Table Sessions", description: "Session length and behaviour", icon: Users, to: "/settings?tab=table-sessions" },
+      { key: "integrations", label: "Integrations", description: "POS and third-party connectors", icon: Plug, to: "/settings?tab=integrations" },
+      { key: "landing", label: "Landing Page Editor", description: "Customise your public venue page", icon: Globe, to: "/settings/landing-page" },
+    ];
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Venue Settings</h2>
+          <p className="text-muted-foreground">Choose a setting to manage</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {hubItems.map((item) => (
+            <Link
+              key={item.key}
+              to={item.to}
+              className="group flex items-start gap-3 p-4 rounded-lg border border-border bg-card hover:bg-accent hover:border-primary/40 transition-colors"
+            >
+              <div className="p-2 rounded-md bg-primary/10 text-primary shrink-0">
+                <item.icon className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-foreground">{item.label}</div>
+                <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground shrink-0 mt-1" />
+            </Link>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Venue Settings</h2>
-        <p className="text-muted-foreground">Manage your venue details and team</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <Link to="/settings" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-1">
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to Settings
+          </Link>
+          <h2 className="text-2xl font-bold text-foreground">Venue Settings</h2>
+          <p className="text-muted-foreground">Manage your venue details and team</p>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="space-y-6">
