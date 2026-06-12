@@ -168,14 +168,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         pinned ? "w-16" : "w-64",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className={cn("border-b border-sidebar-border relative", pinned ? "p-2" : "p-4")}>
-          <div className="flex items-center justify-center mb-2"> 
+        <div className={cn("border-b border-sidebar-border relative", pinned ? "p-2" : "px-3 py-2")}>
+          <div className="flex items-center justify-center mb-1">
             <img
               src="/brand/shyndig-icon.png"
               alt="H&L OrderNOW"
               className={cn(
                 "object-contain",
-                pinned ? "h-10 w-auto max-w-[56px]" : "h-28 w-auto max-w-[220px]"
+                pinned ? "h-10 w-auto max-w-[56px]" : "h-14 w-auto max-w-[200px]"
               )}
             />
             {!pinned && (
