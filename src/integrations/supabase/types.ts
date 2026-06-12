@@ -4459,17 +4459,22 @@ export type Database = {
       venue_payment_config: {
         Row: {
           api_key_live: string | null
+          api_key_live_secret_id: string | null
           api_key_test: string | null
+          api_key_test_secret_id: string | null
           apple_pay_merchant_id: string | null
           capture_mode: string
           client_key_live: string | null
+          client_key_live_secret_id: string | null
           client_key_test: string | null
+          client_key_test_secret_id: string | null
           country_code: string
           created_at: string
           default_currency: string
           environment: string
           google_pay_merchant_id: string | null
           hmac_key: string | null
+          hmac_key_secret_id: string | null
           id: string
           is_active: boolean
           merchant_account: string | null
@@ -4482,17 +4487,22 @@ export type Database = {
         }
         Insert: {
           api_key_live?: string | null
+          api_key_live_secret_id?: string | null
           api_key_test?: string | null
+          api_key_test_secret_id?: string | null
           apple_pay_merchant_id?: string | null
           capture_mode?: string
           client_key_live?: string | null
+          client_key_live_secret_id?: string | null
           client_key_test?: string | null
+          client_key_test_secret_id?: string | null
           country_code?: string
           created_at?: string
           default_currency?: string
           environment?: string
           google_pay_merchant_id?: string | null
           hmac_key?: string | null
+          hmac_key_secret_id?: string | null
           id?: string
           is_active?: boolean
           merchant_account?: string | null
@@ -4505,17 +4515,22 @@ export type Database = {
         }
         Update: {
           api_key_live?: string | null
+          api_key_live_secret_id?: string | null
           api_key_test?: string | null
+          api_key_test_secret_id?: string | null
           apple_pay_merchant_id?: string | null
           capture_mode?: string
           client_key_live?: string | null
+          client_key_live_secret_id?: string | null
           client_key_test?: string | null
+          client_key_test_secret_id?: string | null
           country_code?: string
           created_at?: string
           default_currency?: string
           environment?: string
           google_pay_merchant_id?: string | null
           hmac_key?: string | null
+          hmac_key_secret_id?: string | null
           id?: string
           is_active?: boolean
           merchant_account?: string | null
@@ -4646,6 +4661,7 @@ export type Database = {
           updated_at: string
           venue_id: string
           webhook_secret: string | null
+          webhook_secret_id: string | null
         }
         Insert: {
           account_id?: string | null
@@ -4676,6 +4692,7 @@ export type Database = {
           updated_at?: string
           venue_id: string
           webhook_secret?: string | null
+          webhook_secret_id?: string | null
         }
         Update: {
           account_id?: string | null
@@ -4706,6 +4723,7 @@ export type Database = {
           updated_at?: string
           venue_id?: string
           webhook_secret?: string | null
+          webhook_secret_id?: string | null
         }
         Relationships: [
           {
@@ -5031,6 +5049,7 @@ export type Database = {
       }
     }
     Functions: {
+      _payment_secret_column: { Args: { _field: string }; Returns: string }
       ack_job: { Args: { _msg_id: number; _queue: string }; Returns: boolean }
       advance_audit_date: { Args: { _venue_id: string }; Returns: string }
       apply_throttle_on_order_insert_for: {
@@ -5152,6 +5171,10 @@ export type Database = {
         Args: { _table_id?: string; _venue_id: string }
         Returns: Json
       }
+      get_payment_secret: {
+        Args: { _field: string; _venue_id: string }
+        Returns: string
+      }
       get_platform_financials: {
         Args: { _from: string; _to: string }
         Returns: Json
@@ -5160,6 +5183,7 @@ export type Database = {
         Args: { _from: string; _to: string }
         Returns: Json
       }
+      get_pos_webhook_secret: { Args: { _venue_id: string }; Returns: string }
       get_terminal_by_token: {
         Args: { _token: string }
         Returns: {
@@ -5366,8 +5390,16 @@ export type Database = {
         }
         Returns: Json
       }
+      set_payment_secret: {
+        Args: { _field: string; _value: string; _venue_id: string }
+        Returns: string
+      }
       set_pos_credential: {
         Args: { _field: string; _value: string; _venue_id: string }
+        Returns: string
+      }
+      set_pos_webhook_secret: {
+        Args: { _value: string; _venue_id: string }
         Returns: string
       }
       set_primary_venue: { Args: { _venue_id: string }; Returns: undefined }
