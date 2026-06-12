@@ -164,7 +164,16 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "push_order") {
-      // OUTBOUND: Push an order to the POS system
+      // OUTBOUND: Push an order to the POS system. Require service-role auth.
+      const authHeader = req.headers.get("authorization") || "";
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      if (!authHeader.startsWith("Bearer ") || authHeader.slice(7) !== serviceKey) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorised" }),
+          { status: 401, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+
       const { order_id } = body;
 
       if (!order_id) {
