@@ -191,6 +191,30 @@ Deno.serve(async (req) => {
       return json({ error: "No payment configuration found for this venue" }, 404);
     }
 
+    // Prefer Vault for secrets; fall back to legacy columns if not yet migrated.
+    const loadSecret = async (field: string): Promise<string | null> => {
+      try {
+        const { data } = await adminClient.rpc("get_payment_secret", {
+          _venue_id: venue_id,
+          _field: field,
+        });
+        return (data as string) || null;
+      } catch { return null; }
+    };
+    const [vaultApiTest, vaultApiLive, vaultCkTest, vaultCkLive, vaultHmac] = await Promise.all([
+      loadSecret("api_key_test"),
+      loadSecret("api_key_live"),
+      loadSecret("client_key_test"),
+      loadSecret("client_key_live"),
+      loadSecret("hmac_key"),
+    ]);
+    config.api_key_test    = vaultApiTest    ?? config.api_key_test;
+    config.api_key_live    = vaultApiLive    ?? config.api_key_live;
+    config.client_key_test = vaultCkTest     ?? config.client_key_test;
+    config.client_key_live = vaultCkLive     ?? config.client_key_live;
+    config.hmac_key        = vaultHmac       ?? config.hmac_key;
+
+
     if (!config.is_active && action !== "test_connection") {
       return json({ error: "Payments are not enabled for this venue" }, 400);
     }
