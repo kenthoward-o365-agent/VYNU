@@ -69,12 +69,7 @@ const ReceiptView = ({
           .from("order_items")
           .select("id, menu_item_id, quantity, unit_price, modifiers")
           .eq("order_id", orderId),
-        supabase
-          .from("venue_taxes")
-          .select("id, name, rate, tax_type, is_inclusive, display_order")
-          .eq("venue_id", venueId)
-          .eq("is_active", true)
-          .order("display_order"),
+        (supabase as any).rpc("get_venue_taxes_public", { _venue_id: venueId }),
       ]);
 
       let items: OrderItem[] = (itemsRes.data as any[]) || [];

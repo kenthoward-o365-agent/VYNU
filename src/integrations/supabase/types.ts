@@ -5167,6 +5167,10 @@ export type Database = {
           total: number
         }[]
       }
+      get_item_modifiers_public: {
+        Args: { _menu_item_id: string; _venue_id: string }
+        Returns: Json
+      }
       get_menu_item_food_costs: {
         Args: { _venue_id: string }
         Returns: {
@@ -5256,6 +5260,17 @@ export type Database = {
           settings: Json
           state: string
           venue_type: string
+        }[]
+      }
+      get_venue_taxes_public: {
+        Args: { _venue_id: string }
+        Returns: {
+          display_order: number
+          id: string
+          is_inclusive: boolean
+          name: string
+          rate: number
+          tax_type: string
         }[]
       }
       has_role: {

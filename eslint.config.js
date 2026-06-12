@@ -10,6 +10,10 @@ import tseslint from "typescript-eslint";
 const RESTRICTED_TABLES = [
   "venues",
   "tables",
+  "table_sessions",
+  "venue_taxes",
+  "venue_display_areas",
+  "venue_order_statuses",
   "venue_payment_config",
   "venue_pos_integrations",
 ];
