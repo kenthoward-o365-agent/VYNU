@@ -170,14 +170,20 @@ Deno.serve(async (req) => {
     if (action === "clear_field") {
       const field = body.field;
       if (!ALLOWED_FIELDS.has(field)) return json({ error: "Invalid field" }, 400);
+      const SECRET_FIELDS = new Set([
+        "api_key_test", "api_key_live", "client_key_test", "client_key_live", "hmac_key",
+      ]);
+      const patch: Record<string, any> = { [field]: null };
+      if (SECRET_FIELDS.has(field)) patch[`${field}_secret_id`] = null;
       const { error } = await adminClient
         .from("venue_payment_config")
-        .update({ [field]: null })
+        .update(patch)
         .eq("venue_id", venue_id)
         .eq("provider", "ordrpayments");
       if (error) return json({ error: error.message }, 400);
       return json({ success: true });
     }
+
 
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err: any) {
