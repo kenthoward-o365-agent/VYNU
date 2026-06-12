@@ -5258,6 +5258,17 @@ export type Database = {
           venue_type: string
         }[]
       }
+      get_venue_taxes_public: {
+        Args: { _venue_id: string }
+        Returns: {
+          display_order: number
+          id: string
+          is_inclusive: boolean
+          name: string
+          rate: number
+          tax_type: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
