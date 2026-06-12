@@ -95,24 +95,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [pinned]);
   const perms = usePermissions();
 
-  // Single-open accordion: which top-level group is expanded.
-  const groupForPath = useCallback((p: string, search: string): string | null => {
-    if (p.startsWith("/diners")) return "diners";
-    if (p.startsWith("/orders/")) return "orders";
-    if (p.startsWith("/reporting")) return "reporting";
-    if (p === "/rule-types" || p === "/menu-times") return "pricing";
-    if (p === "/modifiers") return "menu";
-    if (p === "/menu") {
-      const sp = new URLSearchParams(search);
-      if (sp.get("import") || sp.get("enhance")) return "menu";
-    }
-    return null;
-  }, []);
-  const [openGroup, setOpenGroup] = useState<string | null>(() => groupForPath(location.pathname, location.search));
-  useEffect(() => {
-    const g = groupForPath(location.pathname, location.search);
-    if (g) setOpenGroup(g);
-  }, [location.pathname, location.search, groupForPath]);
 
   // PCI DSS / SOC 2 inactivity logout: 15 min idle, 60s warning.
   const handleIdleLogout = useCallback(async () => {
