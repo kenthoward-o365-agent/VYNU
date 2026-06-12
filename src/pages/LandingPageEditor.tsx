@@ -4,17 +4,18 @@ import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrate
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, Plus, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, Plus, Sparkles, Palette } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { SortableSection } from "@/components/landing-editor/SectionList";
 import SectionEditPanel from "@/components/landing-editor/SectionEditPanel";
+import ThemeEditPanel from "@/components/landing-editor/ThemeEditPanel";
 import SectionAddModal from "@/components/landing-editor/SectionAddModal";
 import LandingSectionRenderer from "@/components/landing-editor/LandingSectionRenderer";
 import MobilePreviewFrame from "@/components/landing-editor/MobilePreviewFrame";
 import AIBuildFromUrlDialog from "@/components/landing-editor/AIBuildFromUrlDialog";
-import type { LandingSection, SectionType } from "@/components/landing-editor/types";
-import { createDefaultSection } from "@/components/landing-editor/types";
+import type { LandingSection, SectionType, LandingTheme } from "@/components/landing-editor/types";
+import { createDefaultSection, createDefaultTheme, parseLandingPayload } from "@/components/landing-editor/types";
 
 const DEFAULT_SECTIONS: LandingSection[] = [
   createDefaultSection("hero"),
@@ -24,33 +25,33 @@ const DEFAULT_SECTIONS: LandingSection[] = [
   createDefaultSection("hours-location"),
 ];
 
-function parseSections(raw: string | null | undefined): LandingSection[] {
-  if (!raw) return DEFAULT_SECTIONS.map((s) => ({ ...s, id: crypto.randomUUID() }));
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
-  } catch {
-    // Legacy HTML — start fresh
-  }
-  return DEFAULT_SECTIONS.map((s) => ({ ...s, id: crypto.randomUUID() }));
-}
+const THEME_PSEUDO_ID = "__theme__";
 
 export default function LandingPageEditor() {
   const { venue, refetch } = useVenue();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const [sections, setSections] = useState<LandingSection[]>([]);
+  const [theme, setTheme] = useState<LandingTheme>(createDefaultTheme());
   const initialLoadDone = useRef(false);
 
   useEffect(() => {
-    if (venue?.landing_page_html && !initialLoadDone.current) {
-      setSections(parseSections(venue.landing_page_html));
+    if (initialLoadDone.current) return;
+    if (venue?.landing_page_html) {
+      const parsed = parseLandingPayload(venue.landing_page_html);
+      if (parsed) {
+        setSections(parsed.sections);
+        setTheme(parsed.theme);
+      } else {
+        setSections(DEFAULT_SECTIONS.map((s) => ({ ...s, id: crypto.randomUUID() })));
+      }
       initialLoadDone.current = true;
-    } else if (!venue && !initialLoadDone.current) {
-      setSections(parseSections(null));
+    } else if (!venue) {
+      setSections(DEFAULT_SECTIONS.map((s) => ({ ...s, id: crypto.randomUUID() })));
     }
   }, [venue?.landing_page_html]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const [selectedId, setSelectedId] = useState<string | null>(THEME_PSEUDO_ID);
   const [addOpen, setAddOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
 
@@ -60,6 +61,7 @@ export default function LandingPageEditor() {
   );
 
   const selectedSection = sections.find((s) => s.id === selectedId) ?? null;
+  const themeSelected = selectedId === THEME_PSEUDO_ID;
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -90,9 +92,10 @@ export default function LandingPageEditor() {
   const handleSave = async () => {
     if (!venue) return;
     setSaving(true);
+    const payload = JSON.stringify({ theme, sections });
     const { error } = await supabase
       .from("venues")
-      .update({ landing_page_html: JSON.stringify(sections) } as any)
+      .update({ landing_page_html: payload } as any)
       .eq("id", venue.id);
 
     if (error) {
@@ -106,7 +109,6 @@ export default function LandingPageEditor() {
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
-      {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={() => navigate("/settings")}>
@@ -127,9 +129,7 @@ export default function LandingPageEditor() {
         </div>
       </div>
 
-      {/* Editor Layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: Section list */}
         <div className="w-56 border-r border-border bg-card overflow-y-auto shrink-0 flex flex-col">
           <div className="p-3 border-b border-border flex items-center justify-between">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sections</p>
@@ -138,6 +138,15 @@ export default function LandingPageEditor() {
             </Button>
           </div>
           <div className="p-2 space-y-1.5 flex-1 overflow-y-auto">
+            {/* Pinned theme entry */}
+            <button
+              onClick={() => setSelectedId(THEME_PSEUDO_ID)}
+              className={`w-full flex items-center gap-2 p-2.5 rounded-lg border transition-colors ${themeSelected ? "border-primary bg-primary/10" : "border-border hover:border-primary/40 bg-card"}`}
+            >
+              <Palette className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-sm font-medium truncate flex-1 text-left">Page Theme</span>
+            </button>
+            <div className="h-px bg-border my-1" />
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={sections.map((s) => s.id)} strategy={verticalListSortingStrategy}>
                 {sections.map((section) => (
@@ -154,16 +163,16 @@ export default function LandingPageEditor() {
           </div>
         </div>
 
-        {/* Center: Mobile preview */}
         <div className="flex-1 overflow-hidden">
           <MobilePreviewFrame>
-            <LandingSectionRenderer sections={sections} />
+            <LandingSectionRenderer sections={sections} theme={theme} />
           </MobilePreviewFrame>
         </div>
 
-        {/* Right: Edit panel */}
         <div className="w-64 border-l border-border bg-card overflow-y-auto shrink-0">
-          {selectedSection ? (
+          {themeSelected ? (
+            <ThemeEditPanel theme={theme} onChange={setTheme} />
+          ) : selectedSection ? (
             <SectionEditPanel section={selectedSection} onChange={handleUpdate} venueId={venue?.id} />
           ) : (
             <div className="p-4 text-center text-muted-foreground text-sm">
@@ -178,9 +187,10 @@ export default function LandingPageEditor() {
         open={aiOpen}
         onClose={() => setAiOpen(false)}
         venueId={venue?.id}
-        onGenerated={(newSections, mode) => {
+        onGenerated={(newSections, newTheme, mode) => {
           setSections((prev) => (mode === "replace" ? newSections : [...prev, ...newSections]));
-          setSelectedId(null);
+          if (newTheme && mode === "replace") setTheme(newTheme);
+          setSelectedId(THEME_PSEUDO_ID);
           toast.message("Remember to click Save & Publish to keep your new landing page.");
         }}
       />
