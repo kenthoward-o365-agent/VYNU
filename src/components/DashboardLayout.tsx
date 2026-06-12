@@ -403,43 +403,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     </Link>
                   </CollapsibleContent>
                 )}
-                {isSettings && (
-                  <CollapsibleContent className="pl-10 space-y-0.5">
-                    {[
-                      { to: "/settings?tab=details", label: "Details", icon: Settings },
-                      { to: "/settings?tab=users", label: "Users", icon: Users },
-                      { to: "/settings?tab=loyalty", label: "Loyalty", icon: Gift },
-                      { to: "/settings?tab=sippa", label: "H&L OrderNOW AI", icon: Bot },
-                      { to: "/settings?tab=payments", label: "Payments", icon: CreditCard },
-                      { to: "/settings?tab=gratuities", label: "Gratuities", icon: DollarSign },
-                      { to: "/settings?tab=surcharges", label: "Surcharges", icon: Percent },
-                      { to: "/settings?tab=taxes", label: "Taxes", icon: Receipt },
-                      { to: "/settings?tab=table-sessions", label: "Table Sessions", icon: Users },
-                      { to: "/settings?tab=integrations", label: "Integrations", icon: Plug },
-                    ].map((sub) => {
-                      const params = new URLSearchParams(location.search);
-                      const currentTab = params.get("tab") || "details";
-                      const subTab = new URL(sub.to, "http://x").searchParams.get("tab") || "details";
-                      const subActive = location.pathname === "/settings" && currentTab === subTab;
-                      return (
-                        <Link
-                          key={sub.to}
-                          to={sub.to}
-                          onClick={() => setSidebarOpen(false)}
-                          className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors",
-                            subActive
-                              ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                          )}
-                        >
-                          <sub.icon className="h-3 w-3" />
-                          {sub.label}
-                        </Link>
-                      );
-                    })}
-                  </CollapsibleContent>
-                )}
               </Collapsible>
             );
           })}
