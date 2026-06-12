@@ -107,10 +107,35 @@ If the diner asks to split the bill, split the check, or divide between people:
 where N is the number of ways to split.
 - Mention the per-person amount in your response.`;
 
+    // Filter client-supplied conversation history: only allow user/assistant turns
+    // and cap length. Prevents prompt-injection via role:"system" entries.
+    const safeConversation = Array.isArray(conversation)
+      ? conversation
+          .filter((m: any) =>
+            m && typeof m === "object" &&
+            (m.role === "user" || m.role === "assistant") &&
+            typeof m.content === "string"
+          )
+          .slice(-20)
+          .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 2000) }))
+      : [];
+
+    // Validate table_id belongs to this venue before any staff_alert insert
+    let validatedTableId: string | null = null;
+    if (table_id && typeof table_id === "string") {
+      const { data: t } = await sb
+        .from("tables")
+        .select("id")
+        .eq("id", table_id)
+        .eq("venue_id", venue_id)
+        .maybeSingle();
+      if (t) validatedTableId = t.id;
+    }
+
     const messages = [
       { role: "system", content: systemPrompt },
-      ...(conversation || []),
-      { role: "user", content: message },
+      ...safeConversation,
+      { role: "user", content: String(message ?? "").slice(0, 2000) },
     ];
 
     const response = await fetch(LOVABLE_API_URL, {
