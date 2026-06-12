@@ -9,6 +9,18 @@ export type SectionType =
   | "divider"
   | "spacer";
 
+export interface LandingTheme {
+  /** Solid hex OR CSS gradient string (anything valid in `background`). */
+  background: string;
+  surface: string;        // panel/card fill
+  border: string;         // subtle border
+  textPrimary: string;
+  textMuted: string;
+  accent: string;         // table number, CTA buttons, links
+  fontHeading: string;    // Google Font family name
+  fontBody: string;       // Google Font family name
+}
+
 export interface HeroSection {
   id: string;
   type: "hero";
@@ -17,6 +29,7 @@ export interface HeroSection {
   bgColor: string;
   logoEmoji: string;
   heroImageUrl?: string;
+  overlayOpacity?: number; // 0–0.9, default 0.5
 }
 
 export interface TableDisplaySection {
@@ -40,6 +53,11 @@ export interface FeaturedItemsSection {
   type: "featured-items";
   title: string;
   items: FeaturedItem[];
+  bgColor?: string;
+  cardBgColor?: string;
+  cardBorderColor?: string;
+  titleColor?: string;
+  priceColor?: string;
 }
 
 export interface LoyaltyCTASection {
@@ -50,6 +68,14 @@ export interface LoyaltyCTASection {
   variant?: "text" | "image";
   imageUrl?: string;
   icon?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  bgColor?: string;
+  borderColor?: string;
+  headingColor?: string;
+  descriptionColor?: string;
+  buttonBgColor?: string;
+  buttonTextColor?: string;
 }
 
 export interface HoursLocationSection {
@@ -57,6 +83,10 @@ export interface HoursLocationSection {
   type: "hours-location";
   address: string;
   hours: string;
+  mapUrl?: string;
+  bgColor?: string;
+  headingColor?: string;
+  textColor?: string;
 }
 
 export interface SocialLinksSection {
@@ -65,17 +95,24 @@ export interface SocialLinksSection {
   instagram: string;
   facebook: string;
   google: string;
+  iconColor?: string;
+  iconHoverColor?: string;
 }
 
 export interface TextSection {
   id: string;
   type: "text";
   content: string;
+  color?: string;
+  align?: "left" | "center" | "right";
+  weight?: "normal" | "medium" | "bold";
 }
 
 export interface DividerSection {
   id: string;
   type: "divider";
+  color?: string;
+  thickness?: number;
 }
 
 export interface SpacerSection {
@@ -119,13 +156,51 @@ export const SECTION_DESCRIPTIONS: Record<SectionType, string> = {
   spacer: "Empty vertical space",
 };
 
+export function createDefaultTheme(): LandingTheme {
+  return {
+    background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+    surface: "rgba(255,255,255,0.08)",
+    border: "rgba(255,255,255,0.15)",
+    textPrimary: "#ffffff",
+    textMuted: "rgba(255,255,255,0.7)",
+    accent: "#7c3aed",
+    fontHeading: "Inter",
+    fontBody: "Inter",
+  };
+}
+
+export interface LandingPayload {
+  theme: LandingTheme;
+  sections: LandingSection[];
+}
+
+/** Parse stored JSON, upgrading legacy bare-array payloads with a default theme. */
+export function parseLandingPayload(raw: string | null | undefined): LandingPayload | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return { theme: createDefaultTheme(), sections: parsed as LandingSection[] };
+    }
+    if (parsed && Array.isArray(parsed.sections)) {
+      return {
+        theme: { ...createDefaultTheme(), ...(parsed.theme || {}) },
+        sections: parsed.sections as LandingSection[],
+      };
+    }
+  } catch {
+    // legacy HTML
+  }
+  return null;
+}
+
 export function createDefaultSection(type: SectionType): LandingSection {
   const id = crypto.randomUUID();
   switch (type) {
     case "hero":
-      return { id, type, title: "Welcome", subtitle: "Scan, order, enjoy — no app needed", bgColor: "#1a1a2e", logoEmoji: "🍽️", heroImageUrl: "" };
+      return { id, type, title: "Welcome", subtitle: "Scan, order, enjoy — no app needed", bgColor: "#1a1a2e", logoEmoji: "🍽️", heroImageUrl: "", overlayOpacity: 0.5 };
     case "table-display":
-      return { id, type, label: "Your Table", numberColor: "#7c3aed", bgColor: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.15)", labelColor: "rgba(255,255,255,0.5)" };
+      return { id, type, label: "Your Table" };
     case "featured-items":
       return {
         id, type, title: "Today's Specials",
@@ -135,13 +210,13 @@ export function createDefaultSection(type: SectionType): LandingSection {
         ],
       };
     case "loyalty-cta":
-      return { id, type, heading: "Earn Rewards", description: "Sign up for our loyalty program and earn points with every order.", variant: "text" as const, imageUrl: "", icon: "🎁" };
+      return { id, type, heading: "Earn Rewards", description: "Sign up for our loyalty program and earn points with every order.", variant: "text" as const, imageUrl: "", icon: "🎁", ctaLabel: "", ctaUrl: "" };
     case "hours-location":
       return { id, type, address: "123 Main Street, Sydney NSW 2000", hours: "Mon-Fri 11am-10pm · Sat-Sun 9am-11pm" };
     case "social-links":
       return { id, type, instagram: "", facebook: "", google: "" };
     case "text":
-      return { id, type, content: "Your text here" };
+      return { id, type, content: "Your text here", align: "center" };
     case "divider":
       return { id, type };
     case "spacer":

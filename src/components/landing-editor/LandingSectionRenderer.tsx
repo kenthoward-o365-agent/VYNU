@@ -1,21 +1,52 @@
-import type { LandingSection } from "./types";
+import { useEffect } from "react";
+import type { LandingSection, LandingTheme } from "./types";
+import { createDefaultTheme } from "./types";
 import type { ReactNode } from "react";
 
 interface Props {
   sections: LandingSection[];
+  theme?: LandingTheme;
   tableNumber?: string;
-  /** Index after which to inject inline action buttons (used on consumer landing) */
   inlineActionsAfterIndex?: number;
   inlineActions?: ReactNode;
 }
 
-const LandingSectionRenderer = ({ sections, tableNumber = "7", inlineActionsAfterIndex, inlineActions }: Props) => {
+/** Load a Google Font once per family. */
+function useGoogleFonts(families: string[]) {
+  useEffect(() => {
+    const unique = Array.from(new Set(families.filter(Boolean)));
+    const added: HTMLLinkElement[] = [];
+    unique.forEach((family) => {
+      const id = `gf-${family.replace(/\s+/g, "-")}`;
+      if (document.getElementById(id)) return;
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@400;500;600;700;800&display=swap`;
+      document.head.appendChild(link);
+      added.push(link);
+    });
+    // Don't remove on unmount — fonts may be in use by other previews.
+  }, [families.join("|")]);
+}
+
+const LandingSectionRenderer = ({ sections, theme: themeProp, tableNumber = "7", inlineActionsAfterIndex, inlineActions }: Props) => {
+  const theme = { ...createDefaultTheme(), ...(themeProp || {}) };
+  useGoogleFonts([theme.fontHeading, theme.fontBody]);
+
   return (
-    <div className="min-h-screen text-white font-sans" style={{ background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)" }}>
+    <div
+      className="min-h-screen font-sans"
+      style={{
+        background: theme.background,
+        color: theme.textPrimary,
+        fontFamily: `'${theme.fontBody}', system-ui, sans-serif`,
+      }}
+    >
       <div className="max-w-3xl mx-auto">
         {sections.map((section, index) => (
           <div key={section.id}>
-            <RenderSection section={section} tableNumber={tableNumber} />
+            <RenderSection section={section} theme={theme} tableNumber={tableNumber} />
             {inlineActions && index === inlineActionsAfterIndex && inlineActions}
           </div>
         ))}
@@ -24,60 +55,106 @@ const LandingSectionRenderer = ({ sections, tableNumber = "7", inlineActionsAfte
   );
 };
 
-function RenderSection({ section, tableNumber }: { section: LandingSection; tableNumber: string }) {
+function RenderSection({ section, theme, tableNumber }: { section: LandingSection; theme: LandingTheme; tableNumber: string }) {
+  const headingFont = `'${theme.fontHeading}', system-ui, sans-serif`;
+
   switch (section.type) {
-    case "hero":
+    case "hero": {
+      const overlayOpacity = section.overlayOpacity ?? 0.5;
+      if (section.heroImageUrl) {
+        return (
+          <div className="relative w-full overflow-hidden aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] max-h-[60vh]">
+            <img
+              src={section.heroImageUrl}
+              alt={section.title}
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              loading="eager"
+            />
+            <div
+              className="absolute inset-0"
+              style={{ background: `linear-gradient(to bottom, rgba(0,0,0,${overlayOpacity * 0.8}) 0%, rgba(0,0,0,${overlayOpacity * 0.5}) 50%, rgba(0,0,0,${overlayOpacity}) 100%)` }}
+            />
+            <div className="relative z-10 flex flex-col items-center justify-center text-center h-full px-6 py-8" style={{ color: theme.textPrimary }}>
+              <h1 className="text-2xl md:text-4xl font-extrabold mb-1 md:mb-2 drop-shadow" style={{ fontFamily: headingFont }}>
+                {section.title}
+              </h1>
+              <p className="text-sm md:text-lg drop-shadow" style={{ color: theme.textPrimary, opacity: 0.9 }}>{section.subtitle}</p>
+            </div>
+          </div>
+        );
+      }
       return (
         <div
-          className="flex flex-col items-center justify-center text-center min-h-[40vh] px-6 py-12 md:py-20 relative overflow-hidden"
-          style={
-            section.heroImageUrl
-              ? { backgroundImage: `url(${section.heroImageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
-              : { background: section.bgColor || "transparent" }
-          }
+          className="flex flex-col items-center justify-center text-center min-h-[40vh] px-6 py-12 md:py-20"
+          style={{ background: section.bgColor || "transparent", color: theme.textPrimary }}
         >
-          {section.heroImageUrl && (
-            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70" />
-          )}
-          <div className="relative z-10">
-            {!section.heroImageUrl && (
-              <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl flex items-center justify-center text-3xl md:text-5xl mb-4 md:mb-6 mx-auto" style={{ background: "rgba(124,58,237,0.2)" }}>
-                {section.logoEmoji}
-              </div>
-            )}
-            <h1 className="text-2xl md:text-4xl font-extrabold mb-1 md:mb-2">{section.title}</h1>
-            <p className="text-sm md:text-lg text-white/70">{section.subtitle}</p>
+          <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl flex items-center justify-center text-3xl md:text-5xl mb-4 md:mb-6 mx-auto" style={{ background: theme.surface }}>
+            {section.logoEmoji}
           </div>
+          <h1 className="text-2xl md:text-4xl font-extrabold mb-1 md:mb-2" style={{ fontFamily: headingFont }}>{section.title}</h1>
+          <p className="text-sm md:text-lg" style={{ color: theme.textMuted }}>{section.subtitle}</p>
         </div>
       );
+    }
 
     case "table-display":
       return (
         <div className="flex justify-center px-6 py-6">
-          <div className="rounded-2xl px-8 py-6 text-center min-w-[140px] md:min-w-[200px]" style={{ background: section.bgColor ?? "rgba(255,255,255,0.1)", border: `1px solid ${section.borderColor ?? "rgba(255,255,255,0.15)"}` }}>
-            <p className="text-[0.65rem] md:text-xs uppercase tracking-widest mb-1" style={{ color: section.labelColor ?? "rgba(255,255,255,0.5)" }}>{section.label ?? "Your Table"}</p>
-            <p className="text-4xl md:text-6xl font-bold" style={{ color: section.numberColor ?? "#7c3aed" }}>{tableNumber}</p>
+          <div
+            className="rounded-2xl px-8 py-6 text-center min-w-[140px] md:min-w-[200px]"
+            style={{
+              background: section.bgColor ?? theme.surface,
+              border: `1px solid ${section.borderColor ?? theme.border}`,
+            }}
+          >
+            <p className="text-[0.65rem] md:text-xs uppercase tracking-widest mb-1" style={{ color: section.labelColor ?? theme.textMuted }}>{section.label ?? "Your Table"}</p>
+            <p className="text-4xl md:text-6xl font-bold" style={{ color: section.numberColor ?? theme.accent, fontFamily: headingFont }}>{tableNumber}</p>
           </div>
         </div>
       );
 
     case "featured-items":
       return (
-        <div className="px-6 py-8 text-center">
-          <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6">{section.title}</h2>
+        <div className="px-6 py-8 text-center" style={{ background: section.bgColor ?? "transparent" }}>
+          <h2 className="text-lg md:text-2xl font-bold mb-4 md:mb-6" style={{ color: section.titleColor ?? theme.textPrimary, fontFamily: headingFont }}>{section.title}</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-lg md:max-w-none mx-auto">
             {section.items.map((item, i) => (
-              <div key={i} className="rounded-xl p-3 md:p-4 border border-white/10" style={{ background: "rgba(255,255,255,0.08)" }}>
+              <div
+                key={i}
+                className="rounded-xl p-3 md:p-4"
+                style={{
+                  background: section.cardBgColor ?? theme.surface,
+                  border: `1px solid ${section.cardBorderColor ?? theme.border}`,
+                }}
+              >
                 <p className="text-2xl md:text-3xl mb-2">{item.emoji}</p>
-                <p className="font-semibold text-xs md:text-sm mb-1">{item.name}</p>
-                <p className="text-[#7c3aed] font-bold text-sm md:text-base">{item.price}</p>
+                <p className="font-semibold text-xs md:text-sm mb-1" style={{ color: theme.textPrimary }}>{item.name}</p>
+                <p className="font-bold text-sm md:text-base" style={{ color: section.priceColor ?? theme.accent }}>{item.price}</p>
               </div>
             ))}
           </div>
         </div>
       );
 
-    case "loyalty-cta":
+    case "loyalty-cta": {
+      const icon = section.icon !== undefined ? section.icon : "🎁";
+      const iconPrefix = icon ? `${icon} ` : "";
+      const showButton = !!(section.ctaUrl && section.ctaLabel);
+      const Button = showButton ? (
+        <a
+          href={section.ctaUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block mt-4 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
+          style={{
+            background: section.buttonBgColor ?? theme.accent,
+            color: section.buttonTextColor ?? "#ffffff",
+          }}
+        >
+          {section.ctaLabel}
+        </a>
+      ) : null;
+
       if (section.variant === "image" && section.imageUrl) {
         return (
           <div className="flex justify-center px-6 py-6">
@@ -87,8 +164,9 @@ function RenderSection({ section, tableNumber }: { section: LandingSection; tabl
             >
               <div className="absolute inset-0 bg-black/40" />
               <div className="relative z-10 p-5 md:p-8">
-                <p className="font-semibold text-base md:text-xl mb-2">{(() => { const icon = section.icon !== undefined ? section.icon : "🎁"; return icon ? `${icon} ` : ""; })()}{section.heading}</p>
-                <p className="text-sm md:text-base text-white/80">{section.description}</p>
+                <p className="font-semibold text-base md:text-xl mb-2" style={{ color: section.headingColor ?? "#fff", fontFamily: headingFont }}>{iconPrefix}{section.heading}</p>
+                <p className="text-sm md:text-base" style={{ color: section.descriptionColor ?? "rgba(255,255,255,0.85)" }}>{section.description}</p>
+                {Button}
               </div>
             </div>
           </div>
@@ -96,57 +174,91 @@ function RenderSection({ section, tableNumber }: { section: LandingSection; tabl
       }
       return (
         <div className="flex justify-center px-6 py-6">
-          <div className="rounded-2xl p-5 md:p-8 w-full max-w-xs md:max-w-md text-center border border-[#7c3aed]/30" style={{ background: "rgba(124,58,237,0.15)" }}>
-            <p className="font-semibold text-base md:text-xl mb-2">{(() => { const icon = section.icon !== undefined ? section.icon : "🎁"; return icon ? `${icon} ` : ""; })()}{section.heading}</p>
-            <p className="text-sm md:text-base text-white/70">{section.description}</p>
+          <div
+            className="rounded-2xl p-5 md:p-8 w-full max-w-xs md:max-w-md text-center"
+            style={{
+              background: section.bgColor ?? `${theme.accent}26`,
+              border: `1px solid ${section.borderColor ?? `${theme.accent}55`}`,
+            }}
+          >
+            <p className="font-semibold text-base md:text-xl mb-2" style={{ color: section.headingColor ?? theme.textPrimary, fontFamily: headingFont }}>{iconPrefix}{section.heading}</p>
+            <p className="text-sm md:text-base" style={{ color: section.descriptionColor ?? theme.textMuted }}>{section.description}</p>
+            {Button}
           </div>
         </div>
       );
+    }
 
-    case "hours-location":
+    case "hours-location": {
+      const content = (
+        <>
+          <h3 className="text-base md:text-xl font-semibold mb-3" style={{ color: section.headingColor ?? theme.textPrimary, fontFamily: headingFont }}>📍 Find Us</h3>
+          <p className="text-sm md:text-base mb-1" style={{ color: section.textColor ?? theme.textMuted }}>{section.address}</p>
+          <p className="text-sm md:text-base" style={{ color: section.textColor ?? theme.textMuted }}>{section.hours}</p>
+        </>
+      );
       return (
-        <div className="px-6 py-8 text-center">
-          <h3 className="text-base md:text-xl font-semibold mb-3">📍 Find Us</h3>
-          <p className="text-sm md:text-base text-white/70 mb-1">{section.address}</p>
-          <p className="text-sm md:text-base text-white/70">{section.hours}</p>
+        <div className="px-6 py-8 text-center" style={{ background: section.bgColor ?? "transparent" }}>
+          {section.mapUrl ? (
+            <a href={section.mapUrl} target="_blank" rel="noopener noreferrer" className="block hover:opacity-80 transition-opacity">
+              {content}
+            </a>
+          ) : content}
         </div>
       );
+    }
 
-    case "social-links":
+    case "social-links": {
+      const iconColor = section.iconColor ?? theme.textMuted;
       return (
         <div className="flex items-center justify-center gap-6 md:gap-8 px-6 py-6">
           {section.instagram && (
-            <a href={section.instagram} className="text-white/60 hover:text-white transition-colors" target="_blank" rel="noopener noreferrer">
+            <a href={section.instagram} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: iconColor }}>
               <svg className="w-6 h-6 md:w-8 md:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
             </a>
           )}
           {section.facebook && (
-            <a href={section.facebook} className="text-white/60 hover:text-white transition-colors" target="_blank" rel="noopener noreferrer">
+            <a href={section.facebook} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: iconColor }}>
               <svg className="w-6 h-6 md:w-8 md:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
             </a>
           )}
           {section.google && (
-            <a href={section.google} className="text-white/60 hover:text-white transition-colors" target="_blank" rel="noopener noreferrer">
+            <a href={section.google} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: iconColor }}>
               <svg className="w-6 h-6 md:w-8 md:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
             </a>
           )}
           {!section.instagram && !section.facebook && !section.google && (
-            <p className="text-white/40 text-sm">Add your social links</p>
+            <p className="text-sm" style={{ color: theme.textMuted }}>Add your social links</p>
           )}
         </div>
       );
+    }
 
     case "text":
       return (
-        <div className="px-6 py-4 text-center">
-          <p className="text-sm md:text-base text-white/80">{section.content}</p>
+        <div className="px-6 py-4" style={{ textAlign: section.align ?? "center" }}>
+          <p
+            className="text-sm md:text-base"
+            style={{
+              color: section.color ?? theme.textMuted,
+              fontWeight: section.weight === "bold" ? 700 : section.weight === "medium" ? 500 : 400,
+            }}
+          >
+            {section.content}
+          </p>
         </div>
       );
 
     case "divider":
       return (
         <div className="px-6 py-2">
-          <hr className="border-white/15 mx-auto max-w-[200px] md:max-w-[300px]" />
+          <hr
+            className="mx-auto max-w-[200px] md:max-w-[300px]"
+            style={{
+              borderColor: section.color ?? theme.border,
+              borderTopWidth: `${section.thickness ?? 1}px`,
+            }}
+          />
         </div>
       );
 
