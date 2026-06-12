@@ -60,7 +60,7 @@ const venueNavItems: NavItem[] = [
   { path: "/diners", label: "Diners", icon: { light: navDiners, dark: navDinersDark }, hasSub: true, navKey: "diners" },
   { path: "/reporting", label: "DayEnd", icon: CalendarCheck, hasSub: true, navKey: "settings" },
   { path: "/billing", label: "Billing", icon: Receipt, navKey: "settings" },
-  { path: "/settings", label: "Settings", icon: { light: navSettings, dark: navSettingsDark }, hasSub: true, navKey: "settings" },
+  { path: "/settings", label: "Settings", icon: { light: navSettings, dark: navSettingsDark }, navKey: "settings" },
 ];
 
 const groupNavItems = [
