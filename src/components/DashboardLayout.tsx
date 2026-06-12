@@ -237,14 +237,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         <nav className={cn("flex-1 overflow-y-auto space-y-1", pinned ? "p-2" : "p-3")}>
           {showVenueNav && filteredVenueNav.map((item) => {
-            const active = location.pathname === item.path || (item.path === "/settings" && location.pathname.startsWith("/settings")) || (item.path === "/diners" && location.pathname.startsWith("/diners")) || (item.path === "/pricing" && location.pathname === "/menu-times") || (item.path === "/reporting" && location.pathname.startsWith("/reporting")) || (item.path === "/orders" && location.pathname.startsWith("/orders"));
-            const isMenuBuilder = item.path === "/menu";
-            const isDiners = item.path === "/diners";
-            const isPricing = item.path === "/pricing";
-            const isDayEnd = item.path === "/reporting";
-            const isOrders = item.path === "/orders";
-            const hasSub = isMenuBuilder || isDiners || isPricing || isDayEnd || isOrders;
-            const groupKey = isMenuBuilder ? "menu" : isDiners ? "diners" : isPricing ? "pricing" : isDayEnd ? "reporting" : isOrders ? "orders" : null;
+            const active =
+              location.pathname === item.path ||
+              (item.path === "/settings" && location.pathname.startsWith("/settings")) ||
+              (item.path === "/diners" && location.pathname.startsWith("/diners")) ||
+              (item.path === "/pricing" && (location.pathname === "/menu-times" || location.pathname === "/rule-types")) ||
+              (item.path === "/menu" && location.pathname === "/modifiers") ||
+              (item.path === "/reporting" && location.pathname.startsWith("/reporting")) ||
+              (item.path === "/orders/settings" && (location.pathname === "/orders/statuses" || location.pathname === "/orders/throttling" || location.pathname === "/orders/settings")) ||
+              (item.path === "/orders" && location.pathname === "/orders");
 
             const iconEl = typeof item.icon === 'object' && 'light' in item.icon ? (
               <img src={theme === 'dark' ? item.icon.dark : item.icon.light} className="h-4 w-4 shrink-0" alt="" />
@@ -255,155 +256,42 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             );
 
             if (pinned) {
-              const subItems: { to: string; label: string; icon: any }[] = isMenuBuilder ? [
-                { to: "/menu?import=true", label: "Import", icon: Upload },
-                { to: "/menu?enhance=true", label: "Enhance Images", icon: ImagePlus },
-                { to: "/modifiers", label: "Modifiers", icon: SlidersHorizontal },
-              ] : isOrders ? [
-                { to: "/orders/statuses", label: "Order Display System", icon: Monitor },
-                { to: "/orders/throttling", label: "Operational Throttling", icon: Sliders },
-              ] : isPricing ? [
-                { to: "/rule-types", label: "Rule Types", icon: Tag },
-              ] : isDiners ? [
-                { to: "/diners/preferences", label: "Diner Preferences", icon: Settings },
-              ] : isDayEnd ? [
-                { to: "/reporting", label: "Reporting", icon: FileText },
-              ] : [];
-
-              const linkEl = (
-                <Link
-                  to={item.path}
-                  onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    "flex items-center justify-center h-10 w-full rounded-lg transition-colors",
-                    active
-                      ? "bg-sidebar-accent text-sidebar-primary"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  {iconEl}
-                </Link>
-              );
-
-              if (hasSub && subItems.length > 0) {
-                return (
-                  <HoverCard key={item.path} openDelay={80} closeDelay={120}>
-                    <HoverCardTrigger asChild>{linkEl}</HoverCardTrigger>
-                    <HoverCardContent side="right" align="start" sideOffset={8} className="w-56 p-1.5">
-                      <div className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border mb-1">
-                        {item.label}
-                      </div>
-                      <div className="space-y-0.5">
-                        {subItems.map((sub) => (
-                          <Link
-                            key={sub.to}
-                            to={sub.to}
-                            onClick={() => setSidebarOpen(false)}
-                            className="flex items-center gap-2 px-2 py-1.5 rounded-md text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                          >
-                            <sub.icon className="h-3.5 w-3.5 shrink-0" />
-                            {sub.label}
-                          </Link>
-                        ))}
-                      </div>
-                    </HoverCardContent>
-                  </HoverCard>
-                );
-              }
-
               return (
                 <Tooltip key={item.path}>
-                  <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={item.path}
+                      onClick={() => setSidebarOpen(false)}
+                      className={cn(
+                        "flex items-center justify-center h-10 w-full rounded-lg transition-colors",
+                        active
+                          ? "bg-sidebar-accent text-sidebar-primary"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                      )}
+                    >
+                      {iconEl}
+                    </Link>
+                  </TooltipTrigger>
                   <TooltipContent side="right">{item.label}</TooltipContent>
                 </Tooltip>
               );
             }
 
             return (
-              <Collapsible
+              <Link
                 key={item.path}
-                open={hasSub ? openGroup === groupKey : false}
-                onOpenChange={(v) => { if (hasSub && groupKey) setOpenGroup(v ? groupKey : null); }}
+                to={item.path}
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
+                  active
+                    ? "bg-sidebar-accent text-sidebar-primary"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                )}
               >
-                <div className="flex items-center">
-                  <Link
-                    to={item.path}
-                    onClick={() => setSidebarOpen(false)}
-                    className={cn(
-                      "flex-1 flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
-                      active
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    )}
-                  >
-                    {typeof item.icon === 'object' && 'light' in item.icon ? (
-                      <img src={theme === 'dark' ? item.icon.dark : item.icon.light} className="h-4 w-4 shrink-0" alt="" />
-                    ) : typeof item.icon === 'string' ? (
-                      <img src={item.icon} className="h-4 w-4 shrink-0" alt="" />
-                    ) : (
-                      <item.icon className="h-4 w-4 shrink-0" />
-                    )}
-                    {item.label}
-                  </Link>
-                  {hasSub && (
-                    <CollapsibleTrigger className="p-2 rounded-md text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors group">
-                      <ChevronDown className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-180" />
-                    </CollapsibleTrigger>
-                  )}
-                </div>
-                {isMenuBuilder && (
-                  <CollapsibleContent className="pl-8 space-y-0.5">
-                    <Link to="/menu?import=true" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
-                      <Upload className="h-3 w-3" />
-                      Import
-                    </Link>
-                    <Link to="/menu?enhance=true" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
-                      <ImagePlus className="h-3 w-3" />
-                      Enhance Images
-                    </Link>
-                    <Link to="/modifiers" onClick={() => setSidebarOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors">
-                      <SlidersHorizontal className="h-3 w-3" />
-                      Modifiers
-                    </Link>
-                  </CollapsibleContent>
-                )}
-                {isOrders && (
-                  <CollapsibleContent className="pl-8 space-y-0.5">
-                    <Link to="/orders/statuses" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/orders/statuses" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
-                      <Monitor className="h-3 w-3" />
-                      Order Display System
-                    </Link>
-                    <Link to="/orders/throttling" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/orders/throttling" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
-                      <Sliders className="h-3 w-3" />
-                      Operational Throttling
-                    </Link>
-                  </CollapsibleContent>
-                )}
-                {isPricing && (
-                  <CollapsibleContent className="pl-8 space-y-0.5">
-                    <Link to="/rule-types" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/rule-types" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
-                      <Tag className="h-3 w-3" />
-                      Rule Types
-                    </Link>
-                  </CollapsibleContent>
-                )}
-                {isDiners && (
-                  <CollapsibleContent className="pl-8 space-y-0.5">
-                    <Link to="/diners/preferences" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/diners/preferences" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
-                      <Settings className="h-3 w-3" />
-                      Diner Preferences
-                    </Link>
-                  </CollapsibleContent>
-                )}
-                {isDayEnd && (
-                  <CollapsibleContent className="pl-8 space-y-0.5">
-                    <Link to="/reporting" onClick={() => setSidebarOpen(false)} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-colors", location.pathname === "/reporting" ? "bg-sidebar-accent text-sidebar-primary font-medium" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")}>
-                      <FileText className="h-3 w-3" />
-                      Reporting
-                    </Link>
-                  </CollapsibleContent>
-                )}
-              </Collapsible>
+                {iconEl}
+                {item.label}
+              </Link>
             );
           })}
 
