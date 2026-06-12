@@ -90,25 +90,15 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
     let cancelled = false;
     (async () => {
       setLoadingMods(true);
-      const { data: itemMods } = await supabase
-        .from("menu_item_modifiers")
-        .select("modifier_category_id, is_required, display_order")
-        .eq("menu_item_id", item.id);
+      const { data } = await (supabase as any).rpc("get_item_modifiers_public", {
+        _venue_id: venueId,
+        _menu_item_id: item.id,
+      });
 
-      const itemModRows = (itemMods || []) as Array<{
-        modifier_category_id: string;
-        is_required: boolean;
-        display_order: number | null;
-      }>;
-      const catIds = itemModRows.map((r) => r.modifier_category_id);
-      const perItemMeta = new Map(
-        itemModRows.map((r) => [r.modifier_category_id, {
-          is_required: !!r.is_required,
-          item_display_order: r.display_order ?? 0,
-        }]),
-      );
+      const categoryRows = ((data as any)?.categories || []) as ModifierCategoryRow[];
+      const modifierRows = ((data as any)?.modifiers || []) as ModifierRow[];
 
-      if (catIds.length === 0) {
+      if (categoryRows.length === 0) {
         if (!cancelled) {
           setCategories([]);
           setModifiers([]);
@@ -117,32 +107,9 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
         return;
       }
 
-      const [catsRes, modsRes] = await Promise.all([
-        supabase
-          .from("modifier_categories")
-          .select("id, name, display_order, selection_type, min_selection, max_selection")
-          .in("id", catIds)
-          .eq("is_active", true)
-          .order("display_order"),
-        supabase
-          .from("modifiers")
-          .select("id, category_id, name, price, display_order, is_active")
-          .in("category_id", catIds)
-          .eq("is_active", true)
-          .order("display_order"),
-      ]);
-
       if (cancelled) return;
-      const merged: ModifierCategoryRow[] = ((catsRes.data as any[]) || []).map((c) => {
-        const meta = perItemMeta.get(c.id);
-        return {
-          ...c,
-          is_required: meta?.is_required ?? false,
-          item_display_order: meta?.item_display_order ?? c.display_order ?? 0,
-        };
-      });
-      setCategories(merged);
-      setModifiers((modsRes.data as any) || []);
+      setCategories(categoryRows);
+      setModifiers(modifierRows);
       setLoadingMods(false);
     })();
     return () => {
