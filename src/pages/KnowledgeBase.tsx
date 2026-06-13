@@ -188,7 +188,7 @@ export default function KnowledgeBase() {
 
 
         {/* Getting Started */}
-        <Section id="getting-started" title="Getting Started" icon={Rocket}>
+        <Section id="getting-started" title="Getting Started" icon={Rocket} hidden={isHidden("getting-started")}>
           <SubSection title="Welcome to H&L OrderNOW">
             <p>H&L OrderNOW replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue&apos;s AI assistant, and place orders — no app download required.</p>
           </SubSection>
@@ -216,7 +216,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* POS Terminal Interface */}
-        <Section id="pos-terminal-ui" title="POS Terminal Interface" icon={MonitorSmartphone}>
+        <Section id="pos-terminal-ui" title="POS Terminal Interface" icon={MonitorSmartphone} hidden={isHidden("pos-terminal-ui")}>
           <SubSection title="A real terminal, in the browser">
             <p>H&L OrderNOW runs inside a virtual <strong>POS terminal chassis</strong> — a dark, bezelled frame locked to the viewport on desktop and tablet. The frame stays fixed while only the &quot;screen&quot; inside scrolls, exactly like a physical Lightspeed/Revel-style terminal at the pass. The chassis is hidden on phones so you get the full screen on the floor.</p>
           </SubSection>
@@ -269,7 +269,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Dashboard */}
-        <Section id="dashboard" title="Dashboard" icon={LayoutDashboard}>
+        <Section id="dashboard" title="Dashboard" icon={LayoutDashboard} hidden={isHidden("dashboard")}>
           <SubSection title="Understanding Your Metrics">
             <p>Your dashboard gives you a real-time snapshot of today&apos;s performance:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
@@ -286,7 +286,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Spark AI Analytics */}
-        <Section id="shyndig-ai-analytics" title="Spark AI Analytics" icon={BarChart3}>
+        <Section id="shyndig-ai-analytics" title="Spark AI Analytics" icon={BarChart3} hidden={isHidden("shyndig-ai-analytics")}>
           <SubSection title="What the AI Tracks">
             <p>Spark AI Analytics shows you how diners interact with your AI assistant:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
@@ -302,7 +302,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Menu Builder */}
-        <Section id="menu-builder" title="Menu Builder" icon={UtensilsCrossed}>
+        <Section id="menu-builder" title="Menu Builder" icon={UtensilsCrossed} hidden={isHidden("menu-builder")}>
           <SubSection title="Categories &amp; Items">
             <StepList steps={[
               "Click 'Add Category' to create a section (e.g. Starters, Mains, Drinks).",
@@ -349,7 +349,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Pricing */}
-        <Section id="pricing" title="Pricing" icon={Tag}>
+        <Section id="pricing" title="Pricing" icon={Tag} hidden={isHidden("pricing")}>
           <SubSection title="Dynamic Pricing Rules">
             <p>Create rules that automatically adjust menu prices based on time, day, or special events:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
@@ -372,7 +372,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Tables & QR */}
-        <Section id="tables-qr" title="Tables &amp; QR" icon={QrCode}>
+        <Section id="tables-qr" title="Tables &amp; QR" icon={QrCode} hidden={isHidden("tables-qr")}>
           <SubSection title="Creating Tables">
             <StepList steps={[
               "Click 'Add Table' and enter the table number.",
@@ -392,7 +392,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Orders */}
-        <Section id="orders" title="Orders" icon={ClipboardList}>
+        <Section id="orders" title="Orders" icon={ClipboardList} hidden={isHidden("orders")}>
           <SubSection title="Default Order Lifecycle">
             <p>New venues start with these statuses (you can rename, recolour, reorder, add, or remove them in Order Display System):</p>
             <ol className="list-decimal list-inside space-y-1 pl-1">
@@ -446,7 +446,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Display Terminals */}
-        <Section id="display-terminals" title="Display Terminals" icon={Monitor}>
+        <Section id="display-terminals" title="Display Terminals" icon={Monitor} hidden={isHidden("display-terminals")}>
           <SubSection title="What they are">
             <p>Display Terminals are a lightweight way to show orders on any screen — kitchen, bar, expo, coffee station — without buying dedicated hardware or installing software. Any device with a browser can become a terminal in under a minute.</p>
             <p>Key point — these are <em>display</em> terminals, not <em>ordering</em> terminals. Diners cannot order from them. Staff cannot mark orders ready from them. They simply show the orders assigned to specific <strong>Display Areas</strong> in real time, so the right station sees what they need to make.</p>
@@ -525,7 +525,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Operational Throttling */}
-        <Section id="operational-throttling" title="Operational Throttling" icon={Sliders}>
+        <Section id="operational-throttling" title="Operational Throttling" icon={Sliders} hidden={isHidden("operational-throttling")}>
           <SubSection title="What it is">
             <p>
               Operational Throttling is per-station flood control. Every Display Area (Kitchen, Bar, Expo, Take Away, Coffee, Dessert, etc.) has its own queue with its own capacity settings and its own mode. When a rush hits, throttling holds new tickets back and releases them at a rate the station can actually keep up with — instead of dumping 25 dockets on the kitchen at once.
@@ -711,7 +711,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Analytics */}
-        <Section id="analytics" title="Analytics" icon={TrendingUp}>
+        <Section id="analytics" title="Analytics" icon={TrendingUp} hidden={isHidden("analytics")}>
           <SubSection title="Revenue &amp; Performance">
             <p>The Analytics page provides deeper insights beyond the dashboard:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
@@ -726,7 +726,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Diners */}
-        <Section id="diners" title="Diners — CRM" icon={Users}>
+        <Section id="diners" title="Diners — CRM" icon={Users} hidden={isHidden("diners")}>
           <SubSection title="Diner Directory">
             <p>The Diners page is a full multi-channel CRM, organised into four tabs:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
@@ -779,7 +779,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* POS Integration — H&L Exceed Web Orders */}
-        <Section id="pos-integration" title="POS Integration — H&L Exceed Web Orders" icon={Plug}>
+        <Section id="pos-integration" title="POS Integration — H&L Exceed Web Orders" icon={Plug} hidden={isHidden("pos-integration")}>
           <SubSection title="What this integration does">
             <p>
               When a diner places an order through H&L OrderNOW, we can push that order straight into your H&L Exceed POS via the <strong>H&L Web Orders API</strong>. The order opens on the POS exactly as if a staff member had keyed it in — same docket, same PLUs, same tender, same table. No double-handling, no re-keying at end of service.
@@ -913,7 +913,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Test Cards */}
-        <Section id="test-cards" title="Test Cards" icon={CreditCard}>
+        <Section id="test-cards" title="Test Cards" icon={CreditCard} hidden={isHidden("test-cards")}>
           <SubSection title="Payment Testing">
             <p>When your venue is in Test mode (Settings → Payments), use these test card numbers to simulate different payment scenarios. No real charges are made in test mode.</p>
           </SubSection>
@@ -945,7 +945,7 @@ export default function KnowledgeBase() {
         </Section>
 
         {/* Settings */}
-        <Section id="settings" title="Settings" icon={Settings}>
+        <Section id="settings" title="Settings" icon={Settings} hidden={isHidden("settings")}>
           <SubSection title="Details">
             <p>Update your venue name, type, address, contact information, logo, and operating hours. This information is displayed to diners and used by the AI assistant.</p>
           </SubSection>
