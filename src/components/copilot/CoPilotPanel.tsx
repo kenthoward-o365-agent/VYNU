@@ -25,10 +25,10 @@ interface ChatMessage {
 }
 
 const EXAMPLES = [
+  "Show me how to add a menu item",
+  "Walk me through refunding an order",
+  "How do I connect H&L Exceed POS?",
   "What was last night's revenue?",
-  "Top 5 selling items this week",
-  "Any unpaid invoices?",
-  "How do I refund an order?",
 ];
 
 export default function CoPilotPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
