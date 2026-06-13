@@ -12,22 +12,87 @@ const corsHeaders = {
 type Json = Record<string, unknown>;
 
 // ---------- Knowledge Base topics (kept in sync with src/pages/KnowledgeBase.tsx) ----------
-const KB_TOPICS: { id: string; label: string; summary: string }[] = [
-  { id: "getting-started", label: "Getting Started", summary: "Onboarding wizard, venue details, first menu import, first table set, and going live with QR codes." },
-  { id: "dashboard", label: "Dashboard", summary: "Today's revenue, orders, top items, ticket times, abandonment, table utilization, hourly revenue chart." },
-  { id: "shyndig-ai-analytics", label: "Spark AI Analytics", summary: "How diners use the AI chat — conversion rate, top intents, popular suggestions, conversation depth." },
-  { id: "menu-builder", label: "Menu Builder", summary: "Categories, items, modifiers, display areas, time frames, image enhancement, and POS sync." },
-  { id: "pricing", label: "Pricing", summary: "Pricing rules (happy hour, member, dynamic), rule types, schedule-based item pricing." },
-  { id: "tables-qr", label: "Tables & QR", summary: "Creating tables, downloading QR sticker PDFs. QR URLs are permanent — never reprint after edits." },
-  { id: "orders", label: "Orders", summary: "Live order board, status flow, refunds, re-opening closed orders, throttled orders, fire-bar." },
-  { id: "display-terminals", label: "Display Terminals (KDS)", summary: "Pair kitchen/bar display terminals via short code, assign to display areas, color-coded urgency." },
-  { id: "operational-throttling", label: "Operational Throttling", summary: "Cap inbound order rate during peak — add extra wait minutes, configure thresholds per service." },
-  { id: "analytics", label: "Analytics", summary: "Deeper trends: revenue by hour/day/item/staff, abandonment, ticket times, top items." },
-  { id: "diners", label: "Diners", summary: "Diner profiles, preferences, loyalty balances, visit history, stored payment methods." },
-  { id: "settings", label: "Settings", summary: "Venue details, users/roles, loyalty, H&L OrderNOW AI tone, payments (H&L Pay), gratuities, surcharges, taxes (GST), table sessions, integrations." },
-  { id: "pos-integration", label: "POS Integration (H&L Exceed)", summary: "Configure H&L POS credentials, auto-push orders, manual product sync, webhook handling." },
-  { id: "test-cards", label: "Test Cards", summary: "Adyen test card numbers for sandbox checkout flows." },
+const KB_TOPICS: { id: string; label: string; summary: string; details: string[] }[] = [
+  { id: "getting-started", label: "Getting Started", summary: "Onboarding wizard, venue details, first menu import, first table set, and going live with QR codes.",
+    details: [
+      "Onboarding wizard captures venue name, ABN, address, timezone (default Australia/Sydney), and trading hours.",
+      "Import your first menu via CSV/Square/POS pull or build from scratch in Menu Builder.",
+      "Create your first batch of tables under Tables, then download the QR sticker PDF and print/stick on tables.",
+      "Flip the venue to live from Settings → General once your menu, tables, and payments are ready.",
+    ] },
+  { id: "pos-terminal-ui", label: "POS Terminal Interface", summary: "Dark bezelled terminal chassis. Top status bar (logo, venue, shift, user, clock). Tile nav with pin toggle. Status footer (online, printer, card terminal, version).",
+    details: [
+      "On desktop/tablet the whole app is locked inside a dark POS bezel. On phones the bezel is hidden for full-screen access.",
+      "Top bar shows H&L logo, venue + site ID, shift label, user/role, and a live Australia/Sydney clock.",
+      "Sidebar tiles can be pinned (88px expanded) or collapsed (64px). Phones use a hamburger drawer.",
+      "Footer rail: online LED, printer / card terminal placeholders, app version, sign out, theme toggle, and the CoPilot trigger.",
+    ] },
+  { id: "dashboard", label: "Dashboard", summary: "Today's revenue, orders, top items, ticket times, abandonment, table utilization, hourly revenue chart.",
+    details: [
+      "Top tiles: today's revenue (tax-inclusive), order count, average ticket, abandonment %.",
+      "Ticket times card shows average + p90 from order placed → completed.",
+      "Hourly chart highlights peak times — use it to plan throttling and staffing.",
+    ] },
+  { id: "shyndig-ai-analytics", label: "Spark AI Analytics", summary: "How diners use the AI chat — conversion rate, top intents, popular suggestions, conversation depth.",
+    details: ["Conversion = chats that produced an order ÷ total chats.", "Top intents reveal what diners actually ask (recommendations, allergens, upsells)."] },
+  { id: "menu-builder", label: "Menu Builder", summary: "Categories, items, modifiers, display areas, time frames, image enhancement, and POS sync.",
+    details: [
+      "Add Item: name, price, category, description, image. Use ‘Enhance image’ for AI cleanup.",
+      "Modifiers (e.g. milk choice, sauce, size) are reusable groups attached to items.",
+      "Display areas route items to the right kitchen/bar display terminal.",
+      "Pull from H&L Exceed via POS Integration to keep PLUs in sync.",
+    ] },
+  { id: "pricing", label: "Pricing", summary: "Pricing rules (happy hour, member, dynamic), rule types, schedule-based item pricing.",
+    details: ["Happy hour: schedule a discount window per category/item.", "Member pricing applies when a diner is identified via loyalty."] },
+  { id: "tables-qr", label: "Tables & QR", summary: "Creating tables, downloading QR sticker PDFs. QR URLs are permanent — never reprint after edits.",
+    details: [
+      "Add Table sets the table number + capacity. The QR is generated with a permanent UUID.",
+      "Download the QR PDF and stick on the table. Re-printing is NOT needed when you rename a table — the URL never changes.",
+    ] },
+  { id: "orders", label: "Orders", summary: "Live order board, status flow, refunds, re-opening closed orders, throttled orders, fire-bar.",
+    details: [
+      "Status flow: new → in_progress → ready → completed. Cancellations and refunds are tracked separately.",
+      "Refund: open the order card → Refund → confirm. Refund posts back via H&L Pay to the original card.",
+      "Re-open a closed order from the order detail menu to amend or add items.",
+      "Throttled orders show a wait-minute badge; the fire-bar groups items by kitchen station.",
+    ] },
+  { id: "display-terminals", label: "Display Terminals (KDS)", summary: "Pair kitchen/bar display terminals via short code, assign to display areas, color-coded urgency.",
+    details: ["On the terminal screen visit the pair URL, enter the short code shown in Display Terminals, then assign it to one or more display areas."] },
+  { id: "operational-throttling", label: "Operational Throttling", summary: "Cap inbound order rate during peak — add extra wait minutes, configure thresholds per service.",
+    details: ["Set ‘orders per 10 min’ thresholds. When exceeded, diner checkout shows extra wait time before they pay."] },
+  { id: "analytics", label: "Analytics", summary: "Deeper trends: revenue by hour/day/item/staff, abandonment, ticket times, top items.",
+    details: ["Use date range presets (today, 7d, 28d, custom). Export CSV from any chart's overflow menu."] },
+  { id: "diners", label: "Diners", summary: "Diner profiles, preferences, loyalty balances, visit history, stored payment methods.",
+    details: ["Diner preferences (allergens, dietary, favourite items) feed the AI chat for personalised suggestions."] },
+  { id: "settings", label: "Settings", summary: "Venue details, users/roles, loyalty, H&L OrderNOW AI tone, payments (H&L Pay), gratuities, surcharges, taxes (GST), table sessions, integrations.",
+    details: [
+      "Users tab: invite staff, assign roles (owner, manager, staff). Role drives nav + tool access (e.g. CoPilot financials are admin-only).",
+      "Payments (H&L Pay): connect your H&L Pay account, set processing currency, manage payout schedule.",
+      "Gratuities & surcharges: default tip suggestions (10/15/20%), weekend/public-holiday surcharges, GST inclusive/exclusive.",
+      "Table sessions: choose pay-as-you-go vs end-of-meal billing.",
+      "Integrations: H&L Exceed POS, loyalty providers, accounting exports.",
+    ] },
+  { id: "pos-integration", label: "POS Integration (H&L Exceed)", summary: "Configure H&L POS credentials, auto-push orders, manual product sync, webhook handling.",
+    details: [
+      "Settings → Integrations → H&L Exceed. Enter API URL + key. Hit Test Connection.",
+      "Enable Auto-push so paid orders flow to the POS instantly. Use Manual Sync to pull product changes.",
+      "Webhooks: POS sends back receipt/print confirmations and refund acks.",
+    ] },
+  { id: "test-cards", label: "Test Cards", summary: "Adyen test card numbers for sandbox checkout flows.",
+    details: ["Use sandbox-only PANs from the Test Cards page — never live cards in test mode."] },
 ];
+
+// Walkthroughs available to the model (kept in sync with src/components/copilot/walkthroughs.ts).
+const WALKTHROUGHS = [
+  { id: "add-menu-item", title: "Add a menu item", description: "Create a new item in Menu Builder." },
+  { id: "create-table-qr", title: "Create a table and print its QR sticker", description: "Add a table and download the permanent QR PDF." },
+  { id: "refund-order", title: "Refund an order", description: "Refund on the live orders board." },
+  { id: "view-revenue", title: "See today's revenue", description: "Where today's revenue tiles live." },
+  { id: "configure-payments", title: "Configure H&L Pay payments", description: "Payments, gratuities, surcharges, GST." },
+  { id: "pos-integration", title: "Connect H&L Exceed POS", description: "Pair the POS so orders push automatically." },
+  { id: "open-knowledge-base", title: "Browse the Knowledge Base", description: "Open the full how-to library." },
+];
+
 
 // ---------- Tool catalog ----------
 const tools = [
