@@ -12,22 +12,87 @@ const corsHeaders = {
 type Json = Record<string, unknown>;
 
 // ---------- Knowledge Base topics (kept in sync with src/pages/KnowledgeBase.tsx) ----------
-const KB_TOPICS: { id: string; label: string; summary: string }[] = [
-  { id: "getting-started", label: "Getting Started", summary: "Onboarding wizard, venue details, first menu import, first table set, and going live with QR codes." },
-  { id: "dashboard", label: "Dashboard", summary: "Today's revenue, orders, top items, ticket times, abandonment, table utilization, hourly revenue chart." },
-  { id: "shyndig-ai-analytics", label: "Spark AI Analytics", summary: "How diners use the AI chat — conversion rate, top intents, popular suggestions, conversation depth." },
-  { id: "menu-builder", label: "Menu Builder", summary: "Categories, items, modifiers, display areas, time frames, image enhancement, and POS sync." },
-  { id: "pricing", label: "Pricing", summary: "Pricing rules (happy hour, member, dynamic), rule types, schedule-based item pricing." },
-  { id: "tables-qr", label: "Tables & QR", summary: "Creating tables, downloading QR sticker PDFs. QR URLs are permanent — never reprint after edits." },
-  { id: "orders", label: "Orders", summary: "Live order board, status flow, refunds, re-opening closed orders, throttled orders, fire-bar." },
-  { id: "display-terminals", label: "Display Terminals (KDS)", summary: "Pair kitchen/bar display terminals via short code, assign to display areas, color-coded urgency." },
-  { id: "operational-throttling", label: "Operational Throttling", summary: "Cap inbound order rate during peak — add extra wait minutes, configure thresholds per service." },
-  { id: "analytics", label: "Analytics", summary: "Deeper trends: revenue by hour/day/item/staff, abandonment, ticket times, top items." },
-  { id: "diners", label: "Diners", summary: "Diner profiles, preferences, loyalty balances, visit history, stored payment methods." },
-  { id: "settings", label: "Settings", summary: "Venue details, users/roles, loyalty, H&L OrderNOW AI tone, payments (H&L Pay), gratuities, surcharges, taxes (GST), table sessions, integrations." },
-  { id: "pos-integration", label: "POS Integration (H&L Exceed)", summary: "Configure H&L POS credentials, auto-push orders, manual product sync, webhook handling." },
-  { id: "test-cards", label: "Test Cards", summary: "Adyen test card numbers for sandbox checkout flows." },
+const KB_TOPICS: { id: string; label: string; summary: string; details: string[] }[] = [
+  { id: "getting-started", label: "Getting Started", summary: "Onboarding wizard, venue details, first menu import, first table set, and going live with QR codes.",
+    details: [
+      "Onboarding wizard captures venue name, ABN, address, timezone (default Australia/Sydney), and trading hours.",
+      "Import your first menu via CSV/Square/POS pull or build from scratch in Menu Builder.",
+      "Create your first batch of tables under Tables, then download the QR sticker PDF and print/stick on tables.",
+      "Flip the venue to live from Settings → General once your menu, tables, and payments are ready.",
+    ] },
+  { id: "pos-terminal-ui", label: "POS Terminal Interface", summary: "Dark bezelled terminal chassis. Top status bar (logo, venue, shift, user, clock). Tile nav with pin toggle. Status footer (online, printer, card terminal, version).",
+    details: [
+      "On desktop/tablet the whole app is locked inside a dark POS bezel. On phones the bezel is hidden for full-screen access.",
+      "Top bar shows H&L logo, venue + site ID, shift label, user/role, and a live Australia/Sydney clock.",
+      "Sidebar tiles can be pinned (88px expanded) or collapsed (64px). Phones use a hamburger drawer.",
+      "Footer rail: online LED, printer / card terminal placeholders, app version, sign out, theme toggle, and the CoPilot trigger.",
+    ] },
+  { id: "dashboard", label: "Dashboard", summary: "Today's revenue, orders, top items, ticket times, abandonment, table utilization, hourly revenue chart.",
+    details: [
+      "Top tiles: today's revenue (tax-inclusive), order count, average ticket, abandonment %.",
+      "Ticket times card shows average + p90 from order placed → completed.",
+      "Hourly chart highlights peak times — use it to plan throttling and staffing.",
+    ] },
+  { id: "shyndig-ai-analytics", label: "Spark AI Analytics", summary: "How diners use the AI chat — conversion rate, top intents, popular suggestions, conversation depth.",
+    details: ["Conversion = chats that produced an order ÷ total chats.", "Top intents reveal what diners actually ask (recommendations, allergens, upsells)."] },
+  { id: "menu-builder", label: "Menu Builder", summary: "Categories, items, modifiers, display areas, time frames, image enhancement, and POS sync.",
+    details: [
+      "Add Item: name, price, category, description, image. Use ‘Enhance image’ for AI cleanup.",
+      "Modifiers (e.g. milk choice, sauce, size) are reusable groups attached to items.",
+      "Display areas route items to the right kitchen/bar display terminal.",
+      "Pull from H&L Exceed via POS Integration to keep PLUs in sync.",
+    ] },
+  { id: "pricing", label: "Pricing", summary: "Pricing rules (happy hour, member, dynamic), rule types, schedule-based item pricing.",
+    details: ["Happy hour: schedule a discount window per category/item.", "Member pricing applies when a diner is identified via loyalty."] },
+  { id: "tables-qr", label: "Tables & QR", summary: "Creating tables, downloading QR sticker PDFs. QR URLs are permanent — never reprint after edits.",
+    details: [
+      "Add Table sets the table number + capacity. The QR is generated with a permanent UUID.",
+      "Download the QR PDF and stick on the table. Re-printing is NOT needed when you rename a table — the URL never changes.",
+    ] },
+  { id: "orders", label: "Orders", summary: "Live order board, status flow, refunds, re-opening closed orders, throttled orders, fire-bar.",
+    details: [
+      "Status flow: new → in_progress → ready → completed. Cancellations and refunds are tracked separately.",
+      "Refund: open the order card → Refund → confirm. Refund posts back via H&L Pay to the original card.",
+      "Re-open a closed order from the order detail menu to amend or add items.",
+      "Throttled orders show a wait-minute badge; the fire-bar groups items by kitchen station.",
+    ] },
+  { id: "display-terminals", label: "Display Terminals (KDS)", summary: "Pair kitchen/bar display terminals via short code, assign to display areas, color-coded urgency.",
+    details: ["On the terminal screen visit the pair URL, enter the short code shown in Display Terminals, then assign it to one or more display areas."] },
+  { id: "operational-throttling", label: "Operational Throttling", summary: "Cap inbound order rate during peak — add extra wait minutes, configure thresholds per service.",
+    details: ["Set ‘orders per 10 min’ thresholds. When exceeded, diner checkout shows extra wait time before they pay."] },
+  { id: "analytics", label: "Analytics", summary: "Deeper trends: revenue by hour/day/item/staff, abandonment, ticket times, top items.",
+    details: ["Use date range presets (today, 7d, 28d, custom). Export CSV from any chart's overflow menu."] },
+  { id: "diners", label: "Diners", summary: "Diner profiles, preferences, loyalty balances, visit history, stored payment methods.",
+    details: ["Diner preferences (allergens, dietary, favourite items) feed the AI chat for personalised suggestions."] },
+  { id: "settings", label: "Settings", summary: "Venue details, users/roles, loyalty, H&L OrderNOW AI tone, payments (H&L Pay), gratuities, surcharges, taxes (GST), table sessions, integrations.",
+    details: [
+      "Users tab: invite staff, assign roles (owner, manager, staff). Role drives nav + tool access (e.g. CoPilot financials are admin-only).",
+      "Payments (H&L Pay): connect your H&L Pay account, set processing currency, manage payout schedule.",
+      "Gratuities & surcharges: default tip suggestions (10/15/20%), weekend/public-holiday surcharges, GST inclusive/exclusive.",
+      "Table sessions: choose pay-as-you-go vs end-of-meal billing.",
+      "Integrations: H&L Exceed POS, loyalty providers, accounting exports.",
+    ] },
+  { id: "pos-integration", label: "POS Integration (H&L Exceed)", summary: "Configure H&L POS credentials, auto-push orders, manual product sync, webhook handling.",
+    details: [
+      "Settings → Integrations → H&L Exceed. Enter API URL + key. Hit Test Connection.",
+      "Enable Auto-push so paid orders flow to the POS instantly. Use Manual Sync to pull product changes.",
+      "Webhooks: POS sends back receipt/print confirmations and refund acks.",
+    ] },
+  { id: "test-cards", label: "Test Cards", summary: "Adyen test card numbers for sandbox checkout flows.",
+    details: ["Use sandbox-only PANs from the Test Cards page — never live cards in test mode."] },
 ];
+
+// Walkthroughs available to the model (kept in sync with src/components/copilot/walkthroughs.ts).
+const WALKTHROUGHS = [
+  { id: "add-menu-item", title: "Add a menu item", description: "Create a new item in Menu Builder." },
+  { id: "create-table-qr", title: "Create a table and print its QR sticker", description: "Add a table and download the permanent QR PDF." },
+  { id: "refund-order", title: "Refund an order", description: "Refund on the live orders board." },
+  { id: "view-revenue", title: "See today's revenue", description: "Where today's revenue tiles live." },
+  { id: "configure-payments", title: "Configure H&L Pay payments", description: "Payments, gratuities, surcharges, GST." },
+  { id: "pos-integration", title: "Connect H&L Exceed POS", description: "Pair the POS so orders push automatically." },
+  { id: "open-knowledge-base", title: "Browse the Knowledge Base", description: "Open the full how-to library." },
+];
+
 
 // ---------- Tool catalog ----------
 const tools = [
@@ -35,7 +100,7 @@ const tools = [
     type: "function",
     function: {
       name: "search_knowledge_base",
-      description: "Search platform help topics (how-to, settings, features). Returns matching topic summaries with anchor links.",
+      description: "Search platform help topics (how-to, settings, features). Returns matching topic summaries with anchor links. Use this first for any 'how do I...' or 'where is...' question.",
       parameters: {
         type: "object",
         properties: { query: { type: "string", description: "Natural-language question or keyword." } },
@@ -43,6 +108,37 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "get_knowledge_article",
+      description: "Fetch the FULL article (detail paragraphs) for a single knowledge-base topic by id. Use after search_knowledge_base when you need depth to answer accurately.",
+      parameters: {
+        type: "object",
+        properties: { topic_id: { type: "string", description: "Topic id, e.g. 'orders', 'menu-builder'." } },
+        required: ["topic_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "start_walkthrough",
+      description: "Launch an interactive in-app walkthrough that visually highlights elements step-by-step (Step 1, Next, Step 2...). Use this whenever the user asks how to perform a task that has a matching walkthrough id. After calling this, reply with one short sentence confirming the walkthrough has started; do NOT also repeat the steps in text.",
+      parameters: {
+        type: "object",
+        properties: {
+          walkthrough_id: {
+            type: "string",
+            description: "One of: add-menu-item, create-table-qr, refund-order, view-revenue, configure-payments, pos-integration, open-knowledge-base.",
+            enum: ["add-menu-item", "create-table-qr", "refund-order", "view-revenue", "configure-payments", "pos-integration", "open-knowledge-base"],
+          },
+        },
+        required: ["walkthrough_id"],
+      },
+    },
+  },
+
   {
     type: "function",
     function: {
@@ -162,18 +258,50 @@ async function runTool(
     switch (name) {
       case "search_knowledge_base": {
         const q = String(args.query ?? "").toLowerCase().trim();
-        if (!q) return { ok: true, matches: KB_TOPICS.slice(0, 5) };
+        const toMatch = (t: typeof KB_TOPICS[number], score: number) => ({
+          id: t.id, label: t.label, summary: t.summary, score,
+          link: `/knowledge-base#${t.id}`,
+        });
+        if (!q) {
+          return { ok: true, matches: KB_TOPICS.slice(0, 5).map((t) => toMatch(t, 0)), walkthroughs: WALKTHROUGHS };
+        }
         const scored = KB_TOPICS.map((t) => {
-          const hay = `${t.label} ${t.summary}`.toLowerCase();
+          const hay = `${t.label} ${t.summary} ${t.details.join(" ")}`.toLowerCase();
           let score = 0;
           for (const word of q.split(/\s+/).filter((w) => w.length > 2)) {
             if (hay.includes(word)) score += 1;
           }
           if (hay.includes(q)) score += 3;
-          return { ...t, score, link: `/knowledge-base#${t.id}` };
-        }).filter((t) => t.score > 0).sort((a, b) => b.score - a.score).slice(0, 5);
-        return { ok: true, matches: scored.length ? scored : KB_TOPICS.slice(0, 4).map((t) => ({ ...t, link: `/knowledge-base#${t.id}` })) };
+          return { t, score };
+        }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 5).map((x) => toMatch(x.t, x.score));
+        return {
+          ok: true,
+          matches: scored.length ? scored : KB_TOPICS.slice(0, 4).map((t) => toMatch(t, 0)),
+          walkthroughs: WALKTHROUGHS,
+          hint: "If the user wants a how-to and a matching walkthrough exists, call start_walkthrough with the matching walkthrough_id rather than just describing the steps.",
+        };
       }
+
+      case "get_knowledge_article": {
+        const id = String(args.topic_id ?? "");
+        const topic = KB_TOPICS.find((t) => t.id === id);
+        if (!topic) return { ok: false, error: `No topic with id '${id}'.` };
+        return {
+          ok: true,
+          id: topic.id, label: topic.label, summary: topic.summary,
+          details: topic.details,
+          link: `/knowledge-base#${topic.id}`,
+        };
+      }
+
+      case "start_walkthrough": {
+        const id = String(args.walkthrough_id ?? "");
+        const w = WALKTHROUGHS.find((x) => x.id === id);
+        if (!w) return { ok: false, error: `No walkthrough with id '${id}'. Available: ${WALKTHROUGHS.map((x) => x.id).join(", ")}` };
+        return { ok: true, walkthrough_id: w.id, title: w.title, description: w.description };
+      }
+
+
 
       case "get_live_orders": {
         const hours = Math.min(Math.max(Number(args.hours ?? 24), 1), 24 * 30);
@@ -444,7 +572,7 @@ PURPOSE
 RULES
 - Use tools to look up live numbers — never invent figures. If a tool returns no data, say so plainly.
 - Format currency as AUD (e.g. $1,234.56). Format dates in local venue time.
-- For "how do I…" questions, call search_knowledge_base and link with a short markdown link.
+- For "how do I…" or "where is…" questions: ALWAYS call search_knowledge_base first. If the result includes a walkthrough whose id matches what the user wants to do, call start_walkthrough with that id — the UI will visually highlight each control step-by-step (Step 1, Next, Step 2…). After launching, reply with one short confirmation like "Starting the walkthrough — follow the highlighted steps." Do NOT also repeat the steps in text. If no walkthrough matches, call get_knowledge_article for the most relevant topic and answer in clear numbered steps with a markdown link to /knowledge-base#<topic_id>.
 - Markdown is fine. Keep most replies under ~150 words. Use tables/lists for multi-row data.
 - Financial tools (invoices, subscription) are admins-only — if the user lacks access the tool will say so; relay that gently.
 - Never expose internal infra names. The payments product is "H&L Pay".

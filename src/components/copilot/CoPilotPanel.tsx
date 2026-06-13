@@ -10,6 +10,7 @@ import { Send, Loader2, Trash2, Wrench, MessageCircle, Bot } from "lucide-react"
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import copilotIcon from "@/assets/brand/copilot-icon.png";
+import { startWalkthrough } from "./walkthroughs";
 
 interface ToolEvent {
   name: string;
@@ -24,10 +25,10 @@ interface ChatMessage {
 }
 
 const EXAMPLES = [
+  "Show me how to add a menu item",
+  "Walk me through refunding an order",
+  "How do I connect H&L Exceed POS?",
   "What was last night's revenue?",
-  "Top 5 selling items this week",
-  "Any unpaid invoices?",
-  "How do I refund an order?",
 ];
 
 export default function CoPilotPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
@@ -91,14 +92,22 @@ export default function CoPilotPanel({ open, onOpenChange }: { open: boolean; on
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "Done.", tools: data.tool_events ?? [] }]);
+      const toolEvents = data.tool_events ?? [];
+      setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "Done.", tools: toolEvents }]);
+
+      // If the model launched a walkthrough, fire it and close the sheet so the spotlight is visible.
+      const wt = toolEvents.find((t: any) => t.name === "start_walkthrough" && t.result?.ok && t.result?.walkthrough_id);
+      if (wt) {
+        onOpenChange(false);
+        setTimeout(() => startWalkthrough(wt.result.walkthrough_id), 250);
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "CoPilot failed");
       setMessages((m) => [...m, { role: "assistant", content: "Sorry — something went wrong. Try again?" }]);
     } finally {
       setSending(false);
     }
-  }, [sending, venueId]);
+  }, [sending, venueId, onOpenChange]);
 
   const clearConversation = useCallback(async () => {
     if (!venueId) return;

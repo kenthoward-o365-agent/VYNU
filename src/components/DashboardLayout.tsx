@@ -2,6 +2,7 @@ import { ReactNode, useCallback, useEffect, useState } from "react";
 import { useIdleLogout } from "@/hooks/use-idle-logout";
 import IdleTimeoutModal from "@/components/consumer/IdleTimeoutModal";
 import CoPilotPanel, { CoPilotButton } from "@/components/copilot/CoPilotPanel";
+import WalkthroughPlayer from "@/components/copilot/WalkthroughPlayer";
 
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -102,6 +103,7 @@ function NavTile({
   const tile = (
     <Link
       to={item.path}
+      data-copilot-target={item.path}
       onClick={onClick}
       className={cn(
         "group relative flex flex-col items-center justify-center gap-1 rounded-lg transition-all",
@@ -480,7 +482,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         onEnd={idle.endNow}
       />
       {showVenueNav && perms.can("copilot") && (
-        <CoPilotPanel open={copilotOpen} onOpenChange={setCopilotOpen} />
+        <>
+          <CoPilotPanel open={copilotOpen} onOpenChange={setCopilotOpen} />
+          <WalkthroughPlayer />
+        </>
       )}
     </>
   );
