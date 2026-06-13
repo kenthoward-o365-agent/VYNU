@@ -60,7 +60,21 @@
     --sidebar-border: 204 30% 90%;
     --sidebar-ring: 198 70% 55%;
     --sidebar-muted: 203 20% 45%;
+
+    /* POS terminal chassis tokens — additive, derived from existing palette. */
+    --pos-chassis: 203 42% 14%;
+    --pos-chassis-edge: 203 42% 22%;
+    --pos-chassis-highlight: 203 25% 30%;
+    --pos-screen: 0 0% 100%;
+    --pos-status-bar: 203 42% 11%;
+    --pos-status-fg: 0 0% 100%;
+    --pos-tile: 204 38% 97%;
+    --pos-tile-hover: 204 38% 93%;
+    --pos-tile-active: 198 70% 95%;
+    --pos-led-on: 87 50% 51%;
+    --pos-led-off: 0 62% 55%;
   }
+
 
   .dark {
     --background: 203 42% 11%;
@@ -106,7 +120,21 @@
     --sidebar-border: 203 42% 18%;
     --sidebar-ring: 198 70% 55%;
     --sidebar-muted: 204 15% 60%;
+
+    /* POS terminal chassis tokens — dark mode. */
+    --pos-chassis: 203 50% 5%;
+    --pos-chassis-edge: 203 42% 18%;
+    --pos-chassis-highlight: 203 30% 22%;
+    --pos-screen: 203 42% 11%;
+    --pos-status-bar: 203 50% 6%;
+    --pos-status-fg: 0 0% 100%;
+    --pos-tile: 203 42% 14%;
+    --pos-tile-hover: 203 42% 18%;
+    --pos-tile-active: 198 70% 20%;
+    --pos-led-on: 87 50% 51%;
+    --pos-led-off: 0 62% 55%;
   }
+
 }
 
 @layer base {
