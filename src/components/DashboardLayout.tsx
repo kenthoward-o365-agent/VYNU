@@ -330,9 +330,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </Link>
                 )}
                 <Link
-                  to="/knowledge-base"
+                  to={`/knowledge-base${routeToKbSection(location.pathname) ? `?section=${routeToKbSection(location.pathname)}` : ""}`}
                   className="inline-flex items-center justify-center h-8 w-8 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  title="Knowledge Base"
+                  title="Knowledge Base — help for this page"
                 >
                   <HelpCircle className="h-4 w-4" />
                 </Link>
