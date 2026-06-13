@@ -482,7 +482,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         onEnd={idle.endNow}
       />
       {showVenueNav && perms.can("copilot") && (
-        <CoPilotPanel open={copilotOpen} onOpenChange={setCopilotOpen} />
+        <>
+          <CoPilotPanel open={copilotOpen} onOpenChange={setCopilotOpen} />
+          <WalkthroughPlayer />
+        </>
       )}
     </>
   );
