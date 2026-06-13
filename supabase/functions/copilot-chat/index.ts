@@ -638,7 +638,10 @@ The user's access level: ${isAdmin ? "ADMIN (financials allowed)" : "STAFF (fina
     }
 
 
-    for (let i = 0; i < 8; i++) {
+
+    // Skip the LLM round-trip when we already launched a walkthrough deterministically.
+    for (let i = 0; i < (assistantText ? 0 : 8); i++) {
+
       const resp = await fetch(LOVABLE_API_URL, {
         method: "POST",
         headers: {
