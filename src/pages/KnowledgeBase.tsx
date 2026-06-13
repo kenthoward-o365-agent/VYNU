@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import {
   BookOpen, LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
   TrendingUp, Users, Settings, BarChart3, ChevronRight, Rocket, Sparkles,
-  SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X, Monitor, Sliders, Plug
+  SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X, Monitor, Sliders, Plug,
+  MonitorSmartphone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ interface TocItem {
 
 const tocItems: TocItem[] = [
   { id: "getting-started", label: "Getting Started", icon: Rocket },
+  { id: "pos-terminal-ui", label: "POS Terminal Interface", icon: MonitorSmartphone },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "shyndig-ai-analytics", label: "Spark AI Analytics", icon: BarChart3 },
   { id: "menu-builder", label: "Menu Builder", icon: UtensilsCrossed },
@@ -158,6 +160,59 @@ export default function KnowledgeBase() {
             </ul>
           </SubSection>
           <Tip>QR codes are permanent — once printed, they never change. You can safely order stickers.</Tip>
+        </Section>
+
+        {/* POS Terminal Interface */}
+        <Section id="pos-terminal-ui" title="POS Terminal Interface" icon={MonitorSmartphone}>
+          <SubSection title="A real terminal, in the browser">
+            <p>H&L OrderNOW runs inside a virtual <strong>POS terminal chassis</strong> — a dark, bezelled frame locked to the viewport on desktop and tablet. The frame stays fixed while only the &quot;screen&quot; inside scrolls, exactly like a physical Lightspeed/Revel-style terminal at the pass. The chassis is hidden on phones so you get the full screen on the floor.</p>
+          </SubSection>
+
+          <SubSection title="Top status bar">
+            <p>The bar across the top of the terminal is always visible and shows, left to right:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>H&L OrderNOW logo</strong> — taps return you to the Dashboard.</li>
+              <li><strong>Venue name &amp; Site ID</strong> — the last 4 characters of the venue UUID, printed beside the venue name (e.g. <code>Bondi Bistro · #1042</code>). Click the venue name to switch venues if you operate more than one.</li>
+              <li><strong>Shift label</strong> — inferred from the current time of day (Breakfast / Lunch / Dinner / Late) until a real shift table is wired in.</li>
+              <li><strong>Logged-in user &amp; role</strong> — display name plus a role badge (Owner, Manager, Staff, custom role).</li>
+              <li><strong>Live date &amp; clock</strong> — ticks every second in <code>tabular-nums</code> so the digits don&apos;t jitter. Formatted for Australia/Sydney with a user-locale fallback.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Tile navigation (left rail)">
+            <p>The sidebar is a vertical stack of <strong>chunky POS tiles</strong> — icon on top, label beneath — grouped into Operations and (where applicable) Group + Admin, separated by hairline dividers with small uppercase group labels.</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>The <strong>active tile</strong> shows an H&L Blue accent strip down its left edge plus a tinted background.</li>
+              <li>Hovering any tile gives a subtle blue glow.</li>
+              <li>The <strong>pin toggle</strong> at the bottom of the rail collapses tiles to icon-only (64px) or expands them with labels (88px). The state persists per browser.</li>
+              <li>On phones the rail collapses to a hamburger drawer — same items, same order.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Status footer rail">
+            <p>The bar across the bottom of the chassis is the system health strip:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Online LED</strong> — H&L Green when the browser reports network up, red when offline. Reacts immediately to <code>online</code> / <code>offline</code> events.</li>
+              <li><strong>Printer</strong> — placeholder &quot;Ready&quot; LED today; will read from real docket-printer status when that signal lands.</li>
+              <li><strong>Card Terminal</strong> — same — &quot;Ready&quot; placeholder until live H&L Pay terminal status is wired in.</li>
+              <li><strong>Version</strong> — current app build (<code>VITE_APP_VERSION</code>, defaults to <code>v1.0</code>).</li>
+              <li><strong>Sign Out</strong>, theme toggle, sidebar pin, and Co-Pilot trigger all live here.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Co-Pilot and overlays">
+            <p>The Co-Pilot side panel and the idle-timeout modal mount <em>outside</em> the bezel so they cover the chassis as well as the screen — the same way a real terminal would lock its overlays over the whole display.</p>
+          </SubSection>
+
+          <SubSection title="Idle logout">
+            <p>If the terminal sits idle for the configured timeout, the idle modal appears in the centre of the screen and counts down before signing you out — same behaviour any cashier expects on a shared POS station. Touching the screen or pressing any key resets the timer.</p>
+          </SubSection>
+
+          <SubSection title="Theme">
+            <p>The chassis renders correctly in both light and dark modes. The system follows your saved preference; toggle from the footer rail. The H&L OrderNOW logo and brand colours (H&L Blue, H&L Green) are unchanged — only the surrounding chassis darkens.</p>
+          </SubSection>
+
+          <Tip>Treat the terminal as a single shared workstation: pin tiles for fast access on busy nights, leave the chassis bezel on for the front-of-house Mac mini, and use the Sign Out button (footer rail) between shifts so the next operator&apos;s user, role and audit trail are recorded correctly.</Tip>
         </Section>
 
         {/* Dashboard */}
@@ -927,7 +982,7 @@ export default function KnowledgeBase() {
 
         <Separator />
         <p className="text-xs text-muted-foreground text-center pb-8">
-          Need more help? Contact us at support@shyndig.com
+          Need more help? Contact us at support@hlordernow.com
         </p>
       </div>
     </div>
