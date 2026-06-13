@@ -102,6 +102,7 @@ function NavTile({
   const tile = (
     <Link
       to={item.path}
+      data-copilot-target={item.path}
       onClick={onClick}
       className={cn(
         "group relative flex flex-col items-center justify-center gap-1 rounded-lg transition-all",
