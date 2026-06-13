@@ -3,14 +3,14 @@ import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useVenue } from "@/contexts/VenueContext";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Trash2, Wrench, MessageCircle, Bot } from "lucide-react";
+import { Send, Loader2, Trash2, Wrench, Bot, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import copilotIcon from "@/assets/brand/copilot-icon.png";
 import { startWalkthrough } from "./walkthroughs";
+
 
 interface ToolEvent {
   name: string;
