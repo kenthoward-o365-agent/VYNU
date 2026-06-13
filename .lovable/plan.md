@@ -1,71 +1,74 @@
-# POS Terminal Redesign — Venue + Admin Shell
+## Goal
 
-Transform the entire authenticated venue and admin experience so it looks and behaves like a dark, professional POS terminal (Lightspeed/Revel inspired) **while preserving the existing H&L OrderNOW logo and color palette** (H&L Blue `198 70% 55%`, H&L Green `87 50% 51%`, Ink `203 42% 21%`, plus the existing dark sidebar tokens). No new brand colors are introduced — the chassis is built from deepened shades of the existing dark tokens, and the H&L Blue stays the active/accent color throughout. Consumer (`/order/...`), Auth, BillingSetup, ResetPassword, and Developers remain untouched.
+Turn the Knowledge Base from a feature *index* into a true operator manual. Today some sections (Display Terminals, Throttling, POS Integration, Orders) are deep and useful; others (Landing Page Editor, Pricing, Loyalty, H&L OrderNOW AI, Taxes, Dashboard, Analytics, Diners overview, Menu AI features) are one- or two-paragraph blurbs that don't explain *how* to actually use the feature.
 
-## What the user will see
+The user called out Landing Page Editor as the worst example: it doesn't even mention the **Build from website** flow, the **Theme panel**, individual **section types**, the **mobile preview**, or how to publish — even though all of that exists in `src/components/landing-editor/`.
 
-```text
-┌──────────────────────────────────────────────────────────────────┐  ← subtle dark bezel (existing dark token, deepened)
-│ [H&L logo]  Venue: Bondi Bistro · #1042 · Lunch Shift           │
-│             Sarah K · Manager        Sat 13 Jun · 14:32:07     │  ← status bar
-├──────┬───────────────────────────────────────────────────────────┤
-│ ▢ Da │                                                           │
-│ ▣ Or │           ACTIVE PAGE CONTENT                            │
-│ ▢ Me │           (Dashboard / Orders / Menu …)                  │
-│ ▢ Ta │                                                           │
-│ ▢ Di │                                                           │
-│ ▢ Se │                                                           │
-│      ├───────────────────────────────────────────────────────────┤
-│ ⏻    │ Online · Printer OK · Card Terminal Ready   v1.0  Sign Out│  ← footer rail
-└──────┴───────────────────────────────────────────────────────────┘
-```
+## Approach
 
-- **Bezel**: 8–12px chassis frame around the app viewport using a deeper shade of the existing `--sidebar-background` (no new color), slightly rounded inner screen, subtle inner highlight, soft outer shadow. Desktop only; tablet/mobile collapses bezel to a thin border so usable area is preserved.
-- **Logo**: existing `/brand/shyndig-icon.png` (H&L OrderNOW) rendered in the top-left of the status bar at terminal-appropriate size. No new logo, no recolor.
-- **Sidebar = tile nav**: each item is a chunky square-ish tile (icon on top, label beneath), darker base derived from `--sidebar-accent`, **H&L Blue accent strip + tinted icon** when active, blue hover glow. Two stacked groups (Operations, then Group + Admin when applicable) separated by hairline dividers and small uppercase labels — same items, same order, same icons as today.
-- **Top status bar**: split into left (logo + venue name, site ID, shift), right (user name + role badge, live date + ticking clock HH:MM:SS in tabular-nums).
-- **Footer rail**: connection dot (H&L Green when online, destructive when offline), printer + card-terminal status, version, Sign Out, theme toggle, sidebar pin toggle, Co-Pilot button.
-- **Typography**: unchanged — keep current sans, add `tabular-nums` only on the clock and numeric status counters so they feel terminal-grade.
-- **Palette source of truth**: `src/index.css` tokens stay as-is. New tokens added below are HSL derivations of existing tokens only.
+For each "thin" section, read the actual feature code (pages + components) so the doc reflects what's really there — buttons, dialogs, field names, defaults — then rewrite the KB section using the same structure the strong sections already use:
 
-## Scope
+- **What it is / where to find it** (one paragraph + nav path)
+- **Setup walkthrough** (numbered `StepList` — first-time setup)
+- **Every sub-feature** (one `SubSection` per major capability, with the exact button/menu names)
+- **Day-to-day management** (editing, reordering, disabling, deleting)
+- **Tips / gotchas / permissions** as `<Tip>` and bullets
+- **Troubleshooting table** when relevant (Symptom → Cause → Fix)
 
-In scope: every route rendered by `DashboardLayout` (venue + admin + group).
-Out of scope: `Auth`, `ResetPassword`, `ConsumerOrder`, `BillingSetup`, `Developers`, all `src/components/consumer/*`. Business logic, routes, RLS, edge functions — untouched.
+Keep the existing TOC IDs and section order — only the *content inside* each `<Section>` changes. No new routes, no schema changes, no behaviour changes.
 
-## Implementation
+## Sections to expand (priority order)
 
-1. **New `POSTerminalShell` wrapper** (`src/components/pos/POSTerminalShell.tsx`)
-   - Outer `div` with bezel styling (existing-token gradient border, inset ring, drop shadow), centered with `max-w-[1600px]` on very large screens, full-bleed below `lg`.
-   - Renders top `POSStatusBar`, body slot (sidebar + content), footer `POSStatusFooter`.
-2. **`POSStatusBar`** (`src/components/pos/POSStatusBar.tsx`)
-   - Left: H&L logo (existing asset), venue name, site ID (from `venue.site_id`), shift label (placeholder "Lunch Shift" derived from current hour until shift data is wired).
-   - Right: user display name + role (from `usePermissions` / `useAuth`), live date + clock via `useEffect` ticking each second.
-   - Admin mode: shows "Platform Admin" + selected venue context if any.
-3. **`POSStatusFooter`** (`src/components/pos/POSStatusFooter.tsx`)
-   - Online/offline indicator (`navigator.onLine` + event listeners), printer + card-terminal placeholders ("Ready") until real signals exist, app version from `import.meta.env.VITE_APP_VERSION || 'v1.0'`, theme toggle, Sign Out, Co-Pilot trigger.
-4. **`POSSideNav`** (`src/components/pos/POSSideNav.tsx`)
-   - Replaces the navigation portion of `DashboardLayout` with tile-style buttons. **Same nav arrays (`venueNavItems`, `groupNavItems`, `adminNavItems`), same icons (existing SVG nav icons keep their light/dark variants), same active-path logic** — just restyled. Two widths: 88px (icon+label tile) default, 64px collapsed (icon only). Pin toggle preserved.
-   - Active tile uses H&L Blue (`--primary`) strip + tinted icon; inactive uses `--sidebar-muted`.
-5. **Refactor `DashboardLayout.tsx`**
-   - Keep all logic (idle logout, onboarding banner, copilot, venue switching, permissions). Replace JSX scaffolding (`<aside>` + `<header>` + main) with `<POSTerminalShell sidebar={<POSSideNav …/>} statusBar={<POSStatusBar …/>} footer={<POSStatusFooter …/>}>{children}</POSTerminalShell>`.
-   - Move venue switcher dropdown into the status bar (click venue name → existing dropdown). Mobile drawer behavior preserved.
-6. **Tokens** (additive only — no existing token changes): add terminal-specific CSS vars in `src/index.css` under `:root` and `.dark`, all HSL derived from existing palette:
-   - `--pos-chassis` (deeper shade of sidebar bg), `--pos-chassis-edge` (existing border), `--pos-screen` (existing background), `--pos-tile` (= sidebar-accent), `--pos-tile-active` (= primary @ low alpha), `--pos-status-bar` (= sidebar bg), `--pos-led-on` (= H&L Green / success), `--pos-led-off` (= destructive).
-7. **Theme behavior**: respect the user's existing theme toggle — the chassis renders correctly in both light and dark using the existing token system. Default still follows current `ThemeContext`; no forced override.
-8. **No route changes, no data changes, no new dependencies, no new colors, no new logo.**
+1. **Landing Page Editor** *(highest priority — user's example)*
+   Cover: opening the editor from Settings, the three-pane layout (Section list / Edit panel / Mobile preview), **Build from website** dialog (URL + Replace vs Append + what gets scraped: colours, fonts, address, content), **Add Section** modal and every section type (Hero, Table Display, Featured Items, Loyalty CTA, Hours & Location, Social Links, Text, Divider, Spacer), the **Theme panel** (background incl. gradients, accent, surface, border, text colours, heading + body font pickers), per-section overrides, reordering, deleting, mobile-frame preview, save & publish, how the page maps to the QR-scan landing URL.
 
-## Technical notes
+2. **Pricing**
+   Expand each rule type with real-world examples, explain the stacking math, time-window editor, day-of-week selector, active toggle behaviour, how rules interact with modifiers and AI upsells, who can manage them.
 
-- All new files under `src/components/pos/`. Pages keep rendering inside `<DashboardLayout>{children}</DashboardLayout>` as today.
-- Clock uses a single `setInterval(1s)` in `POSStatusBar`, cleared on unmount; formatted with `Intl.DateTimeFormat` (Australia/Sydney with user-locale fallback).
-- Sidebar tile dimensions: 80×72px expanded, 56×56px collapsed; active state uses `box-shadow: inset 3px 0 0 hsl(var(--primary))`.
-- Bezel: `border: 10px solid hsl(var(--pos-chassis)); border-radius: 22px; box-shadow: inset 0 0 0 1px hsl(var(--pos-chassis-edge)), 0 30px 60px -20px hsl(var(--foreground) / 0.4);`. Collapses below `lg`.
-- Page padding inside the "screen" matches today's so no page layouts break.
-- Co-Pilot panel and IdleTimeoutModal continue mounting at the layout root (outside the bezel) so overlays cover the chassis too.
+3. **Settings → Loyalty** (currently 4 steps)
+   Programme types in detail (Points / Stamps / Tier), earn rules, redemption rules, tier thresholds, expiry, child-venue / group loyalty, diner-facing prompts (join, tier-up), how loyalty appears in CRM segments.
 
-## Out of scope / follow-ups
+4. **Settings → H&L OrderNOW AI**
+   Agent name/tone/opening, venue context best practices, agent icon upload, AI guardrails (max discount, quiet hours, daily caps — cross-link to CRM), how the agent appears on the diner screen, testing the agent.
 
-- Real printer + card-terminal status wiring (placeholder "Ready" for now).
-- Shift schedule inferred from clock until a real shift table is wired.
-- Consumer mobile app unchanged (Phase 2 per project memory).
+5. **Settings → Payments (H&L Pay)**
+   Expand existing onboarding flow, add Settlement schedule, refunds, chargebacks/disputes, surcharges, gratuities, statement descriptor rules, switching Test ↔ Live, what to verify before going live.
+
+6. **Settings → Taxes**
+   Add a worked GST example (inclusive vs exclusive), per-category overrides, how taxes appear on the diner receipt and POS push, audit reports.
+
+7. **Settings → Users & Roles**
+   Already strong on the two-layer model — add a step-by-step "Create a new role" walkthrough and a "Day in the life" matrix of common Australian hospitality roles.
+
+8. **Dashboard**
+   Document every tile and chart explicitly, how the date picker works, comparison mode, AI-revenue attribution badge, how to drill from a chart to the underlying orders.
+
+9. **Spark AI Analytics**
+   List every chart, define each metric precisely, explain attribution windows, what "good" looks like, how to act on each insight.
+
+10. **Analytics**
+    Date range presets, export options, item/category drill-down, comparison periods, how throttling affects analytics, ROI of pricing rules and campaigns.
+
+11. **Diners — CRM** (already long, but light on *how-to*)
+    Add walkthroughs: create a segment from scratch, send a one-off campaign, schedule a recurring birthday campaign, interpret RFM tiers, handle unsubscribes, import existing diners.
+
+12. **Menu Builder — AI features**
+    Expand AI Import (file size limits, what gets extracted, how to fix mis-reads), Enhance Images (before/after expectations, cost), Generate Images (prompt tips), Display Areas (how items route to kitchen vs bar), POS ID field (links to POS integration section).
+
+13. **Tables & QR**
+    Add: zones, capacity, bulk add, reprinting stickers, what happens when a table is deleted (sessions, history), QR sticker design tips, dine-in vs takeaway sessions.
+
+14. **Orders** (already strong) — small additions only: filtering by Display Area, sorting, search, exporting, what each badge means at a glance.
+
+15. **Getting Started**
+    Tighten the checklist so each step links (via the TOC anchor pattern) to the expanded section that explains it in depth.
+
+## Out of scope
+
+- No new pages, components, routes, schema or backend changes.
+- No changes to the TOC list or section IDs (preserves the in-page search and Co-Pilot deep links).
+- The Admin Knowledge Base (`/admin/knowledge-base`) is unrelated — it's the compliance document library, not user docs, and isn't touched.
+
+## Delivery
+
+A single edit pass on `src/pages/KnowledgeBase.tsx`. Estimated final size ~2,200–2,500 lines (currently 1,043). Each newly expanded section will use the existing `Section` / `SubSection` / `StepList` / `Tip` primitives, so layout and dark-mode styling stay consistent and the existing in-page search keeps working out of the box.
