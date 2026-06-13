@@ -100,7 +100,7 @@ const tools = [
     type: "function",
     function: {
       name: "search_knowledge_base",
-      description: "Search platform help topics (how-to, settings, features). Returns matching topic summaries with anchor links.",
+      description: "Search platform help topics (how-to, settings, features). Returns matching topic summaries with anchor links. Use this first for any 'how do I...' or 'where is...' question.",
       parameters: {
         type: "object",
         properties: { query: { type: "string", description: "Natural-language question or keyword." } },
@@ -108,6 +108,37 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "get_knowledge_article",
+      description: "Fetch the FULL article (detail paragraphs) for a single knowledge-base topic by id. Use after search_knowledge_base when you need depth to answer accurately.",
+      parameters: {
+        type: "object",
+        properties: { topic_id: { type: "string", description: "Topic id, e.g. 'orders', 'menu-builder'." } },
+        required: ["topic_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "start_walkthrough",
+      description: "Launch an interactive in-app walkthrough that visually highlights elements step-by-step (Step 1, Next, Step 2...). Use this whenever the user asks how to perform a task that has a matching walkthrough id. After calling this, reply with one short sentence confirming the walkthrough has started; do NOT also repeat the steps in text.",
+      parameters: {
+        type: "object",
+        properties: {
+          walkthrough_id: {
+            type: "string",
+            description: "One of: add-menu-item, create-table-qr, refund-order, view-revenue, configure-payments, pos-integration, open-knowledge-base.",
+            enum: ["add-menu-item", "create-table-qr", "refund-order", "view-revenue", "configure-payments", "pos-integration", "open-knowledge-base"],
+          },
+        },
+        required: ["walkthrough_id"],
+      },
+    },
+  },
+
   {
     type: "function",
     function: {
