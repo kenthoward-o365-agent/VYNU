@@ -10,6 +10,7 @@ import { Send, Loader2, Trash2, Wrench, MessageCircle, Bot } from "lucide-react"
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import copilotIcon from "@/assets/brand/copilot-icon.png";
+import { startWalkthrough } from "./walkthroughs";
 
 interface ToolEvent {
   name: string;
