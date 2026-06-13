@@ -258,18 +258,50 @@ async function runTool(
     switch (name) {
       case "search_knowledge_base": {
         const q = String(args.query ?? "").toLowerCase().trim();
-        if (!q) return { ok: true, matches: KB_TOPICS.slice(0, 5) };
+        const toMatch = (t: typeof KB_TOPICS[number], score: number) => ({
+          id: t.id, label: t.label, summary: t.summary, score,
+          link: `/knowledge-base#${t.id}`,
+        });
+        if (!q) {
+          return { ok: true, matches: KB_TOPICS.slice(0, 5).map((t) => toMatch(t, 0)), walkthroughs: WALKTHROUGHS };
+        }
         const scored = KB_TOPICS.map((t) => {
-          const hay = `${t.label} ${t.summary}`.toLowerCase();
+          const hay = `${t.label} ${t.summary} ${t.details.join(" ")}`.toLowerCase();
           let score = 0;
           for (const word of q.split(/\s+/).filter((w) => w.length > 2)) {
             if (hay.includes(word)) score += 1;
           }
           if (hay.includes(q)) score += 3;
-          return { ...t, score, link: `/knowledge-base#${t.id}` };
-        }).filter((t) => t.score > 0).sort((a, b) => b.score - a.score).slice(0, 5);
-        return { ok: true, matches: scored.length ? scored : KB_TOPICS.slice(0, 4).map((t) => ({ ...t, link: `/knowledge-base#${t.id}` })) };
+          return { t, score };
+        }).filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, 5).map((x) => toMatch(x.t, x.score));
+        return {
+          ok: true,
+          matches: scored.length ? scored : KB_TOPICS.slice(0, 4).map((t) => toMatch(t, 0)),
+          walkthroughs: WALKTHROUGHS,
+          hint: "If the user wants a how-to and a matching walkthrough exists, call start_walkthrough with the matching walkthrough_id rather than just describing the steps.",
+        };
       }
+
+      case "get_knowledge_article": {
+        const id = String(args.topic_id ?? "");
+        const topic = KB_TOPICS.find((t) => t.id === id);
+        if (!topic) return { ok: false, error: `No topic with id '${id}'.` };
+        return {
+          ok: true,
+          id: topic.id, label: topic.label, summary: topic.summary,
+          details: topic.details,
+          link: `/knowledge-base#${topic.id}`,
+        };
+      }
+
+      case "start_walkthrough": {
+        const id = String(args.walkthrough_id ?? "");
+        const w = WALKTHROUGHS.find((x) => x.id === id);
+        if (!w) return { ok: false, error: `No walkthrough with id '${id}'. Available: ${WALKTHROUGHS.map((x) => x.id).join(", ")}` };
+        return { ok: true, walkthrough_id: w.id, title: w.title, description: w.description };
+      }
+
+
 
       case "get_live_orders": {
         const hours = Math.min(Math.max(Number(args.hours ?? 24), 1), 24 * 30);
