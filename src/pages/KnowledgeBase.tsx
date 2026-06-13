@@ -270,35 +270,91 @@ export default function KnowledgeBase() {
 
         {/* Dashboard */}
         <Section id="dashboard" title="Dashboard" icon={LayoutDashboard} hidden={isHidden("dashboard")}>
-          <SubSection title="Understanding Your Metrics">
-            <p>Your dashboard gives you a real-time snapshot of today&apos;s performance:</p>
+          <SubSection title="What it is">
+            <p>The Dashboard is your at-a-glance operating view for the venue — refreshed in near real-time. It's designed for the manager-on-shift to glance at between covers and instantly see &quot;are we on track tonight?&quot;. For deeper trend analysis use the Analytics page; for AI-specific metrics use Spark AI Analytics.</p>
+          </SubSection>
+
+          <SubSection title="The date picker">
+            <p>Top-right of the page. Presets: <strong>Today</strong>, <strong>Yesterday</strong>, <strong>This Week</strong>, <strong>Last 7 Days</strong>, <strong>This Month</strong>, <strong>Last 30 Days</strong>, <strong>Custom range</strong>. The selected range applies to every tile and chart on the page. Default on load is Today.</p>
+          </SubSection>
+
+          <SubSection title="KPI tiles (top row)">
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Revenue</strong> — Total sales for the selected period.</li>
-              <li><strong>Orders</strong> — Number of completed orders.</li>
-              <li><strong>Avg Ticket</strong> — Average order value.</li>
-              <li><strong>Ticket Times</strong> — How long orders take from received to served.</li>
+              <li><strong>Revenue</strong> — total of completed (paid) orders in range, net of refunds. Excludes cancelled and abandoned orders.</li>
+              <li><strong>Orders</strong> — count of completed orders. Multi-item orders count as one.</li>
+              <li><strong>Avg Ticket</strong> — Revenue ÷ Orders. The single best leading indicator of upsell health.</li>
+              <li><strong>Ticket Times</strong> — median time from Received → Served across the range. Throttled tickets count the queued time too.</li>
+            </ul>
+            <p>Each tile shows the change vs the previous comparable period (Today vs Yesterday, This Week vs Last Week, etc.) as a coloured % arrow.</p>
+          </SubSection>
+
+          <SubSection title="Revenue by Hour">
+            <p>Bar chart of revenue bucketed by hour of day across the selected range. Use it to spot the actual shape of your trade — most venues are surprised by how much revenue is concentrated in a 90-min window. Pair it with Throttling capacity tuning: if 65% of your revenue lands between 7–9pm, your stations need to be sized for that, not the daily average.</p>
+          </SubSection>
+
+          <SubSection title="Table Utilisation">
+            <p>Heat-style table showing revenue and cover count per table over the range. Highlights:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Dead tables</strong> — low utilisation may mean a bad QR position (under a fold of menu) or an awkward floor location.</li>
+              <li><strong>Hero tables</strong> — outsized revenue often = bar / window seats. Worth knowing for reservation prioritisation.</li>
             </ul>
           </SubSection>
-          <SubSection title="Charts &amp; Insights">
-            <p><strong>Revenue by Hour</strong> shows when your peak trading periods are. <strong>Table Utilisation</strong> highlights which tables generate the most revenue. <strong>Top Items</strong> shows your best sellers by quantity and revenue.</p>
+
+          <SubSection title="Top Items">
+            <p>Two charts side-by-side: best sellers by <em>quantity</em> and best sellers by <em>revenue</em>. A high-quantity / low-revenue item is a hook (e.g. fries) — great for footfall but not for margin. A low-quantity / high-revenue item is a hero dish — make sure it's prominently featured on the Landing Page.</p>
           </SubSection>
-          <Tip>Use the date picker in the top-right to compare different time periods.</Tip>
+
+          <SubSection title="Ticket Times card">
+            <p>Distribution of order completion times: P50 (median), P90, and the slowest 10%. If P90 is creeping over your target service time, check Throttling capacity, kitchen staffing, and the Display Terminal heartbeat (an offline kitchen iPad explains a lot of slow tickets).</p>
+          </SubSection>
+
+          <SubSection title="Abandonment card">
+            <p>Counts diners who scanned, opened the chat, but never placed an order. A high abandonment rate after AI changes usually means the agent's tone or opening message needs tweaking — go to Settings → H&L OrderNOW AI.</p>
+          </SubSection>
+
+          <Tip>Bookmark a Custom range like &quot;Last Friday&quot; and compare it to the same chart with the range set to &quot;Two Fridays ago&quot;. Week-over-week comparison on the same day of week is the single most useful trend you'll look at as a hospo operator.</Tip>
         </Section>
 
         {/* Spark AI Analytics */}
         <Section id="shyndig-ai-analytics" title="Spark AI Analytics" icon={BarChart3} hidden={isHidden("shyndig-ai-analytics")}>
-          <SubSection title="What the AI Tracks">
-            <p>Spark AI Analytics shows you how diners interact with your AI assistant:</p>
+          <SubSection title="What it tracks">
+            <p>Spark AI Analytics is the &quot;is the AI actually working?&quot; dashboard. It tracks every conversation between a diner and your H&L OrderNOW agent and shows you how well the agent is converting, upselling, and being received. Use it to tune your agent's tone, opening message, and venue context.</p>
+          </SubSection>
+
+          <SubSection title="Headline metrics">
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Chat Sessions</strong> — Total conversations started.</li>
-              <li><strong>Conversion Rate</strong> — Percentage of chats that led to an order.</li>
-              <li><strong>Items Added via AI</strong> — How many items the AI suggested that were added to cart.</li>
-              <li><strong>Message Count</strong> — Average messages per session.</li>
+              <li><strong>Chat Sessions</strong> — total unique diner conversations in range. One session per QR scan + chat-open, regardless of how many messages.</li>
+              <li><strong>Conversion Rate</strong> — Sessions that led to at least one placed order ÷ total sessions. Healthy range: 40–65% for dine-in, 25–45% for browse-mode landings.</li>
+              <li><strong>Items Added via AI</strong> — count of cart items added directly from an AI suggestion (e.g. agent recommends a side, diner taps Add). Measures upsell effectiveness.</li>
+              <li><strong>Messages per Session</strong> — average back-and-forth count. 3–6 is the sweet spot. Higher often means the agent is failing to understand intent; lower can mean diners aren't engaging at all.</li>
+              <li><strong>AI Generated Revenue</strong> — revenue attributed to AI actions (chat upsells, AI campaign clicks, AI-recommended specials). Surfaces the dollar value of the agent.</li>
             </ul>
           </SubSection>
-          <SubSection title="Reading the Insights">
-            <p>A high conversion rate means your AI personality and menu descriptions are working well. If diners are chatting a lot but not ordering, consider simplifying your menu descriptions or adjusting the AI&apos;s tone in Settings → H&L OrderNOW AI.</p>
+
+          <SubSection title="Reading the trend lines">
+            <p>Each metric has a sparkline showing the last 14 days. Watch for:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Sudden drop in conversion = something broke (broken modifier, out-of-stock item still on menu, payment misconfig). Open Orders and check error rate.</li>
+              <li>Steady drop in messages-per-session with steady conversion = AI is getting <em>more</em> efficient. Good.</li>
+              <li>Rising messages-per-session with falling conversion = AI is confused. Revisit your Venue Context and menu descriptions.</li>
+            </ul>
           </SubSection>
+
+          <SubSection title="Top AI suggestions table">
+            <p>Lists the items the AI most frequently recommended, with accept rate. Items with high recommendations but low accept rate are misaligned — either the description oversells, the price is too high for the moment, or the photo isn't compelling. Items with high accept rate are AI heroes — make sure they're well-stocked.</p>
+          </SubSection>
+
+          <SubSection title="Tuning loop">
+            <StepList steps={[
+              "Pick the worst-performing metric on the page (usually conversion or accept rate).",
+              "Open the related setting: Settings → H&L OrderNOW AI for tone/opening, Menu Builder for item descriptions and photos.",
+              "Make one change at a time so you can attribute the impact.",
+              "Wait 24–72 hours for enough sessions to flow through, then re-check.",
+              "Repeat. The agent gets noticeably better with 3–4 tuning passes.",
+            ]} />
+          </SubSection>
+
+          <Tip>If conversion is below 30%, the issue is almost never the AI itself — it's usually missing item photos, vague descriptions, or no obvious specials. Fix the menu, then re-measure.</Tip>
         </Section>
 
         {/* Menu Builder */}
@@ -313,17 +369,47 @@ export default function KnowledgeBase() {
             ]} />
           </SubSection>
           <SubSection title="AI Import">
-            <p>Upload a photo or PDF of your existing menu. H&L OrderNOW&apos;s AI will read it and create categories and items automatically. Review and adjust before saving.</p>
+            <p>The fastest way to populate a new venue. Upload a photo, scan, or PDF of your existing printed menu and AI extracts categories, items, descriptions and prices in one pass.</p>
             <StepList steps={[
-              "Go to Menu Builder → Settings → AI Features → Import.",
-              "Upload your menu file (PDF, JPG, PNG).",
-              "Review the AI-generated items and make corrections.",
-              "Click 'Import All' to add them to your menu.",
+              "Menu Builder → Settings (cog) → AI Features → Import Menu.",
+              "Upload your menu file. Supported: PDF, JPG, PNG, HEIC. Max ~20MB. Multi-page PDFs are read end-to-end.",
+              "Wait 20–60 seconds while the AI parses. A preview table appears with category, name, price and description for every detected item.",
+              "Edit anything that's mis-read — OCR sometimes mangles unusual ingredients or handwriting. Toggle off any item you don't want to import.",
+              "Click Import All. Items land in the chosen category (or a new one if needed). Existing items aren't overwritten by default.",
+              "Add photos: either use Enhance Images on photos you already have, or Generate Images for the rest.",
             ]} />
+            <p>What the AI extracts well: standard printed menus, clear typography, common dish names, AUD prices, allergen icons. What it struggles with: handwritten chalkboards, heavy decorative fonts, photos of menus at sharp angles. Re-shoot or re-scan if the preview looks rough.</p>
           </SubSection>
-          <SubSection title="Enhance &amp; Generate Images">
-            <p><strong>Enhance Images</strong> uses AI to improve the quality of your existing food photos — better lighting, colour, and composition.</p>
-            <p><strong>Generate Images</strong> creates professional food photos from your item descriptions when you don't have photos available.</p>
+
+          <SubSection title="Enhance Images">
+            <p>Takes an existing food photo and improves lighting, colour balance, sharpness and background. Use it when:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>You have iPhone shots from the kitchen pass that look flat.</li>
+              <li>The photo has clutter (other plates, hands, menus) that distracts.</li>
+              <li>The lighting is yellow/warm and you want the food to pop.</li>
+            </ul>
+            <p>Open the item → Image → <strong>Enhance</strong>. Pick a preset (Brighter, Punchier, Studio, Cosy). Compare before/after side-by-side. Save replaces the existing image (the original is kept in version history for 30 days).</p>
+          </SubSection>
+
+          <SubSection title="Generate Images (AI)">
+            <p>Creates a professional-looking food photo from scratch using the item name and description. Use it as a stop-gap when you don't have a real photo, or as a placeholder while you book a photographer.</p>
+            <StepList steps={[
+              "Open the item → Image → Generate with AI.",
+              "Review the auto-filled prompt (built from the item's name + description). Tweak it to mention plating, garnish, surface (e.g. 'on a dark slate plate, overhead shot, natural light').",
+              "Pick an aspect ratio (square for menu cards, 4:5 for hero feeds).",
+              "Click Generate. 2–4 variations appear in ~15s.",
+              "Pick one — it's saved as the item's image. Generate again for more variations if none are right.",
+            ]} />
+            <Tip>AI-generated photos are great for landings but diners can sometimes spot them. Replace with a real photo within the first month of trading where possible — conversion lifts measurably.</Tip>
+          </SubSection>
+
+          <SubSection title="Display Areas (kitchen routing)">
+            <p>Every item routes to one or more <strong>Display Areas</strong> (Kitchen, Bar, Coffee, Dessert, Take Away, etc.). The Display Area determines which Display Terminals show the ticket and which Throttling station's capacity it counts against. Edit areas under Menu Builder → Settings → Display Areas; assign per item or per category.</p>
+            <p>Cross-station orders (e.g. a burger + a cocktail) are split visually on each terminal but tracked as one order on the manager view. See <em>Display Terminals</em> and <em>Operational Throttling</em> for the full flow.</p>
+          </SubSection>
+
+          <SubSection title="POS ID (PLU)">
+            <p>Each item and modifier has a <strong>POS ID</strong> field — the PLU H&L OrderNOW sends to your H&L Exceed POS when integration is enabled. Get the PLU from your existing H&L product file and paste it in. A wrong or missing PLU causes the POS push to be rejected. Full details under <em>POS Integration — H&L Exceed Web Orders</em>.</p>
           </SubSection>
           <SubSection title="Modifiers">
             <p>Modifiers let diners customise their orders (e.g. &quot;Extra cheese&quot;, &quot;No onion&quot;, &quot;Medium rare&quot;).</p>
@@ -350,45 +436,113 @@ export default function KnowledgeBase() {
 
         {/* Pricing */}
         <Section id="pricing" title="Pricing" icon={Tag} hidden={isHidden("pricing")}>
-          <SubSection title="Dynamic Pricing Rules">
-            <p>Create rules that automatically adjust menu prices based on time, day, or special events:</p>
-            <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Happy Hour</strong> — Discount during specific time windows.</li>
-              <li><strong>Late Night</strong> — Premium pricing for late-night service.</li>
-              <li><strong>Special / Event</strong> — One-off pricing for events.</li>
-              <li><strong>Weather</strong> — Adjust pricing based on conditions.</li>
+          <SubSection title="What dynamic pricing does">
+            <p>Pricing rules let you automatically adjust menu prices based on time, day, event, or weather — without re-editing individual item prices. The base price you set in Menu Builder is always the &quot;reference&quot; price; rules apply a percentage modifier on top of it at checkout. Diners see the adjusted price in the AI chat, on the menu feed, and on their receipt; the original is never shown.</p>
+            <p>Where to find it: <strong>Pricing</strong> in the sidebar. Anyone with the <em>Pricing</em> nav permission on their role can view; <em>Manage Settings</em> is required to create, edit, or activate rules.</p>
+          </SubSection>
+
+          <SubSection title="The four rule types">
+            <ul className="list-disc list-inside space-y-2 pl-1">
+              <li><strong>Happy Hour</strong> — Time-windowed discount. The classic use case: 20% off all drinks Mon–Thu 4–6pm. Set a negative modifier (e.g. <code>-20</code>).</li>
+              <li><strong>Late Night</strong> — Time-windowed premium. Adds a small surcharge (e.g. <code>+10</code>) after a cutoff to cover late staffing. Different from Happy Hour only by intent — it's the same engine.</li>
+              <li><strong>Special / Event</strong> — One-off rule tied to a specific date range. Use for Mother's Day premium menus, NYE surcharge, or a sponsored discount weekend.</li>
+              <li><strong>Weather</strong> — Adjusts pricing based on observed conditions (e.g. discount on cold drinks when it's hot). Reads the venue's location and the current forecast; the rule only triggers when the condition matches.</li>
             </ul>
           </SubSection>
-          <SubSection title="Setting Up a Rule">
+
+          <SubSection title="Setting up a rule (walkthrough)">
             <StepList steps={[
-              "Click 'Add Pricing Rule'.",
-              "Choose a rule type and give it a name.",
-              "Set the percentage modifier (negative for discounts, positive for surcharges).",
-              "Define days of the week and time ranges.",
-              "Toggle the rule active/inactive as needed.",
+              "Pricing → Add Pricing Rule.",
+              "Pick a rule type (Happy Hour, Late Night, Special/Event, Weather).",
+              "Give it a clear internal name — this is for staff, not diners (e.g. 'Mon-Thu Drinks Happy Hour').",
+              "Set the modifier: negative for a discount, positive for a surcharge. e.g. -20 = 20% off, +10 = 10% added.",
+              "Pick the days of the week the rule runs (untick any days it shouldn't apply).",
+              "Set the start and end times for those days (24-hour clock).",
+              "Scope the rule: applies to All items, a Category, or specific menu Items. Narrower scope wins for clarity.",
+              "Leave Active off until you've tested. When ready, flip Active on — the rule applies on the next order.",
             ]} />
           </SubSection>
-          <Tip>Pricing rules stack — if multiple rules apply, all modifiers are combined.</Tip>
+
+          <SubSection title="How rules stack">
+            <p>If two rules apply to the same item at the same moment, their <strong>percentages combine multiplicatively</strong>. Example: a -20% Happy Hour + a -10% loyalty discount on a $10 beer:</p>
+            <p className="font-mono text-xs bg-muted/40 rounded p-2">$10 × 0.80 × 0.90 = $7.20</p>
+            <p>This means stacking three 10% discounts is <em>not</em> 30% off — it's ~27% off. Plan accordingly so you don't accidentally give away margin.</p>
+          </SubSection>
+
+          <SubSection title="Editing and disabling">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Toggle <strong>Active</strong> off to pause a rule without deleting it — its config is preserved for later.</li>
+              <li>Editing an active rule applies the change on the next order. Already-placed orders are not retroactively repriced.</li>
+              <li>Delete a rule only when you're sure it's not coming back — there's no archive view.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Interactions">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Modifiers</strong> — the modifier's own price is applied <em>before</em> percentage rules, so a $2 &quot;Extra cheese&quot; on a Happy Hour burger is also discounted by the Happy Hour percentage.</li>
+              <li><strong>AI upsells</strong> — the AI agent quotes the live (post-rule) price when it suggests an add-on, so upsells never break a happy-hour offer.</li>
+              <li><strong>Loyalty</strong> — points are earned on the <em>paid</em> price after discounts, not on the reference price.</li>
+              <li><strong>Receipts</strong> — only the final line price is shown to the diner; the rule name is recorded internally so Analytics can attribute revenue impact.</li>
+            </ul>
+          </SubSection>
+
+          <Tip>Run a new rule with Active <em>off</em> first and review it in Analytics → Pricing simulations (if available) — or simply place a test order in the AI chat to confirm the adjusted price appears as expected. Once you flip it on, every diner sees the new price within seconds.</Tip>
         </Section>
 
         {/* Tables & QR */}
         <Section id="tables-qr" title="Tables &amp; QR" icon={QrCode} hidden={isHidden("tables-qr")}>
-          <SubSection title="Creating Tables">
+          <SubSection title="What it is">
+            <p>The Tables &amp; QR page is the canonical list of every physical table in your venue, each with a permanent QR code. A QR scan opens the diner's AI ordering experience with the table number already attached — so orders, tabs, and payments all route correctly without staff input.</p>
+          </SubSection>
+
+          <SubSection title="Creating tables">
             <StepList steps={[
-              "Click 'Add Table' and enter the table number.",
-              "Optionally set a zone (e.g. 'Patio', 'Main Floor') and capacity.",
-              "Repeat for all tables in your venue.",
+              "Tables & QR → Add Table.",
+              "Enter the table number (matches your floor plan / POS — keep them consistent).",
+              "Optionally set a Zone (e.g. 'Patio', 'Main Floor', 'Booth Wall') for filtering and reports.",
+              "Optionally set Capacity (cover count) — used by future smart-seating features and helpful for Dashboard analytics today.",
+              "Save. The QR code is generated immediately.",
             ]} />
           </SubSection>
-          <SubSection title="QR Codes">
-            <p>Each table gets a unique QR code. When scanned, it takes the diner directly to your venue&apos;s AI ordering experience for that specific table.</p>
+
+          <SubSection title="Bulk add (numbered ranges)">
+            <p>Add Table → <strong>Bulk add</strong> lets you create T1–T50 in one go. Pick a prefix (or none), a start, and an end. Assign a zone to all of them if they share one. You'll save 30 minutes vs adding individually.</p>
+          </SubSection>
+
+          <SubSection title="QR codes — permanent">
+            <p><strong>QR codes never change.</strong> They're tied to the table's stable UUID, not its number or any URL parameter. This is critical: you can print stickers, laminate them, varnish them under a resin coat, and they will work forever. The Tab-Less platform guarantees this — no URL rotation, no expiry, no &quot;please reprint your QRs&quot;.</p>
             <StepList steps={[
-              "Click the QR icon on any table row to view the code.",
-              "Download or print the QR code.",
-              "Place it on the table as a sticker or tent card.",
+              "Click the QR icon on any table row to open the preview.",
+              "Download as PNG or PDF. PDF includes the table number printed beneath the QR.",
+              "Bulk download: tick multiple tables and use 'Download selected as PDF' — one page per table.",
+              "Print to sticker stock (we recommend matte vinyl, ~50×50mm for table-top; ~100×100mm for booth walls / windows).",
+              "Apply to the table. Clean surface, square placement, away from glassware drip lines.",
             ]} />
           </SubSection>
-          <Tip>QR codes are permanent and tied to the table&apos;s unique ID. They never expire — print them once and they work forever.</Tip>
+
+          <SubSection title="Sticker design tips">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Include the table number prominently <em>next to</em> the QR — staff use it to confirm a diner is at the right table.</li>
+              <li>Add a short call to action above the QR: &quot;Scan to order&quot; or &quot;No app needed&quot;.</li>
+              <li>Use matte stock — gloss reflections kill scan reliability under hospitality lighting.</li>
+              <li>Don't shrink below 30×30mm — phones struggle with anything smaller across a 4-top table.</li>
+              <li>Order 10–15% spares. Bartenders spill things; stickers get peeled by curious toddlers.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Editing &amp; deleting">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Edit</strong> a table to change its number, zone, or capacity. The QR code stays the same — only the metadata changes.</li>
+              <li><strong>Deleting</strong> a table soft-archives it. The QR sticker, if scanned, will show a &quot;Table no longer available, please flag a staff member&quot; message. Historical orders are preserved on the table for reporting.</li>
+              <li>You cannot permanently delete a table with orders attached — archive it instead.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Dine-in vs take-away vs browse">
+            <p>The QR scan starts a <em>dine-in session</em> by default — tied to the table, supports tabs, multiple diners on one table, and shared bill splitting. For takeaway, generate a single &quot;Takeaway&quot; QR (Tables &amp; QR → Add Takeaway Code) and post it at the counter. For browse-only landings (e.g. a window sticker for passersby), use a Venue QR that lands on the Landing Page without starting a session.</p>
+          </SubSection>
+
+          <Tip>Re-printing a sticker because it got damaged uses the same QR code — just download and print again. Never &quot;regenerate&quot; a QR thinking you need a fresh one. The URL hasn't changed and never will.</Tip>
         </Section>
 
         {/* Orders */}
@@ -712,17 +866,44 @@ export default function KnowledgeBase() {
 
         {/* Analytics */}
         <Section id="analytics" title="Analytics" icon={TrendingUp} hidden={isHidden("analytics")}>
-          <SubSection title="Revenue &amp; Performance">
-            <p>The Analytics page provides deeper insights beyond the dashboard:</p>
+          <SubSection title="What it is">
+            <p>Analytics is the deeper-dive companion to the Dashboard. Where the Dashboard answers &quot;what's happening right now?&quot;, Analytics answers &quot;what's happened over time and why?&quot;. Use it weekly for trend reviews, monthly for menu engineering, and quarterly for pricing-rule ROI.</p>
+          </SubSection>
+
+          <SubSection title="Date range and comparison">
+            <p>Top-right picker offers Today, Yesterday, This Week, Last 7 Days, This Month, Last 30 Days, This Quarter, Year to Date, and Custom range. Most charts overlay a <strong>comparison period</strong> (e.g. last 7 days vs the 7 days before) so you can see the delta at a glance. The comparison line is dashed; the current period is solid.</p>
+          </SubSection>
+
+          <SubSection title="Revenue trends">
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li>Revenue trends over time (daily, weekly, monthly).</li>
-              <li>Item-level performance — which items sell best.</li>
-              <li>Category breakdowns.</li>
+              <li><strong>Daily revenue</strong> — line chart with weekday/weekend banding so seasonality is visible.</li>
+              <li><strong>Day-of-week heatmap</strong> — average revenue per weekday hour, across the range. Confirms your busiest 90-min windows.</li>
+              <li><strong>Channel split</strong> — dine-in vs take-away vs delivery (where applicable).</li>
             </ul>
           </SubSection>
-          <SubSection title="Filtering">
-            <p>Use the date range picker to focus on specific periods. Compare weekdays vs weekends, or track the impact of menu changes and pricing rules.</p>
+
+          <SubSection title="Item &amp; category performance">
+            <p>Drill from category → item → modifier. Each row shows units sold, revenue, contribution margin (if cost is set), and rank movement vs the comparison period. Use this to:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Spot rising stars to feature on the Landing Page or push via an AI Instant Campaign.</li>
+              <li>Identify dead stock to remove or reprice.</li>
+              <li>Find &quot;modifier money&quot; — items where add-ons make up 30%+ of the line, worth investing in better modifier UX.</li>
+            </ul>
           </SubSection>
+
+          <SubSection title="Pricing rule ROI">
+            <p>For each active Pricing Rule, see attributed revenue impact: total revenue at the discounted/surcharged price vs the modelled revenue if the rule wasn't applied. Use this to justify keeping a Happy Hour (or killing one that's just leaking margin).</p>
+          </SubSection>
+
+          <SubSection title="Throttling impact">
+            <p>When Operational Throttling is enabled, an extra row shows the count of orders queued, average added wait time, and orders bumped manually. If queued counts spike on the same nights ticket times also spike, your station capacity needs to go up (not your throttle limits).</p>
+          </SubSection>
+
+          <SubSection title="Exports">
+            <p>Each table view has an <strong>Export CSV</strong> button (top-right of the table). Exports respect the current date range, filters, and sort order. Useful for accountants who still want a spreadsheet at month end.</p>
+          </SubSection>
+
+          <Tip>The single most valuable Analytics view is the <strong>day-of-week heatmap</strong>. It tells you exactly when to staff up and which nights are worth a targeted CRM campaign to grow.</Tip>
         </Section>
 
         {/* Diners */}
@@ -978,23 +1159,88 @@ export default function KnowledgeBase() {
             <p>Owners always have full access regardless of any per-user toggles. To assign a role and toggle order permissions, edit the user under <strong>Settings → Users</strong> and use the dialog.</p>
           </SubSection>
           <SubSection title="Loyalty">
-            <p>Configure your loyalty programme:</p>
+            <p>Loyalty in H&L OrderNOW is venue-configurable (or group-wide if you run multiple sites). Diners join from a Loyalty CTA on the Landing Page, from the AI chat (&quot;Want me to add you to our rewards?&quot;), or after their first paid order. Once joined, their points/stamps/tier sit in their diner profile and unlock automatically at checkout.</p>
+
+            <p className="font-semibold mt-3">Programme types</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Points</strong> — earn N points per dollar spent (default 1pt = $1). Diners redeem points for credit at a configurable rate (e.g. 100pts = $5 off). Best for venues with frequent visits and varied basket sizes.</li>
+              <li><strong>Stamps</strong> — punch-card style. Earn one stamp per visit / per qualifying item; redeem a full card for a free item or discount. Best for cafes, takeaway, single-item venues.</li>
+              <li><strong>Tier-based</strong> — diners climb tiers (e.g. Silver → Gold → Black) based on rolling 12-month spend. Each tier unlocks perks: priority service, % discount, free item on birthday, exclusive specials in the AI chat. Best for restaurants with regulars and a hospitality-led brand.</li>
+            </ul>
+
+            <p className="font-semibold mt-3">Setting up a programme</p>
             <StepList steps={[
-              "Choose a programme type: Points, Stamps, or Tier-based.",
-              "Set the rules (e.g. 1 point per dollar spent, 10 stamps for a free item).",
-              "Define tier thresholds if using tiered loyalty.",
-              "Toggle the programme active when ready.",
+              "Settings → Loyalty → Enable Loyalty.",
+              "Pick a programme type (Points / Stamps / Tier).",
+              "Configure earn rules: Points = points per $1; Stamps = how a stamp is earned (per visit, per qualifying item); Tier = annual spend thresholds.",
+              "Configure redemption: Points = redemption rate ($ value per 100pts) and minimum balance to redeem; Stamps = stamps per reward and the reward itself; Tier = perks per tier.",
+              "Set expiry: points/stamps can expire after N months of inactivity. Recommended 12 months for points, 6 for stamps. Tiers reset annually based on rolling spend.",
+              "Customise the join prompt: heading, description, and the CTA the agent uses in chat.",
+              "Toggle the programme Active. Existing diners are auto-enrolled if their orders qualify; new diners are prompted on first visit.",
             ]} />
+
+            <p className="font-semibold mt-3">Group loyalty (multi-venue)</p>
+            <p>If your venue is part of a group, the Group Loyalty Manager in the Group dashboard lets you run a single programme across all sites. Diners earn at any venue, redeem at any venue, and the parent controls the rules. Child venues can opt in or run their own local programme — never both.</p>
+
+            <p className="font-semibold mt-3">Diner-facing prompts</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Join prompt</strong> — appears after a successful first order if the diner isn't already a member.</li>
+              <li><strong>Tier-up notification</strong> — push + in-app banner when a diner crosses a tier threshold.</li>
+              <li><strong>Redemption nudge</strong> — AI agent proactively offers to apply a redemption when the diner has enough balance and an eligible item is in cart.</li>
+              <li><strong>Birthday reward</strong> — auto-issued on the diner's birthday (requires birthday on file from the CRM profile).</li>
+            </ul>
+
+            <p className="font-semibold mt-3">CRM integration</p>
+            <p>Loyalty tier and balance are first-class fields in the CRM Segments builder. Build segments like &quot;Gold tier, &gt;30 days since last visit&quot; and target them with a win-back campaign in one click.</p>
+
+            <Tip>Don't over-discount. A 1pt-per-$1 programme redeeming at 100pts = $5 is a 5% effective margin hit on engaged regulars — pricier than most loyalty operators realise. Model the cost before you launch.</Tip>
           </SubSection>
           <SubSection title="H&L OrderNOW AI">
-            <p>Customise your AI dining assistant:</p>
+            <p>The H&L OrderNOW AI settings let you shape the personality, voice, and guardrails of your venue's AI dining assistant. Done well, the agent feels like a knowledgeable host who knows your menu cold. Done badly, it feels like a generic chatbot.</p>
+
+            <p className="font-semibold mt-3">Identity</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Agent Name</strong> — What your AI introduces itself as.</li>
-              <li><strong>Tone</strong> — Casual, professional, or playful.</li>
-              <li><strong>Opening Message</strong> — The first thing diners see.</li>
-              <li><strong>Venue Context</strong> — Background info the AI uses to answer questions (e.g. &quot;We're a modern Australian bistro, BYO wine&quot;).</li>
-              <li><strong>Agent Icon</strong> — Custom avatar for the chat interface.</li>
+              <li><strong>Agent Name</strong> — how the agent introduces itself (e.g. &quot;Ollie&quot;, &quot;Sippa&quot;, &quot;Your Sommelier&quot;). Give it a name that fits your brand.</li>
+              <li><strong>Agent Icon</strong> — custom avatar shown next to every message. Upload a square PNG/SVG, ideally with transparent background. Falls back to the H&L OrderNOW default.</li>
+              <li><strong>Opening Message</strong> — the first thing every diner sees. Keep it warm, short, and end with a question that invites the next message (e.g. &quot;G'day! Welcome to Bondi Bistro. Are you here for a quick bite or a longer dinner tonight?&quot;).</li>
             </ul>
+
+            <p className="font-semibold mt-3">Tone presets</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Casual</strong> — friendly, contractions, light banter. Great for cafes, pubs, casual diners.</li>
+              <li><strong>Professional</strong> — polished, no slang, structured suggestions. Great for fine dining, hotels.</li>
+              <li><strong>Playful</strong> — emoji, jokes, energetic recommendations. Great for cocktail bars, dessert venues, novelty concepts.</li>
+            </ul>
+
+            <p className="font-semibold mt-3">Venue Context (the most important field)</p>
+            <p>A free-text box where you tell the AI everything a new staff member would need to know: cuisine, signature dishes, sourcing philosophy, BYO policy, kid-friendliness, dietary handling, parking, history. The agent draws on this to answer diner questions and make recommendations that <em>sound like your venue</em>.</p>
+            <p>Good example:</p>
+            <p className="font-mono text-xs bg-muted/40 rounded p-2 whitespace-pre-wrap">{`Modern Australian bistro in Bondi, opened 2018.
+Seafood-forward, native ingredients (saltbush, finger lime, davidson plum).
+Signature: snapper crudo with finger lime. Hero dessert: burnt basque cheesecake.
+Wine list is small-producer Aussie + NZ; cocktails lean low-ABV.
+BYO is fine on Mon/Tue ($15 corkage).
+Kid menu available on request.
+GF is well-handled; DF on most dishes; nut-free kitchen.`}</p>
+
+            <p className="font-semibold mt-3">Guardrails</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Max discount %</strong> — the agent will never offer a discount above this (default 0%). Raise it only if you want the AI to proactively offer Happy Hour or win-back deals.</li>
+              <li><strong>Quiet hours</strong> — outbound AI nudges (CRM Instant Campaigns) won't fire in this window.</li>
+              <li><strong>Daily send cap</strong> — max AI-initiated messages per diner per day.</li>
+              <li><strong>Require approval</strong> — if on, every AI-drafted campaign waits for a human to approve before sending.</li>
+            </ul>
+
+            <p className="font-semibold mt-3">Testing the agent</p>
+            <StepList steps={[
+              "Open your venue's QR URL in a private browser window (so you're not logged in).",
+              "Scan or paste a real table QR.",
+              "Have a full conversation — ask for a recommendation, request a modifier, ask about allergens.",
+              "If anything sounds off, edit the Venue Context first (it has the biggest impact), then the Opening Message, then the tone preset last.",
+              "Re-test in a fresh private window.",
+            ]} />
+
+            <Tip>If diners ask the agent the same question repeatedly (e.g. &quot;do you have parking?&quot;), add the answer to Venue Context — the agent will start answering it confidently first time.</Tip>
           </SubSection>
           <SubSection title="Payments — H&L Pay">
             <p>H&L Pay is H&L OrderNOW&apos;s built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don&apos;t need a separate processor account or API keys.</p>
@@ -1020,16 +1266,104 @@ export default function KnowledgeBase() {
             <Tip>Use the test card numbers shown in Settings → Payments to verify your full ordering and payment flow before going live.</Tip>
           </SubSection>
           <SubSection title="Taxes">
-            <p>Configure tax rules for your venue:</p>
+            <p>Tax rules let you configure how GST (or international equivalents) is collected and displayed. For Australian venues, the default is a single 10% GST rule marked <em>inclusive</em> — i.e. the price you set in Menu Builder already contains GST, exactly as required for diner-facing pricing under the ACCC.</p>
+
+            <p className="font-semibold mt-3">Tax types</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Percentage</strong> — Standard tax rate (e.g. 10% GST).</li>
-              <li><strong>Fixed</strong> — Flat fee per order.</li>
-              <li><strong>Compound</strong> — Tax calculated on top of other taxes.</li>
-              <li>Set whether taxes are inclusive (already in the price) or exclusive (added on top).</li>
+              <li><strong>Percentage</strong> — e.g. 10% GST. The most common type.</li>
+              <li><strong>Fixed</strong> — flat amount per order. Use sparingly (e.g. a small statutory levy).</li>
+              <li><strong>Compound</strong> — calculated on top of subtotal <em>plus</em> another tax (e.g. PST on top of GST in Canadian provinces). Order matters; the compound rule runs after the base it references.</li>
             </ul>
+
+            <p className="font-semibold mt-3">Inclusive vs exclusive (worked example)</p>
+            <p>For a $22 burger with 10% GST:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Inclusive</strong> (Australian default): diner sees $22.00 on the menu and pays $22.00. The GST component is $2.00 ($22 × 1/11) and the net price is $20.00. The receipt shows both lines.</li>
+              <li><strong>Exclusive</strong>: diner sees $22.00 on the menu but pays $24.20 at checkout ($22 + $2.20 GST). Standard in the US; <em>not compliant for Australian dine-in pricing</em>.</li>
+            </ul>
+
+            <p className="font-semibold mt-3">Setting up a tax rule</p>
+            <StepList steps={[
+              "Settings → Taxes → Add Tax Rule.",
+              "Name it (e.g. 'GST').",
+              "Pick type (Percentage / Fixed / Compound) and enter the rate.",
+              "Set inclusive vs exclusive — Australian venues should always use Inclusive for GST.",
+              "Scope: All items, specific Category, or specific Items. Most venues only need one all-items rule.",
+              "Activate. Existing menu prices are not changed — only how tax is computed and displayed.",
+            ]} />
+
+            <p className="font-semibold mt-3">Receipts and POS push</p>
+            <p>The diner receipt shows the subtotal, each tax line, and the total. The POS Integration push sends the inclusive price as the line PLU price (H&L Exceed's expected behaviour). Tax breakdowns are recorded on every order in the audit trail for BAS reporting.</p>
+
+            <p className="font-semibold mt-3">Per-category exemptions</p>
+            <p>Some items can be GST-free in Australia (e.g. basic groceries for retail venues). To handle this, create a second tax rule with rate 0% scoped to those categories, and leave the global 10% rule scoped to <em>All items except</em> those categories. Speak to your accountant before changing GST handling.</p>
+
+            <Tip>BAS exports live in Analytics → Exports. The CSV contains every order's net, GST, and gross broken out by tax rule so your bookkeeper can reconcile straight into Xero / MYOB.</Tip>
           </SubSection>
           <SubSection title="Landing Page Editor">
-            <p>Customise the public-facing page diners see when they scan your QR code. Add sections like a hero banner, about text, and featured items. Preview changes in real-time on a mobile frame before publishing.</p>
+            <p>The Landing Page Editor controls the public-facing page a diner sees the instant they scan your QR sticker — <em>before</em> they start chatting with the AI agent. A good landing page sets the brand tone, confirms they're at the right venue (with their table number), highlights specials, and pushes loyalty sign-up.</p>
+
+            <p className="font-semibold mt-3">Opening the editor</p>
+            <p>Settings → Landing Page → <strong>Open Landing Page Editor</strong>. The editor takes over the screen with a three-pane layout:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Left rail — Sections.</strong> A pinned <em>Page Theme</em> entry at the top, then your draggable list of sections (Hero, Featured Items, Loyalty CTA, etc.). Click any row to edit it on the right; drag the handle to reorder; the trash icon deletes it.</li>
+              <li><strong>Middle — Mobile preview.</strong> A live phone-frame rendering of exactly what diners will see. Updates instantly as you edit.</li>
+              <li><strong>Right — Edit panel.</strong> Shows the Theme panel or the selected section's properties, depending on what's selected.</li>
+            </ul>
+            <p>Top bar buttons: <strong>← Back</strong> returns to Settings without saving, <strong>Build from website</strong> opens the AI generator, <strong>Save &amp; Publish</strong> pushes your changes live.</p>
+
+            <p className="font-semibold mt-3">Build from website (AI)</p>
+            <p>The fastest way to get a real landing page is to let AI build one from your existing restaurant website. Click <strong>Build from website</strong> in the top bar:</p>
+            <StepList steps={[
+              "Paste your existing site URL (e.g. https://yourrestaurant.com).",
+              "Choose Replace current sections (recommended on first run) or Append to current sections.",
+              "Click Generate. The status line shows progress: Scraping site → Analysing branding → Looking up address → Composing sections.",
+              "When it finishes you'll see new sections drop into the left rail and (in Replace mode) a fresh theme applied. The mobile preview updates instantly.",
+              "Click Save & Publish to keep the result. If you don't save, none of it sticks.",
+            ]} />
+            <p>What the AI extracts from your site: brand colours (page background, accent), heading and body fonts (matched to the closest Google Font), a hero title and subtitle, your address, opening hours, social links, and up to ~4 featured items if it can find a menu. Anything it can't find is left blank for you to fill in.</p>
+
+            <p className="font-semibold mt-3">Page Theme</p>
+            <p>The Theme panel sets the colours and fonts every section inherits. Individual sections can still override any colour. Fields:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Page Background</strong> — accepts a hex colour (<code>#1a1a2e</code>) <em>or</em> a full CSS expression like <code>linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)</code>. Gradients land brand atmosphere without uploading an image.</li>
+              <li><strong>Accent</strong> — drives the table number colour, CTA buttons, and links.</li>
+              <li><strong>Surface</strong> — fill for cards/panels inside sections (use a semi-transparent value like <code>rgba(255,255,255,0.08)</code> over a dark background).</li>
+              <li><strong>Border</strong> — subtle dividers and card outlines.</li>
+              <li><strong>Primary Text</strong> / <strong>Muted Text</strong> — headings/body and secondary text.</li>
+              <li><strong>Heading Font</strong> / <strong>Body Font</strong> — pick from the curated Google Fonts list (Inter, Playfair Display, Bebas Neue, DM Sans, etc.). The preview renders the dropdown items in the font itself.</li>
+            </ul>
+
+            <p className="font-semibold mt-3">Section types — what each one does</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>🏠 Hero</strong> — big welcome header with title, subtitle, optional logo emoji, and optional hero image (with adjustable overlay opacity for text contrast). This is the first thing diners see — keep the title short and the subtitle action-oriented (&quot;Scan, order, enjoy — no app needed&quot;).</li>
+              <li><strong>🪑 Table Number</strong> — shows the diner's assigned table in large type. Drawn from the QR they scanned; the page reads it automatically. Customisable label, number colour, background, border. Skip this on take-away-only menus.</li>
+              <li><strong>⭐ Featured Items</strong> — a styled card grid of up to ~6 dishes (emoji, name, price). Use it for today's specials, signature dishes, or seasonal items. This is <em>display only</em> — diners still order via the AI agent, not from this card.</li>
+              <li><strong>🎁 Loyalty CTA</strong> — sign-up prompt for your loyalty programme. Two variants: <em>Text</em> (icon + headline + button) or <em>Image</em> (full-bleed image + overlay text). Configure heading, description, CTA label and URL, and all the colours. Cross-link to the Loyalty section for setup.</li>
+              <li><strong>📍 Hours &amp; Location</strong> — address, opening hours, and an optional embedded map (Google Maps URL). Pre-filled by Build from website when it can find them.</li>
+              <li><strong>📱 Social Links</strong> — Instagram, Facebook, Google handles. Leave a field empty to hide that icon.</li>
+              <li><strong>📝 Text</strong> — free-form paragraph for an &quot;About&quot; blurb, allergy notice, or BYO policy. Align left / centre / right, weight normal / medium / bold.</li>
+              <li><strong>➖ Divider</strong> — thin horizontal rule between sections. Colour and thickness configurable.</li>
+              <li><strong>↕️ Spacer</strong> — vertical breathing room (height in pixels). Use for visual rhythm between dense sections.</li>
+            </ul>
+
+            <p className="font-semibold mt-3">Building a section</p>
+            <StepList steps={[
+              "Click the + button at the top of the left rail to open the Add Section modal.",
+              "Pick a section type. It drops in at the bottom of the list and is auto-selected.",
+              "Edit its fields in the right panel — every change is reflected immediately in the mobile preview.",
+              "Drag the row in the left rail to move it up or down.",
+              "Use the trash icon on a row to delete a section.",
+              "When you're happy, click Save & Publish.",
+            ]} />
+
+            <p className="font-semibold mt-3">Mobile preview</p>
+            <p>The middle pane is locked to phone width because <em>~95% of diners hit your landing page on a phone</em> via the QR scan. Design for that frame first. The preview is interactive — scroll inside it to test long pages.</p>
+
+            <p className="font-semibold mt-3">Save &amp; Publish</p>
+            <p>There is no separate draft / publish step — <strong>Save &amp; Publish</strong> writes the new payload to your venue immediately, and the next diner who scans gets the new page. Permanent QR codes don't change. Roll back by editing again and clicking Save.</p>
+
+            <Tip>If you've just run <strong>Build from website</strong> and don't like the result, you can either tweak it section-by-section, or run it again with a different URL (or in Append mode to layer extra sections onto a hand-built page). Nothing is saved until you click Save &amp; Publish, so it's safe to experiment.</Tip>
           </SubSection>
         </Section>
 
