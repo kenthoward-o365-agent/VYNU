@@ -177,9 +177,9 @@ export default function WalkthroughPlayer() {
   const tip = computeTooltipPos(rect, step.placement);
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] pointer-events-none">
+    <div className="fixed inset-0 z-[9990] pointer-events-none">
       {/* Backdrop with cutout */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-auto" onClick={close}>
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden>
         <defs>
           <mask id="copilot-spotlight-mask">
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
