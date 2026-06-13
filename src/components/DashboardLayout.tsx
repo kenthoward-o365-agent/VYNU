@@ -49,6 +49,33 @@ interface NavItem {
   navKey: string;
 }
 
+// Map app routes → Knowledge Base section ids so the help button is context-aware.
+function routeToKbSection(pathname: string): string | null {
+  const map: Array<[RegExp, string]> = [
+    [/^\/dashboard/, "dashboard"],
+    [/^\/admin\/dashboard/, "dashboard"],
+    [/^\/sippa-analytics/, "shyndig-ai-analytics"],
+    [/^\/menu/, "menu-builder"],
+    [/^\/modifiers/, "menu-builder"],
+    [/^\/pricing/, "pricing"],
+    [/^\/rule-types/, "pricing"],
+    [/^\/tables/, "tables-qr"],
+    [/^\/orders\/throttling/, "operational-throttling"],
+    [/^\/orders\/settings/, "orders"],
+    [/^\/orders\/statuses/, "orders"],
+    [/^\/orders/, "orders"],
+    [/^\/analytics/, "analytics"],
+    [/^\/diners/, "diners"],
+    [/^\/settings\/landing-page/, "settings"],
+    [/^\/settings/, "settings"],
+    [/^\/reporting/, "analytics"],
+    [/^\/self-onboard/, "getting-started"],
+    [/^\/billing/, "settings"],
+  ];
+  for (const [re, id] of map) if (re.test(pathname)) return id;
+  return null;
+}
+
 const venueNavItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: { light: navDashboard, dark: navDashboardDark }, navKey: "dashboard" },
   { path: "/sippa-analytics", label: "Spark AI", icon: { light: navAIAnalytics, dark: navAIAnalyticsDark }, navKey: "sippa_analytics" },
@@ -330,9 +357,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </Link>
                 )}
                 <Link
-                  to="/knowledge-base"
+                  to={`/knowledge-base${routeToKbSection(location.pathname) ? `?section=${routeToKbSection(location.pathname)}` : ""}`}
                   className="inline-flex items-center justify-center h-8 w-8 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-                  title="Knowledge Base"
+                  title="Knowledge Base — help for this page"
                 >
                   <HelpCircle className="h-4 w-4" />
                 </Link>

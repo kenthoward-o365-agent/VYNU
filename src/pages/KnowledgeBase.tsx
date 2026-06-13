@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
@@ -88,7 +89,10 @@ function Tip({ children }: { children: React.ReactNode }) {
 
 export default function KnowledgeBase() {
   const [tocOpen, setTocOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQ = searchParams.get("q") ?? "";
+  const initialSection = searchParams.get("section");
+  const [search, setSearch] = useState(initialQ);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const query = search.trim().toLowerCase();
@@ -105,7 +109,38 @@ export default function KnowledgeBase() {
       if (text.includes(query)) next.add(el.dataset.kbSection!);
     });
     setMatchIds(next);
+    // Auto-scroll to first matching section so search "takes you there".
+    const firstId = tocItems.find((t) => next.has(t.id))?.id;
+    if (firstId) {
+      requestAnimationFrame(() => scrollTo(firstId));
+    }
   }, [query]);
+
+  // Keep ?q= in the URL in sync with search input (so links share state).
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams);
+    if (search) next.set("q", search); else next.delete("q");
+    // Drop section once user starts searching to avoid fighting scroll targets.
+    if (search) next.delete("section");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
+
+  // On mount: if a ?section=… deep-link is present, scroll to it once rendered.
+  useEffect(() => {
+    if (!initialSection) return;
+    // Wait for sections to render.
+    const tryScroll = (attempt = 0) => {
+      const el = document.getElementById(initialSection);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (attempt < 10) {
+        setTimeout(() => tryScroll(attempt + 1), 50);
+      }
+    };
+    tryScroll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const visibleToc = useMemo(() => {
     if (!matchIds) return tocItems;
