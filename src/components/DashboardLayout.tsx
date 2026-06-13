@@ -231,7 +231,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <>
       {/* Outer desk surface */}
       <div
-        className="min-h-screen w-full flex items-stretch justify-center"
+        className="h-screen w-full flex items-stretch justify-center overflow-hidden"
         style={{
           background:
             "radial-gradient(1200px 600px at 50% -10%, hsl(var(--pos-chassis-highlight) / 0.4), transparent 60%), hsl(var(--pos-chassis))",
@@ -240,8 +240,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Terminal chassis (bezel) */}
         <div
           className={cn(
-            "w-full flex flex-col overflow-hidden",
-            "lg:my-3 lg:mx-3 lg:rounded-[22px]",
+            "w-full h-full flex flex-col overflow-hidden",
+            "lg:my-3 lg:mx-3 lg:rounded-[22px] lg:h-[calc(100vh-1.5rem)]",
             "lg:max-w-[1680px]",
           )}
           style={{
