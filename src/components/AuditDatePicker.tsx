@@ -95,7 +95,7 @@ export default function AuditDatePicker({ value, onChange, auditDateOverride }: 
     : `${value.label} — ${format(value.from, "dd MMM")} – ${format(value.to, "dd MMM yyyy")}`;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
