@@ -138,7 +138,10 @@ export default function KnowledgeBase() {
           <span className="font-semibold text-foreground text-sm">Contents</span>
         </div>
         <nav className="space-y-0.5">
-          {tocItems.map((item) => (
+          {visibleToc.length === 0 && (
+            <p className="text-xs text-muted-foreground italic px-3 py-2">No sections match "{search}".</p>
+          )}
+          {visibleToc.map((item) => (
             <button
               key={item.id}
               onClick={() => { scrollTo(item.id); setTocOpen(false); }}
@@ -156,13 +159,33 @@ export default function KnowledgeBase() {
       {tocOpen && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setTocOpen(false)} />}
 
       {/* Main content */}
-      <div className="flex-1 space-y-8 min-w-0">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground mb-1">Knowledge Base</h1>
-          <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on H&L OrderNOW.</p>
+      <div ref={contentRef} className="flex-1 space-y-8 min-w-0">
+        <div className="space-y-3">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground mb-1">Knowledge Base</h1>
+            <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on H&L OrderNOW.</p>
+          </div>
+          <div className="relative max-w-xl">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="search"
+              placeholder="Search the knowledge base..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+            {query && (
+              <p className="text-xs text-muted-foreground mt-1.5">
+                {matchIds ? `${matchIds.size} section${matchIds.size === 1 ? "" : "s"} match` : "Searching..."}
+                {" — "}
+                <button onClick={() => setSearch("")} className="text-primary hover:underline">clear</button>
+              </p>
+            )}
+          </div>
         </div>
 
         <Separator />
+
 
         {/* Getting Started */}
         <Section id="getting-started" title="Getting Started" icon={Rocket}>
