@@ -178,35 +178,7 @@ export default function WalkthroughPlayer() {
 
   return createPortal(
     <div className="fixed inset-0 z-[9990] pointer-events-none">
-      {/* Backdrop with cutout */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden>
-        <defs>
-          <mask id="copilot-spotlight-mask">
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {rect && (
-              <rect
-                x={rect.left - PAD}
-                y={rect.top - PAD}
-                width={rect.width + PAD * 2}
-                height={rect.height + PAD * 2}
-                rx="10"
-                ry="10"
-                fill="black"
-              />
-            )}
-          </mask>
-        </defs>
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="rgba(8, 10, 24, 0.62)"
-          mask="url(#copilot-spotlight-mask)"
-        />
-      </svg>
-
-      {/* Highlight ring (decorative, sits over the cutout) */}
+      {/* Highlight ring only — no modal overlay, so users can click the app while following steps. */}
       {rect && (
         <div
           className="absolute rounded-[10px] ring-2 ring-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.25),0_0_30px_hsl(var(--primary)/0.55)] animate-pulse pointer-events-none"
