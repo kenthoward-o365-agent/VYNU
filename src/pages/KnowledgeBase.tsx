@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import {
   BookOpen, LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
   TrendingUp, Users, Settings, BarChart3, ChevronRight, Rocket, Sparkles,
-  SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X, Monitor, Sliders, Plug
+  SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X, Monitor, Sliders, Plug,
+  MonitorSmartphone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
