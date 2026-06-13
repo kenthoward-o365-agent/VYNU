@@ -262,12 +262,12 @@ export function CoPilotLauncher() {
         onClick={() => setOpen(true)}
         aria-label="Open CoPilot"
         className={cn(
-          "fixed bottom-5 right-5 z-40 flex items-center gap-2 pl-2 pr-3.5 py-2 rounded-full",
+          "fixed bottom-5 right-5 z-40 flex items-center gap-2 pl-2.5 pr-4 py-2 rounded-full",
           "bg-primary text-primary-foreground shadow-lg shadow-primary/30",
           "hover:scale-105 active:scale-95 transition-transform",
         )}
       >
-        <img src={copilotIcon} alt="" className="h-7 w-7" width={28} height={28} />
+        <Bot className="h-5 w-5" strokeWidth={2.5} />
         <span className="text-sm font-medium">CoPilot</span>
       </button>
       <CoPilotPanel open={open} onOpenChange={setOpen} />
