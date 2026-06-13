@@ -982,7 +982,7 @@ export default function KnowledgeBase() {
 
         <Separator />
         <p className="text-xs text-muted-foreground text-center pb-8">
-          Need more help? Contact us at support@shyndig.com
+          Need more help? Contact us at support@hlordernow.com
         </p>
       </div>
     </div>
