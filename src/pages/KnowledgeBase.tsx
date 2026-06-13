@@ -88,6 +88,32 @@ function Tip({ children }: { children: React.ReactNode }) {
 
 export default function KnowledgeBase() {
   const [tocOpen, setTocOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const query = search.trim().toLowerCase();
+
+  // After re-render, compute which section IDs match the search by reading rendered text.
+  const [matchIds, setMatchIds] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    if (!query) { setMatchIds(null); return; }
+    const root = contentRef.current;
+    if (!root) return;
+    const next = new Set<string>();
+    root.querySelectorAll<HTMLElement>("[data-kb-section]").forEach((el) => {
+      const text = (el.textContent || "").toLowerCase();
+      if (text.includes(query)) next.add(el.dataset.kbSection!);
+    });
+    setMatchIds(next);
+  }, [query]);
+
+  const visibleToc = useMemo(() => {
+    if (!matchIds) return tocItems;
+    return tocItems.filter((t) => matchIds.has(t.id));
+  }, [matchIds]);
+
+  const isHidden = (id: string) => !!matchIds && !matchIds.has(id);
+
 
   return (
     <div className="flex gap-6 max-w-7xl mx-auto relative">
