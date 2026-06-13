@@ -40,9 +40,10 @@ function scrollTo(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function Section({ id, title, icon: Icon, children }: { id: string; title: string; icon: any; children: React.ReactNode }) {
+function Section({ id, title, icon: Icon, children, hidden }: { id: string; title: string; icon: any; children: React.ReactNode; hidden?: boolean }) {
+  if (hidden) return null;
   return (
-    <section id={id} className="scroll-mt-6">
+    <section id={id} data-kb-section={id} data-kb-title={title} className="scroll-mt-6">
       <div className="flex items-center gap-3 mb-4">
         <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
           <Icon className="h-5 w-5 text-primary" />
@@ -57,6 +58,7 @@ function Section({ id, title, icon: Icon, children }: { id: string; title: strin
     </section>
   );
 }
+
 
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
