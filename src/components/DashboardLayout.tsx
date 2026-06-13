@@ -49,6 +49,33 @@ interface NavItem {
   navKey: string;
 }
 
+// Map app routes → Knowledge Base section ids so the help button is context-aware.
+function routeToKbSection(pathname: string): string | null {
+  const map: Array<[RegExp, string]> = [
+    [/^\/dashboard/, "dashboard"],
+    [/^\/admin\/dashboard/, "dashboard"],
+    [/^\/sippa-analytics/, "shyndig-ai-analytics"],
+    [/^\/menu/, "menu-builder"],
+    [/^\/modifiers/, "menu-builder"],
+    [/^\/pricing/, "pricing"],
+    [/^\/rule-types/, "pricing"],
+    [/^\/tables/, "tables-qr"],
+    [/^\/orders\/throttling/, "operational-throttling"],
+    [/^\/orders\/settings/, "orders"],
+    [/^\/orders\/statuses/, "orders"],
+    [/^\/orders/, "orders"],
+    [/^\/analytics/, "analytics"],
+    [/^\/diners/, "diners"],
+    [/^\/settings\/landing-page/, "settings"],
+    [/^\/settings/, "settings"],
+    [/^\/reporting/, "analytics"],
+    [/^\/self-onboard/, "getting-started"],
+    [/^\/billing/, "settings"],
+  ];
+  for (const [re, id] of map) if (re.test(pathname)) return id;
+  return null;
+}
+
 const venueNavItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: { light: navDashboard, dark: navDashboardDark }, navKey: "dashboard" },
   { path: "/sippa-analytics", label: "Spark AI", icon: { light: navAIAnalytics, dark: navAIAnalyticsDark }, navKey: "sippa_analytics" },
