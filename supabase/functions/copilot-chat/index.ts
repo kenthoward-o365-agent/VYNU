@@ -624,6 +624,20 @@ The user's access level: ${isAdmin ? "ADMIN (financials allowed)" : "STAFF (fina
     let assistantText = "";
     let lastUsage: any = null;
 
+    // Deterministic shortcut: if the user clearly asked a how-to that maps to a walkthrough,
+    // launch it directly so the visual walkthrough always fires.
+    const wtId = detectWalkthroughIntent(message);
+    if (wtId) {
+      const w = WALKTHROUGHS.find((x) => x.id === wtId)!;
+      toolEvents.push({
+        name: "start_walkthrough",
+        args: { walkthrough_id: wtId },
+        result: { ok: true, walkthrough_id: w.id, title: w.title, description: w.description },
+      });
+      assistantText = `Starting the **${w.title}** walkthrough — follow the highlighted steps on screen. I'll keep this chat open so you can refer back. Tap **Next** on each tooltip, or close it any time.`;
+    }
+
+
     for (let i = 0; i < 8; i++) {
       const resp = await fetch(LOVABLE_API_URL, {
         method: "POST",
