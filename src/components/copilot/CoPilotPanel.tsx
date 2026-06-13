@@ -6,7 +6,7 @@ import { useVenue } from "@/contexts/VenueContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Trash2, Wrench, MessageCircle } from "lucide-react";
+import { Send, Loader2, Trash2, Wrench, MessageCircle, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import copilotIcon from "@/assets/brand/copilot-icon.png";
@@ -241,11 +241,13 @@ export function CoPilotButton({ onClick }: { onClick: () => void }) {
       aria-label="Open CoPilot"
       title="CoPilot"
       className={cn(
-        "inline-flex items-center justify-center h-9 w-9 rounded-md",
-        "text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
+        "inline-flex items-center justify-center h-9 w-9 rounded-lg",
+        "bg-primary/15 text-primary border border-primary/20",
+        "hover:bg-primary/25 hover:scale-105 active:scale-95 transition-all",
+        "shadow-[0_0_12px_hsl(var(--primary)/0.25)]",
       )}
     >
-      <img src={copilotIcon} alt="" className="h-5 w-5" width={20} height={20} />
+      <Bot className="h-[18px] w-[18px]" strokeWidth={2.5} />
     </button>
   );
 }
@@ -260,12 +262,12 @@ export function CoPilotLauncher() {
         onClick={() => setOpen(true)}
         aria-label="Open CoPilot"
         className={cn(
-          "fixed bottom-5 right-5 z-40 flex items-center gap-2 pl-2 pr-3.5 py-2 rounded-full",
+          "fixed bottom-5 right-5 z-40 flex items-center gap-2 pl-2.5 pr-4 py-2 rounded-full",
           "bg-primary text-primary-foreground shadow-lg shadow-primary/30",
           "hover:scale-105 active:scale-95 transition-transform",
         )}
       >
-        <img src={copilotIcon} alt="" className="h-7 w-7" width={28} height={28} />
+        <Bot className="h-5 w-5" strokeWidth={2.5} />
         <span className="text-sm font-medium">CoPilot</span>
       </button>
       <CoPilotPanel open={open} onOpenChange={setOpen} />
