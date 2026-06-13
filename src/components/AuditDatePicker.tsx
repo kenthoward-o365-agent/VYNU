@@ -53,15 +53,20 @@ interface AuditDatePickerProps {
 export default function AuditDatePicker({ value, onChange, auditDateOverride }: AuditDatePickerProps) {
   const presets = useMemo(() => buildPresets(auditDateOverride), [auditDateOverride]);
   const [open, setOpen] = useState(false);
-  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date } | undefined>({
-    from: value.from,
-    to: value.to,
-  });
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date } | undefined>(undefined);
+
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    // Reset the custom-range working state every time the popover opens so the
+    // first click always sets the start date (instead of completing a range
+    // that was pre-seeded from the active preset).
+    if (next) setCustomRange(undefined);
+  };
 
   const handlePreset = (preset: (typeof presets)[0]) => {
     const r = preset.getRange();
     onChange({ ...r, label: preset.label });
-    setCustomRange({ from: r.from, to: r.to });
+    setCustomRange(undefined);
     setOpen(false);
   };
 
