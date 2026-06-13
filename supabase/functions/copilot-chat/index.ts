@@ -83,15 +83,45 @@ const KB_TOPICS: { id: string; label: string; summary: string; details: string[]
 ];
 
 // Walkthroughs available to the model (kept in sync with src/components/copilot/walkthroughs.ts).
-const WALKTHROUGHS = [
-  { id: "add-menu-item", title: "Add a menu item", description: "Create a new item in Menu Builder." },
-  { id: "create-table-qr", title: "Create a table and print its QR sticker", description: "Add a table and download the permanent QR PDF." },
-  { id: "refund-order", title: "Refund an order", description: "Refund on the live orders board." },
-  { id: "view-revenue", title: "See today's revenue", description: "Where today's revenue tiles live." },
-  { id: "configure-payments", title: "Configure H&L Pay payments", description: "Payments, gratuities, surcharges, GST." },
-  { id: "pos-integration", title: "Connect H&L Exceed POS", description: "Pair the POS so orders push automatically." },
-  { id: "open-knowledge-base", title: "Browse the Knowledge Base", description: "Open the full how-to library." },
+const WALKTHROUGHS: { id: string; title: string; description: string; keywords: string[] }[] = [
+  { id: "add-menu-item", title: "Add a menu item", description: "Create a new item in Menu Builder.",
+    keywords: ["add menu item", "add item", "new menu item", "create menu item", "create item", "add a dish", "add product", "menu builder"] },
+  { id: "create-table-qr", title: "Create a table and print its QR sticker", description: "Add a table and download the permanent QR PDF.",
+    keywords: ["add table", "create table", "new table", "print qr", "download qr", "qr sticker", "qr code"] },
+  { id: "refund-order", title: "Refund an order", description: "Refund on the live orders board.",
+    keywords: ["refund", "refund order", "issue refund", "give refund", "money back"] },
+  { id: "view-revenue", title: "See today's revenue", description: "Where today's revenue tiles live.",
+    keywords: ["today's revenue", "today revenue", "see revenue", "view revenue", "todays sales", "today sales", "where is revenue"] },
+  { id: "configure-payments", title: "Configure H&L Pay payments", description: "Payments, gratuities, surcharges, GST.",
+    keywords: ["configure payments", "set up payments", "setup payments", "h&l pay", "hl pay", "gratuities", "surcharges", "gst", "tip", "tipping"] },
+  { id: "pos-integration", title: "Connect H&L Exceed POS", description: "Pair the POS so orders push automatically.",
+    keywords: ["connect pos", "connect h&l exceed", "h&l exceed", "hl exceed", "pos integration", "pair pos", "setup pos", "set up pos"] },
+  { id: "open-knowledge-base", title: "Browse the Knowledge Base", description: "Open the full how-to library.",
+    keywords: ["knowledge base", "help library", "how-to library", "documentation"] },
 ];
+
+// Heuristic: detect a how-to intent + matching walkthrough purely from the user's text.
+function detectWalkthroughIntent(message: string): string | null {
+  const text = message.toLowerCase().trim();
+  if (!text) return null;
+  const howToPattern = /^(how (do|can|to) i|how to|walk me through|show me how|guide me|help me)\b/;
+  const looksLikeHowTo = howToPattern.test(text) || text.startsWith("where ");
+  // Best keyword match (longest match wins)
+  let best: { id: string; score: number } | null = null;
+  for (const w of WALKTHROUGHS) {
+    for (const kw of w.keywords) {
+      if (text.includes(kw)) {
+        const score = kw.length;
+        if (!best || score > best.score) best = { id: w.id, score };
+      }
+    }
+  }
+  if (!best) return null;
+  // Require either how-to phrasing OR a fairly specific keyword (length >= 8 chars)
+  if (looksLikeHowTo || best.score >= 8) return best.id;
+  return null;
+}
+
 
 
 // ---------- Tool catalog ----------
