@@ -18,6 +18,7 @@ interface TocItem {
 
 const tocItems: TocItem[] = [
   { id: "getting-started", label: "Getting Started", icon: Rocket },
+  { id: "pos-terminal-ui", label: "POS Terminal Interface", icon: MonitorSmartphone },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "shyndig-ai-analytics", label: "Spark AI Analytics", icon: BarChart3 },
   { id: "menu-builder", label: "Menu Builder", icon: UtensilsCrossed },
