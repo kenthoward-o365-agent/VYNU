@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   BookOpen, LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
   TrendingUp, Users, Settings, BarChart3, ChevronRight, Rocket, Sparkles,
   SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X, Monitor, Sliders, Plug,
-  MonitorSmartphone
+  MonitorSmartphone, Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
 
 interface TocItem {
   id: string;
