@@ -92,14 +92,22 @@ export default function CoPilotPanel({ open, onOpenChange }: { open: boolean; on
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "Done.", tools: data.tool_events ?? [] }]);
+      const toolEvents = data.tool_events ?? [];
+      setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "Done.", tools: toolEvents }]);
+
+      // If the model launched a walkthrough, fire it and close the sheet so the spotlight is visible.
+      const wt = toolEvents.find((t: any) => t.name === "start_walkthrough" && t.result?.ok && t.result?.walkthrough_id);
+      if (wt) {
+        onOpenChange(false);
+        setTimeout(() => startWalkthrough(wt.result.walkthrough_id), 250);
+      }
     } catch (e: any) {
       toast.error(e?.message ?? "CoPilot failed");
       setMessages((m) => [...m, { role: "assistant", content: "Sorry — something went wrong. Try again?" }]);
     } finally {
       setSending(false);
     }
-  }, [sending, venueId]);
+  }, [sending, venueId, onOpenChange]);
 
   const clearConversation = useCallback(async () => {
     if (!venueId) return;
