@@ -95,11 +95,11 @@ export default function CoPilotPanel({ open, onOpenChange }: { open: boolean; on
       const toolEvents = data.tool_events ?? [];
       setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "Done.", tools: toolEvents }]);
 
-      // If the model launched a walkthrough, fire it and close the sheet so the spotlight is visible.
+      // If the model launched a walkthrough, fire it while keeping the panel open
+      // so the user can read the step-by-step directions.
       const wt = toolEvents.find((t: any) => t.name === "start_walkthrough" && t.result?.ok && t.result?.walkthrough_id);
       if (wt) {
-        onOpenChange(false);
-        setTimeout(() => startWalkthrough(wt.result.walkthrough_id), 250);
+        startWalkthrough(wt.result.walkthrough_id);
       }
     } catch (e: any) {
       toast.error(e?.message ?? "CoPilot failed");
