@@ -6,7 +6,7 @@ import { useVenue } from "@/contexts/VenueContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Loader2, Trash2, Wrench, MessageCircle } from "lucide-react";
+import { Send, Loader2, Trash2, Wrench, MessageCircle, Bot } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import copilotIcon from "@/assets/brand/copilot-icon.png";
