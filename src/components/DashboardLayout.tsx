@@ -238,7 +238,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     (item.path === "/orders/settings" && (location.pathname === "/orders/statuses" || location.pathname === "/orders/throttling" || location.pathname === "/orders/settings")) ||
     (item.path === "/orders" && location.pathname === "/orders");
 
-  const railWidth = pinned ? "w-16" : "w-24";
+  const railWidth = pinned ? "w-16" : "w-40";
 
   return (
     <>
@@ -373,7 +373,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 className={cn(
                   "fixed inset-y-0 left-0 z-50 flex flex-col transition-[transform,width] duration-200 lg:static lg:translate-x-0",
                   "border-r",
-                  pinned ? "w-16" : "w-24",
+                  pinned ? "w-16" : "w-40",
                   sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
                 )}
                 style={{
