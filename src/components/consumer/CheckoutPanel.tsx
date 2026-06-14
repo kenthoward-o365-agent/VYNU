@@ -539,9 +539,9 @@ const CheckoutPanel = ({
   const canProceedLegacy = paymentEnabled ? isLegacyCardValid : true;
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-4rem)]">
+    <div className="flex flex-col min-h-[calc(100dvh-4rem)] pb-32">
       {/* Header */}
-      <div className="px-5 pt-5 pb-3 flex items-center gap-3">
+      <div className="px-5 pt-5 pb-3 flex items-center gap-3 sticky top-0 z-30 bg-background">
         <button onClick={onBack} className="p-1">
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -559,7 +559,7 @@ const CheckoutPanel = ({
         </div>
       )}
 
-      <div className="flex-1 overflow-auto px-5 pb-4 space-y-5">
+      <div className="flex-1 px-5 pb-4 space-y-5">
         {/* Order Summary */}
         <div className="space-y-2">
           {items.map((item) => {
