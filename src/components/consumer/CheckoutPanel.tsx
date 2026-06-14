@@ -539,9 +539,9 @@ const CheckoutPanel = ({
   const canProceedLegacy = paymentEnabled ? isLegacyCardValid : true;
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-4rem)]">
+    <div className="flex flex-col min-h-[calc(100dvh-4rem)] pb-32">
       {/* Header */}
-      <div className="px-5 pt-5 pb-3 flex items-center gap-3">
+      <div className="px-5 pt-5 pb-3 flex items-center gap-3 sticky top-0 z-30 bg-background">
         <button onClick={onBack} className="p-1">
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -559,7 +559,7 @@ const CheckoutPanel = ({
         </div>
       )}
 
-      <div className="flex-1 overflow-auto px-5 pb-4 space-y-5">
+      <div className="flex-1 px-5 pb-4 space-y-5">
         {/* Order Summary */}
         <div className="space-y-2">
           {items.map((item) => {
@@ -878,9 +878,12 @@ const CheckoutPanel = ({
       </div>
 
       {/* Pay Button — only used for stored-card flow, legacy form, and confirm-only flow.
-          Drop-in renders its own pay button. */}
+          Drop-in renders its own pay button. Fixed above BottomNav so it's always reachable. */}
       {!showDropin && (
-        <div className="border-t border-border px-5 pt-4 pb-20">
+        <div
+          className="fixed left-0 right-0 max-w-md mx-auto bg-background border-t border-border px-5 pt-3 z-40"
+          style={{ bottom: "4rem", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.75rem)" }}
+        >
           <Button
             onClick={processLegacyPayment}
             disabled={processing || !canProceedLegacy}
