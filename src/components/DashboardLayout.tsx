@@ -63,22 +63,33 @@ function routeToKbSection(pathname: string): string | null {
 }
 
 const venueNavItems: NavItem[] = [
-  { path: "/dashboard", label: "Dashboard", icon: { light: navDashboard, dark: navDashboardDark }, navKey: "dashboard" },
-  { path: "/sippa-analytics", label: "Spark AI", icon: { light: navAIAnalytics, dark: navAIAnalyticsDark }, navKey: "sippa_analytics" },
-  { path: "/menu", label: "Menu", icon: { light: navMenuBuilder, dark: navMenuBuilderDark }, navKey: "menu" },
-  { path: "/pricing", label: "Pricing", icon: { light: navPricing, dark: navPricingDark }, navKey: "pricing" },
-  { path: "/tables", label: "Tables", icon: { light: navTablesQR, dark: navTablesQRDark }, navKey: "tables" },
-  { path: "/orders", label: "Orders", icon: { light: navOrders, dark: navOrdersDark }, navKey: "orders" },
-  { path: "/orders/settings", label: "Order Cfg", icon: Monitor, navKey: "orders" },
-  { path: "/analytics", label: "Analytics", icon: { light: navAnalytics, dark: navAnalyticsDark }, navKey: "analytics" },
-  { path: "/diners", label: "Diners", icon: { light: navDiners, dark: navDinersDark }, navKey: "diners" },
-  { path: "/reporting", label: "DayEnd", icon: CalendarCheck, navKey: "settings" },
-  { path: "/billing", label: "Billing", icon: Receipt, navKey: "settings" },
-  { path: "/settings", label: "Settings", icon: { light: navSettings, dark: navSettingsDark }, navKey: "settings" },
+  { path: "/dashboard", label: "Dashboard", icon: IconDashboard, navKey: "dashboard" },
+  { path: "/sippa-analytics", label: "Spark AI", icon: IconSparkAI, navKey: "sippa_analytics" },
+  { path: "/menu", label: "Menu", icon: IconMenu, navKey: "menu" },
+  { path: "/pricing", label: "Pricing", icon: IconPricing, navKey: "pricing" },
+  { path: "/tables", label: "Tables", icon: IconTables, navKey: "tables" },
+  { path: "/orders", label: "Orders", icon: IconOrders, navKey: "orders" },
+  { path: "/orders/settings", label: "Order Cfg", icon: IconOrderCfg, navKey: "orders" },
+  { path: "/analytics", label: "Analytics", icon: IconAnalytics, navKey: "analytics" },
+  { path: "/diners", label: "Diners", icon: IconDiners, navKey: "diners" },
+  { path: "/reporting", label: "DayEnd", icon: IconDayEnd, navKey: "settings" },
+  { path: "/billing", label: "Billing", icon: IconBilling, navKey: "settings" },
+  { path: "/settings", label: "Settings", icon: IconSettings, navKey: "settings" },
 ];
 
 const groupNavItems = [
-  { path: "/group", label: "Group", icon: Building2 },
+  { path: "/group", label: "Group", icon: IconGroup },
+];
+
+const adminNavItems = [
+  { path: "/admin/dashboard", label: "Dashboard", icon: IconDashboard },
+  { path: "/admin/venues", label: "Venues", icon: IconVenues },
+  { path: "/admin/financials", label: "Finance", icon: IconFinance },
+  { path: "/admin/billing", label: "H&L Pay", icon: IconHLPay },
+  { path: "/admin/staff", label: "Staff", icon: IconStaff },
+  { path: "/admin/partners", label: "Partners", icon: IconPartners },
+  { path: "/admin/integrations", label: "POS", icon: IconPOS },
+  { path: "/admin/knowledge-base", label: "Knowledge", icon: IconKnowledge },
 ];
 
 const adminNavItems = [
