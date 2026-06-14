@@ -259,31 +259,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <>
-      {/* Outer desk surface */}
-      <div
-        className="h-screen w-full flex items-stretch justify-center overflow-hidden"
-        style={{
-          background:
-            "radial-gradient(1200px 600px at 50% -10%, hsl(var(--pos-chassis-highlight) / 0.4), transparent 60%), hsl(var(--pos-chassis))",
-        }}
-      >
-        {/* Terminal chassis (bezel) */}
-        <div
-          className={cn(
-            "w-full h-full flex flex-col overflow-hidden",
-            "lg:my-3 lg:mx-3 lg:rounded-[22px] lg:h-[calc(100vh-1.5rem)]",
-            "lg:max-w-[1680px]",
-          )}
-          style={{
-            background: "hsl(var(--pos-screen))",
-            border: "1px solid hsl(var(--pos-chassis-edge))",
-            boxShadow:
-              "inset 0 0 0 6px hsl(var(--pos-chassis)), inset 0 0 0 7px hsl(var(--pos-chassis-edge)), 0 30px 60px -20px hsl(0 0% 0% / 0.5)",
-            padding: "0",
-          }}
-        >
-          {/* Inner screen wrapper that respects the inset bezel */}
-          <div className="flex flex-col flex-1 overflow-hidden lg:m-[7px] lg:rounded-[14px]" style={{ background: "hsl(var(--background))" }}>
+      {/* App container — bezel removed */}
+      <div className="h-screen w-full flex items-stretch justify-center overflow-hidden bg-background">
+        <div className="w-full h-full flex flex-col overflow-hidden">
+          <div className="flex flex-col flex-1 overflow-hidden" style={{ background: "hsl(var(--background))" }}>
+
+
 
             {/* Top status bar */}
             <div
