@@ -106,13 +106,8 @@ function NavTile({
   theme: string;
   onClick?: () => void;
 }) {
-  const iconEl = typeof item.icon === "object" && "light" in item.icon ? (
-    <img src={theme === "dark" ? item.icon.dark : item.icon.light} className="h-5 w-5 shrink-0" alt="" />
-  ) : typeof item.icon === "string" ? (
-    <img src={item.icon} className="h-5 w-5 shrink-0" alt="" />
-  ) : (
-    <item.icon className="h-5 w-5 shrink-0" />
-  );
+  const IconCmp = item.icon;
+  const iconEl = <IconCmp className="h-[22px] w-[22px] shrink-0" />;
 
   const tile = (
     <Link
