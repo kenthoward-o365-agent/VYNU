@@ -878,9 +878,12 @@ const CheckoutPanel = ({
       </div>
 
       {/* Pay Button — only used for stored-card flow, legacy form, and confirm-only flow.
-          Drop-in renders its own pay button. */}
+          Drop-in renders its own pay button. Fixed above BottomNav so it's always reachable. */}
       {!showDropin && (
-        <div className="border-t border-border px-5 pt-4 pb-20">
+        <div
+          className="fixed left-0 right-0 max-w-md mx-auto bg-background border-t border-border px-5 pt-3 z-40"
+          style={{ bottom: "4rem", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.75rem)" }}
+        >
           <Button
             onClick={processLegacyPayment}
             disabled={processing || !canProceedLegacy}
