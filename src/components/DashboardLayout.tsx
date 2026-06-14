@@ -477,6 +477,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
         </div>
+      </div>
 
       <IdleTimeoutModal
         open={idle.warningOpen}
