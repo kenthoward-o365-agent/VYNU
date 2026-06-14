@@ -251,7 +251,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
             {/* Top status bar */}
             <div
-              className="flex items-center gap-3 px-3 lg:px-5 h-12 border-b shrink-0"
+              className="flex items-center gap-3 px-3 lg:px-5 h-16 border-b shrink-0"
               style={{
                 background: "hsl(var(--pos-status-bar))",
                 color: "hsl(var(--pos-status-fg))",
@@ -264,7 +264,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <img
                 src="/brand/shyndig-icon.png"
                 alt="H&L OrderNOW"
-                className="h-10 w-auto object-contain shrink-0"
+                className="h-12 w-auto object-contain shrink-0"
               />
               <div className="hidden sm:flex items-center gap-2 text-[12px]">
                 {showVenueNav ? (
