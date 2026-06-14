@@ -326,6 +326,19 @@ export default function AdminPartners() {
         </DialogContent>
       </Dialog>
 
+      {/* Issued webhook secret reveal */}
+      <Dialog open={!!issuedWebhookSecret} onOpenChange={(o) => !o && setIssuedWebhookSecret(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Webhook Signing Secret</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Copy this secret now. It is stored encrypted and will not be shown again.</p>
+          <div className="bg-muted p-3 rounded font-mono text-xs break-all">{issuedWebhookSecret}</div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { navigator.clipboard.writeText(issuedWebhookSecret ?? ""); toast.success("Copied"); }}>Copy</Button>
+            <Button onClick={() => setIssuedWebhookSecret(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Add webhook */}
       <Dialog open={!!whDialogPartner} onOpenChange={(o) => !o && setWhDialogPartner(null)}>
         <DialogContent>
