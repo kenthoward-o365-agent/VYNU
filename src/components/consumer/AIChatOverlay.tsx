@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, X, Sparkles, Users, AlertTriangle, Mic, MicOff } from "lucide-react";
+import { Send, X, Sparkles, Users, AlertTriangle, Mic, MicOff, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
