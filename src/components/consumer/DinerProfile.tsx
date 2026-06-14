@@ -17,6 +17,8 @@ const COMMON_ALLERGENS = [
 interface DinerProfileProps {
   venueId: string;
   groupId: string | null;
+  onSignup?: () => void;
+  onSignin?: () => void;
 }
 
 interface Profile {
