@@ -482,7 +482,12 @@ const CheckoutPanel = ({
         if (result.resultCode === "Authorised") {
           await finalizePaidOrder(orderId, !!result?.mock_mode);
         } else {
-          toast.error(`Payment ${result.resultCode || "failed"}: ${result.refusalReason || "Please try again"}`);
+          const hint = result?.mock_mode
+            ? "Tap 'Fill test card for me' to use the simulator's test card."
+            : "Please check your card details and try again.";
+          toast.error(
+            `Payment ${result.resultCode || "failed"}: ${result.refusalReason || hint}`
+          );
           await cleanupOrder(orderId);
         }
       } else {
