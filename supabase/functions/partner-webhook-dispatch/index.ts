@@ -95,11 +95,19 @@ Deno.serve(async (req) => {
     serviceKey,
   );
 
+  // Helper: load webhook + decrypted secret via SECURITY DEFINER RPC.
+  // The `secret` column on api_webhooks is no longer readable — values live in Vault.
+  // deno-lint-ignore no-explicit-any
+  async function loadSecret(webhookId: string): Promise<string | null> {
+    const { data } = await supabase.rpc("get_api_webhook_secret", { _webhook_id: webhookId });
+    return (data as string) ?? null;
+  }
+
   // GET = cron tick: retry pending deliveries whose retry time has elapsed.
   if (req.method === "GET") {
     const { data: pending } = await supabase
       .from("api_webhook_deliveries")
-      .select("id, webhook_id, event_type, payload, api_webhooks!inner(id, url, secret, events, is_active)")
+      .select("id, webhook_id, event_type, payload, api_webhooks!inner(id, url, events, is_active)")
       .is("delivered_at", null)
       .lte("next_retry_at", new Date().toISOString())
       .limit(50);
@@ -109,7 +117,9 @@ Deno.serve(async (req) => {
       // deno-lint-ignore no-explicit-any
       const wh = (d as any).api_webhooks;
       if (!wh?.is_active) continue;
-      await deliver(supabase, d.id, wh, d.event_type, d.payload);
+      const secret = await loadSecret(wh.id);
+      if (!secret) continue;
+      await deliver(supabase, d.id, { ...wh, secret }, d.event_type, d.payload);
       attempted++;
     }
     return new Response(JSON.stringify({ retried: attempted }), {
@@ -126,24 +136,31 @@ Deno.serve(async (req) => {
       });
     }
 
-    let webhooks: Webhook[] = [];
+    let webhookRows: { id: string; url: string; events: string[] }[] = [];
     if (webhook_id) {
       const { data } = await supabase
-        .from("api_webhooks").select("id, url, secret, events")
+        .from("api_webhooks").select("id, url, events")
         .eq("id", webhook_id).eq("is_active", true).maybeSingle();
-      if (data) webhooks = [data];
+      if (data) webhookRows = [data];
     } else if (partner_type && venue_id) {
       const { data } = await supabase
         .from("api_webhooks")
-        .select("id, url, secret, events, api_partners!inner(partner_type, is_active)")
+        .select("id, url, events, api_partners!inner(partner_type, is_active)")
         .eq("venue_id", venue_id)
         .eq("is_active", true)
         .contains("events", [event_type])
         // deno-lint-ignore no-explicit-any
         .filter("api_partners.partner_type" as any, "eq", partner_type)
         .filter("api_partners.is_active", "eq", true);
-      webhooks = (data ?? []) as Webhook[];
+      webhookRows = (data ?? []) as { id: string; url: string; events: string[] }[];
     }
+
+    const webhooks: Webhook[] = [];
+    for (const w of webhookRows) {
+      const secret = await loadSecret(w.id);
+      if (secret) webhooks.push({ ...w, secret });
+    }
+
 
     const results = [];
     for (const wh of webhooks) {
