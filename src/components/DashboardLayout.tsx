@@ -321,7 +321,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium bg-primary/20 text-white hover:bg-primary/30 transition-colors"
                     title="Self Onboard"
                   >
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <IconSparkAI className="h-3.5 w-3.5" />
                     <span className="hidden lg:inline">Self Onboard</span>
                   </Link>
                 )}
