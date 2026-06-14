@@ -302,12 +302,34 @@ export default function DinerProfile({ venueId, groupId, onSignup, onSignin }: D
     return (
       <div className="px-5 pt-8 pb-24 space-y-6">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-            <User className="h-8 w-8 text-muted-foreground" />
+          <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center mx-auto mb-4">
+            <Sparkles className="h-8 w-8 text-primary" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground mb-2">Your Profile</h2>
-          <p className="text-sm text-muted-foreground">
-            Sign in to view your profile, order history, loyalty points, and more.
+          <h2 className="text-lg font-semibold text-foreground mb-2">Join as a diner</h2>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            You're ordering as a guest. Create your H&L OrderNOW ID to earn loyalty points,
+            save your cards, track orders, and unlock personalised recommendations at every
+            H&L OrderNOW venue.
+          </p>
+        </div>
+        <div className="space-y-2 max-w-xs mx-auto">
+          <Button
+            className="w-full h-12 rounded-2xl"
+            onClick={() => onSignup?.()}
+            disabled={!onSignup}
+          >
+            Create my H&L OrderNOW ID
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full h-12 rounded-2xl"
+            onClick={() => onSignin?.()}
+            disabled={!onSignin}
+          >
+            I already have an ID — sign in
+          </Button>
+          <p className="text-[11px] text-muted-foreground text-center pt-2">
+            You can keep ordering as a guest — your current cart and table session stay put.
           </p>
         </div>
       </div>
