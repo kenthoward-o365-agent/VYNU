@@ -132,9 +132,9 @@ function NavTile({
       data-copilot-target={item.path}
       onClick={onClick}
       className={cn(
-        "group relative flex flex-col items-center justify-center gap-1 rounded-lg transition-all",
+        "group relative flex flex-col items-center justify-center gap-0.5 rounded-lg transition-all",
         "border border-transparent",
-        collapsed ? "h-12 w-12 mx-auto" : "h-[72px] w-full px-1",
+        collapsed ? "h-10 w-10 mx-auto" : "h-[56px] w-full px-1",
         active
           ? "text-[hsl(var(--primary))] shadow-[inset_3px_0_0_hsl(var(--primary)),0_1px_0_hsl(var(--pos-chassis-edge))]"
           : "text-sidebar-foreground/80 hover:text-sidebar-foreground",
@@ -146,7 +146,7 @@ function NavTile({
       <span
         className={cn(
           "flex items-center justify-center rounded-md transition-colors",
-          collapsed ? "h-9 w-9" : "h-8 w-8",
+          collapsed ? "h-7 w-7" : "h-7 w-7",
         )}
         style={{
           background: active ? "hsl(var(--primary) / 0.15)" : "hsl(var(--pos-tile))",
@@ -159,6 +159,7 @@ function NavTile({
           {item.label}
         </span>
       )}
+
     </Link>
   );
 
@@ -415,7 +416,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </button>
                 </div>
 
-                <nav className={cn("flex-1 overflow-y-auto py-2 space-y-1.5", pinned ? "px-1.5" : "px-2")}>
+                <nav className={cn("flex-1 overflow-y-auto py-2 space-y-0.5", pinned ? "px-1.5" : "px-2")}>
                   {showVenueNav && filteredVenueNav.map((item) => (
                     <NavTile
                       key={item.path}
