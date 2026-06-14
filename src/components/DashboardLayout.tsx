@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { usePermissions } from "@/hooks/use-permissions";
 import {
-  ChevronDown, Check, Sun, Moon, Shield, Receipt, HelpCircle, DollarSign, Settings, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, Plug, Cable, Monitor, Pin, PinOff, BookOpen, Sparkles, User
+  ChevronDown, Check, Sun, Moon, HelpCircle, Menu, X, LogOut, Pin, PinOff, User
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -22,24 +22,11 @@ import {
 
 import POSClock from "@/components/pos/POSClock";
 
-import navDashboard from "@/assets/nav-icons/dashboard.svg";
-import navDashboardDark from "@/assets/nav-icons/dashboard-dark.svg";
-import navAIAnalytics from "@/assets/nav-icons/Shyndig_AI_Analytics.svg";
-import navAIAnalyticsDark from "@/assets/nav-icons/Shyndig_AI_Analytics-dark.svg";
-import navMenuBuilder from "@/assets/nav-icons/menu-builder.svg";
-import navMenuBuilderDark from "@/assets/nav-icons/menu-builder-dark.svg";
-import navPricing from "@/assets/nav-icons/pricing.svg";
-import navPricingDark from "@/assets/nav-icons/pricing-dark.svg";
-import navTablesQR from "@/assets/nav-icons/tables-qr.svg";
-import navTablesQRDark from "@/assets/nav-icons/tables-qr-dark.svg";
-import navOrders from "@/assets/nav-icons/orders.svg";
-import navOrdersDark from "@/assets/nav-icons/orders-dark.svg";
-import navAnalytics from "@/assets/nav-icons/analytics.svg";
-import navAnalyticsDark from "@/assets/nav-icons/analytics-dark.svg";
-import navDiners from "@/assets/nav-icons/diners.svg";
-import navDinersDark from "@/assets/nav-icons/diners-dark.svg";
-import navSettings from "@/assets/nav-icons/settings.svg";
-import navSettingsDark from "@/assets/nav-icons/settings-dark.svg";
+import {
+  IconDashboard, IconSparkAI, IconMenu, IconPricing, IconTables, IconOrders,
+  IconOrderCfg, IconAnalytics, IconDiners, IconDayEnd, IconBilling, IconSettings,
+  IconGroup, IconVenues, IconFinance, IconHLPay, IconStaff, IconPartners, IconPOS, IconKnowledge,
+} from "@/components/nav-icons";
 
 interface NavItem {
   path: string;
