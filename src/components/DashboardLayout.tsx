@@ -92,16 +92,6 @@ const adminNavItems = [
   { path: "/admin/knowledge-base", label: "Knowledge", icon: IconKnowledge },
 ];
 
-const adminNavItems = [
-  { path: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/admin/venues", label: "Venues", icon: Shield },
-  { path: "/admin/financials", label: "Finance", icon: DollarSign },
-  { path: "/admin/billing", label: "H&L Pay", icon: Receipt },
-  { path: "/admin/staff", label: "Staff", icon: Shield },
-  { path: "/admin/partners", label: "Partners", icon: Plug },
-  { path: "/admin/integrations", label: "POS", icon: Cable },
-  { path: "/admin/knowledge-base", label: "Knowledge", icon: BookOpen },
-];
 
 function NavTile({
   item,
