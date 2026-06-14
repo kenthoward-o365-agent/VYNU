@@ -581,6 +581,7 @@ const ConsumerOrder = () => {
     if (newTab === "chat") {
       setShowChat(true);
     } else {
+      setShowChat(false);
       setTab(newTab);
       if (newTab !== "cart") setShowCheckout(false);
     }
