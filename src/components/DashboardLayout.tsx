@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { usePermissions } from "@/hooks/use-permissions";
 import {
-  ChevronDown, Check, Sun, Moon, Shield, Receipt, HelpCircle, DollarSign, Settings, Menu, X, LogOut, Building2, LayoutDashboard, CalendarCheck, Plug, Cable, Monitor, Pin, PinOff, BookOpen, Sparkles, User
+  ChevronDown, Check, Sun, Moon, HelpCircle, Menu, X, LogOut, Pin, PinOff, User
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -22,24 +22,11 @@ import {
 
 import POSClock from "@/components/pos/POSClock";
 
-import navDashboard from "@/assets/nav-icons/dashboard.svg";
-import navDashboardDark from "@/assets/nav-icons/dashboard-dark.svg";
-import navAIAnalytics from "@/assets/nav-icons/Shyndig_AI_Analytics.svg";
-import navAIAnalyticsDark from "@/assets/nav-icons/Shyndig_AI_Analytics-dark.svg";
-import navMenuBuilder from "@/assets/nav-icons/menu-builder.svg";
-import navMenuBuilderDark from "@/assets/nav-icons/menu-builder-dark.svg";
-import navPricing from "@/assets/nav-icons/pricing.svg";
-import navPricingDark from "@/assets/nav-icons/pricing-dark.svg";
-import navTablesQR from "@/assets/nav-icons/tables-qr.svg";
-import navTablesQRDark from "@/assets/nav-icons/tables-qr-dark.svg";
-import navOrders from "@/assets/nav-icons/orders.svg";
-import navOrdersDark from "@/assets/nav-icons/orders-dark.svg";
-import navAnalytics from "@/assets/nav-icons/analytics.svg";
-import navAnalyticsDark from "@/assets/nav-icons/analytics-dark.svg";
-import navDiners from "@/assets/nav-icons/diners.svg";
-import navDinersDark from "@/assets/nav-icons/diners-dark.svg";
-import navSettings from "@/assets/nav-icons/settings.svg";
-import navSettingsDark from "@/assets/nav-icons/settings-dark.svg";
+import {
+  IconDashboard, IconSparkAI, IconMenu, IconPricing, IconTables, IconOrders,
+  IconOrderCfg, IconAnalytics, IconDiners, IconDayEnd, IconBilling, IconSettings,
+  IconGroup, IconVenues, IconFinance, IconHLPay, IconStaff, IconPartners, IconPOS, IconKnowledge,
+} from "@/components/nav-icons";
 
 interface NavItem {
   path: string;
@@ -76,34 +63,35 @@ function routeToKbSection(pathname: string): string | null {
 }
 
 const venueNavItems: NavItem[] = [
-  { path: "/dashboard", label: "Dashboard", icon: { light: navDashboard, dark: navDashboardDark }, navKey: "dashboard" },
-  { path: "/sippa-analytics", label: "Spark AI", icon: { light: navAIAnalytics, dark: navAIAnalyticsDark }, navKey: "sippa_analytics" },
-  { path: "/menu", label: "Menu", icon: { light: navMenuBuilder, dark: navMenuBuilderDark }, navKey: "menu" },
-  { path: "/pricing", label: "Pricing", icon: { light: navPricing, dark: navPricingDark }, navKey: "pricing" },
-  { path: "/tables", label: "Tables", icon: { light: navTablesQR, dark: navTablesQRDark }, navKey: "tables" },
-  { path: "/orders", label: "Orders", icon: { light: navOrders, dark: navOrdersDark }, navKey: "orders" },
-  { path: "/orders/settings", label: "Order Cfg", icon: Monitor, navKey: "orders" },
-  { path: "/analytics", label: "Analytics", icon: { light: navAnalytics, dark: navAnalyticsDark }, navKey: "analytics" },
-  { path: "/diners", label: "Diners", icon: { light: navDiners, dark: navDinersDark }, navKey: "diners" },
-  { path: "/reporting", label: "DayEnd", icon: CalendarCheck, navKey: "settings" },
-  { path: "/billing", label: "Billing", icon: Receipt, navKey: "settings" },
-  { path: "/settings", label: "Settings", icon: { light: navSettings, dark: navSettingsDark }, navKey: "settings" },
+  { path: "/dashboard", label: "Dashboard", icon: IconDashboard, navKey: "dashboard" },
+  { path: "/sippa-analytics", label: "Spark AI", icon: IconSparkAI, navKey: "sippa_analytics" },
+  { path: "/menu", label: "Menu", icon: IconMenu, navKey: "menu" },
+  { path: "/pricing", label: "Pricing", icon: IconPricing, navKey: "pricing" },
+  { path: "/tables", label: "Tables", icon: IconTables, navKey: "tables" },
+  { path: "/orders", label: "Orders", icon: IconOrders, navKey: "orders" },
+  { path: "/orders/settings", label: "Order Cfg", icon: IconOrderCfg, navKey: "orders" },
+  { path: "/analytics", label: "Analytics", icon: IconAnalytics, navKey: "analytics" },
+  { path: "/diners", label: "Diners", icon: IconDiners, navKey: "diners" },
+  { path: "/reporting", label: "DayEnd", icon: IconDayEnd, navKey: "settings" },
+  { path: "/billing", label: "Billing", icon: IconBilling, navKey: "settings" },
+  { path: "/settings", label: "Settings", icon: IconSettings, navKey: "settings" },
 ];
 
 const groupNavItems = [
-  { path: "/group", label: "Group", icon: Building2 },
+  { path: "/group", label: "Group", icon: IconGroup },
 ];
 
 const adminNavItems = [
-  { path: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/admin/venues", label: "Venues", icon: Shield },
-  { path: "/admin/financials", label: "Finance", icon: DollarSign },
-  { path: "/admin/billing", label: "H&L Pay", icon: Receipt },
-  { path: "/admin/staff", label: "Staff", icon: Shield },
-  { path: "/admin/partners", label: "Partners", icon: Plug },
-  { path: "/admin/integrations", label: "POS", icon: Cable },
-  { path: "/admin/knowledge-base", label: "Knowledge", icon: BookOpen },
+  { path: "/admin/dashboard", label: "Dashboard", icon: IconDashboard },
+  { path: "/admin/venues", label: "Venues", icon: IconVenues },
+  { path: "/admin/financials", label: "Finance", icon: IconFinance },
+  { path: "/admin/billing", label: "H&L Pay", icon: IconHLPay },
+  { path: "/admin/staff", label: "Staff", icon: IconStaff },
+  { path: "/admin/partners", label: "Partners", icon: IconPartners },
+  { path: "/admin/integrations", label: "POS", icon: IconPOS },
+  { path: "/admin/knowledge-base", label: "Knowledge", icon: IconKnowledge },
 ];
+
 
 function NavTile({
   item,
@@ -118,13 +106,8 @@ function NavTile({
   theme: string;
   onClick?: () => void;
 }) {
-  const iconEl = typeof item.icon === "object" && "light" in item.icon ? (
-    <img src={theme === "dark" ? item.icon.dark : item.icon.light} className="h-5 w-5 shrink-0" alt="" />
-  ) : typeof item.icon === "string" ? (
-    <img src={item.icon} className="h-5 w-5 shrink-0" alt="" />
-  ) : (
-    <item.icon className="h-5 w-5 shrink-0" />
-  );
+  const IconCmp = item.icon;
+  const iconEl = <IconCmp className="h-[22px] w-[22px] shrink-0" />;
 
   const tile = (
     <Link
@@ -333,7 +316,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md text-xs font-medium bg-primary/20 text-white hover:bg-primary/30 transition-colors"
                     title="Self Onboard"
                   >
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <IconSparkAI className="h-3.5 w-3.5" />
                     <span className="hidden lg:inline">Self Onboard</span>
                   </Link>
                 )}
