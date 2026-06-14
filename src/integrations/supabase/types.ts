@@ -531,7 +531,6 @@ export type Database = {
           last_delivery_at: string | null
           last_delivery_status: number | null
           partner_id: string
-          secret: string | null
           secret_id: string | null
           updated_at: string
           url: string
@@ -545,7 +544,6 @@ export type Database = {
           last_delivery_at?: string | null
           last_delivery_status?: number | null
           partner_id: string
-          secret?: string | null
           secret_id?: string | null
           updated_at?: string
           url: string
@@ -559,7 +557,6 @@ export type Database = {
           last_delivery_at?: string | null
           last_delivery_status?: number | null
           partner_id?: string
-          secret?: string | null
           secret_id?: string | null
           updated_at?: string
           url?: string
