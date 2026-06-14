@@ -400,13 +400,24 @@ Deno.serve(async (req) => {
         result = await resp.json();
       }
 
-      // Save stored card token if payment authorised and store requested
-      if (
-        result.resultCode === "Authorised" &&
-        store_card &&
-        diner_id &&
-        result.additionalData
-      ) {
+      // Save stored card token if payment authorised and store requested.
+      // Require authentication + verified ownership of the diner profile before
+      // we write a stored card to it (prevents IDOR / mock-mode token planting).
+      let canStoreCard = false;
+      if (result.resultCode === "Authorised" && store_card && diner_id && result.additionalData) {
+        if (!userId) {
+          canStoreCard = false;
+        } else {
+          const { data: ownerProfile } = await adminClient
+            .from("diner_profiles")
+            .select("id")
+            .eq("id", diner_id)
+            .eq("user_id", userId)
+            .maybeSingle();
+          canStoreCard = !!ownerProfile;
+        }
+      }
+      if (canStoreCard) {
         const tokenRef =
           result.additionalData["recurring.recurringDetailReference"] ||
           result.additionalData?.["recurring.shopperReference"];

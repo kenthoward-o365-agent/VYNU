@@ -128,11 +128,20 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Update order status
-      const { error: updateErr } = await supabase
+      // Update order status — scoped to the venue that owns this POS integration
+      // to prevent cross-venue order manipulation via a valid POS credential.
+      const { error: updateErr, count: updatedCount } = await supabase
         .from("orders")
-        .update({ status: newStatus })
-        .eq("id", orderId);
+        .update({ status: newStatus }, { count: "exact" })
+        .eq("id", orderId)
+        .eq("venue_id", integration.venue_id);
+
+      if (!updateErr && (updatedCount ?? 0) === 0) {
+        return new Response(
+          JSON.stringify({ error: "Order not found for this venue" }),
+          { status: 404, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
 
       if (updateErr) {
         return new Response(

@@ -79,9 +79,20 @@ async function deliver(supabase: any, deliveryId: string, webhook: Webhook, even
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
+  // Require CRON_SECRET or service role key for all calls — this is an
+  // internal dispatcher, never to be invoked by end users.
+  const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  if (!token || (token !== cronSecret && token !== serviceKey)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+    });
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    serviceKey,
   );
 
   // GET = cron tick: retry pending deliveries whose retry time has elapsed.
