@@ -157,18 +157,21 @@ Deno.serve(async (req) => {
       if (!staff_id || !venue_id) return json({ error: "staff_id and venue_id are required" }, 400);
       if (!(await isVenueManager(venue_id))) return json({ error: "Forbidden" }, 403);
 
-      // Get user_id before deleting staff record
+      // Get user_id before deleting staff record (scoped to venue)
       const { data: staffRow } = await adminClient
         .from("venue_staff")
         .select("user_id")
         .eq("id", staff_id)
-        .single();
+        .eq("venue_id", venue_id)
+        .maybeSingle();
+      if (!staffRow) return json({ error: "Staff not found" }, 404);
 
-      // Remove staff record
+      // Remove staff record (scoped to venue)
       const { error: delErr } = await adminClient
         .from("venue_staff")
         .delete()
-        .eq("id", staff_id);
+        .eq("id", staff_id)
+        .eq("venue_id", venue_id);
       if (delErr) return json({ error: delErr.message }, 400);
 
       // Optionally delete the auth user entirely (only tabless_admin)
@@ -225,7 +228,8 @@ Deno.serve(async (req) => {
       const { error } = await adminClient
         .from("venue_staff")
         .update(updates)
-        .eq("id", staff_id);
+        .eq("id", staff_id)
+        .eq("venue_id", venue_id);
       if (error) return json({ error: error.message }, 400);
 
       return json({ success: true });
@@ -259,7 +263,8 @@ Deno.serve(async (req) => {
       const { error } = await adminClient
         .from("venue_staff")
         .update({ is_active })
-        .eq("id", staff_id);
+        .eq("id", staff_id)
+        .eq("venue_id", venue_id);
       if (error) return json({ error: error.message }, 400);
 
       return json({ success: true });

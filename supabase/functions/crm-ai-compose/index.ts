@@ -15,16 +15,30 @@ interface Body {
   segment_name?: string
 }
 
+const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return j({ error: 'Unauthorized' }, 401)
+    if (!authHeader?.startsWith('Bearer ')) return j({ error: 'Unauthorized' }, 401)
 
     const body: Body = await req.json()
     if (!body.venue_id || !body.goal || !body.channel) return j({ error: 'Missing fields' }, 400)
 
+    // Verify JWT and confirm caller manages this venue
+    const callerClient = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    })
+    const { data: userData, error: userErr } = await callerClient.auth.getUser()
+    const userId = userData?.user?.id
+    if (userErr || !userId) return j({ error: 'Unauthorized' }, 401)
+
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
+    const { data: isManager } = await supabase.rpc('is_venue_manager', {
+      _user_id: userId, _venue_id: body.venue_id,
+    })
+    if (!isManager) return j({ error: 'Forbidden' }, 403)
     const { data: venue } = await supabase.from('venues').select('name, cuisine_type').eq('id', body.venue_id).maybeSingle()
     const { data: cfg } = await supabase.from('venue_crm_config').select('default_tone, max_discount_pct').eq('venue_id', body.venue_id).maybeSingle()
 

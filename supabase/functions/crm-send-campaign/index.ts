@@ -15,19 +15,35 @@ function makeToken() {
   return crypto.randomUUID().replace(/-/g, '').slice(0, 20)
 }
 
+const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return j({ error: 'Unauthorized' }, 401)
+    if (!authHeader?.startsWith('Bearer ')) return j({ error: 'Unauthorized' }, 401)
 
     const body: Body = await req.json()
     if (!body.campaign_id) return j({ error: 'Missing campaign_id' }, 400)
+
+    // Verify JWT
+    const callerClient = createClient(SUPABASE_URL, ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    })
+    const { data: userData, error: userErr } = await callerClient.auth.getUser()
+    const userId = userData?.user?.id
+    if (userErr || !userId) return j({ error: 'Unauthorized' }, 401)
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
     const { data: campaign, error } = await supabase
       .from('crm_campaigns').select('*').eq('id', body.campaign_id).maybeSingle()
     if (error || !campaign) return j({ error: 'Campaign not found' }, 404)
+
+    // Confirm caller manages the campaign's venue
+    const { data: isManager } = await supabase.rpc('is_venue_manager', {
+      _user_id: userId, _venue_id: campaign.venue_id,
+    })
+    if (!isManager) return j({ error: 'Forbidden' }, 403)
     if (!['draft', 'scheduled'].includes(campaign.status) && !body.test_recipient) {
       return j({ error: `Cannot send a ${campaign.status} campaign` }, 400)
     }
