@@ -482,7 +482,12 @@ const CheckoutPanel = ({
         if (result.resultCode === "Authorised") {
           await finalizePaidOrder(orderId, !!result?.mock_mode);
         } else {
-          toast.error(`Payment ${result.resultCode || "failed"}: ${result.refusalReason || "Please try again"}`);
+          const hint = result?.mock_mode
+            ? "Tap 'Fill test card for me' to use the simulator's test card."
+            : "Please check your card details and try again.";
+          toast.error(
+            `Payment ${result.resultCode || "failed"}: ${result.refusalReason || hint}`
+          );
           await cleanupOrder(orderId);
         }
       } else {
@@ -762,9 +767,27 @@ const CheckoutPanel = ({
                   Card Details
                 </Label>
                 {isMockMode && (
-                  <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[11px] text-warning-foreground">
-                    <strong>H&L Pay test mode.</strong> Use card{" "}
-                    <code className="font-mono">4111 1111 1111 1111</code>, any future expiry, any CVC.
+                  <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[11px] text-warning-foreground space-y-2">
+                    <p>
+                      <strong>H&L Pay test mode.</strong> No card will actually be charged. Only the
+                      test card <code className="font-mono">4111 1111 1111 1111</code> will simulate
+                      a successful payment.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCard({
+                          number: "4111 1111 1111 1111",
+                          holder_name: card.holder_name || "Test Diner",
+                          expiry_month: "12",
+                          expiry_year: String(new Date().getFullYear() + 2),
+                          cvc: "737",
+                        })
+                      }
+                      className="text-xs font-semibold underline underline-offset-2 hover:no-underline"
+                    >
+                      Fill test card for me
+                    </button>
                   </div>
                 )}
 
