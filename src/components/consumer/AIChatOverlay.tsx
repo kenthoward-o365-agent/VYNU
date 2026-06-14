@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, X, Sparkles, Users, AlertTriangle, Mic, MicOff } from "lucide-react";
+import { Send, X, Sparkles, Users, AlertTriangle, Mic, MicOff, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
@@ -247,18 +247,34 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
   }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background flex flex-col max-w-md mx-auto">
+    <div
+      className="fixed top-0 left-0 right-0 max-w-md mx-auto z-[60] bg-background flex flex-col"
+      style={{
+        height: "calc(100dvh - 4rem - env(safe-area-inset-bottom, 0px))",
+      }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+      <div className="flex items-center justify-between px-3 py-3 border-b border-border shrink-0">
+        <button
+          onClick={onClose}
+          className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronLeft className="h-5 w-5" />
+          Menu
+        </button>
         <div className="flex items-center gap-2">
           <img
             src={agentIcon || "/brand/ai-agent-default.svg"}
             alt={agentName}
-            className="h-7 w-7 rounded-full object-cover"
+            className="h-6 w-6 rounded-full object-cover"
           />
-          <h2 className="font-semibold">{agentName}</h2>
+          <h2 className="font-semibold text-sm">{agentName}</h2>
         </div>
-        <button onClick={onClose} className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-secondary transition-colors">
+        <button
+          onClick={onClose}
+          className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-secondary transition-colors"
+          aria-label="Close chat"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
