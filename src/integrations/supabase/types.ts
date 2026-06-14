@@ -531,7 +531,8 @@ export type Database = {
           last_delivery_at: string | null
           last_delivery_status: number | null
           partner_id: string
-          secret: string
+          secret: string | null
+          secret_id: string | null
           updated_at: string
           url: string
           venue_id: string
@@ -544,7 +545,8 @@ export type Database = {
           last_delivery_at?: string | null
           last_delivery_status?: number | null
           partner_id: string
-          secret: string
+          secret?: string | null
+          secret_id?: string | null
           updated_at?: string
           url: string
           venue_id: string
@@ -557,7 +559,8 @@ export type Database = {
           last_delivery_at?: string | null
           last_delivery_status?: number | null
           partner_id?: string
-          secret?: string
+          secret?: string | null
+          secret_id?: string | null
           updated_at?: string
           url?: string
           venue_id?: string
@@ -5070,6 +5073,18 @@ export type Database = {
       }
       close_idle_web_sessions: { Args: never; Returns: number }
       close_table_session: { Args: { _session_id: string }; Returns: boolean }
+      create_api_webhook: {
+        Args: {
+          _events: string[]
+          _partner_id: string
+          _url: string
+          _venue_id: string
+        }
+        Returns: {
+          secret: string
+          webhook_id: string
+        }[]
+      }
       create_venue_with_owner: {
         Args: {
           _address?: string
@@ -5159,6 +5174,7 @@ export type Database = {
         Args: { _from: string; _to: string }
         Returns: Json
       }
+      get_api_webhook_secret: { Args: { _webhook_id: string }; Returns: string }
       get_ar_dashboard: { Args: { _from: string; _to: string }; Returns: Json }
       get_diner_order_status: {
         Args: { _order_id: string }
