@@ -44,7 +44,7 @@ function scrollTo(id: string) {
 function Section({ id, title, icon: Icon, children, hidden }: { id: string; title: string; icon: any; children: React.ReactNode; hidden?: boolean }) {
   if (hidden) return null;
   return (
-    <section id={id} data-kb-section={id} data-kb-title={title} className="scroll-mt-6">
+    <section id={id} data-kb-section={id} data-kb-title={title} className="scroll-mt-40">
       <div className="flex items-center gap-3 mb-4">
         <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
           <Icon className="h-5 w-5 text-primary" />
@@ -194,8 +194,9 @@ export default function KnowledgeBase() {
       {tocOpen && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setTocOpen(false)} />}
 
       {/* Main content */}
-      <div ref={contentRef} className="flex-1 space-y-8 min-w-0">
-        <div className="space-y-3">
+      <div className="flex-1 min-w-0">
+        {/* Sticky header with search */}
+        <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 space-y-3 pb-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground mb-1">Knowledge Base</h1>
             <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on H&L OrderNOW.</p>
@@ -217,9 +218,11 @@ export default function KnowledgeBase() {
               </p>
             )}
           </div>
+          <Separator />
         </div>
 
-        <Separator />
+        {/* Sections */}
+        <div ref={contentRef} className="space-y-8 pt-2">
 
 
         {/* Getting Started */}
@@ -1408,5 +1411,6 @@ GF is well-handled; DF on most dishes; nut-free kitchen.`}</p>
         </p>
       </div>
     </div>
+  </div>
   );
 }
