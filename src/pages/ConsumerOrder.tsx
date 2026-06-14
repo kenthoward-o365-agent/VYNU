@@ -781,7 +781,12 @@ const ConsumerOrder = () => {
       />
 
       {tab === "profile" && venue && (
-        <DinerProfile venueId={venue.id} groupId={venue.group_id} />
+        <DinerProfile
+          venueId={venue.id}
+          groupId={venue.group_id}
+          onSignup={() => { setAuthMode("signup"); setShowSignup(true); }}
+          onSignin={() => { setAuthMode("signin"); setShowSignup(true); }}
+        />
       )}
 
       {/* Upsell Prompt Overlay */}
