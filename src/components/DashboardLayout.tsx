@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import POSClock from "@/components/pos/POSClock";
-import POSStatusFooter from "@/components/pos/POSStatusFooter";
 
 import navDashboard from "@/assets/nav-icons/dashboard.svg";
 import navDashboardDark from "@/assets/nav-icons/dashboard-dark.svg";
@@ -476,9 +475,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 {children}
               </main>
             </div>
-
-            {/* Footer status rail */}
-            <POSStatusFooter />
           </div>
         </div>
       </div>
