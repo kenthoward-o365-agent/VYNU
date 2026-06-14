@@ -76,6 +76,7 @@ export default function AdminPartners() {
   const [whVenueId, setWhVenueId] = useState<string>("");
   const [whUrl, setWhUrl] = useState("");
   const [whEvents, setWhEvents] = useState<string[]>([]);
+  const [issuedWebhookSecret, setIssuedWebhookSecret] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -136,13 +137,17 @@ export default function AdminPartners() {
   async function createWebhook() {
     if (!whDialogPartner || !whVenueId || !whUrl) return toast.error("Venue and URL required");
     if (whEvents.length === 0) return toast.error("Select at least one event");
-    const secret = crypto.randomUUID().replace(/-/g, "");
-    const { error } = await supabase.from("api_webhooks").insert({
-      partner_id: whDialogPartner.id, venue_id: whVenueId, url: whUrl,
-      events: whEvents, secret,
+    // Secret is generated server-side and stored in Vault; we only see it once here.
+    const { data, error } = await (supabase as any).rpc("create_api_webhook", {
+      _partner_id: whDialogPartner.id,
+      _venue_id: whVenueId,
+      _url: whUrl,
+      _events: whEvents,
     });
     if (error) return toast.error(error.message);
-    toast.success("Webhook registered");
+    const row = Array.isArray(data) ? data[0] : data;
+    setIssuedWebhookSecret(row?.secret ?? null);
+    toast.success("Webhook registered — copy the secret now, it won't be shown again");
     setWhDialogPartner(null); setWhVenueId(""); setWhUrl(""); setWhEvents([]);
     void load();
   }
