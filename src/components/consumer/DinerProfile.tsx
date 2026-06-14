@@ -64,7 +64,7 @@ interface LoyaltyVenue {
   state: string | null;
 }
 
-export default function DinerProfile({ venueId, groupId }: DinerProfileProps) {
+export default function DinerProfile({ venueId, groupId, onSignup, onSignin }: DinerProfileProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orders, setOrders] = useState<OrderHistory[]>([]);
   const [loyalty, setLoyalty] = useState<LoyaltyInfo[]>([]);
