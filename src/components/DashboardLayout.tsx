@@ -238,7 +238,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     (item.path === "/orders/settings" && (location.pathname === "/orders/statuses" || location.pathname === "/orders/throttling" || location.pathname === "/orders/settings")) ||
     (item.path === "/orders" && location.pathname === "/orders");
 
-  const railWidth = pinned ? "w-16" : "w-24";
+  const railWidth = pinned ? "w-16" : "w-40";
 
   return (
     <>
