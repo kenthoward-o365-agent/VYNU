@@ -264,7 +264,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <img
                 src="/brand/shyndig-icon.png"
                 alt="H&L OrderNOW"
-                className="h-8 w-auto object-contain shrink-0"
+                className="h-10 w-auto object-contain shrink-0"
               />
               <div className="hidden sm:flex items-center gap-2 text-[12px]">
                 {showVenueNav ? (
