@@ -156,10 +156,11 @@ function Stat({ label, value }: { label: string; value: any }) {
 }
 
 function CampaignEditor({
-  open, campaign, venueId, segments, onClose, onSaved,
+  open, campaign, venueId, segments, smsSubCount, onClose, onSaved,
 }: {
   open: boolean; campaign: Campaign | null; venueId?: string;
   segments: { id: string; name: string; member_count: number }[];
+  smsSubCount: number;
   onClose: () => void; onSaved: () => void;
 }) {
   const [form, setForm] = useState<any>({});
@@ -171,10 +172,12 @@ function CampaignEditor({
     if (campaign) setForm(campaign);
     else setForm({
       name: "", channel: "email", goal: "daily_special", status: "draft",
+      audience_type: "segment",
       segment_id: null, subject: "", body_text: "", sms_text: "", cta_label: "Order now", cta_url: "",
       is_ai_generated: false, is_instant: false,
     });
   }, [campaign, open]);
+
 
   const upd = (patch: any) => setForm((f: any) => ({ ...f, ...patch }));
 
