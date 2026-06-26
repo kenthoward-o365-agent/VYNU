@@ -995,7 +995,66 @@ export default function KnowledgeBase() {
           <SubSection title="Diner Preferences (Personalisation)">
             <p>Configure how returning diners are treated when they interact with your venue — personalised welcome by loyalty tier, dietary memory, favourite item shortcuts and the marketing consent toggles described above.</p>
           </SubSection>
+
+          <SubSection title="SMS Subscribers (Text Receipts &amp; Marketing List)">
+            <p>The <strong>SMS Subscribers</strong> tab (Diners → SMS Subscribers) is a dedicated list of mobile numbers captured from guests who chose to <strong>text themselves a copy of their receipt</strong> at checkout — including walk-in guests who never created a frequent diner profile. It is intentionally kept <em>separate</em> from the Diners directory so you can market to one-off visitors without polluting your CRM, and so SMS consent is tracked independently of email/push consent on a registered profile.</p>
+
+            <p className="font-medium mt-3">How a number lands in the list</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>On the diner receipt screen the guest taps <strong>Text Me a Copy</strong>, enters a mobile number, and optionally ticks <em>&quot;Yes, send me future specials and offers from this venue&quot;</em>.</li>
+              <li>The <code>send-receipt-sms</code> edge function normalises the number to E.164 (defaults to the venue&apos;s country, Australia +61 unless overridden), upserts a row in <code>sms_subscribers</code> for that venue, records the receipt send, and — only if the box was ticked — sets <code>marketing_consent = true</code> with a timestamp and the consent source (<code>receipt_optin</code>).</li>
+              <li>If the same number texts itself another receipt later, we increment <code>receipts_sent</code> and refresh <code>last_receipt_at</code> without duplicating the row.</li>
+              <li>If they ticked the marketing box on a <em>later</em> visit, consent is upgraded; if they didn&apos;t, the row stays as a transactional-only contact (receipts allowed, marketing not).</li>
+            </ul>
+
+            <p className="font-medium mt-3">What you see in the tab</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Header KPIs</strong> — Total subscribers, Marketing-opted-in, Receipts sent (lifetime), and Unsubscribed.</li>
+              <li><strong>Search</strong> — by phone number or by the order reference of the last receipt sent.</li>
+              <li><strong>Filter chips</strong> — <em>All</em>, <em>Marketing opt-in</em>, <em>Transactional only</em>, <em>Unsubscribed</em>.</li>
+              <li><strong>Row detail</strong> — E.164 number, first seen, last receipt, receipts sent count, marketing consent state + source + timestamp, and unsubscribe state + reason (STOP keyword, manual, etc.).</li>
+            </ul>
+
+            <p className="font-medium mt-3">Actions available per row</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Unsubscribe</strong> — sets <code>marketing_consent = false</code> and records the reason as <em>manual</em>. Receipts can still be sent (transactional), but no marketing SMS will go out.</li>
+              <li><strong>Delete</strong> — hard-removes the row entirely. Use for data-subject deletion requests; otherwise prefer Unsubscribe so duplicate captures don&apos;t re-add a number that has previously asked to stop.</li>
+              <li><strong>Export CSV</strong> — exports the current filtered view (number, consent, last receipt, receipts sent, status). Use this to seed an external campaign tool or to hand a curated list to your marketing manager.</li>
+            </ul>
+
+            <p className="font-medium mt-3">Automatic STOP / opt-out handling</p>
+            <p>When you send any SMS to a subscriber (receipt or marketing) and they reply <strong>STOP</strong>, <strong>STOPALL</strong>, <strong>UNSUBSCRIBE</strong>, <strong>QUIT</strong>, <strong>END</strong> or <strong>CANCEL</strong>, Twilio flags the number and our inbound webhook flips the row to unsubscribed with reason <em>stop_keyword</em>. They will not receive further marketing or receipt SMS from your venue. Replying <strong>START</strong> re-opens the channel. This is required by Australian, US and UK SMS regulations — never re-add a STOPped number manually.</p>
+
+            <p className="font-medium mt-3">Sending marketing SMS to this list</p>
+            <ol className="list-decimal list-inside space-y-1 pl-1">
+              <li>Open <strong>Diners → Campaigns → New Campaign</strong>.</li>
+              <li>Channel: <strong>SMS</strong>. Audience: choose the built-in segment <em>&quot;SMS subscribers — marketing opted-in&quot;</em>, or build a custom segment that includes <code>sms_subscribers</code> rows where <code>marketing_consent = true</code>.</li>
+              <li>Compose the message (use the AI Composer for goal-driven copy). Include the venue name and an opt-out reminder — the platform auto-appends <em>&quot;Reply STOP to opt out&quot;</em> on the first send to a number and on the first send of each calendar month.</li>
+              <li>Schedule respecting <strong>quiet hours</strong> (default 9pm–9am local) and the venue&apos;s daily SMS cap, both set in Settings → Marketing Guardrails.</li>
+              <li>After send, the Campaigns Insights tab reports delivery, click-through (via tracking token), and attributed revenue from any orders placed in the following 7 days.</li>
+            </ol>
+
+            <p className="font-medium mt-3">Requirements to send real texts</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>A Twilio account connected via <strong>Settings → Integrations → Twilio</strong> (or the workspace-level Twilio connector). Required secrets: <code>TWILIO_ACCOUNT_SID</code>, <code>TWILIO_AUTH_TOKEN</code> and a sender — either <code>TWILIO_FROM_NUMBER</code> (long code / short code) or a Messaging Service SID.</li>
+              <li><strong>SMS Pumping Protection</strong> and <strong>SMS Geo Permissions</strong> must be enabled in the Twilio console — only enable the destination countries you actually serve. This protects your account from fraudulent traffic that would otherwise be billed to you.</li>
+              <li>If no Twilio credentials are configured, the system runs in <strong>simulated mode</strong>: receipts and marketing sends are still captured in <code>sms_subscribers</code> and Campaign logs (so you can preview consent capture and audience size), but no real text is delivered. A banner at the top of the SMS Subscribers tab shows the current mode.</li>
+            </ul>
+
+            <p className="font-medium mt-3">Compliance &amp; data hygiene</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Receipt SMS (transactional) is allowed without explicit marketing consent because the guest initiated it. Marketing SMS requires the opt-in tick — never repurpose a transactional row for marketing without it.</li>
+              <li>Consent state, source and timestamp are stored on each row to satisfy Spam Act 2003 (AU), TCPA (US) and PECR/GDPR (UK/EU) record-keeping obligations.</li>
+              <li>The list is venue-scoped. A guest who opts in at Venue A is not automatically opted in at Venue B, even within the same group.</li>
+              <li>Numbers older than 24 months with no receipt activity and no marketing engagement should be reviewed and either re-permissioned or deleted. Use the CSV export + filter on <em>last receipt</em> to find them.</li>
+            </ul>
+
+            <p className="font-medium mt-3">Permissions</p>
+            <p>Visibility of the SMS Subscribers tab and the Unsubscribe / Delete / Export actions is controlled by venue role permissions (Settings → Staff &amp; Roles → Permissions → <em>CRM &gt; SMS Subscribers</em>). Restrict Delete and Export to managers; allow Unsubscribe for floor staff who may handle a guest&apos;s in-person request to stop messages.</p>
+          </SubSection>
         </Section>
+
+
 
         {/* POS Integration — H&L Exceed Web Orders */}
         <Section id="pos-integration" title="POS Integration — H&L Exceed Web Orders" icon={Plug} hidden={isHidden("pos-integration")}>
