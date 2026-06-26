@@ -153,7 +153,23 @@ Deno.serve(async (req) => {
     }))
     if (tokenRows.length) await supabase.from('crm_tracking_tokens').insert(tokenRows)
 
-    // TODO: Actual delivery integration (Lovable Emails, Twilio, Web Push). For now sends are logged as 'sent'.
+    // Channel delivery — Twilio SMS today; email/push remain stubbed.
+    let simulated = false
+    let failed = 0
+    if (campaign.channel === 'sms' && campaign.sms_text) {
+      const stop = ' Reply STOP to opt out.'
+      const msg = (campaign.sms_text + (campaign.audience_type === 'sms_subscribers' ? stop : '')).slice(0, 320)
+      for (const r of recipients) {
+        try {
+          const result = await sendSms(r.recipient, msg)
+          if (result.simulated) simulated = true
+        } catch (e) {
+          failed++
+          console.error('sms send fail', r.recipient, e)
+        }
+      }
+    }
+
 
     if (!body.test_recipient) {
       await supabase.from('crm_campaigns').update({
