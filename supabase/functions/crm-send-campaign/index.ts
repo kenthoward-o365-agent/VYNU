@@ -52,6 +52,23 @@ Deno.serve(async (req) => {
     let recipients: { diner_id: string | null; recipient: string }[] = []
     if (body.test_recipient) {
       recipients = [{ diner_id: null, recipient: body.test_recipient }]
+    } else if (campaign.audience_type === 'sms_subscribers') {
+      if (campaign.channel !== 'sms') {
+        return j({ error: 'SMS Subscribers audience requires SMS channel' }, 400)
+      }
+      const { data: subs } = await supabase
+        .from('sms_subscribers')
+        .select('phone')
+        .eq('venue_id', campaign.venue_id)
+        .eq('marketing_opt_in', true)
+        .is('unsubscribed_at', null)
+      const { data: suppressed } = await supabase
+        .from('crm_suppression').select('sms_e164').eq('venue_id', campaign.venue_id)
+      const supSms = new Set((suppressed || []).map((s: any) => s.sms_e164).filter(Boolean))
+      for (const s of subs || []) {
+        if (!s.phone || supSms.has(s.phone)) continue
+        recipients.push({ diner_id: null, recipient: s.phone })
+      }
     } else if (campaign.segment_id) {
       const { data: members } = await supabase
         .from('diner_segment_members')
@@ -83,6 +100,7 @@ Deno.serve(async (req) => {
         recipients.push({ diner_id: p.id, recipient: addr })
       }
     }
+
 
     if (recipients.length === 0) return j({ error: 'No eligible recipients' }, 400)
 
