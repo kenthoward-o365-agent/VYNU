@@ -3403,6 +3403,65 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_subscribers: {
+        Row: {
+          created_at: string
+          diner_profile_id: string | null
+          first_seen_at: string
+          id: string
+          last_order_id: string | null
+          last_receipt_sent_at: string | null
+          marketing_opt_in: boolean
+          opted_in_at: string | null
+          phone: string
+          receipt_send_count: number
+          source: string
+          unsubscribed_at: string | null
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          diner_profile_id?: string | null
+          first_seen_at?: string
+          id?: string
+          last_order_id?: string | null
+          last_receipt_sent_at?: string | null
+          marketing_opt_in?: boolean
+          opted_in_at?: string | null
+          phone: string
+          receipt_send_count?: number
+          source?: string
+          unsubscribed_at?: string | null
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          diner_profile_id?: string | null
+          first_seen_at?: string
+          id?: string
+          last_order_id?: string | null
+          last_receipt_sent_at?: string | null
+          marketing_opt_in?: boolean
+          opted_in_at?: string | null
+          phone?: string
+          receipt_send_count?: number
+          source?: string
+          unsubscribed_at?: string | null
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_subscribers_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_alerts: {
         Row: {
           alert_type: Database["public"]["Enums"]["alert_type"]
