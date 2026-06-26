@@ -314,9 +314,10 @@ function CampaignEditor({
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button variant="secondary" onClick={() => save(false)} disabled={saving}>{saving ? "Saving…" : "Save draft"}</Button>
-          <Button onClick={() => save(true)} disabled={saving || !form.segment_id}>
+          <Button onClick={() => save(true)} disabled={saving || (form.audience_type !== "sms_subscribers" && !form.segment_id)}>
             <Send className="h-3.5 w-3.5 mr-1" />Save & send
           </Button>
+
         </DialogFooter>
       </DialogContent>
     </Dialog>
