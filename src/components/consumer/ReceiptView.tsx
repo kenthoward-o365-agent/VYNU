@@ -4,6 +4,7 @@ import { calculateTaxes, type TaxConfig } from "@/lib/tax-utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Download, CheckCircle2 } from "lucide-react";
+import TextReceiptButton from "./TextReceiptButton";
 
 interface OrderItemModifier {
   modifier_id?: string;
@@ -233,8 +234,14 @@ const ReceiptView = ({
         </div>
       </div>
 
-      {/* Download button (hidden in print) */}
-      <div className="mt-4 max-w-md mx-auto no-print">
+      {/* Action buttons (hidden in print) */}
+      <div className="mt-4 max-w-md mx-auto no-print space-y-2">
+        <TextReceiptButton
+          venueId={venueId}
+          orderId={orderId}
+          defaultPhone={diner?.phone || undefined}
+          venueName={venue?.name}
+        />
         <Button
           onClick={handlePrint}
           variant="outline"
