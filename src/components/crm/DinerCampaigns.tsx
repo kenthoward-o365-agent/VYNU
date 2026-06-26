@@ -137,9 +137,11 @@ export default function DinerCampaigns() {
         campaign={editing}
         venueId={venue?.id}
         segments={segments}
+        smsSubCount={smsSubCount}
         onClose={() => { setEditing(null); setCreating(false); }}
         onSaved={() => { setEditing(null); setCreating(false); load(); }}
       />
+
     </div>
   );
 }
