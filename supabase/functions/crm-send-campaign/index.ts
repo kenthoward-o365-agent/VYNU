@@ -5,6 +5,26 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')
+const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')
+const TWILIO_FROM = Deno.env.get('TWILIO_FROM_NUMBER')
+
+async function sendSms(to: string, body: string) {
+  if (!TWILIO_SID || !TWILIO_TOKEN || !TWILIO_FROM) return { simulated: true }
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Basic ' + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`),
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({ To: to, From: TWILIO_FROM, Body: body }).toString(),
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json?.message || 'Twilio send failed')
+  return { simulated: false, sid: json.sid }
+}
+
 
 interface Body {
   campaign_id: string
@@ -52,6 +72,23 @@ Deno.serve(async (req) => {
     let recipients: { diner_id: string | null; recipient: string }[] = []
     if (body.test_recipient) {
       recipients = [{ diner_id: null, recipient: body.test_recipient }]
+    } else if (campaign.audience_type === 'sms_subscribers') {
+      if (campaign.channel !== 'sms') {
+        return j({ error: 'SMS Subscribers audience requires SMS channel' }, 400)
+      }
+      const { data: subs } = await supabase
+        .from('sms_subscribers')
+        .select('phone')
+        .eq('venue_id', campaign.venue_id)
+        .eq('marketing_opt_in', true)
+        .is('unsubscribed_at', null)
+      const { data: suppressed } = await supabase
+        .from('crm_suppression').select('sms_e164').eq('venue_id', campaign.venue_id)
+      const supSms = new Set((suppressed || []).map((s: any) => s.sms_e164).filter(Boolean))
+      for (const s of subs || []) {
+        if (!s.phone || supSms.has(s.phone)) continue
+        recipients.push({ diner_id: null, recipient: s.phone })
+      }
     } else if (campaign.segment_id) {
       const { data: members } = await supabase
         .from('diner_segment_members')
@@ -84,6 +121,7 @@ Deno.serve(async (req) => {
       }
     }
 
+
     if (recipients.length === 0) return j({ error: 'No eligible recipients' }, 400)
 
     if (!body.test_recipient) {
@@ -115,17 +153,33 @@ Deno.serve(async (req) => {
     }))
     if (tokenRows.length) await supabase.from('crm_tracking_tokens').insert(tokenRows)
 
-    // TODO: Actual delivery integration (Lovable Emails, Twilio, Web Push). For now sends are logged as 'sent'.
+    // Channel delivery — Twilio SMS today; email/push remain stubbed.
+    let simulated = false
+    let failed = 0
+    if (campaign.channel === 'sms' && campaign.sms_text) {
+      const stop = ' Reply STOP to opt out.'
+      const msg = (campaign.sms_text + (campaign.audience_type === 'sms_subscribers' ? stop : '')).slice(0, 320)
+      for (const r of recipients) {
+        try {
+          const result = await sendSms(r.recipient, msg)
+          if (result.simulated) simulated = true
+        } catch (e) {
+          failed++
+          console.error('sms send fail', r.recipient, e)
+        }
+      }
+    }
+
 
     if (!body.test_recipient) {
       await supabase.from('crm_campaigns').update({
         status: 'sent',
         send_completed_at: new Date().toISOString(),
-        recipients_sent: recipients.length,
+        recipients_sent: recipients.length - failed,
       }).eq('id', campaign.id)
     }
 
-    return j({ ok: true, recipients: recipients.length, test: !!body.test_recipient })
+    return j({ ok: true, recipients: recipients.length, failed, simulated, test: !!body.test_recipient })
   } catch (e) {
     return j({ error: String(e) }, 500)
   }

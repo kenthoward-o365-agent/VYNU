@@ -51,6 +51,7 @@ export default function DinerCampaigns() {
   const { venue } = useVenue();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [segments, setSegments] = useState<{ id: string; name: string; member_count: number }[]>([]);
+  const [smsSubCount, setSmsSubCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Campaign | null>(null);
   const [creating, setCreating] = useState(false);
@@ -58,15 +59,19 @@ export default function DinerCampaigns() {
   const load = async () => {
     if (!venue) return;
     setLoading(true);
-    const [{ data: c }, { data: s }] = await Promise.all([
+    const [{ data: c }, { data: s }, { count }] = await Promise.all([
       supabase.from("crm_campaigns" as any).select("*").eq("venue_id", venue.id).order("created_at", { ascending: false }).limit(100),
       supabase.from("diner_segments" as any).select("id, name, member_count").eq("venue_id", venue.id).eq("is_archived", false),
+      supabase.from("sms_subscribers" as any).select("*", { count: "exact", head: true })
+        .eq("venue_id", venue.id).eq("marketing_opt_in", true).is("unsubscribed_at", null),
     ]);
     setCampaigns((c as any[]) as Campaign[] || []);
     setSegments((s as any[]) || []);
+    setSmsSubCount(count || 0);
     setLoading(false);
   };
   useEffect(() => { load(); }, [venue]);
+
 
   const send = async (id: string) => {
     if (!confirm("Send this campaign now?")) return;
@@ -132,9 +137,11 @@ export default function DinerCampaigns() {
         campaign={editing}
         venueId={venue?.id}
         segments={segments}
+        smsSubCount={smsSubCount}
         onClose={() => { setEditing(null); setCreating(false); }}
         onSaved={() => { setEditing(null); setCreating(false); load(); }}
       />
+
     </div>
   );
 }
@@ -149,10 +156,11 @@ function Stat({ label, value }: { label: string; value: any }) {
 }
 
 function CampaignEditor({
-  open, campaign, venueId, segments, onClose, onSaved,
+  open, campaign, venueId, segments, smsSubCount, onClose, onSaved,
 }: {
   open: boolean; campaign: Campaign | null; venueId?: string;
   segments: { id: string; name: string; member_count: number }[];
+  smsSubCount: number;
   onClose: () => void; onSaved: () => void;
 }) {
   const [form, setForm] = useState<any>({});
@@ -164,10 +172,12 @@ function CampaignEditor({
     if (campaign) setForm(campaign);
     else setForm({
       name: "", channel: "email", goal: "daily_special", status: "draft",
+      audience_type: "segment",
       segment_id: null, subject: "", body_text: "", sms_text: "", cta_label: "Order now", cta_url: "",
       is_ai_generated: false, is_instant: false,
     });
   }, [campaign, open]);
+
 
   const upd = (patch: any) => setForm((f: any) => ({ ...f, ...patch }));
 
@@ -245,12 +255,27 @@ function CampaignEditor({
               </Select>
             </div>
             <div>
-              <Label>Audience (segment)</Label>
-              <Select value={form.segment_id || ""} onValueChange={(v) => upd({ segment_id: v || null })}>
-                <SelectTrigger><SelectValue placeholder="Select segment" /></SelectTrigger>
-                <SelectContent>{segments.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} ({s.member_count})</SelectItem>)}</SelectContent>
+              <Label>Audience</Label>
+              <Select
+                value={form.audience_type === "sms_subscribers" ? "sms_subscribers" : (form.segment_id || "")}
+                onValueChange={(v) => {
+                  if (v === "sms_subscribers") upd({ audience_type: "sms_subscribers", segment_id: null, channel: "sms" });
+                  else upd({ audience_type: "segment", segment_id: v || null });
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select audience" /></SelectTrigger>
+                <SelectContent>
+                  {form.channel === "sms" && (
+                    <SelectItem value="sms_subscribers">📱 SMS Subscribers ({smsSubCount} opted in)</SelectItem>
+                  )}
+                  {segments.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} ({s.member_count})</SelectItem>)}
+                </SelectContent>
               </Select>
+              {form.audience_type === "sms_subscribers" && (
+                <p className="text-xs text-muted-foreground mt-1">Sends to phone numbers captured via receipt SMS opt-in (not diners).</p>
+              )}
             </div>
+
             <div className="flex items-center gap-2">
               <input type="checkbox" id="instant" checked={!!form.is_instant} onChange={(e) => upd({ is_instant: e.target.checked })} />
               <Label htmlFor="instant" className="cursor-pointer">Instant AI campaign (revenue counts toward AI total)</Label>
@@ -289,9 +314,10 @@ function CampaignEditor({
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button variant="secondary" onClick={() => save(false)} disabled={saving}>{saving ? "Saving…" : "Save draft"}</Button>
-          <Button onClick={() => save(true)} disabled={saving || !form.segment_id}>
+          <Button onClick={() => save(true)} disabled={saving || (form.audience_type !== "sms_subscribers" && !form.segment_id)}>
             <Send className="h-3.5 w-3.5 mr-1" />Save & send
           </Button>
+
         </DialogFooter>
       </DialogContent>
     </Dialog>
