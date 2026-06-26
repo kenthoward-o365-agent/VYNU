@@ -175,11 +175,11 @@ Deno.serve(async (req) => {
       await supabase.from('crm_campaigns').update({
         status: 'sent',
         send_completed_at: new Date().toISOString(),
-        recipients_sent: recipients.length,
+        recipients_sent: recipients.length - failed,
       }).eq('id', campaign.id)
     }
 
-    return j({ ok: true, recipients: recipients.length, test: !!body.test_recipient })
+    return j({ ok: true, recipients: recipients.length, failed, simulated, test: !!body.test_recipient })
   } catch (e) {
     return j({ error: String(e) }, 500)
   }
