@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.ar-verify-onboarding-token]
 verify_jwt = false
+
+[functions.send-receipt-sms]
+verify_jwt = false
