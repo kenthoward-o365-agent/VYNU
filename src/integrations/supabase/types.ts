@@ -971,6 +971,7 @@ export type Database = {
           approved_by: string | null
           attributed_orders: number
           attributed_revenue: number
+          audience_type: string
           body_html: string | null
           body_text: string | null
           channel: Database["public"]["Enums"]["campaign_channel"]
@@ -1010,6 +1011,7 @@ export type Database = {
           approved_by?: string | null
           attributed_orders?: number
           attributed_revenue?: number
+          audience_type?: string
           body_html?: string | null
           body_text?: string | null
           channel: Database["public"]["Enums"]["campaign_channel"]
@@ -1049,6 +1051,7 @@ export type Database = {
           approved_by?: string | null
           attributed_orders?: number
           attributed_revenue?: number
+          audience_type?: string
           body_html?: string | null
           body_text?: string | null
           channel?: Database["public"]["Enums"]["campaign_channel"]
