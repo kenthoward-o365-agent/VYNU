@@ -255,12 +255,27 @@ function CampaignEditor({
               </Select>
             </div>
             <div>
-              <Label>Audience (segment)</Label>
-              <Select value={form.segment_id || ""} onValueChange={(v) => upd({ segment_id: v || null })}>
-                <SelectTrigger><SelectValue placeholder="Select segment" /></SelectTrigger>
-                <SelectContent>{segments.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} ({s.member_count})</SelectItem>)}</SelectContent>
+              <Label>Audience</Label>
+              <Select
+                value={form.audience_type === "sms_subscribers" ? "sms_subscribers" : (form.segment_id || "")}
+                onValueChange={(v) => {
+                  if (v === "sms_subscribers") upd({ audience_type: "sms_subscribers", segment_id: null, channel: "sms" });
+                  else upd({ audience_type: "segment", segment_id: v || null });
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Select audience" /></SelectTrigger>
+                <SelectContent>
+                  {form.channel === "sms" && (
+                    <SelectItem value="sms_subscribers">📱 SMS Subscribers ({smsSubCount} opted in)</SelectItem>
+                  )}
+                  {segments.map((s) => <SelectItem key={s.id} value={s.id}>{s.name} ({s.member_count})</SelectItem>)}
+                </SelectContent>
               </Select>
+              {form.audience_type === "sms_subscribers" && (
+                <p className="text-xs text-muted-foreground mt-1">Sends to phone numbers captured via receipt SMS opt-in (not diners).</p>
+              )}
             </div>
+
             <div className="flex items-center gap-2">
               <input type="checkbox" id="instant" checked={!!form.is_instant} onChange={(e) => upd({ is_instant: e.target.checked })} />
               <Label htmlFor="instant" className="cursor-pointer">Instant AI campaign (revenue counts toward AI total)</Label>
