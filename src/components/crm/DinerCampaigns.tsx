@@ -51,6 +51,7 @@ export default function DinerCampaigns() {
   const { venue } = useVenue();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [segments, setSegments] = useState<{ id: string; name: string; member_count: number }[]>([]);
+  const [smsSubCount, setSmsSubCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Campaign | null>(null);
   const [creating, setCreating] = useState(false);
@@ -58,15 +59,19 @@ export default function DinerCampaigns() {
   const load = async () => {
     if (!venue) return;
     setLoading(true);
-    const [{ data: c }, { data: s }] = await Promise.all([
+    const [{ data: c }, { data: s }, { count }] = await Promise.all([
       supabase.from("crm_campaigns" as any).select("*").eq("venue_id", venue.id).order("created_at", { ascending: false }).limit(100),
       supabase.from("diner_segments" as any).select("id, name, member_count").eq("venue_id", venue.id).eq("is_archived", false),
+      supabase.from("sms_subscribers" as any).select("*", { count: "exact", head: true })
+        .eq("venue_id", venue.id).eq("marketing_opt_in", true).is("unsubscribed_at", null),
     ]);
     setCampaigns((c as any[]) as Campaign[] || []);
     setSegments((s as any[]) || []);
+    setSmsSubCount(count || 0);
     setLoading(false);
   };
   useEffect(() => { load(); }, [venue]);
+
 
   const send = async (id: string) => {
     if (!confirm("Send this campaign now?")) return;
