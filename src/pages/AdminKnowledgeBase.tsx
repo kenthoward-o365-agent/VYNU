@@ -24,6 +24,7 @@ import { toast } from "@/hooks/use-toast";
 const BUCKET = "admin-kb";
 
 const FOLDERS = [
+  { id: "packaging", label: "Packaging & Pricing", description: "Package tier definitions, feature grids, commercial sell sheets." },
   { id: "pci", label: "PCI DSS", description: "Self-Assessment Questionnaires, AoCs, scope evidence." },
   { id: "architecture", label: "Architecture & Security", description: "System diagrams, security whitepapers, data-flow docs." },
   { id: "policies", label: "Policies & Runbooks", description: "Info-sec policy, incident response, secret rotation." },
@@ -225,7 +226,7 @@ export default function AdminKnowledgeBase() {
             <FolderOpen className="h-6 w-6 text-primary" />
             <div>
               <p className="text-sm font-semibold">{FOLDERS.length} categories</p>
-              <p className="text-xs text-muted-foreground">PCI, Architecture, Policies, Vendor, Client</p>
+              <p className="text-xs text-muted-foreground">Packaging, PCI, Architecture, Policies, Vendor, Client</p>
             </div>
           </CardContent>
         </Card>
