@@ -55,7 +55,7 @@ export default function AdminVenueDetail() {
   const [form, setForm] = useState({
     name: "", venue_type: "restaurant", address: "", city: "", state: "NSW",
     postcode: "", phone: "", email: "", group_id: "__none__",
-    subscription_status: "trial", subscription_plan: "basic", subscription_notes: "",
+    subscription_status: "trial", subscription_plan: "bite", subscription_notes: "",
   });
   const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
 
@@ -94,7 +94,7 @@ export default function AdminVenueDetail() {
         phone: adminRow?.phone || "", email: adminRow?.email || "",
         group_id: data.group_id || "__none__",
         subscription_status: adminRow?.subscription_status || "trial",
-        subscription_plan: adminRow?.subscription_plan || "basic",
+        subscription_plan: normalizePlan(adminRow?.subscription_plan),
         subscription_notes: adminRow?.subscription_notes || "",
       });
 
@@ -215,6 +215,22 @@ export default function AdminVenueDetail() {
       subscription_plan: form.subscription_plan,
       subscription_notes: form.subscription_notes || null,
     } as any).eq("id", venueId);
+    // Mirror the selected plan into the venue's feature-flag tier so the
+    // Packages tab starts from the matching preset. Existing flag overrides
+    // are preserved (we only write the tier column here).
+    if (!error && ["bite", "plate", "feast"].includes(form.subscription_plan)) {
+      const { data: existing } = await supabase
+        .from("venue_feature_flags")
+        .select("venue_id, flags")
+        .eq("venue_id", venueId)
+        .maybeSingle();
+      await supabase
+        .from("venue_feature_flags")
+        .upsert(
+          { venue_id: venueId, tier: form.subscription_plan, flags: (existing?.flags as any) ?? {} },
+          { onConflict: "venue_id" },
+        );
+    }
     if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
     else toast({ title: "Venue updated" });
     setSaving(false);
@@ -368,9 +384,9 @@ export default function AdminVenueDetail() {
                   <Select value={form.subscription_plan} onValueChange={(v) => setForm({ ...form, subscription_plan: v })}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="basic">Basic</SelectItem>
-                      <SelectItem value="pro">Pro</SelectItem>
-                      <SelectItem value="enterprise">Enterprise</SelectItem>
+                      <SelectItem value="bite">Bite</SelectItem>
+                      <SelectItem value="plate">Plate</SelectItem>
+                      <SelectItem value="feast">Feast</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
