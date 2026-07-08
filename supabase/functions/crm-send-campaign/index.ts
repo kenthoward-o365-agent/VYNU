@@ -2,6 +2,7 @@
 // Actual channel delivery (email, sms, push) is stubbed and ready to wire to providers.
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { requireFeature } from '../_shared/require-feature.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -64,6 +65,15 @@ Deno.serve(async (req) => {
       _user_id: userId, _venue_id: campaign.venue_id,
     })
     if (!isManager) return j({ error: 'Forbidden' }, 403)
+
+    // Feature gate: campaign channel must be included in the venue's package.
+    const featureKey =
+      campaign.channel === 'email' ? 'crm.email_campaigns' :
+      campaign.channel === 'sms' ? 'crm.sms_campaigns' :
+      'crm.push_campaigns'
+    const denied = await requireFeature(supabase, campaign.venue_id, featureKey, corsHeaders)
+    if (denied) return denied
+
     if (!['draft', 'scheduled'].includes(campaign.status) && !body.test_recipient) {
       return j({ error: `Cannot send a ${campaign.status} campaign` }, 400)
     }
