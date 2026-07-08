@@ -4,6 +4,7 @@ const corsHeaders = {
 };
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { requireFeature } from '../_shared/require-feature.ts';
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -109,6 +110,9 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const denied = await requireFeature(supabase, venue_id, 'ai.menu_import', corsHeaders);
+    if (denied) return denied;
 
     let menuText = text || '';
     let pdfData = pdf_base64 || null;

@@ -10,6 +10,8 @@ import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
 
 import { usePermissions } from "@/hooks/use-permissions";
+import { useFeatures } from "@/hooks/use-features";
+import type { FeatureKey } from "@/lib/packages";
 import {
   ChevronDown, Check, Sun, Moon, HelpCircle, Menu, X, LogOut, Pin, PinOff, User
 } from "lucide-react";
@@ -33,6 +35,7 @@ interface NavItem {
   label: string;
   icon: any;
   navKey: string;
+  feature?: FeatureKey;
 }
 
 // Map app routes → Knowledge Base section ids so the help button is context-aware.
@@ -64,18 +67,19 @@ function routeToKbSection(pathname: string): string | null {
 
 const venueNavItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: IconDashboard, navKey: "dashboard" },
-  { path: "/sippa-analytics", label: "Spark AI", icon: IconSparkAI, navKey: "sippa_analytics" },
-  { path: "/menu", label: "Menu", icon: IconMenu, navKey: "menu" },
-  { path: "/pricing", label: "Pricing", icon: IconPricing, navKey: "pricing" },
-  { path: "/tables", label: "Tables", icon: IconTables, navKey: "tables" },
-  { path: "/orders", label: "Orders", icon: IconOrders, navKey: "orders" },
-  { path: "/orders/settings", label: "Order Cfg", icon: IconOrderCfg, navKey: "orders" },
-  { path: "/analytics", label: "Analytics", icon: IconAnalytics, navKey: "analytics" },
-  { path: "/diners", label: "Diners", icon: IconDiners, navKey: "diners" },
-  { path: "/reporting", label: "DayEnd", icon: IconDayEnd, navKey: "settings" },
+  { path: "/sippa-analytics", label: "Spark AI", icon: IconSparkAI, navKey: "sippa_analytics", feature: "ai.spark_analytics" },
+  { path: "/menu", label: "Menu", icon: IconMenu, navKey: "menu", feature: "core.menu_builder" },
+  { path: "/pricing", label: "Pricing", icon: IconPricing, navKey: "pricing", feature: "merch.pricing_rules" },
+  { path: "/tables", label: "Tables", icon: IconTables, navKey: "tables", feature: "core.tables_qr" },
+  { path: "/orders", label: "Orders", icon: IconOrders, navKey: "orders", feature: "core.orders_board" },
+  { path: "/orders/settings", label: "Order Cfg", icon: IconOrderCfg, navKey: "orders", feature: "core.orders_board" },
+  { path: "/analytics", label: "Analytics", icon: IconAnalytics, navKey: "analytics", feature: "reporting.core_dashboard" },
+  { path: "/diners", label: "Diners", icon: IconDiners, navKey: "diners", feature: "crm.diner_profiles" },
+  { path: "/reporting", label: "DayEnd", icon: IconDayEnd, navKey: "settings", feature: "reporting.advanced" },
   { path: "/billing", label: "Billing", icon: IconBilling, navKey: "settings" },
   { path: "/settings", label: "Settings", icon: IconSettings, navKey: "settings" },
 ];
+
 
 const groupNavItems = [
   { path: "/group", label: "Group", icon: IconGroup },
@@ -174,6 +178,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     localStorage.setItem("shyndig_sidebar_pinned", pinned ? "1" : "0");
   }, [pinned]);
   const perms = usePermissions();
+  const features = useFeatures();
 
   const handleIdleLogout = useCallback(async () => {
     try {
@@ -207,7 +212,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const showVenueNav = !!venue;
   const showGroupNav = showVenueNav && !isTablessAdmin && isGroupAdmin;
-  const filteredVenueNav = venueNavItems.filter((item) => perms.can(item.navKey));
+  const filteredVenueNav = venueNavItems.filter(
+    (item) => perms.can(item.navKey) && (!item.feature || features.has(item.feature)),
+  );
   const allNavItems = [
     ...(showVenueNav ? filteredVenueNav : []),
     ...(showGroupNav ? groupNavItems : []),

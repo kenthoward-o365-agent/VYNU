@@ -11,6 +11,7 @@ import { VenueProvider, useVenue } from "@/contexts/VenueContext";
 import { VenueChooserModal } from "@/components/VenueChooserModal";
 import { AuditDateProvider } from "@/contexts/AuditDateContext";
 import DashboardLayout from "@/components/DashboardLayout";
+import { RequireFeature } from "@/components/RequireFeature";
 import Auth from "@/pages/Auth";
 import { supabase } from "@/integrations/supabase/client";
 import Dashboard from "@/pages/Dashboard";
@@ -129,16 +130,16 @@ function AppRoutes() {
         <Route path="/tables" element={<Tables />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/orders/settings" element={<OrderSettings />} />
-        <Route path="/orders/statuses" element={<OrderStatuses />} />
-        <Route path="/orders/throttling" element={<OrderThrottling />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/rule-types" element={<RuleTypes />} />
+        <Route path="/orders/statuses" element={<RequireFeature feature="core.custom_order_statuses"><OrderStatuses /></RequireFeature>} />
+        <Route path="/orders/throttling" element={<RequireFeature feature="core.order_throttling"><OrderThrottling /></RequireFeature>} />
+        <Route path="/pricing" element={<RequireFeature feature="merch.pricing_rules"><Pricing /></RequireFeature>} />
+        <Route path="/rule-types" element={<RequireFeature feature="merch.custom_rule_types"><RuleTypes /></RequireFeature>} />
         <Route path="/analytics" element={<Analytics />} />
-        <Route path="/sippa-analytics" element={<SippaAnalyticsPage />} />
+        <Route path="/sippa-analytics" element={<RequireFeature feature="ai.spark_analytics"><SippaAnalyticsPage /></RequireFeature>} />
         <Route path="/diners" element={<Diners />} />
         <Route path="/diners/preferences" element={<DinerPreferences />} />
         <Route path="/loyalty" element={<Navigate to="/settings" replace />} />
-        <Route path="/group" element={<GroupDashboard />} />
+        <Route path="/group" element={<RequireFeature feature="group.dashboard"><GroupDashboard /></RequireFeature>} />
         <Route path="/admin/venues" element={<AdminVenues />} />
         <Route path="/admin/venues/:venueId" element={<AdminVenueDetail />} />
         <Route path="/admin/staff" element={<AdminStaff />} />
@@ -150,7 +151,7 @@ function AppRoutes() {
         
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />
-        <Route path="/reporting" element={<Reporting />} />
+        <Route path="/reporting" element={<RequireFeature feature="reporting.advanced"><Reporting /></RequireFeature>} />
         <Route path="/knowledge-base" element={<KnowledgeBase />} />
         <Route path="/self-onboard" element={<SelfOnboard />} />
         <Route path="/billing" element={<VenueBilling />} />

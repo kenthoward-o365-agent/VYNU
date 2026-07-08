@@ -18,6 +18,7 @@ import DinerSegments from "@/components/crm/DinerSegments";
 import DinerCampaigns from "@/components/crm/DinerCampaigns";
 import DinerInsights from "@/components/crm/DinerInsights";
 import SmsSubscribers from "@/components/crm/SmsSubscribers";
+import { useFeatures } from "@/hooks/use-features";
 import SectionLinks from "@/components/SectionLinks";
 import { Settings as SettingsIcon } from "lucide-react";
 
@@ -61,6 +62,11 @@ export default function Diners() {
   const { venue } = useVenue();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "diners";
+  const features = useFeatures();
+  const hasCampaigns = features.has("crm.email_campaigns") || features.has("crm.sms_campaigns") || features.has("crm.push_campaigns");
+  const hasSegments = features.has("crm.segments_rfm") || features.has("crm.segments_lookalike");
+  const hasInsights = features.has("ai.insights");
+  const hasSms = features.has("crm.sms_campaigns");
   const [diners, setDiners] = useState<DinerWithVisits[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -312,16 +318,16 @@ export default function Diners() {
       <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v })} className="space-y-4">
         <TabsList>
           <TabsTrigger value="diners"><Users className="h-3.5 w-3.5 mr-1" />Diners</TabsTrigger>
-          <TabsTrigger value="sms"><MessageSquare className="h-3.5 w-3.5 mr-1" />SMS Subscribers</TabsTrigger>
-          <TabsTrigger value="segments"><Filter className="h-3.5 w-3.5 mr-1" />Segments</TabsTrigger>
-          <TabsTrigger value="campaigns"><Megaphone className="h-3.5 w-3.5 mr-1" />Campaigns</TabsTrigger>
-          <TabsTrigger value="insights"><BarChart3 className="h-3.5 w-3.5 mr-1" />Insights</TabsTrigger>
+          {hasSms && <TabsTrigger value="sms"><MessageSquare className="h-3.5 w-3.5 mr-1" />SMS Subscribers</TabsTrigger>}
+          {hasSegments && <TabsTrigger value="segments"><Filter className="h-3.5 w-3.5 mr-1" />Segments</TabsTrigger>}
+          {hasCampaigns && <TabsTrigger value="campaigns"><Megaphone className="h-3.5 w-3.5 mr-1" />Campaigns</TabsTrigger>}
+          {hasInsights && <TabsTrigger value="insights"><BarChart3 className="h-3.5 w-3.5 mr-1" />Insights</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="sms"><SmsSubscribers /></TabsContent>
-        <TabsContent value="segments"><DinerSegments /></TabsContent>
-        <TabsContent value="campaigns"><DinerCampaigns /></TabsContent>
-        <TabsContent value="insights"><DinerInsights /></TabsContent>
+        {hasSms && <TabsContent value="sms"><SmsSubscribers /></TabsContent>}
+        {hasSegments && <TabsContent value="segments"><DinerSegments /></TabsContent>}
+        {hasCampaigns && <TabsContent value="campaigns"><DinerCampaigns /></TabsContent>}
+        {hasInsights && <TabsContent value="insights"><DinerInsights /></TabsContent>}
 
         <TabsContent value="diners" className="space-y-4">
           <div className="flex items-center justify-end">
