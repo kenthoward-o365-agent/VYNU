@@ -4227,6 +4227,41 @@ export type Database = {
           },
         ]
       }
+      venue_feature_flags: {
+        Row: {
+          created_at: string
+          flags: Json
+          tier: string
+          updated_at: string
+          updated_by: string | null
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          flags?: Json
+          tier?: string
+          updated_at?: string
+          updated_by?: string | null
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          flags?: Json
+          tier?: string
+          updated_at?: string
+          updated_by?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_feature_flags_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: true
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_group_staff: {
         Row: {
           created_at: string
