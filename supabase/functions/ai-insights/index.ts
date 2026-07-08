@@ -2,6 +2,7 @@
 // and pricing optimisation recommendations for a venue using Lovable AI.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { logAiUsage } from "../_shared/ai-usage.ts";
+import { requireFeature } from "../_shared/require-feature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,6 +61,10 @@ Deno.serve(async (req) => {
       .eq("user_id", userData.user.id);
     const isAdmin = (roles ?? []).some((r) => r.role === "tabless_admin");
     if (!staff && !isAdmin) return json({ error: "forbidden" }, 403);
+
+    // Feature gate
+    const denied = await requireFeature(supabase, venueId, "ai.insights", corsHeaders);
+    if (denied) return denied;
 
     // Resolve window: explicit from/to range takes precedence over `days`
     const fromDate = fromIso ? new Date(fromIso) : new Date(Date.now() - days * 86400000);
