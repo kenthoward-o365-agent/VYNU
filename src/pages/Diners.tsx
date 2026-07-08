@@ -18,6 +18,7 @@ import DinerSegments from "@/components/crm/DinerSegments";
 import DinerCampaigns from "@/components/crm/DinerCampaigns";
 import DinerInsights from "@/components/crm/DinerInsights";
 import SmsSubscribers from "@/components/crm/SmsSubscribers";
+import { useFeatures } from "@/hooks/use-features";
 import SectionLinks from "@/components/SectionLinks";
 import { Settings as SettingsIcon } from "lucide-react";
 
