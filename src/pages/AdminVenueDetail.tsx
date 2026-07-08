@@ -45,6 +45,17 @@ const venueTypes = [
   { value: "bottle_shop", label: "Bottle Shop" },
 ];
 
+// Map legacy plan values to the new Bite/Plate/Feast tiers.
+const PLAN_ALIASES: Record<string, string> = {
+  basic: "bite", starter: "bite", bite: "bite",
+  pro: "plate", standard: "plate", plate: "plate",
+  enterprise: "feast", premium: "feast", feast: "feast",
+};
+function normalizePlan(value: unknown): string {
+  const v = typeof value === "string" ? value.toLowerCase() : "";
+  return PLAN_ALIASES[v] || "bite";
+}
+
 export default function AdminVenueDetail() {
   const { venueId } = useParams<{ venueId: string }>();
   const navigate = useNavigate();
