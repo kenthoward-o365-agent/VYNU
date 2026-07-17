@@ -70,6 +70,15 @@ function AppRoutes() {
   const hasVenueContext = !!venue;
 
   useEffect(() => {
+    if (!user) return;
+    const pending = sessionStorage.getItem("pending_oauth_consent");
+    if (pending && pending.startsWith("/.lovable/oauth/consent")) {
+      sessionStorage.removeItem("pending_oauth_consent");
+      window.location.replace(pending);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
     if (!user || !hasProvisioningResolved || venue || isTablessAdmin) return;
     // User has multiple venues but hasn't picked one yet — let the chooser handle it.
     if (needsVenueChoice || venues.length > 0) return;

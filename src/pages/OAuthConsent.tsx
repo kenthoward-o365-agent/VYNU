@@ -37,9 +37,11 @@ export default function OAuthConsent() {
       const { data: sess } = await supabase.auth.getSession();
       if (!sess.session) {
         const next = window.location.pathname + window.location.search;
-        navigate(`/?next=${encodeURIComponent(next)}`, { replace: true });
+        sessionStorage.setItem("pending_oauth_consent", next);
+        navigate("/", { replace: true });
         return;
       }
+      sessionStorage.removeItem("pending_oauth_consent");
       setEmail(sess.session.user.email ?? null);
       const { data, error } = await oauth.getAuthorizationDetails(authorizationId);
       if (!active) return;
