@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "sdk_version": "0.23.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://jsbxivkgfekcgvtyqnek.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "hl-ordernow-mcp",
+      "version": "0.1.0",
+      "title": "H&L OrderNOW"
+    },
+    "tools": [
+      {
+        "name": "list_venues",
+        "title": "List venues",
+        "description": "List venues the signed-in user can access on H&L OrderNOW.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_menu",
+        "title": "Get menu",
+        "description": "Fetch menu categories and items for a venue.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "venue_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Venue ID whose menu to fetch."
+            }
+          },
+          "required": [
+            "venue_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_orders",
+        "title": "List recent orders",
+        "description": "List recent orders for a venue the signed-in user can access.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "venue_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Venue ID to list orders for."
+            },
+            "limit": {
+              "description": "Max orders to return (default 20).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "status": {
+              "description": "Optional status filter (e.g. 'placed', 'in_progress', 'completed').",
+              "type": "string"
+            }
+          },
+          "required": [
+            "venue_id"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

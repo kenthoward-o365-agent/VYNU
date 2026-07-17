@@ -51,6 +51,7 @@ import OrderThrottling from "@/pages/OrderThrottling";
 import OrderSettings from "@/pages/OrderSettings";
 import SelfOnboard from "@/pages/SelfOnboard";
 import VenueBilling from "@/pages/VenueBilling";
+import OAuthConsent from "@/pages/OAuthConsent";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,6 +68,15 @@ function AppRoutes() {
   const { user, loading: authLoading } = useAuth();
   const { venue, venues, loading: venueLoading, isTablessAdmin, hasProvisioningResolved, needsVenueChoice } = useVenue();
   const hasVenueContext = !!venue;
+
+  useEffect(() => {
+    if (!user) return;
+    const pending = sessionStorage.getItem("pending_oauth_consent");
+    if (pending && pending.startsWith("/.lovable/oauth/consent")) {
+      sessionStorage.removeItem("pending_oauth_consent");
+      window.location.replace(pending);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user || !hasProvisioningResolved || venue || isTablessAdmin) return;
@@ -183,6 +193,15 @@ function RootRoutes() {
       <Route path="/billing/setup/:token" element={<BillingSetup />} />
       <Route path="/billing/setup/success" element={<BillingSetup />} />
       <Route path="/billing/setup/cancelled" element={<BillingSetup />} />
+      {/* OAuth consent route for MCP / external agent integrations */}
+      <Route
+        path="/.lovable/oauth/consent"
+        element={
+          <AuthProvider>
+            <OAuthConsent />
+          </AuthProvider>
+        }
+      />
       {/* All other routes go through auth */}
       <Route path="/*" element={
         <AuthProvider>
