@@ -51,6 +51,7 @@ import OrderThrottling from "@/pages/OrderThrottling";
 import OrderSettings from "@/pages/OrderSettings";
 import SelfOnboard from "@/pages/SelfOnboard";
 import VenueBilling from "@/pages/VenueBilling";
+import OAuthConsent from "@/pages/OAuthConsent";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -183,6 +184,15 @@ function RootRoutes() {
       <Route path="/billing/setup/:token" element={<BillingSetup />} />
       <Route path="/billing/setup/success" element={<BillingSetup />} />
       <Route path="/billing/setup/cancelled" element={<BillingSetup />} />
+      {/* OAuth consent route for MCP / external agent integrations */}
+      <Route
+        path="/.lovable/oauth/consent"
+        element={
+          <AuthProvider>
+            <OAuthConsent />
+          </AuthProvider>
+        }
+      />
       {/* All other routes go through auth */}
       <Route path="/*" element={
         <AuthProvider>
