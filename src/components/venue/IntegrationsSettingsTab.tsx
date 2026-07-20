@@ -3,45 +3,43 @@ import { supabase } from "@/integrations/supabase/client";
 import { useVenue } from "@/contexts/VenueContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plug, RefreshCw, AlertTriangle, Copy, CheckCircle, XCircle, Clock, Cable } from "lucide-react";
+import {
+  Plug, RefreshCw, AlertTriangle, CheckCircle2, XCircle, Clock,
+  Cable, Zap, Settings2, ExternalLink,
+} from "lucide-react";
 import PosConnectDialog from "./PosConnectDialog";
 import HLPosPanel from "./HLPosPanel";
 
-const posProviders = [
-  { value: "hl_exceed", label: "H&L Exceed POS" },
-  { value: "lightspeed", label: "Lightspeed" },
-  { value: "square", label: "Square" },
-  { value: "kounta", label: "Kounta" },
-  { value: "doshii", label: "Doshii" },
-  { value: "other", label: "Other" },
-];
-
-interface PosIntegration {
+interface Provider {
   id: string;
-  venue_id: string;
-  pos_provider: string;
-  endpoint_url: string | null;
-  last_sync_at: string | null;
-  sync_status: string;
-  config: any;
-  location_id: string | null;
-  account_id: string | null;
-  client_id: string | null;
-  // Secret refs (api_key_ref, client_secret_ref, webhook_secret) are NEVER returned
-  // via the Data API. Use these flags to indicate they are set on the server.
-  has_api_key_ref: boolean;
-  has_client_secret_ref: boolean;
-  has_webhook_secret: boolean;
+  slug: string;
+  name: string;
+  auth_type: string;
+  status: string;               // ga | beta | deprecated
+  is_active: boolean;
+  capabilities: Record<string, boolean> | null;
+  docs_url: string | null;
 }
 
+interface VenueIntegration {
+  id: string;
+  venue_id: string;
+  provider_id: string | null;
+  pos_provider: string;
+  connection_status: string;    // connected | connecting | error | disconnected
+  last_sync_at: string | null;
+  last_error: string | null;
+  sync_status: string;
+}
 
 interface SyncLogEntry {
   id: string;
@@ -55,387 +53,357 @@ interface SyncLogEntry {
 
 export default function IntegrationsSettingsTab({ venueId }: { venueId: string }) {
   const { venue, refetch } = useVenue();
-  const [menuSource, setMenuSource] = useState<string>("manual");
-  const [integration, setIntegration] = useState<PosIntegration | null>(null);
-  const [provider, setProvider] = useState("hl_exceed");
-  const [apiKeyRef, setApiKeyRef] = useState("");
-  const [endpointUrl, setEndpointUrl] = useState("");
-  const [locationId, setLocationId] = useState("");
-  const [accountId, setAccountId] = useState("");
-  const [clientId, setClientId] = useState("");
-  const [clientSecretRef, setClientSecretRef] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [showWarning, setShowWarning] = useState(false);
-  const [pendingSource, setPendingSource] = useState<string | null>(null);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [integration, setIntegration] = useState<VenueIntegration | null>(null);
   const [syncLogs, setSyncLogs] = useState<SyncLogEntry[]>([]);
-  const [connectOpen, setConnectOpen] = useState(false);
+  const [menuSource, setMenuSource] = useState<string>("manual");
+  const [saving, setSaving] = useState(false);
+  const [showMenuWarning, setShowMenuWarning] = useState(false);
+  const [pendingSource, setPendingSource] = useState<string | null>(null);
+  const [showDisconnect, setShowDisconnect] = useState(false);
+  const [connectSlug, setConnectSlug] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pos-product-sync`;
+  const connected = integration?.connection_status === "connected";
+  const activeProvider = providers.find((p) => p.slug === integration?.pos_provider) ?? null;
 
   useEffect(() => {
-    if (venue) {
-      setMenuSource((venue as any).menu_source || "manual");
-    }
-    fetchIntegration();
-    fetchSyncLogs();
-  }, [venue, venueId]);
+    void loadAll();
+  }, [venueId]);
 
-  const fetchIntegration = async () => {
-    // Secret values are no longer readable via the Data API.
-    // Use SECURITY DEFINER RPC which returns metadata + has_* flags.
-    const { data } = await (supabase as any).rpc("get_venue_pos_integration_meta", {
-      _venue_id: venueId,
+  useEffect(() => {
+    if (venue) setMenuSource((venue as any).menu_source || "manual");
+  }, [venue]);
+
+  async function loadAll() {
+    setLoading(true);
+    const [{ data: provs }, { data: integ }, { data: logs }] = await Promise.all([
+      (supabase as any).from("pos_providers")
+        .select("id, slug, name, auth_type, status, is_active, capabilities, docs_url")
+        .eq("is_active", true)
+        .order("name"),
+      (supabase as any).from("venue_pos_integrations")
+        .select("id, venue_id, provider_id, pos_provider, connection_status, last_sync_at, last_error, sync_status")
+        .eq("venue_id", venueId)
+        .maybeSingle(),
+      supabase.from("pos_sync_log")
+        .select("*")
+        .eq("venue_id", venueId)
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+    setProviders((provs ?? []) as Provider[]);
+    setIntegration((integ ?? null) as VenueIntegration | null);
+    setSyncLogs((logs ?? []) as SyncLogEntry[]);
+    setLoading(false);
+  }
+
+  async function testConnection() {
+    setTesting(true);
+    const { data, error } = await supabase.functions.invoke("pos-test-connection", {
+      body: { venue_id: venueId },
     });
-    if (data) {
-      const d = data as any as PosIntegration;
-      setIntegration(d);
-      setProvider(d.pos_provider);
-      setApiKeyRef(""); // never echo stored refs; managers re-enter to replace
-      setEndpointUrl(d.endpoint_url || "");
-      setLocationId(d.location_id || "");
-      setAccountId(d.account_id || "");
-      setClientId(d.client_id || "");
-      setClientSecretRef("");
-    }
-  };
+    setTesting(false);
+    if (error) toast.error(error.message);
+    else if ((data as any)?.ok) toast.success((data as any).message || "Connection OK");
+    else toast.error((data as any)?.message || "Test failed");
+    void loadAll();
+  }
 
+  async function disconnect() {
+    if (!integration) return;
+    setSaving(true);
+    const { error } = await (supabase as any)
+      .from("venue_pos_integrations")
+      .update({ connection_status: "disconnected", sync_status: "idle" })
+      .eq("id", integration.id);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Provider disconnected");
+    setShowDisconnect(false);
+    void loadAll();
+  }
 
-  const fetchSyncLogs = async () => {
-    const { data } = await supabase
-      .from("pos_sync_log")
-      .select("*")
-      .eq("venue_id", venueId)
-      .order("created_at", { ascending: false })
-      .limit(10);
-    if (data) setSyncLogs(data as any as SyncLogEntry[]);
-  };
-
-  const handleSourceToggle = (checked: boolean) => {
+  const handleMenuToggle = (checked: boolean) => {
     const newSource = checked ? "pos" : "manual";
-    console.log("[Integrations] toggle clicked", { checked, newSource, current: menuSource, saving });
-    toast.info(`Switching menu source to ${newSource}…`);
     if (newSource === "pos" && menuSource === "manual") {
       setPendingSource("pos");
-      setShowWarning(true);
+      setShowMenuWarning(true);
     } else {
-      applySourceChange(newSource);
+      void applyMenuSource(newSource);
     }
   };
 
-  const applySourceChange = async (source: string) => {
+  async function applyMenuSource(source: string) {
     setSaving(true);
     const { error } = await supabase
       .from("venues")
       .update({ menu_source: source } as any)
       .eq("id", venueId);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      setMenuSource(source);
-      toast.success(`Menu source set to ${source === "pos" ? "POS" : "Manual"}`);
-      await refetch();
-    }
     setSaving(false);
-  };
+    if (error) { toast.error(error.message); return; }
+    setMenuSource(source);
+    toast.success(`Menu source: ${source === "pos" ? "POS-managed" : "Manual"}`);
+    await refetch();
+  }
 
-  const saveIntegration = async () => {
-    setSaving(true);
-    // Non-secret fields go through the table; secret references go through a write-only RPC.
-    const payload: any = {
-      venue_id: venueId,
-      pos_provider: provider,
-      endpoint_url: endpointUrl || null,
-      location_id: locationId || null,
-      account_id: accountId || null,
-      client_id: clientId || null,
-    };
+  function statusBadge(s: string) {
+    if (s === "connected") return <Badge className="gap-1"><CheckCircle2 className="h-3 w-3" /> Connected</Badge>;
+    if (s === "connecting") return <Badge variant="secondary" className="gap-1"><Clock className="h-3 w-3" /> Connecting</Badge>;
+    if (s === "error") return <Badge variant="destructive" className="gap-1"><XCircle className="h-3 w-3" /> Error</Badge>;
+    return <Badge variant="outline">Not connected</Badge>;
+  }
 
-    let error: any = null;
-    if (integration) {
-      ({ error } = await supabase
-        .from("venue_pos_integrations")
-        .update(payload)
-        .eq("id", integration.id));
-    } else {
-      ({ error } = await supabase
-        .from("venue_pos_integrations")
-        .insert(payload));
-    }
-    if (error) { toast.error(error.message); setSaving(false); return; }
+  function releaseBadge(s: string) {
+    if (s === "ga") return null;
+    if (s === "beta") return <Badge variant="secondary" className="text-[10px] uppercase">Beta</Badge>;
+    if (s === "coming_soon" || s === "planned") return <Badge variant="outline" className="text-[10px] uppercase">Coming soon</Badge>;
+    return <Badge variant="outline" className="text-[10px] uppercase">{s}</Badge>;
+  }
 
-    // Persist secret refs only when the manager entered a new value.
-    if ((apiKeyRef && apiKeyRef.length > 0) || (clientSecretRef && clientSecretRef.length > 0)) {
-      const { error: secErr } = await (supabase as any).rpc("update_venue_pos_secret_refs", {
-        _venue_id: venueId,
-        _api_key_ref: apiKeyRef || null,
-        _client_secret_ref: clientSecretRef || null,
-      });
-      if (secErr) { toast.error(secErr.message); setSaving(false); return; }
-    }
-    toast.success(integration ? "Integration updated" : "Integration created");
-
-    await fetchIntegration();
-    setSaving(false);
-  };
-
-  const copyWebhookUrl = () => {
-    navigator.clipboard.writeText(webhookUrl);
-    toast.success("Webhook URL copied");
-  };
-
-  const syncStatusColor = (status: string) => {
-    switch (status) {
-      case "syncing": return "default";
-      case "error": return "destructive";
-      default: return "secondary";
-    }
-  };
-
-  const resultIcon = (result: string) => {
-    if (result === "success") return <CheckCircle className="h-4 w-4 text-green-500" />;
-    return <XCircle className="h-4 w-4 text-destructive" />;
-  };
+  if (loading) {
+    return <p className="text-muted-foreground text-sm">Loading integrations…</p>;
+  }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-4xl">
+      {/* ─── STEP 1: Choose / connect a POS ───────────────────────────── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Plug className="h-5 w-5" /> Menu Source
+            <Cable className="h-5 w-5" /> POS Integrations
           </CardTitle>
           <CardDescription>
-            Choose whether the menu is managed manually or synced from a POS system
+            Connect your Point-of-Sale so H&amp;L OrderNOW can push diner orders straight into it.
+            You can decide who owns the menu after the connection is live.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
+        <CardContent>
+          {providers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No POS providers are enabled for your workspace yet. Contact H&amp;L OrderNOW support to enable H&amp;L Exceed.
+            </p>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {providers.map((p) => {
+                const isActive = integration?.pos_provider === p.slug;
+                const isConnected = isActive && integration?.connection_status === "connected";
+                return (
+                  <div
+                    key={p.id}
+                    className={`rounded-lg border p-4 space-y-3 transition-colors ${
+                      isActive ? "border-primary bg-primary/5" : "border-border"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold">{p.name}</h3>
+                          {releaseBadge(p.status)}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {p.auth_type === "oauth2_client_credentials" ? "OAuth 2.0 (client credentials)" : p.auth_type}
+                        </p>
+                      </div>
+                      {isActive && statusBadge(integration!.connection_status)}
+                    </div>
+
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(p.capabilities ?? {}).filter(([, v]) => v).slice(0, 4).map(([k]) => (
+                        <Badge key={k} variant="outline" className="text-[10px]">{k.replace(/_/g, " ")}</Badge>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {isConnected ? (
+                        <>
+                          <Button size="sm" variant="outline" disabled={testing} onClick={testConnection}>
+                            <RefreshCw className={`h-3 w-3 mr-1 ${testing ? "animate-spin" : ""}`} /> Test
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setConnectSlug(p.slug)}>
+                            <Settings2 className="h-3 w-3 mr-1" /> Reconfigure
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive"
+                                  onClick={() => setShowDisconnect(true)}>
+                            Disconnect
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant={isActive ? "default" : "outline"}
+                          disabled={p.status === "coming_soon" || p.status === "planned"}
+                          onClick={() => setConnectSlug(p.slug)}
+                        >
+                          <Plug className="h-3 w-3 mr-1" />
+                          {isActive ? "Finish setup" : "Connect"}
+                        </Button>
+                      )}
+                      {p.docs_url && (
+                        <a href={p.docs_url} target="_blank" rel="noreferrer"
+                           className="inline-flex items-center gap-1 text-xs text-primary hover:underline self-center">
+                          Docs <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+
+                    {isActive && integration?.last_error && (
+                      <p className="text-xs text-destructive truncate" title={integration.last_error}>
+                        {integration.last_error}
+                      </p>
+                    )}
+                    {isActive && integration?.last_sync_at && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Last sync: {new Date(integration.last_sync_at).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ─── STEP 2: H&L Exceed detail panel (OAuth token, webhook, etc.) ─ */}
+      {connected && activeProvider?.slug === "hl_exceed" && (
+        <HLPosPanel venueId={venueId} />
+      )}
+
+      {/* ─── STEP 3: Order routing + menu ownership ───────────────────── */}
+      <Card className={connected ? "" : "opacity-60"}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5" /> Order Routing &amp; Menu Ownership
+          </CardTitle>
+          <CardDescription>
+            Once a POS is connected, diner orders are pushed to it automatically. Choose who owns the menu.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="rounded-md border border-border/60 bg-muted/30 p-4">
+            <div className="flex items-center gap-2 text-sm">
+              <CheckCircle2 className={`h-4 w-4 ${connected ? "text-primary" : "text-muted-foreground"}`} />
+              <span className="font-medium">Push orders to POS</span>
+              <span className="ml-auto">
+                {connected ? <Badge>Active</Badge> : <Badge variant="outline">Requires connection</Badge>}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Every confirmed diner order is delivered to <strong>{activeProvider?.name ?? "your POS"}</strong> in real time.
+              Failed deliveries retry automatically and are logged below.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <Label className="text-sm font-medium">POS Integration</Label>
+              <Label className="text-sm font-medium">POS manages the menu</Label>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {menuSource === "pos"
-                  ? "Menu is managed by your POS system"
-                  : "Menu is managed manually via the Menu Builder"}
+                  ? "Your POS is the source of truth — items sync from it into H&L OrderNOW."
+                  : "Menu is edited in the H&L OrderNOW Menu Builder. Turn on to let the POS drive it instead."}
               </p>
             </div>
             <Switch
               checked={menuSource === "pos"}
-              onCheckedChange={handleSourceToggle}
-              disabled={saving}
+              onCheckedChange={handleMenuToggle}
+              disabled={saving || !connected}
             />
           </div>
         </CardContent>
       </Card>
 
-      {menuSource === "pos" && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>POS Configuration</CardTitle>
-              <CardDescription>Configure your POS provider connection</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {integration && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Status:</span>
-                  <Badge variant={syncStatusColor(integration.sync_status) as any}>
-                    {integration.sync_status}
-                  </Badge>
-                  {integration.last_sync_at && (
-                    <span className="text-xs text-muted-foreground">
-                      Last sync: {new Date(integration.last_sync_at).toLocaleString()}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <Label>POS Provider</Label>
-                <Select value={provider} onValueChange={setProvider}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {posProviders.map((p) => (
-                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Location ID</Label>
-                  <Input
-                    className="mt-1"
-                    placeholder="H&L OrderNOW Location ID"
-                    value={locationId}
-                    onChange={(e) => setLocationId(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Account ID</Label>
-                  <Input
-                    className="mt-1"
-                    placeholder="H&L OrderNOW Account ID"
-                    value={accountId}
-                    onChange={(e) => setAccountId(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label>API Key Reference</Label>
-                <Input
-                  className="mt-1"
-                  type="password"
-                  placeholder={integration?.has_api_key_ref ? "•••••• (set — enter to replace)" : "Secret name (e.g. LIGHTSPEED_API_KEY)"}
-                  value={apiKeyRef}
-                  onChange={(e) => setApiKeyRef(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Name of the stored secret — not the actual key. Leave blank to keep the current value.
-                </p>
-              </div>
-
-
-              <div>
-                <Label>Endpoint URL</Label>
-                <Input
-                  className="mt-1"
-                  placeholder="https://api.provider.com/v1"
-                  value={endpointUrl}
-                  onChange={(e) => setEndpointUrl(e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>OAuth Client ID</Label>
-                  <Input
-                    className="mt-1"
-                    placeholder="M2M client ID"
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Client Secret Reference</Label>
-                  <Input
-                    className="mt-1"
-                    type="password"
-                    placeholder={integration?.has_client_secret_ref ? "•••••• (set — enter to replace)" : "Secret name (e.g. POS_CLIENT_SECRET)"}
-                    value={clientSecretRef}
-                    onChange={(e) => setClientSecretRef(e.target.value)}
-                  />
-                </div>
-
-              </div>
-
-              <div>
-                <Label>Webhook URL (give this to your POS provider)</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input value={webhookUrl} readOnly className="font-mono text-xs" />
-                  <Button variant="outline" size="icon" onClick={copyWebhookUrl}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  POS partners should POST product catalogs to this URL with the <code>x-location-id</code> header
-                </p>
-              </div>
-
-              <div className="flex gap-2 flex-wrap">
-                <Button onClick={() => setConnectOpen(true)} variant="default">
-                  <Cable className="h-4 w-4 mr-1" /> {integration ? "Reconfigure Provider" : "Connect Provider"}
-                </Button>
-                <Button onClick={saveIntegration} disabled={saving} variant="outline">
-                  {saving ? "Saving..." : "Save Legacy Fields"}
-                </Button>
-                <Button variant="outline" disabled>
-                  <RefreshCw className="h-4 w-4 mr-1" /> Test Connection
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {syncLogs.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" /> Sync Log
-                </CardTitle>
-                <CardDescription>Last 10 sync events</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Event</TableHead>
-                      <TableHead>Direction</TableHead>
-                      <TableHead>Result</TableHead>
-                      <TableHead>Items</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {syncLogs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="text-xs">
-                          {new Date(log.created_at).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-xs">{log.event_type}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {log.direction}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {resultIcon(log.result)}
-                            <span className="text-xs">{log.result}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs">{log.items_synced}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-
-          {provider === "hl_exceed" && <HLPosPanel venueId={venueId} />}
-        </>
+      {/* ─── Sync log ─────────────────────────────────────────────────── */}
+      {syncLogs.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" /> Recent activity
+            </CardTitle>
+            <CardDescription>Last 10 events from this venue's POS connection</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Event</TableHead>
+                  <TableHead>Direction</TableHead>
+                  <TableHead>Result</TableHead>
+                  <TableHead>Items</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {syncLogs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell className="text-xs">{new Date(log.created_at).toLocaleString()}</TableCell>
+                    <TableCell className="text-xs">{log.event_type}</TableCell>
+                    <TableCell><Badge variant="outline" className="text-xs">{log.direction}</Badge></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {log.result === "success"
+                          ? <CheckCircle2 className="h-4 w-4 text-green-500" />
+                          : <XCircle className="h-4 w-4 text-destructive" />}
+                        <span className="text-xs">{log.result}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs">{log.items_synced}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
 
-      <AlertDialog open={showWarning} onOpenChange={setShowWarning}>
+      {/* ─── Dialogs ───────────────────────────────────────────────────── */}
+      <PosConnectDialog
+        venueId={venueId}
+        open={!!connectSlug}
+        onOpenChange={(o) => { if (!o) setConnectSlug(null); }}
+        onSaved={() => { setConnectSlug(null); void loadAll(); }}
+      />
+
+      <AlertDialog open={showMenuWarning} onOpenChange={setShowMenuWarning}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" /> Switch to POS Mode?
+              <AlertTriangle className="h-5 w-5 text-yellow-500" /> Let the POS manage the menu?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Existing manual menu items will be preserved, but POS sync will overwrite them when it runs.
+              Existing manual menu items are preserved, but the next POS sync will overwrite them.
               You can switch back to manual at any time.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPendingSource(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
-              setShowWarning(false);
-              if (pendingSource) applySourceChange(pendingSource);
+              setShowMenuWarning(false);
+              if (pendingSource) void applyMenuSource(pendingSource);
               setPendingSource(null);
             }}>
-              Switch to POS
+              Switch to POS-managed
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <PosConnectDialog
-        venueId={venueId}
-        open={connectOpen}
-        onOpenChange={setConnectOpen}
-        onSaved={() => { void fetchIntegration(); void fetchSyncLogs(); }}
-      />
+      <AlertDialog open={showDisconnect} onOpenChange={setShowDisconnect}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disconnect POS?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Orders will no longer be pushed to your POS until you reconnect. Stored credentials are retained
+              in Vault and can be re-enabled without re-entering them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={disconnect}>Disconnect</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
