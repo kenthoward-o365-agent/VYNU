@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plug } from "lucide-react";
+import { Plug, KeyRound, CheckCircle2 } from "lucide-react";
 
 interface SchemaField {
   key: string;
@@ -134,8 +135,8 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl max-h-[90vh] p-0 flex flex-col gap-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Plug className="h-5 w-5" /> Connect POS Provider
           </DialogTitle>
@@ -144,64 +145,114 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
           </DialogDescription>
         </DialogHeader>
 
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Loading providers…</p>
-        ) : providers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No active POS providers. Ask an admin to enable one in /admin/integrations.</p>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <Label>Provider</Label>
-              <Select value={providerId} onValueChange={(v) => { setProviderId(v); setValues({}); }}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {providers.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name} <span className="text-muted-foreground ml-1">({p.auth_type})</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {provider && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  <Badge variant="outline">{provider.status}</Badge>
-                  {Object.entries(provider.capabilities ?? {}).filter(([, v]) => v).map(([k]) => (
-                    <Badge key={k} variant="secondary" className="text-xs">{k.replace(/_/g, " ")}</Badge>
-                  ))}
-                </div>
-              )}
-            </div>
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading providers…</p>
+          ) : providers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No active POS providers. Ask an admin to enable one in /admin/integrations.</p>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-3">
+              {/* Card 1 — Provider */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Plug className="h-4 w-4" /> 1. Provider
+                  </CardTitle>
+                  <CardDescription>Choose which POS system to connect.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Select value={providerId} onValueChange={(v) => { setProviderId(v); setValues({}); }}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {providers.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name} <span className="text-muted-foreground ml-1">({p.auth_type})</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {provider && (
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant="outline">{provider.status}</Badge>
+                      {Object.entries(provider.capabilities ?? {}).filter(([, v]) => v).map(([k]) => (
+                        <Badge key={k} variant="secondary" className="text-xs">{k.replace(/_/g, " ")}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-            {schema.length === 0 ? (
-              <p className="text-xs text-muted-foreground">This provider needs no extra configuration.</p>
-            ) : (
-              <div className="space-y-3">
-                {schema.map((f) => (
-                  <div key={f.key}>
-                    <Label>
-                      {f.label} {f.required && <span className="text-destructive">*</span>}
-                    </Label>
-                    <Input
-                      className="mt-1"
-                      type={f.type === "secret" ? "password" : f.type === "number" ? "number" : "text"}
-                      placeholder={f.placeholder ?? (f.type === "secret" ? "Paste credential" : "")}
-                      value={values[f.key] ?? ""}
-                      onChange={(e) => setField(f.key, e.target.value)}
-                    />
-                    {f.help && <p className="text-xs text-muted-foreground mt-1">{f.help}</p>}
-                    {f.type === "secret" && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Stored encrypted in Vault. Leave blank to keep the existing value.
-                      </p>
-                    )}
+              {/* Card 2 — Credentials */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <KeyRound className="h-4 w-4" /> 2. Credentials
+                  </CardTitle>
+                  <CardDescription>Supplied by your POS vendor for this venue.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {schema.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">This provider needs no extra configuration.</p>
+                  ) : (
+                    schema.map((f) => (
+                      <div key={f.key}>
+                        <Label>
+                          {f.label} {f.required && <span className="text-destructive">*</span>}
+                        </Label>
+                        <Input
+                          className="mt-1"
+                          type={f.type === "secret" ? "password" : f.type === "number" ? "number" : "text"}
+                          placeholder={f.placeholder ?? (f.type === "secret" ? "Paste credential" : "")}
+                          value={values[f.key] ?? ""}
+                          onChange={(e) => setField(f.key, e.target.value)}
+                        />
+                        {f.help && <p className="text-xs text-muted-foreground mt-1">{f.help}</p>}
+                        {f.type === "secret" && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Stored encrypted in Vault. Leave blank to keep the existing value.
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Card 3 — Review */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <CheckCircle2 className="h-4 w-4" /> 3. Review & Save
+                  </CardTitle>
+                  <CardDescription>Confirm before we connect.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Provider</div>
+                    <div className="font-medium">{provider?.name ?? "—"}</div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                  <div>
+                    <div className="text-xs text-muted-foreground">Fields provided</div>
+                    <div className="font-medium">
+                      {schema.filter((f) => (values[f.key] ?? "").trim().length > 0).length} / {schema.length}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Missing required</div>
+                    <div className="font-medium">
+                      {schema.filter((f) => f.required && !(values[f.key] ?? "").trim()).map((f) => f.label).join(", ") || "None"}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground pt-2 border-t">
+                    Saving marks the integration as <em>connecting</em>. Use <strong>Test connection</strong> on the integrations screen to verify credentials, then enable auto-push to send orders.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
 
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 border-t shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
           <Button onClick={save} disabled={saving || !provider}>
             {saving ? "Saving…" : "Save & Connect"}
