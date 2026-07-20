@@ -112,6 +112,8 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
 
   const handleSourceToggle = (checked: boolean) => {
     const newSource = checked ? "pos" : "manual";
+    console.log("[Integrations] toggle clicked", { checked, newSource, current: menuSource, saving });
+    toast.info(`Switching menu source to ${newSource}…`);
     if (newSource === "pos" && menuSource === "manual") {
       setPendingSource("pos");
       setShowWarning(true);
