@@ -152,71 +152,84 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
             <p className="text-sm text-muted-foreground">No active POS providers. Ask an admin to enable one in /admin/integrations.</p>
           ) : (
             <div className="grid gap-4 lg:grid-cols-3">
-              {/* Card 1 — Provider */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Plug className="h-4 w-4" /> 1. Provider
-                  </CardTitle>
-                  <CardDescription>Choose which POS system to connect.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Select value={providerId} onValueChange={(v) => { setProviderId(v); setValues({}); }}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {providers.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name} <span className="text-muted-foreground ml-1">({p.auth_type})</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {provider && (
-                    <div className="flex flex-wrap gap-1">
-                      <Badge variant="outline">{provider.status}</Badge>
-                      {Object.entries(provider.capabilities ?? {}).filter(([, v]) => v).map(([k]) => (
-                        <Badge key={k} variant="secondary" className="text-xs">{k.replace(/_/g, " ")}</Badge>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Card 2 — Credentials */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <KeyRound className="h-4 w-4" /> 2. Credentials
-                  </CardTitle>
-                  <CardDescription>Supplied by your POS vendor for this venue.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {schema.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">This provider needs no extra configuration.</p>
-                  ) : (
-                    schema.map((f) => (
-                      <div key={f.key}>
-                        <Label>
-                          {f.label} {f.required && <span className="text-destructive">*</span>}
-                        </Label>
-                        <Input
-                          className="mt-1"
-                          type={f.type === "secret" ? "password" : f.type === "number" ? "number" : "text"}
-                          placeholder={f.placeholder ?? (f.type === "secret" ? "Paste credential" : "")}
-                          value={values[f.key] ?? ""}
-                          onChange={(e) => setField(f.key, e.target.value)}
-                        />
-                        {f.help && <p className="text-xs text-muted-foreground mt-1">{f.help}</p>}
-                        {f.type === "secret" && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Stored encrypted in Vault. Leave blank to keep the existing value.
-                          </p>
+              {(() => {
+                const nonSecretFields = schema.filter((f) => f.type !== "secret");
+                const secretFields = schema.filter((f) => f.type === "secret");
+                const renderField = (f: SchemaField) => (
+                  <div key={f.key}>
+                    <Label>
+                      {f.label} {f.required && <span className="text-destructive">*</span>}
+                    </Label>
+                    <Input
+                      className="mt-1"
+                      type={f.type === "secret" ? "password" : f.type === "number" ? "number" : "text"}
+                      placeholder={f.placeholder ?? (f.type === "secret" ? "Paste credential" : "")}
+                      value={values[f.key] ?? ""}
+                      onChange={(e) => setField(f.key, e.target.value)}
+                    />
+                    {f.help && <p className="text-xs text-muted-foreground mt-1">{f.help}</p>}
+                    {f.type === "secret" && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Stored encrypted in Vault. Leave blank to keep the existing value.
+                      </p>
+                    )}
+                  </div>
+                );
+                return (
+                  <>
+                    {/* Card 1 — Provider + non-secret config */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <Plug className="h-4 w-4" /> 1. Provider & Setup
+                        </CardTitle>
+                        <CardDescription>Pick the POS and enter its connection details.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <Label>POS System</Label>
+                          <Select value={providerId} onValueChange={(v) => { setProviderId(v); setValues({}); }}>
+                            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {providers.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  {p.name} <span className="text-muted-foreground ml-1">({p.auth_type})</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {provider && (
+                          <div className="flex flex-wrap gap-1">
+                            <Badge variant="outline">{provider.status}</Badge>
+                            {Object.entries(provider.capabilities ?? {}).filter(([, v]) => v).map(([k]) => (
+                              <Badge key={k} variant="secondary" className="text-xs">{k.replace(/_/g, " ")}</Badge>
+                            ))}
+                          </div>
                         )}
-                      </div>
-                    ))
-                  )}
-                </CardContent>
-              </Card>
+                        {nonSecretFields.map(renderField)}
+                      </CardContent>
+                    </Card>
+
+                    {/* Card 2 — Secret credentials only */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          <KeyRound className="h-4 w-4" /> 2. Secret Credentials
+                        </CardTitle>
+                        <CardDescription>Encrypted keys supplied by your POS vendor.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {secretFields.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">This provider needs no secret keys.</p>
+                        ) : (
+                          secretFields.map(renderField)
+                        )}
+                      </CardContent>
+                    </Card>
+                  </>
+                );
+              })()}
 
               {/* Card 3 — Review */}
               <Card>
