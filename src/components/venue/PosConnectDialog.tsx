@@ -151,45 +151,50 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
           ) : providers.length === 0 ? (
             <p className="text-sm text-muted-foreground">No active POS providers. Ask an admin to enable one in /admin/integrations.</p>
           ) : (
-            <div className="grid gap-4 lg:grid-cols-3">
+            <>
               {(() => {
-                const nonSecretFields = schema.filter((f) => f.type !== "secret");
-                const secretFields = schema.filter((f) => f.type === "secret");
                 const renderField = (f: SchemaField) => (
                   <div key={f.key}>
-                    <Label>
+                    <Label className="text-xs">
                       {f.label} {f.required && <span className="text-destructive">*</span>}
                     </Label>
                     <Input
-                      className="mt-1"
+                      className="mt-1 h-9"
                       type={f.type === "secret" ? "password" : f.type === "number" ? "number" : "text"}
                       placeholder={f.placeholder ?? (f.type === "secret" ? "Paste credential" : "")}
                       value={values[f.key] ?? ""}
                       onChange={(e) => setField(f.key, e.target.value)}
                     />
-                    {f.help && <p className="text-xs text-muted-foreground mt-1">{f.help}</p>}
-                    {f.type === "secret" && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Stored encrypted in Vault. Leave blank to keep the existing value.
-                      </p>
-                    )}
+                    {f.help && <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{f.help}</p>}
                   </div>
                 );
+
+                // Provider slot takes ~2 field-heights; balance fields across the remaining space.
+                const total = schema.length;
+                const card1Count = Math.max(0, Math.ceil((total - 1) / 3)); // fewer in card 1 (has provider)
+                const remaining = total - card1Count;
+                const card2Count = Math.ceil(remaining / 2);
+                const card1Fields = schema.slice(0, card1Count);
+                const card2Fields = schema.slice(card1Count, card1Count + card2Count);
+                const card3Fields = schema.slice(card1Count + card2Count);
+
+                const missing = schema.filter((f) => f.required && !(values[f.key] ?? "").trim());
+
                 return (
-                  <>
-                    {/* Card 1 — Provider + non-secret config */}
+                  <div className="grid gap-4 lg:grid-cols-3">
+                    {/* Card 1 — Provider */}
                     <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <Plug className="h-4 w-4" /> 1. Provider & Setup
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                          <Plug className="h-4 w-4" /> 1. Provider
                         </CardTitle>
-                        <CardDescription>Pick the POS and enter its connection details.</CardDescription>
+                        <CardDescription className="text-xs">Choose your POS system.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div>
-                          <Label>POS System</Label>
+                          <Label className="text-xs">POS System</Label>
                           <Select value={providerId} onValueChange={(v) => { setProviderId(v); setValues({}); }}>
-                            <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                            <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {providers.map((p) => (
                                 <SelectItem key={p.id} value={p.id}>
@@ -201,69 +206,66 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
                         </div>
                         {provider && (
                           <div className="flex flex-wrap gap-1">
-                            <Badge variant="outline">{provider.status}</Badge>
+                            <Badge variant="outline" className="text-[10px]">{provider.status}</Badge>
                             {Object.entries(provider.capabilities ?? {}).filter(([, v]) => v).map(([k]) => (
-                              <Badge key={k} variant="secondary" className="text-xs">{k.replace(/_/g, " ")}</Badge>
+                              <Badge key={k} variant="secondary" className="text-[10px]">{k.replace(/_/g, " ")}</Badge>
                             ))}
                           </div>
                         )}
-                        {nonSecretFields.map(renderField)}
+                        {card1Fields.map(renderField)}
                       </CardContent>
                     </Card>
 
-                    {/* Card 2 — Secret credentials only */}
+                    {/* Card 2 — Configuration */}
                     <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-base">
-                          <KeyRound className="h-4 w-4" /> 2. Secret Credentials
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                          <KeyRound className="h-4 w-4" /> 2. Configuration
                         </CardTitle>
-                        <CardDescription>Encrypted keys supplied by your POS vendor.</CardDescription>
+                        <CardDescription className="text-xs">Connection endpoints & IDs.</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        {secretFields.length === 0 ? (
-                          <p className="text-xs text-muted-foreground">This provider needs no secret keys.</p>
+                        {card2Fields.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">Nothing to configure for this provider.</p>
                         ) : (
-                          secretFields.map(renderField)
+                          card2Fields.map(renderField)
                         )}
                       </CardContent>
                     </Card>
-                  </>
+
+                    {/* Card 3 — Credentials + Review */}
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                          <CheckCircle2 className="h-4 w-4" /> 3. Credentials & Review
+                        </CardTitle>
+                        <CardDescription className="text-xs">Encrypted keys + confirm.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {card3Fields.map(renderField)}
+                        <div className="pt-2 border-t space-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Filled</span>
+                            <span className="font-medium">
+                              {schema.filter((f) => (values[f.key] ?? "").trim().length > 0).length} / {schema.length}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Missing</span>
+                            <span className="font-medium">
+                              {missing.length === 0 ? "None" : missing.map((f) => f.label).join(", ")}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 );
               })()}
-
-              {/* Card 3 — Review */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <CheckCircle2 className="h-4 w-4" /> 3. Review & Save
-                  </CardTitle>
-                  <CardDescription>Confirm before we connect.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div>
-                    <div className="text-xs text-muted-foreground">Provider</div>
-                    <div className="font-medium">{provider?.name ?? "—"}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground">Fields provided</div>
-                    <div className="font-medium">
-                      {schema.filter((f) => (values[f.key] ?? "").trim().length > 0).length} / {schema.length}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-muted-foreground">Missing required</div>
-                    <div className="font-medium">
-                      {schema.filter((f) => f.required && !(values[f.key] ?? "").trim()).map((f) => f.label).join(", ") || "None"}
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground pt-2 border-t">
-                    Saving marks the integration as <em>connecting</em>. Use <strong>Test connection</strong> on the integrations screen to verify credentials, then enable auto-push to send orders.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            </>
           )}
         </div>
+
 
         <DialogFooter className="px-6 py-4 border-t shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
