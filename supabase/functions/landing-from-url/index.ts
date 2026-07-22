@@ -139,10 +139,11 @@ Deno.serve(async (req) => {
       },
     }
 
-    const fcRes = await fetch('https://api.firecrawl.dev/v2/scrape', {
+    const fcRes = await fetch('https://connector-gateway.lovable.dev/firecrawl/v2/scrape', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        'X-Connection-Api-Key': FIRECRAWL_API_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
