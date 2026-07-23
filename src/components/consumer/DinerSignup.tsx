@@ -200,17 +200,18 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
       );
 
       if (allPrograms.length > 0 && profile) {
-        const enrollments = allPrograms.map((prog: any) => {
-          const rules = prog.rules && typeof prog.rules === "object" ? prog.rules : {};
-          const signupBonus = (rules as any).signup_bonus || 0;
-          return {
-            diner_id: profile.id,
-            program_id: prog.id,
-            balance: signupBonus,
-          };
-        });
-
-        await supabase.from("loyalty_balances").insert(enrollments);
+        // Enroll via a server-authoritative RPC. The signup bonus is
+        // computed on the server from the program's own rules — the client
+        // can no longer set the loyalty balance directly (previously it
+        // inserted an arbitrary `balance`, allowing self-granted points).
+        await Promise.all(
+          allPrograms.map((prog) =>
+            supabase.rpc("enroll_diner_in_loyalty", {
+              _diner_id: profile.id,
+              _program_id: prog.id,
+            })
+          )
+        );
       }
 
       if (profile) {
