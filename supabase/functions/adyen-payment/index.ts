@@ -550,6 +550,30 @@ Deno.serve(async (req) => {
         return json({ error: "Authentication required" }, 401);
       }
 
+      // Authorize: the caller must be able to refund THIS venue's orders.
+      // Without this check any authenticated user could refund any venue's
+      // order by supplying its venue_id/order_id (cross-tenant financial
+      // action). We mirror the frontend permission model (use-permissions.ts):
+      // owners/managers always qualify, and any active staff member whose
+      // per-user `venue_staff.can_process_refunds` flag is set also qualifies.
+      const { data: isMgr } = await adminClient.rpc("is_venue_manager", {
+        _user_id: userId,
+        _venue_id: venue_id,
+      });
+      let authorized = !!isMgr;
+      if (!authorized) {
+        const { data: staffRow } = await adminClient
+          .from("venue_staff")
+          .select("can_process_refunds, is_active")
+          .eq("user_id", userId)
+          .eq("venue_id", venue_id)
+          .maybeSingle();
+        authorized = !!(staffRow?.is_active && staffRow?.can_process_refunds);
+      }
+      if (!authorized) {
+        return json({ error: "Not authorized" }, 403);
+      }
+
       // Look up the original payment reference
       const { data: order } = await adminClient
         .from("orders")
@@ -559,6 +583,14 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (!order) return json({ error: "Order not found" }, 404);
+
+      // Bound the refund to the order total (ceiling). Prevents a
+      // caller-controlled `amount` from exceeding what was charged.
+      // (Full refundable-balance tracking incl. prior refunds is tracked
+      // under the Payment/PCI ticket.)
+      if (Number(amount) > Number(order.total)) {
+        return json({ error: "Refund amount exceeds the order total" }, 400);
+      }
 
       // Mock mode — instant success
       if (isMock) {

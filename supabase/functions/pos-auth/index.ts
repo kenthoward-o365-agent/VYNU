@@ -18,6 +18,24 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // ── Authorization ─────────────────────────────────────────────
+    // This endpoint mints a live POS OAuth access token that grants
+    // read/write on the venue's POS. It is an INTERNAL, server-to-server
+    // helper — its only legitimate caller is `pos-order-webhook`, which
+    // invokes it with the service-role key. It must never be reachable
+    // by a browser/anon caller (the public anon key satisfies the
+    // gateway's `verify_jwt`, so gateway auth is NOT sufficient here).
+    // We therefore require the caller to present the service-role key.
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    if (!bearer || bearer !== serviceKey) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
     const { venue_id } = await req.json();
     if (!venue_id) {
       return new Response(JSON.stringify({ error: "venue_id required" }), {
@@ -28,7 +46,7 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      serviceKey
     );
 
     // Fetch integration config
