@@ -27,7 +27,6 @@ AS $$
       AND ts.status IN ('open', 'firing')
   );
 $$;
-REVOKE EXECUTE ON FUNCTION public.is_active_table_session(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.is_active_table_session(uuid) TO anon, authenticated;
 
 DROP POLICY IF EXISTS "order_items_insert_guest_for_live_venue" ON public.order_items;
