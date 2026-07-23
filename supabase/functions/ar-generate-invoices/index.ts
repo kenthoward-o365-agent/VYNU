@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { timingSafeEqualStr } from "../_shared/secure-compare.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -8,10 +9,21 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const adminClient = createClient(supabaseUrl, serviceKey);
 
+  // AEA-03: a missing/empty Authorization header is never treated as trusted
+  // cron. The cron path requires an explicit CRON_SECRET (or service-role key);
+  // manual runs must be an authenticated platform admin.
   const authHeader = req.headers.get("Authorization") || "";
-  const isCron = !authHeader;
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  const cronSecret = Deno.env.get("CRON_SECRET") || "";
+  const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const isCron = !!token && (timingSafeEqualStr(token, cronSecret) || timingSafeEqualStr(token, svcKey));
 
   if (!isCron) {
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const caller = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
     const { data: { user } } = await caller.auth.getUser();

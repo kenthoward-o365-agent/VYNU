@@ -9,6 +9,7 @@
 // and acked so the queue isn't blocked.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { awardLoyalty } from "../_shared/loyalty-engine.ts";
+import { timingSafeEqualStr } from "../_shared/secure-compare.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -138,6 +139,18 @@ async function drain(admin: AdminClient, queue: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  // AEA-06: this worker drains queues and runs jobs with the service-role key.
+  // The gateway's verify_jwt only checks for *a* valid JWT (the public anon key
+  // passes), so require an explicit CRON_SECRET / service-role bearer here —
+  // otherwise any anon-key holder could force queue draining. Mirrors session-tick.
+  const auth = req.headers.get("authorization") || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  if (!token || (!timingSafeEqualStr(token, cronSecret ?? "") && !timingSafeEqualStr(token, svcKey))) {
+    return json({ error: "Unauthorised" }, 401);
   }
 
   try {

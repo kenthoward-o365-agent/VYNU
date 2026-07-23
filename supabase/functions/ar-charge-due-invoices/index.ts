@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { timingSafeEqualStr } from "../_shared/secure-compare.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -10,10 +11,24 @@ Deno.serve(async (req) => {
   const adminClient = createClient(supabaseUrl, serviceKey);
   const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2025-05-28.basil" });
 
+  // AEA-03: authenticate the caller. A missing/empty Authorization header is
+  // NEVER treated as a trusted cron call (the previous `isCron = !authHeader`
+  // was fail-open: any anonymous, header-less POST would charge every due
+  // invoice if the gateway ever allowed it through). The cron path now REQUIRES
+  // an explicit CRON_SECRET (or the service-role key); everything else must be
+  // an authenticated platform admin.
   const authHeader = req.headers.get("Authorization") || "";
-  const isCron = !authHeader;
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  const cronSecret = Deno.env.get("CRON_SECRET") || "";
+  const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  const isCron = !!token && (timingSafeEqualStr(token, cronSecret) || timingSafeEqualStr(token, svcKey));
 
   if (!isCron) {
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const caller = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
     const { data: { user } } = await caller.auth.getUser();
