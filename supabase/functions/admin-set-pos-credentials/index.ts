@@ -31,12 +31,38 @@ Deno.serve(async (req) => {
       status: 401, headers: { ...CORS, "Content-Type": "application/json" },
     });
   }
+  const callerId = claims.claims.sub as string;
 
   try {
     const { venue_id, field, value } = await req.json();
     if (!venue_id || !field || typeof value !== "string" || value.length === 0) {
       return new Response(JSON.stringify({ error: "venue_id, field, value required" }), {
         status: 400, headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
+    // Authorize explicitly in the function (defense-in-depth, and so the
+    // function does not rely solely on the RPC's internal check): the
+    // caller must be a platform admin or a manager of this venue.
+    const [
+      { data: isAdmin, error: isAdminErr },
+      { data: isMgr, error: isMgrErr },
+    ] = await Promise.all([
+      supabase.rpc("has_role", { _user_id: callerId, _role: "tabless_admin" }),
+      supabase.rpc("is_venue_manager", { _user_id: callerId, _venue_id: venue_id }),
+    ]);
+
+    if (isAdminErr || isMgrErr) {
+      return new Response(JSON.stringify({ error: "Authorization check failed" }), {
+        status: 500,
+        headers: { ...CORS, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!isAdmin && !isMgr) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...CORS, "Content-Type": "application/json" },
       });
     }
 

@@ -164,14 +164,19 @@ export default function DinerProfile({ venueId, groupId, onSignup, onSignin }: D
       const uniquePrograms = [...new Map(allPrograms.map((p: any) => [p.id, p])).values()];
       const loyaltyGroupIdsForCount = uniquePrograms.filter((p: any) => p.group_id).map((p: any) => p.group_id);
 
-      // Auto-enroll into missing programs
+      // Auto-enroll into missing programs via the server-authoritative RPC.
+      // The signup bonus is computed on the server from each program's rules;
+      // the client can no longer set the loyalty balance directly.
       const missing = uniquePrograms.filter((p: any) => !enrolledProgramIds.has(p.id));
       if (missing.length > 0) {
-        const newEnrollments = missing.map((p: any) => {
-          const rules = p.rules && typeof p.rules === "object" ? p.rules : {};
-          return { diner_id: prof.id, program_id: p.id, balance: (rules as any).signup_bonus || 0 };
-        });
-        await supabase.from("loyalty_balances").insert(newEnrollments);
+        await Promise.all(
+          missing.map((p: any) =>
+            supabase.rpc("enroll_diner_in_loyalty", {
+              _diner_id: prof.id,
+              _program_id: p.id,
+            })
+          )
+        );
         // Re-fetch balances after enrollment
         const { data: updatedBalances } = await supabase
           .from("loyalty_balances")

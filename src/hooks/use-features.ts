@@ -17,8 +17,10 @@ interface FeaturesResult {
 
 /**
  * Reads the current venue's package tier + feature flags.
- * Falls back to `feast` (all-on) if no row exists yet, so nothing breaks
- * for venues that pre-date this feature.
+ * Falls back to the base tier `bite` (fail-closed) when no row exists, so
+ * an unprovisioned/misconfigured venue does not silently receive every
+ * gated feature. Existing venues are backfilled with an explicit
+ * `venue_feature_flags` row (see migration) so they retain their features.
  */
 export function useFeatures(): FeaturesResult {
   const { venue } = useVenue();
@@ -38,7 +40,7 @@ export function useFeatures(): FeaturesResult {
     },
   });
 
-  const tier: PackageTier = (data?.tier as PackageTier) ?? "feast";
+  const tier: PackageTier = (data?.tier as PackageTier) ?? "bite";
   const overrides = (data?.flags as FeatureFlags) ?? {};
   const flags = resolveFlags(tier, overrides);
 

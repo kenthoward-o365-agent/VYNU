@@ -45,11 +45,12 @@ export default function Auth() {
       toast.error("Enter your email above first");
       return;
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    // Always show the same neutral message regardless of outcome, so the
+    // response does not reveal whether an account exists (enumeration).
+    await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/reset-password`,
     });
-    if (error) toast.error(error.message);
-    else toast.success("Password reset link sent to your email");
+    toast.success("If an account exists for that email, a reset link has been sent.");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,9 +95,14 @@ export default function Auth() {
         _site_id: trimmedSiteId,
       });
 
+      // Use one neutral message for both "no such Site ID" and "you don't
+      // have access to it" so an operator cannot enumerate which Site IDs
+      // exist by probing the response.
+      const SIGNIN_FAILED = "We couldn't sign you in. Please check your email, password, and Site ID.";
+
       if (lookupError || !venueData || venueData.length === 0) {
         await supabase.auth.signOut();
-        toast.error("Invalid Site ID. Please check and try again.");
+        toast.error(SIGNIN_FAILED);
         return;
       }
 
@@ -113,7 +119,7 @@ export default function Auth() {
 
       if (!staffRow) {
         await supabase.auth.signOut();
-        toast.error("You don't have access to that Site ID.");
+        toast.error(SIGNIN_FAILED);
         return;
       }
 

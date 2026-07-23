@@ -5302,6 +5302,10 @@ export type Database = {
           venue_id: string
         }[]
       }
+      enroll_diner_in_loyalty: {
+        Args: { _diner_id: string; _program_id: string }
+        Returns: undefined
+      }
       find_or_create_table_session: {
         Args: {
           _display_name?: string
