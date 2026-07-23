@@ -107,17 +107,20 @@ Deno.serve(async (req) => {
       // Bind the order to the session's own venue so a caller cannot
       // attach an arbitrary/foreign order_id to a session (cross-venue
       // analytics pollution / IDOR).
-      const { data: sess } = await supabase
+      const { data: sess, error: sessErr } = await supabase
         .from("diner_web_sessions")
         .select("venue_id")
         .eq("id", session_id)
         .maybeSingle();
+      if (sessErr) return json({ error: "failed to load session" }, 500);
       if (!sess) return json({ error: "not found" }, 404);
-      const { data: ord } = await supabase
+
+      const { data: ord, error: ordErr } = await supabase
         .from("orders")
         .select("venue_id")
         .eq("id", order_id)
         .maybeSingle();
+      if (ordErr) return json({ error: "failed to load order" }, 500);
       if (!ord || ord.venue_id !== sess.venue_id) {
         return json({ error: "order does not belong to this session's venue" }, 403);
       }

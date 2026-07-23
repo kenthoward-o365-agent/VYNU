@@ -83,11 +83,12 @@ Deno.serve(async (req) => {
     // Mark the token used so the link is single-use (it was previously
     // reusable until expiry). Set only after the checkout session is
     // created successfully.
-    await adminClient
+    const { error: markUsedErr } = await adminClient
       .from("ar_onboarding_tokens")
       .update({ used_at: new Date().toISOString() })
       .eq("id", record.id)
       .is("used_at", null);
+    if (markUsedErr) throw markUsedErr;
 
     return new Response(JSON.stringify({
       valid: true,

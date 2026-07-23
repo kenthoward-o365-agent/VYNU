@@ -98,7 +98,7 @@ export default function Auth() {
       // Use one neutral message for both "no such Site ID" and "you don't
       // have access to it" so an operator cannot enumerate which Site IDs
       // exist by probing the response.
-      const SIGNIN_FAILED = "We couldn't sign you in. Please check your email, password, and Venue ID.";
+      const SIGNIN_FAILED = "We couldn't sign you in. Please check your email, password, and Site ID.";
 
       if (lookupError || !venueData || venueData.length === 0) {
         await supabase.auth.signOut();

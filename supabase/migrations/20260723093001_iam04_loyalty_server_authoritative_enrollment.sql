@@ -57,4 +57,5 @@ TO authenticated
 WITH CHECK (
   diner_id = public.get_user_diner_profile_id()
   AND balance = 0
+  AND tier IS NULL
 );
