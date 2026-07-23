@@ -38,6 +38,9 @@ function makeToken() {
 
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
+// AEA-09: cap a single synchronous send. Larger audiences must be split.
+const MAX_RECIPIENTS_PER_SEND = 5000
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
@@ -78,11 +81,10 @@ Deno.serve(async (req) => {
       return j({ error: `Cannot send a ${campaign.status} campaign` }, 400)
     }
 
-    // Resolve recipients
-    let recipients: { diner_id: string | null; recipient: string }[] = []
-    if (body.test_recipient) {
-      recipients = [{ diner_id: null, recipient: body.test_recipient }]
-    } else if (campaign.audience_type === 'sms_subscribers') {
+    // Resolve the eligible audience (opt-in + suppression enforced). Both the
+    // real send AND the test send draw from this list — see AEA-09 below.
+    const eligible: { diner_id: string | null; recipient: string }[] = []
+    if (campaign.audience_type === 'sms_subscribers') {
       if (campaign.channel !== 'sms') {
         return j({ error: 'SMS Subscribers audience requires SMS channel' }, 400)
       }
@@ -97,7 +99,7 @@ Deno.serve(async (req) => {
       const supSms = new Set((suppressed || []).map((s: any) => s.sms_e164).filter(Boolean))
       for (const s of subs || []) {
         if (!s.phone || supSms.has(s.phone)) continue
-        recipients.push({ diner_id: null, recipient: s.phone })
+        eligible.push({ diner_id: null, recipient: s.phone })
       }
     } else if (campaign.segment_id) {
       const { data: members } = await supabase
@@ -127,10 +129,33 @@ Deno.serve(async (req) => {
         if (!addr) continue
         if (campaign.channel === 'email' && supEmails.has(addr)) continue
         if (campaign.channel === 'sms' && supSms.has(addr)) continue
-        recipients.push({ diner_id: p.id, recipient: addr })
+        eligible.push({ diner_id: p.id, recipient: addr })
       }
     }
 
+    // AEA-09: select the recipients to send to.
+    let recipients: { diner_id: string | null; recipient: string }[]
+    if (body.test_recipient) {
+      // A test send may ONLY target a contact that is already an opted-in,
+      // non-suppressed member of this campaign's audience. Previously it accepted
+      // an arbitrary number, letting a manager SMS anyone while bypassing opt-in
+      // and suppression.
+      const match = eligible.find((r) => r.recipient === body.test_recipient)
+      if (!match) {
+        return j({ error: 'Test recipient must be an opted-in member of this audience' }, 403)
+      }
+      recipients = [match]
+    } else {
+      recipients = eligible
+      // AEA-09: hard cap on a single send to prevent unbounded synchronous
+      // fan-out (function timeout + uncontrolled SMS spend). Narrow the segment
+      // to send to a larger audience in batches.
+      if (recipients.length > MAX_RECIPIENTS_PER_SEND) {
+        return j({
+          error: `Too many recipients (${recipients.length}). The per-send limit is ${MAX_RECIPIENTS_PER_SEND}; narrow the segment.`,
+        }, 400)
+      }
+    }
 
     if (recipients.length === 0) return j({ error: 'No eligible recipients' }, 400)
 

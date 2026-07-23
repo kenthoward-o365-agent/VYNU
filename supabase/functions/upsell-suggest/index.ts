@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { logAiUsage } from "../_shared/ai-usage.ts";
+import { enforceRateLimit, getClientIp, tooManyRequests } from "../_shared/rate-limit.ts";
+import { readJsonLimited, boundedArray, PayloadTooLargeError, payloadTooLarge } from "../_shared/http.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,12 +25,18 @@ serve(async (req) => {
   }
 
   try {
-    const { trigger, added_item, cart_items, menu_items, venue_name, venue_id } = await req.json();
+    // AEA-11: cap body size, then bound attacker-controlled arrays.
+    const reqBody = await readJsonLimited(req) as Record<string, unknown>;
+    const { trigger, added_item, venue_name, venue_id } = reqBody as {
+      trigger?: string; added_item?: any; venue_name?: string; venue_id?: string;
+    };
+    const menu_items = boundedArray<any>(reqBody.menu_items, 200);
+    const cart_items = boundedArray<any>(reqBody.cart_items, 100);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    if (!menu_items?.length) {
+    if (!menu_items.length) {
       return new Response(JSON.stringify({ suggestions: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -49,6 +57,15 @@ serve(async (req) => {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // AEA-04/AEA-02: anonymous consumer endpoint calling a paid AI model —
+    // bound cost-amplification per venue and per IP.
+    const ip = getClientIp(req);
+    const rl = await enforceRateLimit(sb, [
+      { key: `upsell-suggest:venue:${venue_id}`, limit: 240, windowSec: 3600 },
+      { key: `upsell-suggest:ip:${ip}`, limit: 120, windowSec: 3600 },
+    ]);
+    if (!rl.allowed) return tooManyRequests(corsHeaders);
 
 
     // Build context-aware prompt based on trigger type
@@ -184,9 +201,10 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
+    if (e instanceof PayloadTooLargeError) return payloadTooLarge(corsHeaders);
     console.error("upsell-suggest error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error", suggestions: [] }),
+      JSON.stringify({ error: "Something went wrong", suggestions: [] }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

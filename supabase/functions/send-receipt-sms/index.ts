@@ -4,6 +4,8 @@
 // otherwise runs in simulated mode and still records the subscriber.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { enforceRateLimit, getClientIp, tooManyRequests } from "../_shared/rate-limit.ts";
+import { readJsonLimited, PayloadTooLargeError, payloadTooLarge } from "../_shared/http.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,7 +50,15 @@ async function sendTwilio(to: string, body: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { venue_id, order_id, phone, marketing_opt_in, receipt_url } = await req.json();
+    // AEA-11: cap body size before parsing.
+    const parsed = await readJsonLimited(req) as Record<string, unknown>;
+    // NOTE: `receipt_url` is intentionally NOT read from the body — see AEA-01.
+    // A caller-supplied link let attackers send phishing URLs from the venue's
+    // trusted sender. The receipt link is now built server-side below.
+    const venue_id = parsed.venue_id as string | undefined;
+    const order_id = parsed.order_id as string | undefined;
+    const phone = parsed.phone as string | undefined;
+    const marketing_opt_in = parsed.marketing_opt_in;
     if (!venue_id || !order_id || !phone) {
       return new Response(JSON.stringify({ error: "Missing venue_id, order_id, or phone" }), {
         status: 400,
@@ -64,6 +74,20 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // AEA-01/AEA-02: rate limit this public, SMS-sending endpoint across several
+    // dimensions so a leaked (venue_id, order_id) pair can't be looped to spam
+    // arbitrary numbers or run up the venue's Twilio bill. The destination phone
+    // is caller-supplied by design (guests type their own number on the receipt
+    // screen), so volume limits are the primary abuse control here.
+    const ip = getClientIp(req);
+    const rl = await enforceRateLimit(admin, [
+      { key: `send-receipt-sms:order:${order_id}`, limit: 3, windowSec: 86400 },
+      { key: `send-receipt-sms:phone:${normalized}`, limit: 5, windowSec: 3600 },
+      { key: `send-receipt-sms:ip:${ip}`, limit: 10, windowSec: 3600 },
+      { key: `send-receipt-sms:venue:${venue_id}`, limit: 100, windowSec: 3600 },
+    ], { failClosed: true }); // paid SMS path — deny if the limiter is unavailable
+    if (!rl.allowed) return tooManyRequests(corsHeaders);
 
     // Confirm the order belongs to the venue (anti-abuse)
     const { data: order, error: orderErr } = await admin
@@ -83,7 +107,10 @@ Deno.serve(async (req) => {
       .from("venues").select("name").eq("id", venue_id).maybeSingle();
     const venueName = venue?.name || "your venue";
 
-    const link = receipt_url || `https://hlordernow.lovable.app/order/${venue_id}/_/receipt/${order_id}`;
+    // AEA-01: build the receipt link server-side from the (validated) order —
+    // never from the request body — so an attacker cannot inject a phishing URL
+    // into an SMS sent under the venue's sender ID.
+    const link = `https://hlordernow.lovable.app/order/${venue_id}/_/receipt/${order_id}`;
     const body = `${venueName}: Thanks for visiting! Your receipt: ${link}${marketing_opt_in ? " — Reply STOP to opt out." : ""}`;
 
     let sendResult: { simulated: boolean; sid?: string } = { simulated: true };
@@ -91,7 +118,8 @@ Deno.serve(async (req) => {
       sendResult = await sendTwilio(normalized, body);
     } catch (e) {
       console.error("twilio error", e);
-      return new Response(JSON.stringify({ error: (e as Error).message }), {
+      // AEA-16: don't leak upstream provider error text to the caller.
+      return new Response(JSON.stringify({ error: "Failed to send SMS" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -136,8 +164,10 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
+    if (e instanceof PayloadTooLargeError) return payloadTooLarge(corsHeaders);
     console.error(e);
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
+    // AEA-16: generic error to the caller; detail stays in the logs.
+    return new Response(JSON.stringify({ error: "Internal error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
