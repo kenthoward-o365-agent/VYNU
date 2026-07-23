@@ -5283,6 +5283,10 @@ export type Database = {
       }
       enqueue_job: { Args: { _payload: Json; _queue: string }; Returns: number }
       enqueue_pos_job: { Args: { _payload: Json }; Returns: number }
+      enroll_diner_in_loyalty: {
+        Args: { _diner_id: string; _program_id: string }
+        Returns: string
+      }
       ensure_log_partitions: {
         Args: { months_ahead?: number }
         Returns: undefined
@@ -5301,10 +5305,6 @@ export type Database = {
           diner_id: string
           venue_id: string
         }[]
-      }
-      enroll_diner_in_loyalty: {
-        Args: { _diner_id: string; _program_id: string }
-        Returns: undefined
       }
       find_or_create_table_session: {
         Args: {
