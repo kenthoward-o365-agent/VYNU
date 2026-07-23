@@ -12,6 +12,7 @@ import { VenueChooserModal } from "@/components/VenueChooserModal";
 import { AuditDateProvider } from "@/contexts/AuditDateContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { RequireFeature } from "@/components/RequireFeature";
+import { RequireAdmin } from "@/components/RequireAdmin";
 import Auth from "@/pages/Auth";
 import { supabase } from "@/integrations/supabase/client";
 import Dashboard from "@/pages/Dashboard";
@@ -134,7 +135,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Navigate to={defaultRoute} replace />} />
         <Route path="/dashboard" element={hasVenueContext ? <Dashboard /> : isTablessAdmin ? <Navigate to="/admin/dashboard" replace /> : <Dashboard />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/dashboard" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
         <Route path="/menu" element={<MenuBuilder />} />
         <Route path="/modifiers" element={<Modifiers />} />
         <Route path="/tables" element={<Tables />} />
@@ -150,14 +151,14 @@ function AppRoutes() {
         <Route path="/diners/preferences" element={<DinerPreferences />} />
         <Route path="/loyalty" element={<Navigate to="/settings" replace />} />
         <Route path="/group" element={<RequireFeature feature="group.dashboard"><GroupDashboard /></RequireFeature>} />
-        <Route path="/admin/venues" element={<AdminVenues />} />
-        <Route path="/admin/venues/:venueId" element={<AdminVenueDetail />} />
-        <Route path="/admin/staff" element={<AdminStaff />} />
-        <Route path="/admin/partners" element={<AdminPartners />} />
-        <Route path="/admin/integrations" element={<AdminIntegrations />} />
-        <Route path="/admin/knowledge-base" element={<AdminKnowledgeBase />} />
-        <Route path="/admin/financials" element={<AdminFinancials />} />
-        <Route path="/admin/billing" element={<AdminBilling />} />
+        <Route path="/admin/venues" element={<RequireAdmin><AdminVenues /></RequireAdmin>} />
+        <Route path="/admin/venues/:venueId" element={<RequireAdmin><AdminVenueDetail /></RequireAdmin>} />
+        <Route path="/admin/staff" element={<RequireAdmin><AdminStaff /></RequireAdmin>} />
+        <Route path="/admin/partners" element={<RequireAdmin><AdminPartners /></RequireAdmin>} />
+        <Route path="/admin/integrations" element={<RequireAdmin><AdminIntegrations /></RequireAdmin>} />
+        <Route path="/admin/knowledge-base" element={<RequireAdmin><AdminKnowledgeBase /></RequireAdmin>} />
+        <Route path="/admin/financials" element={<RequireAdmin><AdminFinancials /></RequireAdmin>} />
+        <Route path="/admin/billing" element={<RequireAdmin><AdminBilling /></RequireAdmin>} />
         
         <Route path="/settings" element={<VenueSettings />} />
         <Route path="/settings/landing-page" element={<LandingPageEditor />} />

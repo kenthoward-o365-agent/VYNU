@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { isPasswordAcceptable, WEAK_PASSWORD_MESSAGE } from "@/lib/password";
 
 interface AuthContextType {
   user: User | null;
@@ -35,6 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, displayName: string) => {
+    if (!isPasswordAcceptable(password)) {
+      throw new Error(WEAK_PASSWORD_MESSAGE);
+    }
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -52,6 +56,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    // Clear app-owned USER state so it does not leak into the next
+    // session (e.g. a different user logging in on the same browser).
+    // Theme preference (`tabless-theme`) is intentionally preserved.
+    // NOTE: the POS terminal pairing token (`shyndig_terminal_token`) is
+    // DEVICE state, not user state — it must survive sign-out / idle-logout,
+    // otherwise a shared terminal would need re-pairing on every logout.
+    try {
+      localStorage.removeItem("tabless_active_venue");
+      localStorage.removeItem("shyndig_sidebar_pinned");
+    } catch {
+      // ignore storage access errors (e.g. privacy mode)
+    }
   };
 
   return (
