@@ -1,6 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { logAiUsage } from "../_shared/ai-usage.ts";
+import { enforceRateLimit, getClientIp, tooManyRequests } from "../_shared/rate-limit.ts";
+import { readJsonLimited, boundedArray, PayloadTooLargeError, payloadTooLarge } from "../_shared/http.ts";
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -21,7 +23,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { message, venue_id, menu_items, conversation, diner_id, last_order_items, table_id } = await req.json();
+    // AEA-11: cap body size before parsing.
+    const parsed = await readJsonLimited(req) as Record<string, unknown>;
+    // diner_id is intentionally not read from the body — staff alerts use only the
+    // server-validated table_id (see the CALL_MANAGER handler below).
+    const { message, venue_id, conversation, table_id } = parsed as {
+      message?: string; venue_id?: string; conversation?: unknown; table_id?: string;
+    };
+    // AEA-11: bound attacker-controlled arrays that flow into the AI prompt.
+    const menuItems = boundedArray<any>(parsed.menu_items, 200);
+    const lastOrderItems = boundedArray<any>(parsed.last_order_items, 50);
 
     if (!venue_id || typeof venue_id !== "string") {
       return new Response(JSON.stringify({ error: "venue_id required" }), {
@@ -47,6 +58,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // AEA-04/AEA-02: this endpoint is anonymous by design (diner chatbot) and
+    // calls a paid AI model, so bound cost-amplification per venue and per IP.
+    const ip = getClientIp(req);
+    const rl = await enforceRateLimit(sb, [
+      { key: `diner-chat:venue:${venue_id}`, limit: 120, windowSec: 3600 },
+      { key: `diner-chat:ip:${ip}`, limit: 60, windowSec: 3600 },
+    ]);
+    if (!rl.allowed) return tooManyRequests(corsHeaders);
+
     const { data: aiConfig } = await sb
       .from("venue_ai_config")
       .select("agent_name, tone, chat_mode, opening_message, venue_context")
@@ -58,12 +78,12 @@ Deno.serve(async (req) => {
     const toneInstruction = tonePrompts[tone] || tonePrompts.aussie;
     const venueContext = aiConfig?.venue_context || "";
 
-    const menuContext = menu_items
+    const menuContext = menuItems
       .map((i: any) => `- ${i.name} (id: ${i.id}) — $${i.price}${i.description ? ` — ${i.description}` : ""}${i.dietary_tags?.length ? ` [${i.dietary_tags.join(", ")}]` : ""}${i.allergens?.length ? ` ⚠️ ${i.allergens.join(", ")}` : ""}`)
       .join("\n");
 
-    const lastOrderContext = last_order_items?.length
-      ? `\nDINER'S LAST ORDER:\n${last_order_items.map((i: any) => `- ${i.name} (id: ${i.id}) x${i.quantity}`).join("\n")}\nIf the diner says "another round", "same again", or similar reorder phrases, add all these items again using [ADD_ITEMS].`
+    const lastOrderContext = lastOrderItems.length
+      ? `\nDINER'S LAST ORDER:\n${lastOrderItems.map((i: any) => `- ${i.name} (id: ${i.id}) x${i.quantity}`).join("\n")}\nIf the diner says "another round", "same again", or similar reorder phrases, add all these items again using [ADD_ITEMS].`
       : "";
 
     const venueKnowledge = venueContext
@@ -178,7 +198,7 @@ where N is the number of ways to split.
     if (addMatch) {
       const ids = addMatch[1].split(",").map((s: string) => s.trim());
       ids.forEach((id: string) => {
-        const item = menu_items.find((m: any) => m.id === id);
+        const item = menuItems.find((m: any) => m.id === id);
         if (item) {
           suggested_items.push({ id: item.id, name: item.name, price: item.price });
         }
@@ -225,8 +245,10 @@ where N is the number of ways to split.
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: any) {
+    if (error instanceof PayloadTooLargeError) return payloadTooLarge(corsHeaders);
     console.error("Diner chat error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    // AEA-16: generic error to the caller; detail stays in logs.
+    return new Response(JSON.stringify({ error: "Something went wrong" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

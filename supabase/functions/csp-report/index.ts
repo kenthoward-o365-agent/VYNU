@@ -2,6 +2,7 @@
 // Publicly callable (browsers post here automatically). Stores reports in pci_script_baseline
 // with is_authorised=false so admins can review unexpected scripts on the payment page.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { readJsonLimited } from "../_shared/http.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,7 +15,10 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: corsHeaders });
 
   try {
-    const body = await req.json().catch(() => ({}));
+    // AEA-11: CSP reports are small; cap the body at 16 KB. An oversized or
+    // malformed body throws and is handled by the catch below WITHOUT writing a
+    // (junk) baseline row.
+    const body = await readJsonLimited(req, 16 * 1024) as any;
     const report = body?.["csp-report"] ?? body ?? {};
     const url: string = (report["document-uri"] || report.documentURL || "unknown").toString().slice(0, 500);
     const blocked: string = (report["blocked-uri"] || report.blockedURL || "inline").toString().slice(0, 500);

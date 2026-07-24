@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { timingSafeEqualStr } from "../_shared/secure-compare.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -34,7 +35,7 @@ async function verifyHmac(
   const computed = Array.from(new Uint8Array(sig))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  return computed === signature;
+  return timingSafeEqualStr(computed, signature);
 }
 
 async function getAuthToken(supabase: any, venueId: string): Promise<string | null> {
@@ -128,6 +129,27 @@ Deno.serve(async (req) => {
         );
       }
 
+      // AEA-08: replay protection. A captured, validly-signed status update could
+      // otherwise be re-sent to re-drive an order's status. Claim the signature
+      // once; a duplicate is acked idempotently without re-applying the change.
+      const { data: isNew, error: claimErr } = await supabase.rpc("claim_webhook_event", {
+        _source: "pos-order-webhook",
+        _event_key: signature,
+      });
+      if (claimErr || typeof isNew !== "boolean") {
+        console.error("pos-order-webhook claim_webhook_event failed", claimErr);
+        return new Response(
+          JSON.stringify({ error: "Internal error" }),
+          { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+      if (isNew === false) {
+        return new Response(
+          JSON.stringify({ ok: true, deduped: true }),
+          { status: 200, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
+
       // Update order status — scoped to the venue that owns this POS integration
       // to prevent cross-venue order manipulation via a valid POS credential.
       const { error: updateErr, count: updatedCount } = await supabase
@@ -136,17 +158,26 @@ Deno.serve(async (req) => {
         .eq("id", orderId)
         .eq("venue_id", integration.venue_id);
 
-      if (!updateErr && (updatedCount ?? 0) === 0) {
+      // M1: if the update did not actually apply (transient error, or the order
+      // isn't present yet), release the replay claim so a legitimate POS retry
+      // can be processed instead of being permanently deduped and lost.
+      if (updateErr || (updatedCount ?? 0) === 0) {
+        await supabase.rpc("release_webhook_event", {
+          _source: "pos-order-webhook",
+          _event_key: signature,
+        });
+
+        if (updateErr) {
+          console.error("pos-order-webhook order update failed", updateErr);
+          // L5: don't leak the raw DB error to the caller.
+          return new Response(
+            JSON.stringify({ error: "Internal error" }),
+            { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
+          );
+        }
         return new Response(
           JSON.stringify({ error: "Order not found for this venue" }),
           { status: 404, headers: { ...CORS, "Content-Type": "application/json" } }
-        );
-      }
-
-      if (updateErr) {
-        return new Response(
-          JSON.stringify({ error: updateErr.message }),
-          { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
         );
       }
 

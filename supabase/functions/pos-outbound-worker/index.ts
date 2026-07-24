@@ -11,6 +11,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadAdapter } from "../_shared/pos-adapter.ts";
 import { loadIntegration, buildContext, runWithBreaker } from "../_shared/pos-context.ts";
+import { timingSafeEqualStr } from "../_shared/secure-compare.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -24,6 +25,20 @@ const BATCH = 25;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+
+  // AEA-06: require an explicit CRON_SECRET / service-role bearer. The gateway
+  // verify_jwt check is satisfied by the public anon key, so without this any
+  // anon-key holder could trigger the outbound POS worker (and its menu-pull
+  // fan-out). Mirrors session-tick / process-job-queue.
+  const auth = req.headers.get("authorization") || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  if (!token || (!timingSafeEqualStr(token, cronSecret ?? "") && !timingSafeEqualStr(token, svcKey))) {
+    return new Response(JSON.stringify({ error: "Unauthorised" }), {
+      status: 401, headers: { ...CORS, "Content-Type": "application/json" },
+    });
+  }
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,

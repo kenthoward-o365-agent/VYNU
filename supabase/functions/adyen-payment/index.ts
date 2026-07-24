@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enforceRateLimit, getClientIp, tooManyRequests } from "../_shared/rate-limit.ts";
 
 // build: mock-fallback v2
 
@@ -324,6 +325,19 @@ Deno.serve(async (req) => {
         return json({ error: "amount and reference required" }, 400);
       }
 
+      // AEA-05/AEA-02: rate-limit the live-charge path. It is callable with only
+      // the anon key (guest checkout), so without this it is a card-testing /
+      // BIN-attack surface against the live Adyen endpoint. Limit per IP and per
+      // venue; mock mode is exempt (no real charge, no cost).
+      if (!isMock) {
+        const ip = getClientIp(req);
+        const rl = await enforceRateLimit(adminClient, [
+          { key: `adyen-create-payment:ip:${ip}`, limit: 10, windowSec: 600 },
+          { key: `adyen-create-payment:venue:${venue_id}`, limit: 60, windowSec: 600 },
+        ], { failClosed: true }); // live-charge path — deny if the limiter is unavailable
+        if (!rl.allowed) return tooManyRequests(corsHeaders);
+      }
+
       let result: any;
 
       if (isMock) {
@@ -392,9 +406,19 @@ Deno.serve(async (req) => {
           return json({ error: "No payment method provided" }, 400);
         }
 
+        // AEA-05: forward an Adyen Idempotency-Key. A double-submit or client
+        // retry with the same reference+amount returns the original result
+        // instead of issuing a second (duplicate) charge. The amount is included
+        // so that a legitimate re-payment of the same reference for a *different*
+        // amount is not incorrectly replayed as the original charge.
+        const idempotencyKey = `${reference}:${Math.round(Number(amount) * 100)}`;
         const resp = await fetch(`${baseUrl}/payments`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+          headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": apiKey,
+            "Idempotency-Key": idempotencyKey,
+          },
           body: JSON.stringify(paymentRequest),
         });
         result = await resp.json();
