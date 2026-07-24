@@ -132,10 +132,17 @@ Deno.serve(async (req) => {
       // AEA-08: replay protection. A captured, validly-signed status update could
       // otherwise be re-sent to re-drive an order's status. Claim the signature
       // once; a duplicate is acked idempotently without re-applying the change.
-      const { data: isNew } = await supabase.rpc("claim_webhook_event", {
+      const { data: isNew, error: claimErr } = await supabase.rpc("claim_webhook_event", {
         _source: "pos-order-webhook",
         _event_key: signature,
       });
+      if (claimErr || typeof isNew !== "boolean") {
+        console.error("pos-order-webhook claim_webhook_event failed", claimErr);
+        return new Response(
+          JSON.stringify({ error: "Internal error" }),
+          { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
+        );
+      }
       if (isNew === false) {
         return new Response(
           JSON.stringify({ ok: true, deduped: true }),

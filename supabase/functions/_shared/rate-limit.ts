@@ -58,8 +58,8 @@ export function getClientIp(req: Request): string {
 }
 
 /**
- * Enforce one or more rate-limit rules. All rules are checked (each increments
- * its own counter); the request is allowed only if none is exceeded.
+ * Enforce one or more rate-limit rules. Rules are evaluated in order; once a rule
+ * is exceeded the request is rejected and remaining rules are not incremented.
  *
  * Fail-open policy: if the RPC itself errors (e.g. transient DB issue) the
  * request is allowed, so a limiter outage never takes down a legitimate flow.
