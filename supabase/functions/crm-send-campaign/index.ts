@@ -202,7 +202,8 @@ Deno.serve(async (req) => {
           failed++
           // SEC-03: never log the raw recipient (phone/email) or the raw provider
           // error (which can echo the number). Mask the recipient, log only the error name.
-          const maskedRecipient = String(r.recipient ?? '').replace(/.(?=.{2,})/g, '*')
+          const rawRecipient = String(r.recipient ?? "");
+          const maskedRecipient = rawRecipient.length <= 2 ? "**" : rawRecipient.replace(/.(?=.{2,})/g, "*");
           console.error('sms send fail', { campaign: campaign.id, recipient: maskedRecipient, err: (e as Error)?.name })
         }
       }

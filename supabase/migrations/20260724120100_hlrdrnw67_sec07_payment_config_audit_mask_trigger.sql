@@ -46,5 +46,5 @@ END $$;
 
 DROP TRIGGER IF EXISTS trg_mask_payment_config_audit ON public.payment_config_audit;
 CREATE TRIGGER trg_mask_payment_config_audit
-  BEFORE INSERT ON public.payment_config_audit
+  BEFORE INSERT OR UPDATE ON public.payment_config_audit
   FOR EACH ROW EXECUTE FUNCTION public.mask_payment_config_audit();

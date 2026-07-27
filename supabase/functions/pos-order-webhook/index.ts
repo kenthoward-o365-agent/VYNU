@@ -295,9 +295,11 @@ Deno.serve(async (req) => {
       const posResult = await posRes.json().catch(() => ({}));
 
       // Log a bounded summary, not the full upstream POS response body.
+      const reasonRaw = (posResult as any)?.message ?? (posResult as any)?.error ?? "rejected";
+      const reason = typeof reasonRaw === "string" ? reasonRaw : JSON.stringify(reasonRaw);
       const posErrorSummary = posRes.ok
         ? null
-        : `POS ${posRes.status}: ${String((posResult as any)?.message ?? (posResult as any)?.error ?? "rejected").slice(0, 300)}`;
+        : `POS ${posRes.status}: ${reason.slice(0, 300)}`;
       await supabase.from("pos_sync_log").insert({
         venue_id: order.venue_id,
         event_type: "order_push",
