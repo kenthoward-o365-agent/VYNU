@@ -139,6 +139,7 @@ Deno.serve(async (req) => {
 
     return json({ error: "unhandled action" }, 400);
   } catch (e) {
-    return json({ error: String(e) }, 500);
+    console.error("[web-session-update] error", e);
+    return json({ error: "Internal error" }, 500);
   }
 });

@@ -49,7 +49,8 @@ Deno.serve(async (req) => {
     _queue: QUEUE, _vt_seconds: VT_SECONDS, _qty: BATCH,
   });
   if (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error("[pos-outbound-worker] dequeue failed", error);
+    return new Response(JSON.stringify({ error: "Internal error" }), {
       status: 500, headers: { ...CORS, "Content-Type": "application/json" },
     });
   }

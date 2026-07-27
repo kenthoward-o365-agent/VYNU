@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { safeErrorResponse } from "../_shared/safe-error.ts";
 import { encodeHex } from "https://deno.land/std@0.224.0/encoding/hex.ts";
 
 async function sha256(input: string): Promise<string> {
@@ -71,9 +72,6 @@ Deno.serve(async (req) => {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    console.error("ar-issue-onboarding-link error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeErrorResponse("ar-issue-onboarding-link", err, corsHeaders);
   }
 });

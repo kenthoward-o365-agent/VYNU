@@ -2,6 +2,7 @@
 // Returns the FULL key once (caller must store/display it). DB only stores the SHA-256 hash.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { safeErrorResponse } from "../_shared/safe-error.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -81,8 +82,6 @@ Deno.serve(async (req) => {
       status: 201, headers: { ...CORS, "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }), {
-      status: 500, headers: { ...CORS, "Content-Type": "application/json" },
-    });
+    return safeErrorResponse("admin-issue-api-key", e, CORS);
   }
 });

@@ -200,7 +200,11 @@ Deno.serve(async (req) => {
           if (result.simulated) simulated = true
         } catch (e) {
           failed++
-          console.error('sms send fail', r.recipient, e)
+          // SEC-03: never log the raw recipient (phone/email) or the raw provider
+          // error (which can echo the number). Mask the recipient, log only the error name.
+          const rawRecipient = String(r.recipient ?? "");
+          const maskedRecipient = rawRecipient.length <= 2 ? "**" : rawRecipient.replace(/.(?=.{2,})/g, "*");
+          console.error('sms send fail', { campaign: campaign.id, recipient: maskedRecipient, err: (e as Error)?.name })
         }
       }
     }
@@ -216,7 +220,8 @@ Deno.serve(async (req) => {
 
     return j({ ok: true, recipients: recipients.length, failed, simulated, test: !!body.test_recipient })
   } catch (e) {
-    return j({ error: String(e) }, 500)
+    console.error('[crm-send-campaign] error', e)
+    return j({ error: 'Internal error' }, 500)
   }
 })
 

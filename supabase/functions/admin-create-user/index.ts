@@ -230,7 +230,7 @@ Deno.serve(async (req) => {
         .update(updates)
         .eq("id", staff_id)
         .eq("venue_id", venue_id);
-      if (error) return json({ error: error.message }, 400);
+      if (error) { console.error("[admin-create-user] staff update failed", error); return json({ error: "Failed to update staff member" }, 400); }
 
       return json({ success: true });
     }
@@ -265,7 +265,7 @@ Deno.serve(async (req) => {
         .update({ is_active })
         .eq("id", staff_id)
         .eq("venue_id", venue_id);
-      if (error) return json({ error: error.message }, 400);
+      if (error) { console.error("[admin-create-user] staff update failed", error); return json({ error: "Failed to update staff member" }, 400); }
 
       return json({ success: true });
     }

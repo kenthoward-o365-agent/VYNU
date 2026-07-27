@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "https://deno.land/x/cors@v1.2.2/mod.ts";
+import { safeErrorResponse } from "../_shared/safe-error.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -107,8 +108,10 @@ Deno.serve(async (req) => {
 
     if (!tokenRes.ok) {
       const errBody = await tokenRes.text();
+      // Detail stays server-side; do not echo the upstream OAuth error body to the caller.
+      console.error("[pos-auth] token request failed", tokenRes.status, errBody);
       return new Response(
-        JSON.stringify({ error: "Token request failed", details: errBody }),
+        JSON.stringify({ error: "Token request failed" }),
         { status: 502, headers: { ...CORS, "Content-Type": "application/json" } }
       );
     }
@@ -132,9 +135,6 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...CORS, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
-    );
+    return safeErrorResponse("pos-auth", err, CORS);
   }
 });

@@ -134,13 +134,13 @@ Deno.serve(async (req) => {
             is_active: false,
             ...updates,
           });
-        if (insErr) return json({ error: insErr.message }, 400);
+        if (insErr) { console.error("[admin-set-payment-credentials] insert failed", insErr); return json({ error: "Failed to save configuration" }, 400); }
       } else if (Object.keys(updates).length > 0) {
         const { error: updErr } = await adminClient
           .from("venue_payment_config")
           .update(updates)
           .eq("id", existing.id);
-        if (updErr) return json({ error: updErr.message }, 400);
+        if (updErr) { console.error("[admin-set-payment-credentials] update failed", updErr); return json({ error: "Failed to save configuration" }, 400); }
       }
 
       // Write secret fields to Vault via SECURITY DEFINER RPC
@@ -150,7 +150,10 @@ Deno.serve(async (req) => {
           _field: field,
           _value: value,
         });
-        if (vErr) return json({ error: `vault ${field}: ${vErr.message}` }, 400);
+        if (vErr) {
+          console.error(`[admin-set-payment-credentials] vault write failed for ${field}`, vErr);
+          return json({ error: "Failed to store secret" }, 400);
+        }
         // Also null out any stale plaintext column so it can't drift.
         await adminClient
           .from("venue_payment_config")
@@ -180,7 +183,10 @@ Deno.serve(async (req) => {
         .update(patch)
         .eq("venue_id", venue_id)
         .eq("provider", "ordrpayments");
-      if (error) return json({ error: error.message }, 400);
+      if (error) {
+        console.error("[admin-set-payment-credentials] clear_field failed", error);
+        return json({ error: "Failed to clear field" }, 400);
+      }
       return json({ success: true });
     }
 
@@ -188,6 +194,6 @@ Deno.serve(async (req) => {
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err: any) {
     console.error("admin-set-payment-credentials error:", err);
-    return json({ error: err.message || "Server error" }, 500);
+    return json({ error: "Server error" }, 500);
   }
 });

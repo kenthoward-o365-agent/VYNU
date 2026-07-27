@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { safeErrorResponse } from "../_shared/safe-error.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -260,9 +261,6 @@ Deno.serve(async (req) => {
       // ignore logging failure
     }
 
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
-    );
+    return safeErrorResponse("pos-product-sync", err, CORS);
   }
 });

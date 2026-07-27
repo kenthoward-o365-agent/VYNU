@@ -349,9 +349,9 @@ Be thorough — extract every single menu item you can find.`
     );
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('import-menu error:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal error' }),
+      JSON.stringify({ error: 'Internal error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

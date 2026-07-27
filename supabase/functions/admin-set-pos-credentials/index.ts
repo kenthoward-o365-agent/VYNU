@@ -3,6 +3,7 @@
 // the provider's config_schema).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { safeErrorResponse } from "../_shared/safe-error.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -77,8 +78,6 @@ Deno.serve(async (req) => {
       status: 200, headers: { ...CORS, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500, headers: { ...CORS, "Content-Type": "application/json" },
-    });
+    return safeErrorResponse("admin-set-pos-credentials", err, CORS);
   }
 });

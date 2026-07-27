@@ -80,7 +80,8 @@ Return JSON only.`
     try { parsed = JSON.parse(content) } catch { parsed = { body_text: content } }
     return j({ draft: parsed })
   } catch (e) {
-    return j({ error: String(e) }, 500)
+    console.error('[crm-ai-compose] error', e)
+    return j({ error: 'Internal error' }, 500)
   }
 })
 
