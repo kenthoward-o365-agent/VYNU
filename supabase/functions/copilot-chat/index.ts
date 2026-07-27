@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { logAiUsage } from "../_shared/ai-usage.ts";
+import { safeErrorResponse } from "../_shared/safe-error.ts";
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -727,9 +728,6 @@ The user's access level: ${isAdmin ? "ADMIN (financials allowed)" : "STAFF (fina
       tool_events: toolEvents,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e: any) {
-    console.error("copilot-chat error", e);
-    return new Response(JSON.stringify({ error: e?.message ?? String(e) }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeErrorResponse("copilot-chat", e, corsHeaders);
   }
 });

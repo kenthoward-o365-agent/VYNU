@@ -32,11 +32,12 @@ export default function PaymentMethodModal({
         window.location.href = data.url;
       }
     } catch (err: any) {
+      // SEC-04: the backend no longer leaks internal error detail (e.g. env-var
+      // names) to the client, so show a generic, non-sensitive message.
       toast({
         title: "Could not start setup",
-        description: err.message?.includes("STRIPE_SECRET_KEY")
-          ? "Stripe is not configured yet. Add the Stripe secret keys in Lovable Cloud settings to enable payment collection."
-          : err.message,
+        description:
+          "Could not start payment setup. If this venue was just created, its payment processor may not be configured yet — please try again or contact support.",
         variant: "destructive",
       });
       setBusy(false);

@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
     });
     if (error) {
       console.error("enqueue_job failed", error);
-      return json({ error: error.message }, 500);
+      return json({ error: "Failed to enqueue loyalty job" }, 500);
     }
 
     return json({ enqueued: true, msg_id: msgId });

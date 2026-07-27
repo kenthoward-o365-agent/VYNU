@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17";
+import { safeErrorResponse } from "../_shared/safe-error.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -205,11 +206,7 @@ Deno.serve(async (req) => {
       event_type: event.type,
     });
   } catch (err: any) {
-    console.error("Webhook processing error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeErrorResponse("ar-stripe-webhook", err, corsHeaders);
   }
 
   return new Response(JSON.stringify({ received: true }), {

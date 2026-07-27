@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { enforceRateLimit, getClientIp, tooManyRequests } from "../_shared/rate-limit.ts";
+import { safeErrorResponse } from "../_shared/safe-error.ts";
 
 // build: mock-fallback v2
 
@@ -484,7 +485,10 @@ Deno.serve(async (req) => {
         }
       }
 
-      return json({ ...result, mock_mode: isMock });
+      // Strip Adyen additionalData (BIN/card metadata, internal fields) before
+      // returning to the browser; the Drop-in only needs resultCode/action/pspReference.
+      const { additionalData: _ad, ...safeResult } = (result ?? {}) as Record<string, unknown>;
+      return json({ ...safeResult, mock_mode: isMock });
     }
 
     // ═══ PAYMENT DETAILS (3DS) ═══
@@ -499,7 +503,8 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ details: body.details }),
       });
       const result = await resp.json();
-      return json(result, resp.ok ? 200 : 400);
+      const { additionalData: _ad2, ...safeResult } = (result ?? {}) as Record<string, unknown>;
+      return json(safeResult, resp.ok ? 200 : 400);
     }
 
     // ═══ LIST STORED CARDS ═══
@@ -655,10 +660,8 @@ Deno.serve(async (req) => {
 
       const refundResult = await refundResp.json();
       if (!refundResp.ok) {
-        return json({
-          error: refundResult?.message || "H&L Pay refund failed",
-          details: refundResult,
-        }, 400);
+        // Do not echo the full upstream refund body to the caller.
+        return json({ error: refundResult?.message || "H&L Pay refund failed" }, 400);
       }
 
       return json({
@@ -671,7 +674,6 @@ Deno.serve(async (req) => {
 
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err: any) {
-    console.error("ordrpay error:", err);
-    return json({ error: err.message || "H&L Pay processing error" }, 500);
+    return safeErrorResponse("adyen-payment", err, corsHeaders, 500, "H&L Pay processing error");
   }
 });

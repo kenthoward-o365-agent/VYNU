@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     });
   } catch (e: any) {
     console.error("onboarding-go-live error", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: "Internal error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
   const { data: msgId, error } = await admin.rpc("enqueue_pos_job", {
     _payload: { kind: "send_order", venue_id: venueId, order_id: orderId },
   });
-  if (error) return json(500, { error: error.message });
+  if (error) { console.error("[pos-order-push] enqueue failed", error); return json(500, { error: "Failed to enqueue order" }); }
 
   await admin.from("orders").update({
     pos_push_status: "queued", pos_push_error: null,

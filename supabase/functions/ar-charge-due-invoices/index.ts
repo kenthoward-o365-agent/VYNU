@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { timingSafeEqualStr } from "../_shared/secure-compare.ts";
+import { safeErrorResponse } from "../_shared/safe-error.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -167,9 +168,6 @@ Deno.serve(async (req) => {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
-    console.error("ar-charge-due-invoices error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeErrorResponse("ar-charge-due-invoices", err, corsHeaders);
   }
 });

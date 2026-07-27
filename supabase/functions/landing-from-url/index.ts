@@ -302,6 +302,7 @@ MAP_URL: ${extracted.google_maps || ''}`
 
     return j({ sections, theme, branding })
   } catch (e) {
-    return j({ error: String(e) }, 500)
+    console.error("[landing-from-url] error", e)
+    return j({ error: "Internal error" }, 500)
   }
 })
