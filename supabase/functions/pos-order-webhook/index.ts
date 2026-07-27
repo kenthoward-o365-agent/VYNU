@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { timingSafeEqualStr } from "../_shared/secure-compare.ts";
+import { safeErrorResponse } from "../_shared/safe-error.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -293,19 +294,23 @@ Deno.serve(async (req) => {
 
       const posResult = await posRes.json().catch(() => ({}));
 
-      // Log
+      // Log a bounded summary, not the full upstream POS response body.
+      const posErrorSummary = posRes.ok
+        ? null
+        : `POS ${posRes.status}: ${String((posResult as any)?.message ?? (posResult as any)?.error ?? "rejected").slice(0, 300)}`;
       await supabase.from("pos_sync_log").insert({
         venue_id: order.venue_id,
         event_type: "order_push",
         direction: "outbound",
         result: posRes.ok ? "success" : "error",
-        error_message: posRes.ok ? null : JSON.stringify(posResult),
+        error_message: posErrorSummary,
         items_synced: order.order_items?.length || 0,
       });
 
       if (!posRes.ok) {
+        // Do not echo the full upstream POS response body to the caller.
         return new Response(
-          JSON.stringify({ error: "POS rejected order", details: posResult }),
+          JSON.stringify({ error: "POS rejected order" }),
           { status: 502, headers: { ...CORS, "Content-Type": "application/json" } }
         );
       }
@@ -321,9 +326,6 @@ Deno.serve(async (req) => {
       { status: 400, headers: { ...CORS, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...CORS, "Content-Type": "application/json" } }
-    );
+    return safeErrorResponse("pos-order-webhook", err, CORS);
   }
 });
