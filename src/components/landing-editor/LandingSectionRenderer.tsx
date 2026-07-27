@@ -2,6 +2,9 @@ import { useEffect } from "react";
 import type { LandingSection, LandingTheme } from "./types";
 import { createDefaultTheme } from "./types";
 import type { ReactNode } from "react";
+// HLRDRNW-68 · IVA-04 — these URLs come from venue-edited / AI-generated /
+// scraped landing content, so only render safe http(s) schemes into href/src.
+import { safeHttpUrl } from "@/lib/url";
 
 interface Props {
   sections: LandingSection[];
@@ -61,11 +64,12 @@ function RenderSection({ section, theme, tableNumber }: { section: LandingSectio
   switch (section.type) {
     case "hero": {
       const overlayOpacity = section.overlayOpacity ?? 0.5;
-      if (section.heroImageUrl) {
+      const safeHeroImageUrl = safeHttpUrl(section.heroImageUrl);
+      if (safeHeroImageUrl) {
         return (
           <div className="relative w-full overflow-hidden aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] max-h-[60vh]">
             <img
-              src={section.heroImageUrl}
+              src={safeHeroImageUrl}
               alt={section.title}
               className="absolute inset-0 w-full h-full object-cover object-center"
               loading="eager"
@@ -139,10 +143,11 @@ function RenderSection({ section, theme, tableNumber }: { section: LandingSectio
     case "loyalty-cta": {
       const icon = section.icon !== undefined ? section.icon : "🎁";
       const iconPrefix = icon ? `${icon} ` : "";
-      const showButton = !!(section.ctaUrl && section.ctaLabel);
+      const safeCtaUrl = safeHttpUrl(section.ctaUrl);
+      const showButton = !!(safeCtaUrl && section.ctaLabel);
       const Button = showButton ? (
         <a
-          href={section.ctaUrl}
+          href={safeCtaUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-block mt-4 px-5 py-2.5 rounded-full text-sm font-semibold transition-opacity hover:opacity-90"
@@ -155,12 +160,13 @@ function RenderSection({ section, theme, tableNumber }: { section: LandingSectio
         </a>
       ) : null;
 
-      if (section.variant === "image" && section.imageUrl) {
+      const safeOfferImageUrl = safeHttpUrl(section.imageUrl);
+      if (section.variant === "image" && safeOfferImageUrl) {
         return (
           <div className="flex justify-center px-6 py-6">
             <div
               className="rounded-2xl w-full max-w-xs md:max-w-md text-center relative overflow-hidden min-h-[160px] md:min-h-[200px] flex items-center justify-center"
-              style={{ backgroundImage: `url(${section.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" }}
+              style={{ backgroundImage: `url("${encodeURI(safeOfferImageUrl)}")`, backgroundSize: "cover", backgroundPosition: "center" }}
             >
               <div className="absolute inset-0 bg-black/40" />
               <div className="relative z-10 p-5 md:p-8">
@@ -197,10 +203,11 @@ function RenderSection({ section, theme, tableNumber }: { section: LandingSectio
           <p className="text-sm md:text-base" style={{ color: section.textColor ?? theme.textMuted }}>{section.hours}</p>
         </>
       );
+      const safeMapUrl = safeHttpUrl(section.mapUrl);
       return (
         <div className="px-6 py-8 text-center" style={{ background: section.bgColor ?? "transparent" }}>
-          {section.mapUrl ? (
-            <a href={section.mapUrl} target="_blank" rel="noopener noreferrer" className="block hover:opacity-80 transition-opacity">
+          {safeMapUrl ? (
+            <a href={safeMapUrl} target="_blank" rel="noopener noreferrer" className="block hover:opacity-80 transition-opacity">
               {content}
             </a>
           ) : content}
@@ -210,24 +217,27 @@ function RenderSection({ section, theme, tableNumber }: { section: LandingSectio
 
     case "social-links": {
       const iconColor = section.iconColor ?? theme.textMuted;
+      const igUrl = safeHttpUrl(section.instagram);
+      const fbUrl = safeHttpUrl(section.facebook);
+      const googleUrl = safeHttpUrl(section.google);
       return (
         <div className="flex items-center justify-center gap-6 md:gap-8 px-6 py-6">
-          {section.instagram && (
-            <a href={section.instagram} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: iconColor }}>
+          {igUrl && (
+            <a href={igUrl} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: iconColor }}>
               <svg className="w-6 h-6 md:w-8 md:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
             </a>
           )}
-          {section.facebook && (
-            <a href={section.facebook} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: iconColor }}>
+          {fbUrl && (
+            <a href={fbUrl} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: iconColor }}>
               <svg className="w-6 h-6 md:w-8 md:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
             </a>
           )}
-          {section.google && (
-            <a href={section.google} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: iconColor }}>
+          {googleUrl && (
+            <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: iconColor }}>
               <svg className="w-6 h-6 md:w-8 md:h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
             </a>
           )}
-          {!section.instagram && !section.facebook && !section.google && (
+          {!igUrl && !fbUrl && !googleUrl && (
             <p className="text-sm" style={{ color: theme.textMuted }}>Add your social links</p>
           )}
         </div>

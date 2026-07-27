@@ -339,6 +339,38 @@ Deno.serve(async (req) => {
         if (!rl.allowed) return tooManyRequests(corsHeaders);
       }
 
+      // HLRDRNW-68 · IVA-01 — bind the charged amount to the server-authoritative
+      // order total. orders.total is enforced by the pricing triggers
+      // (enforce_order_item_pricing / recompute_order_total), so a client can no
+      // longer be charged an amount it invented for an underpriced order. Only the
+      // real-charge path is enforced, and only when the reference maps to one of
+      // our orders. Over-payment is allowed (not an abuse vector); under-payment
+      // beyond a 1-cent float tolerance is rejected.
+      if (!isMock && typeof reference === "string" && reference.startsWith("order_")) {
+        const boundOrderId = reference.slice("order_".length);
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(boundOrderId)) {
+          const { data: boundOrder } = await adminClient
+            .from("orders")
+            .select("total, venue_id")
+            .eq("id", boundOrderId)
+            .maybeSingle();
+          if (!boundOrder) {
+            return json({ error: "Order not found" }, 400);
+          }
+          if (venue_id && boundOrder.venue_id !== venue_id) {
+            return json({ error: "Order does not belong to this venue" }, 400);
+          }
+          const requestedMinor = Math.round(Number(amount) * 100);
+          const authoritativeMinor = Math.round(Number(boundOrder.total) * 100);
+          if (requestedMinor < authoritativeMinor - 1) {
+            console.warn(
+              `adyen create_payment amount mismatch: requested=${requestedMinor} authoritative=${authoritativeMinor} order=${boundOrderId}`
+            );
+            return json({ error: "Payment amount does not match the order total" }, 400);
+          }
+        }
+      }
+
       let result: any;
 
       if (isMock) {

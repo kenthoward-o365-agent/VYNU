@@ -183,7 +183,13 @@ async function runTool(
     case "set_venue_details": {
       const allowed = ["name", "address", "city", "state", "postcode", "phone", "email", "timezone", "venue_type"];
       const patch: Record<string, any> = {};
-      for (const k of allowed) if (args[k] !== undefined) patch[k] = args[k];
+      // HLRDRNW-68 · IVA-05 — the model controls these values; coerce to bounded
+      // strings so it cannot write oversized/typed junk into the venue record.
+      for (const k of allowed) {
+        if (args[k] === undefined || args[k] === null) continue;
+        const v = String(args[k]).slice(0, 300).trim();
+        if (v.length > 0) patch[k] = v;
+      }
       if (Object.keys(patch).length === 0) return { ok: false, error: "No fields to update." };
       const { error } = await sb.from("venues").update(patch).eq("id", venueId);
       return error ? { ok: false, error: error.message } : { ok: true, updated: Object.keys(patch) };
@@ -202,10 +208,17 @@ async function runTool(
       return error ? { ok: false, error: error.message } : { ok: true, created: data?.length ?? 0, total_requested: rows.length };
     }
     case "add_tax": {
+      // HLRDRNW-68 · IVA-05 — validate model-supplied tax values before insert.
+      const taxName = typeof args.name === "string" ? args.name.slice(0, 100).trim() : "";
+      const rate = Number(args.rate);
+      if (!taxName) return { ok: false, error: "Tax name is required." };
+      if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
+        return { ok: false, error: "Tax rate must be a number between 0 and 100." };
+      }
       const { error } = await sb.from("venue_taxes").insert({
         venue_id: venueId,
-        name: args.name,
-        rate: args.rate,
+        name: taxName,
+        rate,
         is_inclusive: args.inclusive ?? true,
         is_active: true,
       });
@@ -274,6 +287,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    // HLRDRNW-68 · IVA-05 — the client supplies `history`, which is replayed into
+    // the model context. Only keep user/assistant text turns (capped and length-
+    // limited) so a caller cannot inject a forged `system`/`tool` turn to steer
+    // the write-capable tool loop.
+    const safeHistory = (Array.isArray(history) ? history : [])
+      .filter((m: any) =>
+        m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string"
+      )
+      .slice(-30)
+      .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 4000) }));
+
     const auth = req.headers.get("Authorization") ?? "";
     const sbUser = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -321,7 +345,7 @@ OPERATING RULES:
 
     const messages = [
       { role: "system", content: systemPrompt },
-      ...history,
+      ...safeHistory,
       { role: "user", content: message },
     ];
 

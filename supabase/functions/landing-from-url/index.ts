@@ -300,6 +300,26 @@ MAP_URL: ${extracted.google_maps || ''}`
       if (!hoursLoc.mapUrl && extracted.google_maps) hoursLoc.mapUrl = extracted.google_maps
     }
 
+    // HLRDRNW-68 · IVA-04 — these URL fields are AI-generated / scraped and are
+    // rendered into href/src on the public landing page. Drop any value that is
+    // not a plain http(s) URL so a javascript:/data: scheme can never be stored.
+    const isHttpUrl = (v: unknown): boolean => {
+      if (typeof v !== 'string') return false
+      try {
+        const proto = new URL(v.trim()).protocol
+        return proto === 'http:' || proto === 'https:'
+      } catch {
+        return false
+      }
+    }
+    const URL_FIELDS = ['ctaUrl', 'mapUrl', 'heroImageUrl', 'imageUrl', 'instagram', 'facebook', 'google']
+    for (const s of sections) {
+      if (!s || typeof s !== 'object') continue
+      for (const f of URL_FIELDS) {
+        if (f in s && !isHttpUrl((s as any)[f])) delete (s as any)[f]
+      }
+    }
+
     return j({ sections, theme, branding })
   } catch (e) {
     console.error("[landing-from-url] error", e)
