@@ -108,7 +108,7 @@ var get_menu_default = defineTool3({
 });
 
 // src/lib/mcp/index.ts
-var projectRef = "jsbxivkgfekcgvtyqnek";
+var projectRef = "fhjuiyabezcjzjyjxcqi";
 var mcp_default = defineMcp({
   name: "hl-ordernow-mcp",
   title: "H&L OrderNOW",
