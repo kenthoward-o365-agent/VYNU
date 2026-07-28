@@ -4630,22 +4630,17 @@ export type Database = {
       }
       venue_payment_config: {
         Row: {
-          api_key_live: string | null
           api_key_live_secret_id: string | null
-          api_key_test: string | null
           api_key_test_secret_id: string | null
           apple_pay_merchant_id: string | null
           capture_mode: string
-          client_key_live: string | null
           client_key_live_secret_id: string | null
-          client_key_test: string | null
           client_key_test_secret_id: string | null
           country_code: string
           created_at: string
           default_currency: string
           environment: string
           google_pay_merchant_id: string | null
-          hmac_key: string | null
           hmac_key_secret_id: string | null
           id: string
           is_active: boolean
@@ -4658,22 +4653,17 @@ export type Database = {
           venue_id: string
         }
         Insert: {
-          api_key_live?: string | null
           api_key_live_secret_id?: string | null
-          api_key_test?: string | null
           api_key_test_secret_id?: string | null
           apple_pay_merchant_id?: string | null
           capture_mode?: string
-          client_key_live?: string | null
           client_key_live_secret_id?: string | null
-          client_key_test?: string | null
           client_key_test_secret_id?: string | null
           country_code?: string
           created_at?: string
           default_currency?: string
           environment?: string
           google_pay_merchant_id?: string | null
-          hmac_key?: string | null
           hmac_key_secret_id?: string | null
           id?: string
           is_active?: boolean
@@ -4686,22 +4676,17 @@ export type Database = {
           venue_id: string
         }
         Update: {
-          api_key_live?: string | null
           api_key_live_secret_id?: string | null
-          api_key_test?: string | null
           api_key_test_secret_id?: string | null
           apple_pay_merchant_id?: string | null
           capture_mode?: string
-          client_key_live?: string | null
           client_key_live_secret_id?: string | null
-          client_key_test?: string | null
           client_key_test_secret_id?: string | null
           country_code?: string
           created_at?: string
           default_currency?: string
           environment?: string
           google_pay_merchant_id?: string | null
-          hmac_key?: string | null
           hmac_key_secret_id?: string | null
           id?: string
           is_active?: boolean
