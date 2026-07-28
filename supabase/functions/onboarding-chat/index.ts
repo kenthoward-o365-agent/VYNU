@@ -219,7 +219,8 @@ async function runTool(
         venue_id: venueId,
         name: taxName,
         rate,
-        is_inclusive: args.inclusive ?? true,
+        // Coerce to a real boolean — the model may send a non-boolean; default to inclusive.
+        is_inclusive: typeof args.inclusive === "boolean" ? args.inclusive : true,
         is_active: true,
       });
       return error ? { ok: false, error: error.message } : { ok: true };

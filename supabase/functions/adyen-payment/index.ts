@@ -362,7 +362,14 @@ Deno.serve(async (req) => {
           }
           const requestedMinor = Math.round(Number(amount) * 100);
           const authoritativeMinor = Math.round(Number(boundOrder.total) * 100);
-          if (requestedMinor < authoritativeMinor - 1) {
+          // Reject non-numeric / non-finite amounts outright — otherwise NaN
+          // slips past the comparison below (NaN comparisons are always false).
+          if (!Number.isFinite(requestedMinor) || !Number.isFinite(authoritativeMinor)) {
+            return json({ error: "Invalid payment amount" }, 400);
+          }
+          // Exact match to the server-authoritative order total (1-cent float
+          // tolerance) — rejects both under-payment and over-charging the diner.
+          if (Math.abs(requestedMinor - authoritativeMinor) > 1) {
             console.warn(
               `adyen create_payment amount mismatch: requested=${requestedMinor} authoritative=${authoritativeMinor} order=${boundOrderId}`
             );
