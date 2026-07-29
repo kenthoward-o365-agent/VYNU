@@ -6,8 +6,10 @@
 
     <!-- PCI DSS v4.0.1 Req 6.4.3 / 11.6.1 — payment-page script controls.
          Allow-list scripts and frames that are permitted on consumer checkout.
-         Reports go to the csp-report edge function for tamper detection. -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.adyen.com https://pay.google.com https://*.googleapis.com https://*.gstatic.com https://*.applepay.apple.com; style-src 'self' 'unsafe-inline' https://*.adyen.com https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://*.adyen.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.adyen.com https://*.supabase.co wss://*.supabase.co https://*.lovable.app https://pay.google.com; frame-src 'self' https://*.adyen.com https://pay.google.com https://*.applepay.apple.com; form-action 'self' https://*.adyen.com; base-uri 'self'; object-src 'none'; upgrade-insecure-requests; report-uri https://jsbxivkgfekcgvtyqnek.supabase.co/functions/v1/csp-report;" />
+         Reports go to the csp-report edge function for tamper detection.
+         report-uri uses Vite's %VITE_*% HTML env substitution so each project
+         reports to its OWN backend — never hardcode a project ref here. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.adyen.com https://pay.google.com https://*.googleapis.com https://*.gstatic.com https://*.applepay.apple.com; style-src 'self' 'unsafe-inline' https://*.adyen.com https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://*.adyen.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.adyen.com https://*.supabase.co wss://*.supabase.co https://*.lovable.app https://pay.google.com; frame-src 'self' https://*.adyen.com https://pay.google.com https://*.applepay.apple.com; form-action 'self' https://*.adyen.com; base-uri 'self'; object-src 'none'; upgrade-insecure-requests; report-uri %VITE_SUPABASE_URL%/functions/v1/csp-report;" />
     <!-- TODO: Set the document title to the name of your application -->
     <title>H&amp;L OrderNOW</title>
     <meta name="description" content="H&amp;L OrderNOW — AI-powered QR ordering and revenue platform for restaurants, pubs, bars, and cafés. We earn when you earn.">

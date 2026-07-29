@@ -8,9 +8,12 @@ sign-off. The Smoke profile is safe at any time.
 
 - `k6` — `nix run nixpkgs#k6 -- run ...` works in the sandbox.
 - `bun` — to run the seeder/report scripts.
-- Env vars (only needed for seed/report, not for k6):
-  - `SUPABASE_URL` (or `VITE_SUPABASE_URL`)
-  - `SUPABASE_SERVICE_ROLE_KEY`
+- Env vars:
+  - `SUPABASE_URL` (or `VITE_SUPABASE_URL`) — seed/report
+  - `SUPABASE_SERVICE_ROLE_KEY` — seed/report
+  - `BASE_URL` + `ANON_KEY` — every k6 run. There is **no default target**: k6
+    aborts in the init stage if either is missing, so a run can never fall back
+    to a hardcoded backend. Point them at the project you actually mean to load.
 
 ## Three profiles
 
@@ -23,17 +26,24 @@ sign-off. The Smoke profile is safe at any time.
 ## Workflow
 
 ```bash
+# 0. Choose the target explicitly — every k6 command below reuses these.
+#    Staging: fhjuiyabezcjzjyjxcqi   Production: jsbxivkgfekcgvtyqnek
+export BASE_URL="https://<project-ref>.supabase.co"
+export ANON_KEY="<publishable-key for that project>"
+
 # 1. Seed venues (writes IDs to scripts/loadtest/.venue-ids)
 bun run scripts/loadtest/seed.ts --count 1000
 
 # 2. Smoke
 nix run nixpkgs#k6 -- run \
+  -e BASE_URL="$BASE_URL" -e ANON_KEY="$ANON_KEY" \
   -e VENUE_IDS=$(cat scripts/loadtest/.venue-ids) \
   --summary-export out/smoke.json \
   scripts/loadtest/k6/smoke.js
 
 # 3. Peak (start small with PEAK_VUS, scale up)
 nix run nixpkgs#k6 -- run \
+  -e BASE_URL="$BASE_URL" -e ANON_KEY="$ANON_KEY" \
   -e VENUE_IDS=$(cat scripts/loadtest/.venue-ids) \
   -e PEAK_VUS=5000 \
   --summary-export out/peak.json \
@@ -41,6 +51,7 @@ nix run nixpkgs#k6 -- run \
 
 # 4. Cliff — push until something breaks
 nix run nixpkgs#k6 -- run \
+  -e BASE_URL="$BASE_URL" -e ANON_KEY="$ANON_KEY" \
   -e VENUE_IDS=$(cat scripts/loadtest/.venue-ids) \
   -e CLIFF_VUS=20000 \
   --summary-export out/cliff.json \

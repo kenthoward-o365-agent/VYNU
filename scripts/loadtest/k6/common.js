@@ -2,10 +2,16 @@
 // k6 runs in its own JS runtime — no Node APIs.
 import http from "k6/http";
 
-export const BASE_URL = __ENV.BASE_URL || "https://jsbxivkgfekcgvtyqnek.supabase.co";
-export const ANON_KEY =
-  __ENV.ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzYnhpdmtnZmVrY2d2dHlxbmVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NjgzNzcsImV4cCI6MjA5MTE0NDM3N30.Ra4q3O22JrZrgcrpAPFR3txp9T8ZPOk0vyU0ivy_7Ck";
+// No defaults on purpose: a missing env var must abort the run, not silently
+// point a load test at whichever backend was hardcoded here.
+export const BASE_URL = __ENV.BASE_URL;
+export const ANON_KEY = __ENV.ANON_KEY;
+if (!BASE_URL || !ANON_KEY) {
+  throw new Error(
+    "Set BASE_URL and ANON_KEY explicitly, e.g. " +
+      "k6 run -e BASE_URL=https://<project-ref>.supabase.co -e ANON_KEY=<publishable-key> ...",
+  );
+}
 
 // Venue IDs are passed as a comma-separated env var, produced by seed.ts.
 export const VENUE_IDS = (__ENV.VENUE_IDS || "")

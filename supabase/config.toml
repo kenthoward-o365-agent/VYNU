@@ -1,4 +1,6 @@
-project_id = "jsbxivkgfekcgvtyqnek"
+# Staging backend. Must NOT be the production ref (jsbxivkgfekcgvtyqnek) — the
+# Supabase CLI resolves db push / functions deploy targets from this line.
+project_id = "fhjuiyabezcjzjyjxcqi"
 
 [functions.session-tick]
 verify_jwt = false
