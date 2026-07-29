@@ -1,0 +1,9 @@
+# supabase/config.toml intentionally differs per environment: it names the
+# Supabase project the CLI deploys to. Merging it across branches would point
+# one environment at the other's backend, so keep whichever side we're on.
+# Requires (once per clone):  git config merge.keepours.driver true
+supabase/config.toml merge=keepours
+
+# Build artifact of src/lib/mcp/index.ts with VITE_SUPABASE_PROJECT_ID baked in.
+# Regenerated on every build, so never take the other branch's copy.
+supabase/functions/mcp/index.ts merge=keepours

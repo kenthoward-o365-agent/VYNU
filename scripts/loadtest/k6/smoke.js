@@ -1,5 +1,6 @@
 // Smoke profile — sanity check (~5 min, ~10 venues, ~20 diners).
-// Run: k6 run -e VENUE_IDS=$(cat scripts/loadtest/.venue-ids) scripts/loadtest/k6/smoke.js
+// Run: k6 run -e BASE_URL=https://<project-ref>.supabase.co -e ANON_KEY=<key> \
+//        -e VENUE_IDS=$(cat scripts/loadtest/.venue-ids) scripts/loadtest/k6/smoke.js
 import { check, sleep } from "k6";
 import { fetchMenuSnapshot, pickVenue } from "./common.js";
 
