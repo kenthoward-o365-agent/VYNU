@@ -384,9 +384,9 @@ export default function VenueSettings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Venue ID</p>
-                    <p className="font-mono text-sm text-foreground">{venue.id}</p>
+                    <p className="font-mono text-lg font-bold text-foreground">{(venue as any).site_id || "—"}</p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(venue.id); toast.success("Venue ID copied"); }}>Copy</Button>
+                  <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText((venue as any).site_id || ""); toast.success("Venue ID copied"); }}>Copy</Button>
                 </div>
               </CardContent>
             </Card>
