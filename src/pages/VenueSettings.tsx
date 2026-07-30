@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard, Receipt, Bot, Plug, Percent, Globe, ArrowLeft, ChevronRight } from "lucide-react";
+import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard, Receipt, Bot, Plug, Percent, Globe, ArrowLeft, ChevronRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import SippaAISettings from "@/components/venue/SippaAISettings";
 import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
