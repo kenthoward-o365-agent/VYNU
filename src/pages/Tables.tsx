@@ -69,7 +69,7 @@ export default function Tables() {
     const newTable: TableInsert = {
       venue_id: venue.id,
       table_number: form.table_number,
-      zone: form.zone || null,
+      zone_id: form.zone_id === NO_ZONE ? null : form.zone_id,
       capacity: parseInt(form.capacity) || 4,
       pos_table_id: form.pos_table_id || null,
     };
@@ -79,7 +79,7 @@ export default function Tables() {
     await supabase.from("tables").update({ qr_code: qrUrl }).eq("id", data.id);
     toast.success("Table added");
     setDialogOpen(false);
-    setForm({ table_number: "", zone: "", capacity: "4", pos_table_id: "" });
+    setForm({ table_number: "", zone_id: NO_ZONE, capacity: "4", pos_table_id: "" });
     fetchTables();
   };
 
