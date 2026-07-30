@@ -95,12 +95,19 @@ const CheckoutPanel = ({
   const [isMockMode, setIsMockMode] = useState(false);
   const [loadingMethods, setLoadingMethods] = useState(false);
 
+  // Open-tab state (per-zone: some areas run tabs, others are pay-at-order)
+  const [tabRules, setTabRules] = useState<TabZoneRules | null>(null);
+  const [tabMode, setTabMode] = useState<"pay_now" | "tab">("pay_now");
+  const [showTabBill, setShowTabBill] = useState(false);
+
   useEffect(() => {
     checkPaymentEnabled();
     fetchVenueTaxes();
     fetchGratuityConfig();
+    fetchTabRules();
     if (dinerId) fetchStoredCards();
   }, [venueId, dinerId]);
+
 
   // Once payments are confirmed enabled and we know the total, fetch Adyen methods for Drop-in
   useEffect(() => {
