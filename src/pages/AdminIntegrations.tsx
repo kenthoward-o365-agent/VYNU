@@ -89,6 +89,7 @@ export default function AdminIntegrations() {
         <TabsList>
           <TabsTrigger value="providers">Providers ({providers.length})</TabsTrigger>
           <TabsTrigger value="connections">Connections ({connections.length})</TabsTrigger>
+          <TabsTrigger value="loyalty">Loyalty</TabsTrigger>
         </TabsList>
 
         <TabsContent value="providers" className="space-y-4">
