@@ -128,6 +128,7 @@ export default function SurchargeSettingsTab({ venueId }: { venueId: string }) {
           all_day: true,
           start_time: "00:00",
           end_time: "23:59",
+          special_dates: [],
         },
       ],
     }));
@@ -146,6 +147,51 @@ export default function SurchargeSettingsTab({ venueId }: { venueId: string }) {
     setConfig((prev) => ({
       ...prev,
       time_surcharges: prev.time_surcharges.filter((ts) => ts.id !== id),
+    }));
+  };
+
+  const addSpecialDate = (surchargeId: string) => {
+    const today = new Date().toISOString().split("T")[0];
+    setConfig((prev) => ({
+      ...prev,
+      time_surcharges: prev.time_surcharges.map((ts) =>
+        ts.id === surchargeId
+          ? {
+              ...ts,
+              special_dates: [
+                ...(ts.special_dates || []),
+                { id: crypto.randomUUID(), label: "", start_date: today, end_date: today },
+              ],
+            }
+          : ts
+      ),
+    }));
+  };
+
+  const updateSpecialDate = (surchargeId: string, dateId: string, patch: Partial<SpecialDate>) => {
+    setConfig((prev) => ({
+      ...prev,
+      time_surcharges: prev.time_surcharges.map((ts) =>
+        ts.id === surchargeId
+          ? {
+              ...ts,
+              special_dates: (ts.special_dates || []).map((d) =>
+                d.id === dateId ? { ...d, ...patch } : d
+              ),
+            }
+          : ts
+      ),
+    }));
+  };
+
+  const removeSpecialDate = (surchargeId: string, dateId: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      time_surcharges: prev.time_surcharges.map((ts) =>
+        ts.id === surchargeId
+          ? { ...ts, special_dates: (ts.special_dates || []).filter((d) => d.id !== dateId) }
+          : ts
+      ),
     }));
   };
 
