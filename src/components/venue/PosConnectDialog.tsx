@@ -54,7 +54,8 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
   async function load() {
     setLoading(true);
     const [{ data: provs }, { data: existing }] = await Promise.all([
-      (supabase as any).from("pos_providers").select("*").eq("is_active", true).order("name"),
+      (supabase as any).from("pos_providers").select("*").eq("is_active", true)
+        .order("is_default", { ascending: false }).order("display_order").order("name"),
       (supabase as any).from("venue_pos_integrations").select("provider_id, config").eq("venue_id", venueId).maybeSingle(),
     ]);
     const list = (provs ?? []) as Provider[];
