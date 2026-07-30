@@ -178,6 +178,10 @@ export default function AdminIntegrations() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="loyalty" className="space-y-4">
+          <PubPlusIntegrationCard />
+        </TabsContent>
       </Tabs>
 
       <Dialog open={!!configVenueId} onOpenChange={(o) => !o && setConfigVenueId(null)}>
