@@ -333,7 +333,10 @@ const ConsumerOrder = () => {
             total: Number(row.total) || 0,
             created_at: row.created_at,
             extra_wait_minutes: row.extra_wait_minutes ?? 0,
+            service_mode: row.service_mode ?? null,
+            pickup_location: row.pickup_location ?? null,
           });
+
           return;
         }
         if (row && TERMINAL_ORDER_STATUSES.has(row.status)) {
