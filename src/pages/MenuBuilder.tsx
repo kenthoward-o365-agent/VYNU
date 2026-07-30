@@ -66,6 +66,9 @@ export default function MenuBuilder() {
   const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
   const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [menus, setMenus] = useState<VenueMenu[]>([]);
+  const [zones, setZones] = useState<ZoneRef[]>([]);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
