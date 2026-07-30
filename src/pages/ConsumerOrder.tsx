@@ -64,7 +64,10 @@ interface ActiveOrder {
   total: number;
   created_at: string;
   extra_wait_minutes?: number;
+  service_mode?: string | null;
+  pickup_location?: string | null;
 }
+
 
 const OPEN_ORDER_STATUSES: ActiveOrder["status"][] = ["received", "preparing", "ready"];
 const TERMINAL_ORDER_STATUSES = new Set<ActiveOrder["status"]>(["paid", "cancelled", "refunded"]);
@@ -330,7 +333,10 @@ const ConsumerOrder = () => {
             total: Number(row.total) || 0,
             created_at: row.created_at,
             extra_wait_minutes: row.extra_wait_minutes ?? 0,
+            service_mode: row.service_mode ?? null,
+            pickup_location: row.pickup_location ?? null,
           });
+
           return;
         }
         if (row && TERMINAL_ORDER_STATUSES.has(row.status)) {
@@ -718,6 +724,9 @@ const ConsumerOrder = () => {
           total={activeOrder.total}
           createdAt={activeOrder.created_at}
           extraWaitMinutes={activeOrder.extra_wait_minutes ?? 0}
+          serviceMode={(activeOrder.service_mode as "table_delivery" | "counter_pickup" | null) ?? undefined}
+          pickupLocation={activeOrder.pickup_location ?? undefined}
+
         />
       )}
 

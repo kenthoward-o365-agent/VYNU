@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, ChefHat, Bell, CreditCard } from "lucide-react";
+import { CheckCircle2, Clock, ChefHat, Bell, CreditCard, HandPlatter, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,10 @@ interface OrderStatusProps {
   total: number;
   createdAt: string;
   extraWaitMinutes?: number;
+  /** How the venue/zone serves food: brought to the table, or collected by the diner. */
+  serviceMode?: "table_delivery" | "counter_pickup";
+  /** Where to collect from when serviceMode is counter_pickup (e.g. "Main Bar"). */
+  pickupLocation?: string;
 }
 
 const steps: { status: Status; icon: typeof Clock; label: string }[] = [
@@ -21,8 +25,27 @@ const steps: { status: Status; icon: typeof Clock; label: string }[] = [
 
 const statusOrder: Status[] = ["received", "preparing", "ready", "served", "paid"];
 
-const OrderStatus = ({ status, total, createdAt, extraWaitMinutes = 0 }: OrderStatusProps) => {
+const OrderStatus = ({
+  status,
+  total,
+  createdAt,
+  extraWaitMinutes = 0,
+  serviceMode = "table_delivery",
+  pickupLocation,
+}: OrderStatusProps) => {
   const currentIdx = statusOrder.indexOf(status);
+  const isPickup = serviceMode === "counter_pickup";
+  const collectAt = pickupLocation?.trim() || "the counter";
+
+  const pickupSteps = isPickup
+    ? steps.map((s) =>
+        s.status === "ready"
+          ? { ...s, label: "Collect" }
+          : s.status === "served"
+            ? { ...s, label: "Collected" }
+            : s
+      )
+    : steps;
 
   return (
     <div className="px-5 py-6">
@@ -33,6 +56,12 @@ const OrderStatus = ({ status, total, createdAt, extraWaitMinutes = 0 }: OrderSt
             <p className="text-muted-foreground text-xs">
               {new Date(createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </p>
+            {isPickup && status !== "ready" && (
+              <p className="text-muted-foreground text-xs mt-1 flex items-center gap-1">
+                <Store className="h-3 w-3" />
+                Collect from {collectAt} — we'll text you when it's ready
+              </p>
+            )}
             {extraWaitMinutes > 0 && (
               <p className="text-warning text-xs mt-1">
                 Kitchen is busy — extra ~{extraWaitMinutes}m wait
@@ -49,7 +78,7 @@ const OrderStatus = ({ status, total, createdAt, extraWaitMinutes = 0 }: OrderSt
             style={{ width: `${Math.max(0, (currentIdx / (steps.length - 1)) * 100 - 10)}%` }}
           />
 
-          {steps.map((step) => {
+          {pickupSteps.map((step) => {
             const isActive = statusOrder.indexOf(step.status) <= currentIdx;
             const Icon = step.icon;
             return (
@@ -69,6 +98,29 @@ const OrderStatus = ({ status, total, createdAt, extraWaitMinutes = 0 }: OrderSt
             );
           })}
         </div>
+
+        {status === "ready" && (
+          <div
+            className={cn(
+              "mt-6 rounded-xl p-4 flex items-start gap-3",
+              isPickup ? "bg-primary/10 border border-primary/30" : "bg-muted/50"
+            )}
+          >
+            <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+              {isPickup ? <Store className="h-4 w-4" /> : <HandPlatter className="h-4 w-4" />}
+            </div>
+            <div>
+              <p className="font-semibold text-sm">
+                {isPickup ? `Your order is ready — collect it at ${collectAt}` : "Your order is ready"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isPickup
+                  ? "Show this screen or give your name when you collect. We've also sent you a text."
+                  : "A team member is bringing it to your table now."}
+              </p>
+            </div>
+          </div>
+        )}
 
         {status === "served" && (
           <Button className="w-full mt-6 rounded-xl h-12 gap-2">
