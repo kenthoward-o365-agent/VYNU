@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { Cable, ExternalLink, RefreshCw, Settings } from "lucide-react";
 import HLPosPanel from "@/components/venue/HLPosPanel";
+import PubPlusIntegrationCard from "@/components/admin/PubPlusIntegrationCard";
 
 interface Provider {
   id: string;
