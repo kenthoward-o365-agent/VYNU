@@ -364,6 +364,69 @@ const CheckoutPanel = ({
     onOrderPlaced(orderId);
   };
 
+  // ---------- Open tab ----------
+  const tabsAvailable = !!tabRules?.tabs_enabled;
+  const preauthAmount = Number(tabRules?.preauth_amount ?? 0);
+  const needsPreauth =
+    tabMode === "tab" && !!tabRules?.require_preauth && !tabRules?.open_tab_id && preauthAmount > 0;
+
+  const ensureTab = async (): Promise<string> => {
+    const { data, error } = await (supabase as any).rpc("find_or_open_tab", {
+      _venue_id: venueId,
+      _table_id: tableId,
+      _session_id: joinedSessionId || null,
+      _diner_id: dinerId || null,
+    });
+    if (error) throw error;
+    return data as string;
+  };
+
+  /** Adds this round to the table's tab (no payment taken now). */
+  const addRoundToTab = async (tabId: string) => {
+    const orderId = await createOrderRow({ tabId });
+    toast.success("Added to your tab — pay when you're done");
+    onOrderPlaced(orderId);
+    return orderId;
+  };
+
+  const handleAddToTab = async () => {
+    setProcessing(true);
+    try {
+      const tabId = await ensureTab();
+      await addRoundToTab(tabId);
+    } catch (e: any) {
+      console.error("Add to tab failed", e);
+      toast.error(e.message || "Couldn't open a tab here");
+    }
+    setProcessing(false);
+  };
+
+  /** Pre-auth deposit → opens the tab, then adds this round to it. */
+  const preauthAndAddToTab = async (
+    result: any,
+    tabId: string,
+  ) => {
+    await supabase.from("tab_payments").insert({
+      tab_id: tabId,
+      venue_id: venueId,
+      method: "card",
+      amount: preauthAmount,
+      status: "authorised",
+      psp_reference: result?.pspReference || null,
+      payer_diner_id: dinerId,
+      is_mock: !!result?.mock_mode,
+    } as any);
+    await supabase
+      .from("table_tabs")
+      .update({
+        preauth_status: "authorised",
+        preauth_psp_reference: result?.pspReference || null,
+      } as any)
+      .eq("id", tabId);
+    await addRoundToTab(tabId);
+  };
+
+
   /** Called by Drop-in when the diner submits any payment method (card / Apple Pay / Google Pay) */
   const handleDropinSubmit = async (
     paymentMethod: any,
