@@ -84,6 +84,7 @@ export default function GroupDashboard() {
           <TabsTrigger value="settings"><Settings className="h-3.5 w-3.5 mr-1" />Settings</TabsTrigger>
           <TabsTrigger value="venues"><Building2 className="h-3.5 w-3.5 mr-1" />Venues</TabsTrigger>
           <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
+          <TabsTrigger value="pubplus"><Beer className="h-3.5 w-3.5 mr-1" />Pub+</TabsTrigger>
           <TabsTrigger value="diners"><Users className="h-3.5 w-3.5 mr-1" />Diners</TabsTrigger>
         </TabsList>
 
@@ -91,7 +92,11 @@ export default function GroupDashboard() {
         <TabsContent value="settings"><SettingsTab group={group} onSaved={refetch} /></TabsContent>
         <TabsContent value="venues"><VenuesTab group={group} allVenues={venues} groupVenues={groupVenues} onChanged={refetch} /></TabsContent>
         <TabsContent value="loyalty"><GroupLoyaltyTab group={group} /></TabsContent>
+        <TabsContent value="pubplus">
+          <PubPlusManager groupId={group.id} groupName={group.name} venueCount={groupVenues.length} />
+        </TabsContent>
         <TabsContent value="diners"><GroupDinersTab group={group} groupVenues={groupVenues} /></TabsContent>
+
       </Tabs>
     </div>
   );
