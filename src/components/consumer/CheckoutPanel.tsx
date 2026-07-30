@@ -992,11 +992,11 @@ const CheckoutPanel = ({
               <div className="space-y-3">
                 <Label className="text-sm font-semibold flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
-                  Pay with card or wallet
+                  {needsPreauth ? `Pre-authorise ${money(preauthAmount)} to open your tab` : "Pay with card or wallet"}
                 </Label>
                 <ShyndigPayDropin
                   paymentMethodsResponse={paymentMethodsResponse}
-                  amount={total + tipAmount}
+                  amount={needsPreauth ? preauthAmount : total + tipAmount}
                   currency="AUD"
                   countryCode="AU"
                   environment={paymentEnvironment}
