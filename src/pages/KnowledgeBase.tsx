@@ -1227,7 +1227,226 @@ export default function KnowledgeBase() {
           <Tip>Test mode is safe — no real charges are made. Set your venue to Test in Settings → Payments before using these cards.</Tip>
         </Section>
 
+        {/* Zones & Multiple Menus */}
+        <Section id="zones-menus" title="Zones &amp; Multiple Menus" icon={Layers} hidden={isHidden("zones-menus")}>
+          <SubSection title="What a Zone is">
+            <p>A <strong>Zone</strong> is a trading area inside your venue — Public Bar, Bistro, Rooftop, Beer Garden, Gaming Lounge, Function Room. Zones used to be a free-text label typed onto a table. They are now first-class venue records that carry three things:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Identity</strong> — name, description, colour and display order. The colour is used on the Tables board and on the Open Tabs panel so staff can see at a glance where an order came from.</li>
+              <li><strong>A menu</strong> — every zone serves exactly one menu. Several zones can share the same menu (e.g. Bar and Beer Garden both serving &quot;Bar Snacks&quot;), but a zone never serves two menus at once.</li>
+              <li><strong>Payment rules</strong> — pay-on-order vs run-a-tab, optional card pre-auth and amount, maximum tab value, and whether split payments are allowed. See <em>Open Tabs &amp; Split Payments</em>.</li>
+            </ul>
+            <p>Zones live under <strong>Settings → Zones</strong> (the tile at the bottom right of the settings hub). The old standalone &quot;Open Tabs&quot; tile has been folded into the zone card — any tab settings you had before were carried across automatically.</p>
+          </SubSection>
+
+          <SubSection title="Creating and managing zones">
+            <StepList steps={[
+              "Settings → Zones → Add Zone.",
+              "Name it exactly as your team refers to it on the floor (Public Bar, Bistro, Rooftop). This name appears on the Tables page dropdown and on order tickets.",
+              "Optionally add a description and pick a colour.",
+              "Under Menu, choose which menu this zone serves. If you only have one menu ('Main Menu'), leave it selected.",
+              "Under Payments, choose Pay on order or Run a tab, then configure pre-auth / tab limit / split payments if tabs are on.",
+              "Drag zones to reorder them — the order controls how they appear in every dropdown.",
+              "Toggle a zone inactive when an area is closed for the season. Inactive zones disappear from the table dropdown but existing tables keep their assignment.",
+            ]} />
+            <Tip>Don't delete a zone that has tables attached — set it inactive instead. Deleting orphans the tables and their QR stickers keep pointing at a zone that no longer resolves to a menu.</Tip>
+          </SubSection>
+
+          <SubSection title="Assigning zones to tables and QR codes">
+            <p>On the <strong>Tables</strong> page the Zone field is now a dropdown fed by your active zones (plus a &quot;No zone&quot; option) instead of free text. When you migrated, existing text zones such as &quot;Bar&quot; and &quot;Bistro&quot; were matched by name to the new zone records, so nothing was lost.</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>QR codes are untouched.</strong> Changing a table's zone does <em>not</em> change its QR URL. Never reprint stickers after a zone change.</li>
+              <li>When a diner scans a table QR, we look up that table's zone, load the zone's menu, and apply the zone's payment rules — all before the landing page renders.</li>
+              <li>Tables with no zone fall back to the venue's default menu and pay-on-order.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Multiple menus per venue">
+            <p>A <strong>Menu</strong> is a container that owns its own categories and items — for example Bistro Menu, Bar Snacks, Rooftop Cocktails, Function Package. Everything you had before the change was moved into a single menu called <strong>Main Menu</strong>, assigned to every zone, so diners saw no difference on day one.</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>A menu can be shared by several zones. A zone serves exactly one menu.</li>
+              <li>Categories belong to a menu. An item belongs to a category, so it belongs to exactly one menu. To sell the same dish in two outlets, duplicate the item into the second menu (prices, modifiers and PLUs can then differ per outlet).</li>
+              <li>Menus have their own <strong>schedule</strong>: active days plus a start and end time (e.g. Lunch 11:00–15:00). Item-level time frames still apply on top of the menu schedule — an item only shows if <em>both</em> windows are open.</li>
+              <li>Menus can be deactivated without deleting them (useful for seasonal or event menus).</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Menu Builder — the zone / menu switcher">
+            <p>At the top of <strong>Menu Builder</strong> there is a zone / menu switcher. Pick a zone to load the menu that zone serves, or browse by menu directly. Everything on the page below — categories, items, images, modifiers, display areas, pricing, reorder and the AI tools — operates on the selected menu only.</p>
+            <StepList steps={[
+              "Open Menu Builder. The switcher shows the current zone/menu at the top of the page.",
+              "Choose a zone (e.g. Rooftop) or a menu (e.g. Bar Snacks).",
+              "Add / rename / duplicate / delete menus from the same switcher. Duplicate copies every category and item — the fastest way to spin up a second outlet menu from your main one.",
+              "Edit the menu schedule (active days, start/end time) from the switcher's menu settings.",
+              "Add categories and items as normal — they attach to the selected menu automatically.",
+            ]} />
+            <Tip>Always confirm the switcher shows the right menu before you add items. Items added while &quot;Main Menu&quot; is selected will not appear to a diner sitting in a zone that serves &quot;Bar Snacks&quot;.</Tip>
+          </SubSection>
+
+          <SubSection title="Import, Enhance Images and Modifiers are menu-aware">
+            <p>All three AI/admin tools now respect the selected menu:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Import Menu</strong> — the import writes categories and items into the menu currently selected in the switcher. Import a PDF while &quot;Bistro Menu&quot; is active and all 30-odd items land in the Bistro menu, not the Main Menu. If an import ever lands in the wrong place, switch to the correct menu and re-run, or move the categories.</li>
+              <li><strong>Enhance Images / Generate Images</strong> — the batch counter and the queue are scoped to the items in the active menu, so &quot;31 items need images&quot; means 31 items <em>in this menu</em>.</li>
+              <li><strong>Modifiers</strong> — the Modifiers page has a menu selector at the top. Modifier categories are reusable across menus, but the item list you attach them to is filtered to the selected menu.</li>
+            </ul>
+            <p>If items appear to be &quot;missing&quot; after an import, 99% of the time the switcher is on a different menu. Change the switcher before raising a support ticket.</p>
+          </SubSection>
+
+          <SubSection title="Worked example — an Australian pub">
+            <p>Young &amp; Jackson-style setup:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Public Bar</strong> → menu &quot;Bar Snacks&quot; → tabs ON, pre-auth $50, tab limit $300, split payments ON.</li>
+              <li><strong>Bistro</strong> → menu &quot;Bistro Menu&quot; (11:00–21:00 daily) → tabs ON, no pre-auth, split payments ON.</li>
+              <li><strong>Rooftop</strong> → menu &quot;Rooftop&quot; → tabs OFF (pay on order), high-volume, no bill-chasing at close.</li>
+            </ul>
+            <p>Each table sticker points to a table; the table points to a zone; the zone decides the menu and how the diner pays. Nothing else needs to be configured per table.</p>
+          </SubSection>
+        </Section>
+
+        {/* Open Tabs & Split Payments */}
+        <Section id="open-tabs" title="Open Tabs &amp; Split Payments" icon={Receipt} hidden={isHidden("open-tabs")}>
+          <SubSection title="Pay on order vs run a tab">
+            <p>Every zone chooses when money is taken:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Pay on order</strong> (default) — the diner pays at checkout for each order. Simplest, zero risk, best for high-volume bars, rooftops and events.</li>
+              <li><strong>Run a tab</strong> — orders accumulate against an open tab for the table and the diner settles once at the end. Best for bistros, fine dining and long bar sessions.</li>
+            </ul>
+            <p>This is set per zone under <strong>Settings → Zones → (zone) → Payments</strong>, so one venue can run tabs at the bar and the bistro while the rooftop stays pay-on-order.</p>
+          </SubSection>
+
+          <SubSection title="Zone payment settings explained">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Tabs enabled</strong> — turns the &quot;Start a tab&quot; option on for tables in this zone.</li>
+              <li><strong>Require card pre-authorisation</strong> — optional. When on, the diner must authorise a card before the first item is sent to the kitchen. Nothing is captured up front; the hold is released or converted at settlement.</li>
+              <li><strong>Pre-auth amount</strong> — the hold value (e.g. $50 or $100). Set it to roughly your average tab so the hold covers the bill without alarming diners.</li>
+              <li><strong>Maximum tab amount</strong> — once the running total crosses this ceiling, the diner is prompted to settle before ordering more, and staff see the tab flagged on the Open Tabs panel.</li>
+              <li><strong>Allow split payments</strong> — lets a table settle with multiple payments and multiple methods.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="The diner experience">
+            <StepList steps={[
+              "Diner scans the table QR. The zone's menu loads.",
+              "If the zone runs tabs, they're offered 'Pay now' or 'Start a tab'.",
+              "If pre-auth is required, they authorise a card (Apple Pay / Google Pay / card). The hold is placed, not charged.",
+              "They order as many times as they like. Each order fires to the kitchen immediately and is added to the tab.",
+              "A running bill is always visible from the diner app — every order, every line, tax, gratuity and the balance due.",
+              "When they're done they tap 'Pay bill'. They can pay the whole balance, split it evenly across N people, or pay a custom amount.",
+              "On full settlement the tab closes, the pre-auth hold is released, and a receipt (email or SMS) is issued.",
+            ]} />
+          </SubSection>
+
+          <SubSection title="Split payments and mixed tenders">
+            <p>When split payments are allowed, a bill can be settled with any combination of:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Card</strong>, <strong>Apple Pay</strong>, <strong>Google Pay</strong> — taken in the diner app via H&L Pay.</li>
+              <li><strong>Gift card</strong> and <strong>Voucher / comp</strong> — applied against the balance with a reference label so it reconciles.</li>
+              <li><strong>Cash</strong> — recorded by staff on the Open Tabs panel when the diner pays at the bar.</li>
+              <li><strong>Loyalty points</strong> — redeemed against the balance at your configured rate.</li>
+              <li><strong>Other</strong> — for anything unusual (house account, staff meal), always with a note.</li>
+            </ul>
+            <p>Split evenly divides the outstanding balance into equal shares and pushes any rounding remainder onto the first share, so the cents always add up to the exact total. Each payment is recorded separately with its method, amount, tip, payer label and timestamp — the tab is only closed when the balance reaches zero.</p>
+          </SubSection>
+
+          <SubSection title="The Open Tabs panel (staff view)">
+            <p>Orders → <strong>Open Tabs</strong> shows every live tab in the venue: table, zone, tab label, number of orders, total ordered, total paid, balance due, pre-auth status and age. From here staff can:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Open a tab to see every order and every payment against it.</li>
+              <li>Record a cash / gift card / voucher payment taken at the bar.</li>
+              <li>Settle a tab on the diner's behalf (e.g. they hand over a card at the counter).</li>
+              <li>See tabs that have hit their maximum amount, or that are open past close.</li>
+            </ul>
+            <Tip>Run the Open Tabs panel on the manager screen during service and clear it at close. A tab left open overnight can't be auto-settled — the pre-auth hold expires after ~7 days depending on the issuer.</Tip>
+          </SubSection>
+
+          <SubSection title="Security and reconciliation">
+            <p>Tabs and tab payments are locked down by row-level security: a diner can only ever read their own table's tab through a scoped lookup, and staff functions (list open tabs, settle a tab) are restricted to authenticated venue staff. Every payment row carries the method, amount, tip, status and staff/diner attribution for end-of-day reconciliation, and flows into the same reporting and BAS exports as pay-on-order revenue.</p>
+          </SubSection>
+        </Section>
+
+        {/* Pub+ Loyalty */}
+        <Section id="pubplus" title="Pub+ Loyalty" icon={Gift} hidden={isHidden("pubplus")}>
+          <SubSection title="What Pub+ is">
+            <p><strong>Pub+</strong> is a group-wide loyalty programme modelled on the ALH Pub+ scheme. Unlike a standard venue loyalty programme, Pub+ is switched on at the <strong>parent (group) level</strong> and inherited by every child venue automatically. Members are shared across the whole group: a diner who joins at one hotel earns and redeems at every other hotel in the group, regardless of where they signed up.</p>
+            <p>The difference to the ALH programme as it exists today: Pub+ currently requires a downloaded app and a barcode scan at the venue. In H&L OrderNOW the diner simply signs in (or joins) in the ordering app after scanning the table QR — no separate app, no barcode, points accrue on the order itself.</p>
+          </SubSection>
+
+          <SubSection title="Turning it on (group level)">
+            <StepList steps={[
+              "Open the Group dashboard and pick the parent company.",
+              "Go to the Pub+ tab.",
+              "Configure the programme: earn rate, tier thresholds, member benefits, join copy and branding.",
+              "Activate. Every child venue immediately resolves Pub+ as its active loyalty programme — a Pub+ venue never runs a second local programme at the same time.",
+              "Child venues can be viewed (but not overridden) from Admin → Venue → Pub+, so a site manager can see the rules their venue is inheriting.",
+            ]} />
+            <p>Under the hood, the active-programme lookup prioritises a Pub+ programme over any local venue programme, so enabling it at the parent is the single switch that rolls it out group-wide.</p>
+          </SubSection>
+
+          <SubSection title="Shared members and shared points">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Membership is held at the group, not the venue. One diner, one Pub+ balance.</li>
+              <li>Points earned at Venue A are redeemable at Venue B with no transfer step.</li>
+              <li>Visit history, tier and preferences follow the diner between sites, so the AI agent at a venue they've never visited still knows their favourites and dietary flags.</li>
+              <li>Each venue still sees its own earn/redeem liability in reporting, so the group can settle inter-venue redemption internally.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Diner sign-up flow">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Venue landing page</strong> — a Pub+ branded CTA replaces the generic loyalty CTA when Pub+ is active.</li>
+              <li><strong>Diner sign-up</strong> — the sign-up form shows Pub+ benefits and joins the diner to the group programme in the same step.</li>
+              <li><strong>Join prompt after ordering</strong> — non-members are offered Pub+ once their first order is paid, with the points they would have earned shown as the hook.</li>
+              <li><strong>AI agent</strong> — the assistant can offer to enrol a diner mid-conversation and can apply a redemption when the balance covers an item in cart.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Pub+ API integration (placeholder)">
+            <p>The Pub+ programme we've built is <em>self-contained</em> — it does not yet talk to ALH's Pub+ platform. A placeholder integration card sits in the Admin Panel under <strong>Admin → Integrations → Pub+</strong>, ready for the real API: member lookup, points balance sync, earn/burn posting and tier reconciliation. Until credentials are issued, the card shows as not configured and all Pub+ activity stays inside H&L OrderNOW.</p>
+            <Tip>When pitching to a group, run Pub+ end-to-end on a test parent company first: enable at parent, join as a diner at one child venue, order at a second child venue and show the shared balance. That demo is the whole value proposition in 90 seconds.</Tip>
+          </SubSection>
+        </Section>
+
+        {/* Gratuities & Surcharges */}
+        <Section id="surcharges" title="Gratuities &amp; Surcharges" icon={Percent} hidden={isHidden("surcharges")}>
+          <SubSection title="Gratuities">
+            <p>Settings → Payments → Gratuities controls the tip prompt the diner sees at checkout: whether tipping is offered at all, the suggested percentages (typically 5 / 10 / 15% in Australia), the default selection, and whether a custom amount is allowed. Tips are captured with the payment, reported separately from revenue, and settled with your normal payout.</p>
+          </SubSection>
+
+          <SubSection title="Surcharges">
+            <p>Surcharges add a percentage (or fixed amount) to the order total for defined trading periods. Typical Australian use: a 10% Sunday surcharge and a 15% public-holiday surcharge, both disclosed to the diner before they pay.</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Name</strong> — shown on the diner's bill and the receipt (e.g. &quot;Public holiday surcharge&quot;). Be explicit; ACCC expects clear disclosure.</li>
+              <li><strong>Rate</strong> — percentage of the order subtotal, or a fixed amount.</li>
+              <li><strong>Days</strong> — which weekdays it applies on (e.g. Saturday and Sunday).</li>
+              <li><strong>Time window</strong> — optional start/end time, for evening-only surcharges.</li>
+              <li><strong>Active</strong> — turn a surcharge off without deleting its configuration.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Custom dates — holidays and special events">
+            <p>Weekday rules don't cover public holidays or one-off events, so every surcharge also accepts a list of <strong>special date ranges</strong>. A date range applies the surcharge on those dates regardless of which weekday they fall on.</p>
+            <StepList steps={[
+              "Settings → Payments → Surcharges → open the surcharge (or create one).",
+              "Scroll to Special dates → Add date range.",
+              "Enter a start date and an end date. Use the same date twice for a single day (e.g. 25 Dec – 25 Dec for Christmas Day).",
+              "Give it a label so your team knows what it is ('Melbourne Cup', 'Australian Grand Prix', 'Boxing Day').",
+              "Add as many ranges as you need — one surcharge can hold your whole public-holiday calendar plus event weekends.",
+              "Save. The surcharge applies automatically on those dates with no one needing to remember to switch it on.",
+            ]} />
+            <p>Rules of thumb:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>A date range wins over the weekday rule — a date listed in special dates is always surcharged, even if that weekday isn't ticked.</li>
+              <li>Multi-day events (Grand Prix weekend, a festival) are one range, not three separate ones.</li>
+              <li>Load the next 12 months of public holidays for your state at the start of the financial year and you'll never miss one.</li>
+              <li>Surcharges are calculated on the subtotal before gratuity and are shown as their own line on the bill and receipt.</li>
+            </ul>
+            <Tip>Diners are far more accepting of a surcharge they were told about before paying. The bill breakdown shows the surcharge line with its name — don't hide it inside item prices.</Tip>
+          </SubSection>
+        </Section>
+
         {/* Settings */}
+
         <Section id="settings" title="Settings" icon={Settings} hidden={isHidden("settings")}>
           <SubSection title="Details">
             <p>Update your venue name, type, address, contact information, logo, and operating hours. This information is displayed to diners and used by the AI assistant.</p>
