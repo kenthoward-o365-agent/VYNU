@@ -29,15 +29,16 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { data: isManager } = await sbUser.rpc("is_venue_manager", { _user_id: userRes.user.id, _venue_id: venue_id });
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: isManager } = await sb.rpc("is_venue_manager", { _user_id: userRes.user.id, _venue_id: venue_id });
     if (!isManager) {
       return new Response(JSON.stringify({ error: "forbidden" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const result = await computeReadiness(sb, venue_id);
+
 
     // Persist snapshot (best effort)
     await sb.from("venue_onboarding_state").upsert({
