@@ -13,8 +13,13 @@ import { Plus, QrCode, Trash2, Download, Printer, Smartphone, ExternalLink, X } 
 import MobilePreviewFrame from "@/components/landing-editor/MobilePreviewFrame";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-// Permanent QR host. Existing H&L OrderNOW QR stickers point here and must keep working.
-const DEFAULT_QR_BASE_URL = "https://hlordernow.lovable.app";
+// Canonical public host baked into PRINTED QR stickers. It must stay stable across
+// deploys/previews so physical stickers never break — so it is NOT derived from the
+// current origin. Configurable via VITE_PUBLIC_APP_URL, defaulting to the production
+// host. (Operator-facing preview/open links use the current origin instead — see
+// getPreviewUrl below — so testing from a preview build opens the preview app.)
+const CANONICAL_QR_BASE_URL =
+  (import.meta as any).env?.VITE_PUBLIC_APP_URL || "https://hlordernow.lovable.app";
 
 interface Table {
   id: string;
@@ -36,10 +41,14 @@ export default function Tables() {
   const [form, setForm] = useState({ table_number: "", zone: "", capacity: "4", pos_table_id: "" });
   const printRef = useRef<HTMLDivElement>(null);
 
-  const getLiveUrl = (table: Table) => {
-    if (table.qr_code) return table.qr_code;
+  // Operator-facing preview / "open live page" link. Built from the CURRENT origin
+  // (window.location.origin) rather than the canonical sticker host, so previewing
+  // from the Lovable preview build opens the preview app (with unpublished changes)
+  // instead of always jumping to production. The printed sticker (table.qr_code)
+  // is unaffected — it keeps the canonical host.
+  const getPreviewUrl = (table: Table) => {
     if (!venue) return "";
-    return `${DEFAULT_QR_BASE_URL}/order/${venue.id}/${table.id}`;
+    return `${window.location.origin}/order/${venue.id}/${table.id}`;
   };
 
   const fetchTables = useCallback(async () => {
@@ -61,7 +70,7 @@ export default function Tables() {
     };
     const { data, error } = await supabase.from("tables").insert(newTable).select().single();
     if (error) { toast.error(error.message); return; }
-    const qrUrl = `${DEFAULT_QR_BASE_URL}/order/${venue.id}/${data.id}`;
+    const qrUrl = `${CANONICAL_QR_BASE_URL}/order/${venue.id}/${data.id}`;
     await supabase.from("tables").update({ qr_code: qrUrl }).eq("id", data.id);
     toast.success("Table added");
     setDialogOpen(false);
@@ -281,7 +290,7 @@ export default function Tables() {
               <MobilePreviewFrame>
                 {venue && (
                   <iframe
-                    src={getLiveUrl(previewTable)}
+                    src={getPreviewUrl(previewTable)}
                     className="h-full w-full border-0"
                     title={`Mobile preview for table ${previewTable.table_number}`}
                   />
@@ -289,8 +298,8 @@ export default function Tables() {
               </MobilePreviewFrame>
             </div>
             <div className="flex flex-col gap-2 border-t border-border p-4">
-              <p className="text-center text-xs break-all text-muted-foreground">{getLiveUrl(previewTable)}</p>
-              <Button variant="outline" size="sm" className="w-full" onClick={() => window.open(getLiveUrl(previewTable), '_blank')}>
+              <p className="text-center text-xs break-all text-muted-foreground">{getPreviewUrl(previewTable)}</p>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => window.open(getPreviewUrl(previewTable), '_blank')}>
                 <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open live page
               </Button>
             </div>
