@@ -25,16 +25,21 @@ const tocItems: TocItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "shyndig-ai-analytics", label: "Spark AI Analytics", icon: BarChart3 },
   { id: "menu-builder", label: "Menu Builder", icon: UtensilsCrossed },
+  { id: "zones-menus", label: "Zones & Multiple Menus", icon: Layers },
   { id: "pricing", label: "Pricing", icon: Tag },
   { id: "tables-qr", label: "Tables & QR", icon: QrCode },
   { id: "orders", label: "Orders", icon: ClipboardList },
+  { id: "open-tabs", label: "Open Tabs & Split Payments", icon: Receipt },
   { id: "display-terminals", label: "Display Terminals", icon: Monitor },
   { id: "operational-throttling", label: "Operational Throttling", icon: Sliders },
   { id: "analytics", label: "Analytics", icon: TrendingUp },
   { id: "diners", label: "Diners", icon: Users },
+  { id: "pubplus", label: "Pub+ Loyalty", icon: Gift },
+  { id: "surcharges", label: "Gratuities & Surcharges", icon: Percent },
   { id: "settings", label: "Settings", icon: Settings },
-  { id: "pos-integration", label: "POS Integration (H&L)", icon: Plug },
+  { id: "pos-integration", label: "POS Integrations", icon: Plug },
   { id: "test-cards", label: "Test Cards", icon: CreditCard },
+
 ];
 
 function scrollTo(id: string) {
