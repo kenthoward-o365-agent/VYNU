@@ -548,6 +548,17 @@ export default function MenuBuilder() {
         )}
       </div>
 
+      {venue && (
+        <MenuZoneSwitcher
+          venueId={venue.id}
+          menus={menus}
+          zones={zones}
+          activeMenuId={activeMenuId}
+          onSelect={setActiveMenuId}
+          onChanged={fetchData}
+          readOnly={isPosMode}
+        />
+      )}
 
 
       {/* Item list grouped by category */}
