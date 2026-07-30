@@ -22,6 +22,13 @@ interface CardSurcharge {
   rba_banned: boolean; // true = banned from Oct 1 2026
 }
 
+interface SpecialDate {
+  id: string;
+  label: string;
+  start_date: string; // YYYY-MM-DD
+  end_date: string;   // YYYY-MM-DD (same as start for a single day)
+}
+
 interface TimeSurcharge {
   id: string;
   label: string;
@@ -31,6 +38,7 @@ interface TimeSurcharge {
   all_day: boolean;
   start_time: string;
   end_time: string;
+  special_dates?: SpecialDate[]; // extra calendar dates the surcharge applies to
 }
 
 interface SurchargeConfig {
