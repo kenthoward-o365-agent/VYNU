@@ -2753,6 +2753,7 @@ export type Database = {
           id: string
           payment_is_mock: boolean
           payment_psp_reference: string | null
+          payment_status: string
           pos_order_id: string | null
           pos_push_error: string | null
           pos_push_status: string | null
@@ -2760,6 +2761,7 @@ export type Database = {
           session_id: string | null
           session_mode: string | null
           status: Database["public"]["Enums"]["order_status"]
+          tab_id: string | null
           table_id: string | null
           throttled_until: string | null
           total: number | null
@@ -2777,6 +2779,7 @@ export type Database = {
           id?: string
           payment_is_mock?: boolean
           payment_psp_reference?: string | null
+          payment_status?: string
           pos_order_id?: string | null
           pos_push_error?: string | null
           pos_push_status?: string | null
@@ -2784,6 +2787,7 @@ export type Database = {
           session_id?: string | null
           session_mode?: string | null
           status?: Database["public"]["Enums"]["order_status"]
+          tab_id?: string | null
           table_id?: string | null
           throttled_until?: string | null
           total?: number | null
@@ -2801,6 +2805,7 @@ export type Database = {
           id?: string
           payment_is_mock?: boolean
           payment_psp_reference?: string | null
+          payment_status?: string
           pos_order_id?: string | null
           pos_push_error?: string | null
           pos_push_status?: string | null
@@ -2808,6 +2813,7 @@ export type Database = {
           session_id?: string | null
           session_mode?: string | null
           status?: Database["public"]["Enums"]["order_status"]
+          tab_id?: string | null
           table_id?: string | null
           throttled_until?: string | null
           total?: number | null
@@ -2820,6 +2826,13 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "table_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "table_tabs"
             referencedColumns: ["id"]
           },
           {
@@ -3610,6 +3623,79 @@ export type Database = {
           },
         ]
       }
+      tab_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          is_mock: boolean
+          method: string
+          payer_diner_id: string | null
+          payer_label: string | null
+          psp_reference: string | null
+          reference_label: string | null
+          status: string
+          tab_id: string
+          tip_amount: number
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          is_mock?: boolean
+          method: string
+          payer_diner_id?: string | null
+          payer_label?: string | null
+          psp_reference?: string | null
+          reference_label?: string | null
+          status?: string
+          tab_id: string
+          tip_amount?: number
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          is_mock?: boolean
+          method?: string
+          payer_diner_id?: string | null
+          payer_label?: string | null
+          psp_reference?: string | null
+          reference_label?: string | null
+          status?: string
+          tab_id?: string
+          tip_amount?: number
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tab_payments_payer_diner_id_fkey"
+            columns: ["payer_diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_payments_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "table_tabs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_payments_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       table_sessions: {
         Row: {
           auto_close_at: string
@@ -3682,6 +3768,92 @@ export type Database = {
           },
           {
             foreignKeyName: "table_sessions_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      table_tabs: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          id: string
+          label: string | null
+          max_tab_amount: number | null
+          opened_by_diner_id: string | null
+          preauth_amount: number | null
+          preauth_psp_reference: string | null
+          preauth_required: boolean
+          preauth_status: string
+          session_id: string | null
+          status: string
+          table_id: string | null
+          updated_at: string
+          venue_id: string
+          zone: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          max_tab_amount?: number | null
+          opened_by_diner_id?: string | null
+          preauth_amount?: number | null
+          preauth_psp_reference?: string | null
+          preauth_required?: boolean
+          preauth_status?: string
+          session_id?: string | null
+          status?: string
+          table_id?: string | null
+          updated_at?: string
+          venue_id: string
+          zone?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          max_tab_amount?: number | null
+          opened_by_diner_id?: string | null
+          preauth_amount?: number | null
+          preauth_psp_reference?: string | null
+          preauth_required?: boolean
+          preauth_status?: string
+          session_id?: string | null
+          status?: string
+          table_id?: string | null
+          updated_at?: string
+          venue_id?: string
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_tabs_opened_by_diner_id_fkey"
+            columns: ["opened_by_diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_tabs_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "table_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_tabs_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "table_tabs_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
@@ -5053,6 +5225,53 @@ export type Database = {
           },
         ]
       }
+      venue_tab_zones: {
+        Row: {
+          allow_split_payments: boolean
+          created_at: string
+          id: string
+          max_tab_amount: number | null
+          preauth_amount: number
+          require_preauth: boolean
+          tabs_enabled: boolean
+          updated_at: string
+          venue_id: string
+          zone: string
+        }
+        Insert: {
+          allow_split_payments?: boolean
+          created_at?: string
+          id?: string
+          max_tab_amount?: number | null
+          preauth_amount?: number
+          require_preauth?: boolean
+          tabs_enabled?: boolean
+          updated_at?: string
+          venue_id: string
+          zone: string
+        }
+        Update: {
+          allow_split_payments?: boolean
+          created_at?: string
+          id?: string
+          max_tab_amount?: number | null
+          preauth_amount?: number
+          require_preauth?: boolean
+          tabs_enabled?: boolean
+          updated_at?: string
+          venue_id?: string
+          zone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_tab_zones_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_taxes: {
         Row: {
           created_at: string
@@ -5311,6 +5530,15 @@ export type Database = {
         }
         Returns: string
       }
+      find_or_open_tab: {
+        Args: {
+          _diner_id?: string
+          _session_id?: string
+          _table_id: string
+          _venue_id: string
+        }
+        Returns: string
+      }
       fire_table_session: { Args: { _session_id: string }; Returns: boolean }
       generate_invoice_number: { Args: never; Returns: string }
       generate_site_id: { Args: never; Returns: string }
@@ -5392,6 +5620,11 @@ export type Database = {
           quantity: number
           unit_price: number
         }[]
+      }
+      get_tab_summary: { Args: { _tab_id: string }; Returns: Json }
+      get_table_tab_rules: {
+        Args: { _table_id: string; _venue_id: string }
+        Returns: Json
       }
       get_terminal_by_token: {
         Args: { _token: string }
@@ -5563,6 +5796,21 @@ export type Database = {
           opened_at: string
         }[]
       }
+      list_open_tabs: {
+        Args: { _venue_id: string }
+        Returns: {
+          balance_due: number
+          label: string
+          opened_at: string
+          preauth_status: string
+          status: string
+          tab_id: string
+          table_number: string
+          total_ordered: number
+          total_paid: number
+          zone: string
+        }[]
+      }
       list_sibling_venues: {
         Args: { _exclude_venue_id: string; _group_id: string }
         Returns: {
@@ -5655,6 +5903,7 @@ export type Database = {
         Returns: string
       }
       set_primary_venue: { Args: { _venue_id: string }; Returns: undefined }
+      settle_tab: { Args: { _tab_id: string }; Returns: Json }
       unpair_display_terminal: {
         Args: { _terminal_id: string }
         Returns: boolean

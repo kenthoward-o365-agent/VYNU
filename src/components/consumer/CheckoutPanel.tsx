@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { CreditCard, ArrowLeft, ShieldCheck, Trash2, Check } from "lucide-react";
+import { CreditCard, ArrowLeft, ShieldCheck, Trash2, Check, Receipt } from "lucide-react";
 import ShyndigPayDropin from "./AdyenDropin";
+import TabBillPanel from "./TabBillPanel";
+import { money, type TabZoneRules } from "@/lib/tabs";
 
 import type { SelectedModifier } from "./ItemDetailScreen";
 
@@ -93,12 +95,19 @@ const CheckoutPanel = ({
   const [isMockMode, setIsMockMode] = useState(false);
   const [loadingMethods, setLoadingMethods] = useState(false);
 
+  // Open-tab state (per-zone: some areas run tabs, others are pay-at-order)
+  const [tabRules, setTabRules] = useState<TabZoneRules | null>(null);
+  const [tabMode, setTabMode] = useState<"pay_now" | "tab">("pay_now");
+  const [showTabBill, setShowTabBill] = useState(false);
+
   useEffect(() => {
     checkPaymentEnabled();
     fetchVenueTaxes();
     fetchGratuityConfig();
+    fetchTabRules();
     if (dinerId) fetchStoredCards();
   }, [venueId, dinerId]);
+
 
   // Once payments are confirmed enabled and we know the total, fetch Adyen methods for Drop-in
   useEffect(() => {
@@ -107,6 +116,17 @@ const CheckoutPanel = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentEnabled, total + (selectedTip ?? 0)]);
+
+  const fetchTabRules = async () => {
+    if (!tableId) return;
+    const { data, error } = await (supabase as any).rpc("get_table_tab_rules", {
+      _venue_id: venueId,
+      _table_id: tableId,
+    });
+    if (error) return;
+    setTabRules(data as TabZoneRules);
+  };
+
 
   const fetchGratuityConfig = async () => {
     const { data } = await supabase.rpc("get_venue_public_info", { _venue_id: venueId });
@@ -237,7 +257,7 @@ const CheckoutPanel = ({
    * Creates an order in the DB and returns its ID + audit date.
    * Shared by Drop-in flow, stored-card flow, and confirm-only flow.
    */
-  const createOrderRow = async (): Promise<string> => {
+  const createOrderRow = async (opts?: { tabId?: string | null }): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
     const authUserId = session?.user?.id || null;
 
@@ -277,6 +297,8 @@ const CheckoutPanel = ({
         customer_notes: tipAmount > 0 ? `Tip: $${tipAmount.toFixed(2)}` : null,
         session_id: sessionIdToStamp,
         session_mode: sessionIdToStamp ? "group" : "solo",
+        tab_id: opts?.tabId ?? null,
+        payment_status: opts?.tabId ? "unpaid" : "paid",
       } as any);
     if (orderError) throw orderError;
 
@@ -342,12 +364,121 @@ const CheckoutPanel = ({
     onOrderPlaced(orderId);
   };
 
+  // ---------- Open tab ----------
+  const tabsAvailable = !!tabRules?.tabs_enabled;
+  const preauthAmount = Number(tabRules?.preauth_amount ?? 0);
+  const needsPreauth =
+    tabMode === "tab" && !!tabRules?.require_preauth && !tabRules?.open_tab_id && preauthAmount > 0;
+
+  const ensureTab = async (): Promise<string> => {
+    const { data, error } = await (supabase as any).rpc("find_or_open_tab", {
+      _venue_id: venueId,
+      _table_id: tableId,
+      _session_id: joinedSessionId || null,
+      _diner_id: dinerId || null,
+    });
+    if (error) throw error;
+    return data as string;
+  };
+
+  /** Adds this round to the table's tab (no payment taken now). */
+  const addRoundToTab = async (tabId: string) => {
+    const orderId = await createOrderRow({ tabId });
+    toast.success("Added to your tab — pay when you're done");
+    onOrderPlaced(orderId);
+    return orderId;
+  };
+
+  const handleAddToTab = async () => {
+    setProcessing(true);
+    try {
+      const tabId = await ensureTab();
+      await addRoundToTab(tabId);
+    } catch (e: any) {
+      console.error("Add to tab failed", e);
+      toast.error(e.message || "Couldn't open a tab here");
+    }
+    setProcessing(false);
+  };
+
+  /** Pre-auth deposit → opens the tab, then adds this round to it. */
+  const preauthAndAddToTab = async (
+    result: any,
+    tabId: string,
+  ) => {
+    await supabase.from("tab_payments").insert({
+      tab_id: tabId,
+      venue_id: venueId,
+      method: "card",
+      amount: preauthAmount,
+      status: "authorised",
+      psp_reference: result?.pspReference || null,
+      payer_diner_id: dinerId,
+      is_mock: !!result?.mock_mode,
+    } as any);
+    await supabase
+      .from("table_tabs")
+      .update({
+        preauth_status: "authorised",
+        preauth_psp_reference: result?.pspReference || null,
+      } as any)
+      .eq("id", tabId);
+    await addRoundToTab(tabId);
+  };
+
+
   /** Called by Drop-in when the diner submits any payment method (card / Apple Pay / Google Pay) */
   const handleDropinSubmit = async (
     paymentMethod: any,
     browserInfo: any,
     helpers: { resolve: (res: any) => void; reject: (err?: any) => void }
   ) => {
+    // Tab mode with a required deposit: authorise the pre-auth, open the tab,
+    // then push this round onto the tab (nothing else is charged now).
+    if (tabMode === "tab") {
+      let tabId: string | null = null;
+      try {
+        tabId = await ensureTab();
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: any = {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        };
+        if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/adyen-payment`,
+          {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              action: "create_payment",
+              venue_id: venueId,
+              amount: preauthAmount,
+              currency: "AUD",
+              reference: `preauth_${tabId}`,
+              return_url: window.location.href,
+              payment_method: paymentMethod,
+              browser_info: browserInfo,
+              shopper_reference: dinerId ? `diner_${dinerId}` : `anon_${Date.now()}`,
+              diner_id: dinerId || undefined,
+            }),
+          }
+        );
+        const result = await resp.json();
+        helpers.resolve({ resultCode: result.resultCode, action: result.action });
+        if (result.resultCode === "Authorised") {
+          await preauthAndAddToTab(result, tabId);
+        } else if (["Refused", "Error", "Cancelled"].includes(result.resultCode)) {
+          toast.error(`Pre-authorisation ${result.resultCode}: ${result.refusalReason || "Please try again"}`);
+        }
+      } catch (e: any) {
+        console.error("Tab pre-auth error", e);
+        helpers.reject();
+        toast.error(e.message || "Couldn't open your tab. Please try again.");
+      }
+      return;
+    }
+
     let orderId: string | null = null;
     try {
       orderId = await createOrderRow();
@@ -437,6 +568,53 @@ const CheckoutPanel = ({
 
   /** Stored-card / mock-fallback flow (no Drop-in) */
   const processLegacyPayment = async () => {
+    // Tab mode: either add straight to the tab, or take the deposit first.
+    if (tabMode === "tab") {
+      if (!needsPreauth) return handleAddToTab();
+      setProcessing(true);
+      try {
+        const tabId = await ensureTab();
+        const shopperRef = dinerId ? `diner_${dinerId}` : `anon_${Date.now()}`;
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: any = {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        };
+        if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+        const body: any = {
+          action: "create_payment",
+          venue_id: venueId,
+          amount: preauthAmount,
+          currency: "AUD",
+          reference: `preauth_${tabId}`,
+          return_url: window.location.href,
+        };
+        if (selectedStoredCard) {
+          const storedCard = storedCards.find((c) => c.token_reference === selectedStoredCard);
+          body.stored_card_token = selectedStoredCard;
+          body.shopper_reference = storedCard?.shopper_reference || shopperRef;
+        } else {
+          body.card = card;
+          body.shopper_reference = shopperRef;
+        }
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/adyen-payment`,
+          { method: "POST", headers, body: JSON.stringify(body) }
+        );
+        const result = await resp.json();
+        if (result.resultCode === "Authorised") {
+          await preauthAndAddToTab(result, tabId);
+        } else {
+          toast.error(`Pre-authorisation ${result.resultCode || "failed"}: ${result.refusalReason || "Please try again"}`);
+        }
+      } catch (e: any) {
+        console.error("Tab pre-auth error", e);
+        toast.error(e.message || "Couldn't open your tab. Please try again.");
+      }
+      setProcessing(false);
+      return;
+    }
+
     setProcessing(true);
     let orderId: string | null = null;
     try {
@@ -527,16 +705,37 @@ const CheckoutPanel = ({
       card.expiry_year &&
       card.cvc.length >= 3);
 
+  // In tab mode we only show payment UI when a deposit (pre-auth) is required.
+  const paymentUiNeeded = tabMode === "pay_now" || needsPreauth;
+
   // Show Drop-in only when payments enabled, no stored card selected, we have methods + key,
   // and we're NOT in mock mode (mock mode falls back to the legacy test-card form).
   const showDropin =
+    paymentUiNeeded &&
     paymentEnabled && !selectedStoredCard && !!paymentMethodsResponse && !!shyndigPayClientKey && !isMockMode;
 
   // Show legacy form whenever Drop-in can't render (no client key / mock mode)
   const showLegacyForm =
-    paymentEnabled && !showDropin;
+    paymentUiNeeded && paymentEnabled && !showDropin;
 
-  const canProceedLegacy = paymentEnabled ? isLegacyCardValid : true;
+  const canProceedLegacy =
+    tabMode === "tab" ? (needsPreauth ? !!isLegacyCardValid : true) : paymentEnabled ? isLegacyCardValid : true;
+
+  if (showTabBill && tabRules?.open_tab_id) {
+    return (
+      <TabBillPanel
+        venueId={venueId}
+        tabId={tabRules.open_tab_id}
+        dinerId={dinerId}
+        allowSplit={tabRules.allow_split_payments !== false}
+        onBack={() => setShowTabBill(false)}
+        onSettled={() => {
+          setShowTabBill(false);
+          fetchTabRules();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)] pb-32">
@@ -558,6 +757,57 @@ const CheckoutPanel = ({
           Group order{groupDisplayName ? ` · ${groupDisplayName}` : ""} — kitchen holds your bundle until everyone's ready (or ~90s after your last order).
         </div>
       )}
+
+      {/* Pay now vs run a tab — only in areas where the venue allows tabs */}
+      {tabsAvailable && (
+        <div className="mx-5 mb-3 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setTabMode("pay_now")}
+              className={`rounded-xl border p-3 text-left transition-colors ${
+                tabMode === "pay_now" ? "border-primary bg-primary/10" : "border-border bg-card"
+              }`}
+            >
+              <span className="block text-sm font-semibold">Pay now</span>
+              <span className="block text-[11px] text-muted-foreground">Settle this round</span>
+            </button>
+            <button
+              onClick={() => setTabMode("tab")}
+              className={`rounded-xl border p-3 text-left transition-colors ${
+                tabMode === "tab" ? "border-primary bg-primary/10" : "border-border bg-card"
+              }`}
+            >
+              <span className="block text-sm font-semibold flex items-center gap-1.5">
+                <Receipt className="h-3.5 w-3.5" /> Put it on a tab
+              </span>
+              <span className="block text-[11px] text-muted-foreground">Pay at the end</span>
+            </button>
+          </div>
+
+          {tabMode === "tab" && (
+            <p className="text-xs text-muted-foreground">
+              {needsPreauth
+                ? `A ${money(preauthAmount)} deposit is held on your card to open the tab — it comes off your final bill.`
+                : tabRules?.open_tab_id
+                ? "This round joins the tab already open on your table."
+                : "Order as many rounds as you like, then settle the whole bill in the app."}
+              {tabRules?.max_tab_amount
+                ? ` Tab limit ${money(tabRules.max_tab_amount)}.`
+                : ""}
+            </p>
+          )}
+
+          {tabRules?.open_tab_id && (
+            <button
+              onClick={() => setShowTabBill(true)}
+              className="w-full rounded-xl border border-primary/40 bg-primary/5 px-3 py-2 text-sm font-medium text-primary"
+            >
+              View tab &amp; pay
+            </button>
+          )}
+        </div>
+      )}
+
 
       <div className="flex-1 px-5 pb-4 space-y-5">
         {/* Order Summary */}
@@ -656,7 +906,16 @@ const CheckoutPanel = ({
           </div>
         )}
 
-        {paymentEnabled && (
+        {tabMode === "tab" && !needsPreauth && paymentEnabled && (
+          <div className="bg-muted rounded-xl p-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              No payment now — this round goes on your tab. Settle the whole bill from "View tab
+              &amp; pay" whenever you're ready.
+            </p>
+          </div>
+        )}
+
+        {paymentEnabled && paymentUiNeeded && (
           <>
             <Separator />
 
@@ -733,11 +992,11 @@ const CheckoutPanel = ({
               <div className="space-y-3">
                 <Label className="text-sm font-semibold flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
-                  Pay with card or wallet
+                  {needsPreauth ? `Pre-authorise ${money(preauthAmount)} to open your tab` : "Pay with card or wallet"}
                 </Label>
                 <ShyndigPayDropin
                   paymentMethodsResponse={paymentMethodsResponse}
-                  amount={total + tipAmount}
+                  amount={needsPreauth ? preauthAmount : total + tipAmount}
                   currency="AUD"
                   countryCode="AU"
                   environment={paymentEnvironment}
@@ -891,6 +1150,10 @@ const CheckoutPanel = ({
           >
             {processing
               ? "Processing..."
+              : tabMode === "tab"
+              ? needsPreauth
+                ? `Hold ${money(preauthAmount)} & open tab`
+                : `Add to tab — ${money(total + tipAmount)}`
               : paymentEnabled
               ? sessionMode === "group"
                 ? `Pay & send to table — $${(total + tipAmount).toFixed(2)}`

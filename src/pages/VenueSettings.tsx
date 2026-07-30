@@ -25,6 +25,7 @@ import SurchargeSettingsTab from "@/components/venue/SurchargeSettingsTab";
 import IntegrationsSettingsTab from "@/components/venue/IntegrationsSettingsTab";
 import RolesManager from "@/components/venue/RolesManager";
 import TableSessionsSettingsTab from "@/components/venue/TableSessionsSettingsTab";
+import TabsSettingsTab from "@/components/venue/TabsSettingsTab";
 import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
 
 const venueTypes = [
@@ -322,6 +323,7 @@ export default function VenueSettings() {
       { key: "surcharges", label: "Surcharges", description: "Weekend & public holiday surcharges", icon: Percent, to: "/settings?tab=surcharges" },
       { key: "taxes", label: "Taxes", description: "GST and tax configuration", icon: Receipt, to: "/settings?tab=taxes" },
       { key: "table-sessions", label: "Table Sessions", description: "Session length and behaviour", icon: Users, to: "/settings?tab=table-sessions" },
+      { key: "tabs", label: "Open Tabs", description: "Run a tab by area, pre-auth & split payments", icon: Receipt, to: "/settings?tab=tabs" },
       { key: "integrations", label: "Integrations", description: "POS and third-party connectors", icon: Plug, to: "/settings?tab=integrations" },
       { key: "landing", label: "Landing Page Editor", description: "Customise your public venue page", icon: Globe, to: "/settings/landing-page" },
     ];
@@ -691,6 +693,9 @@ export default function VenueSettings() {
             </TabsContent>
             <TabsContent value="table-sessions" className="space-y-6">
               <TableSessionsSettingsTab venueId={venue.id} />
+            </TabsContent>
+            <TabsContent value="tabs" className="space-y-6">
+              <TabsSettingsTab venueId={venue.id} />
             </TabsContent>
           </>
         )}
