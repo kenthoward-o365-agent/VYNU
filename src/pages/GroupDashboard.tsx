@@ -65,7 +65,9 @@ const defaultRules: LoyaltyRules = {
 
 export default function GroupDashboard() {
   const { user } = useAuth();
-  const { group, groups, venues, isGroupAdmin, refetch } = useVenue();
+  const { group: activeGroup, groups, venues, isGroupAdmin, isTablessAdmin, refetch } = useVenue();
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const group = groups.find((g) => g.id === selectedGroupId) ?? activeGroup ?? (isTablessAdmin ? groups[0] : null) ?? null;
   const groupVenues = venues.filter((v) => v.group_id === group?.id);
 
   /* ── No group: creation UI ── */
@@ -73,12 +75,28 @@ export default function GroupDashboard() {
     return <CreateGroupPanel onCreated={refetch} />;
   }
 
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">{group.name}</h2>
-        <p className="text-muted-foreground">Parent Company — {groupVenues.length} venue{groupVenues.length !== 1 ? "s" : ""}</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">{group.name}</h2>
+          <p className="text-muted-foreground">Parent Company — {groupVenues.length} venue{groupVenues.length !== 1 ? "s" : ""}</p>
+        </div>
+        {isTablessAdmin && groups.length > 1 && (
+          <select
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            value={group.id}
+            onChange={(e) => setSelectedGroupId(e.target.value)}
+            aria-label="Select parent company"
+          >
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>{g.name}</option>
+            ))}
+          </select>
+        )}
       </div>
+
 
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>

@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2, DollarSign, CreditCard, BarChart3, Package } from "lucide-react";
+import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2, DollarSign, CreditCard, BarChart3, Package, Beer } from "lucide-react";
 import BillingConfigTab from "@/components/venue/BillingConfigTab";
 import ProcessorCredentialsTab from "@/components/admin/ProcessorCredentialsTab";
 import VenuePerformanceTab from "@/components/admin/VenuePerformanceTab";
@@ -19,6 +19,7 @@ import PackageFeaturesTab from "@/components/admin/PackageFeaturesTab";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import ChildVenueLoyaltyViewer from "@/components/venue/ChildVenueLoyaltyViewer";
 import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
+import PubPlusManager from "@/components/venue/PubPlusManager";
 
 
 import { Switch } from "@/components/ui/switch";
@@ -317,6 +318,9 @@ export default function AdminVenueDetail() {
           <TabsTrigger value="billing"><DollarSign className="h-3.5 w-3.5 mr-1" />Commercials</TabsTrigger>
           <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>
           <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
+          {venue?.group_id && (
+            <TabsTrigger value="pubplus"><Beer className="h-3.5 w-3.5 mr-1" />Pub+</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="package">
@@ -629,6 +633,27 @@ export default function AdminVenueDetail() {
             </Card>
           )}
         </TabsContent>
+
+        {venue?.group_id && (
+          <TabsContent value="pubplus" className="space-y-6">
+            {venue.venue_type === "parent" ? (
+              <PubPlusManager
+                groupId={venue.group_id}
+                groupName={groups.find((g) => g.id === venue.group_id)?.name || venue.name}
+                venueCount={childVenues.length}
+              />
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Beer className="h-5 w-5 text-primary" /> Pub+</CardTitle>
+                  <CardDescription>
+                    Pub+ is managed at the parent company level and applies automatically to {venue.name}. Open the parent venue's Pub+ tab to configure it.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            )}
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
