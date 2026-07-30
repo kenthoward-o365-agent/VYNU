@@ -693,6 +693,9 @@ export default function VenueSettings() {
             <TabsContent value="table-sessions" className="space-y-6">
               <TableSessionsSettingsTab venueId={venue.id} />
             </TabsContent>
+            <TabsContent value="tabs" className="space-y-6">
+              <TabsSettingsTab venueId={venue.id} />
+            </TabsContent>
           </>
         )}
       </Tabs>
