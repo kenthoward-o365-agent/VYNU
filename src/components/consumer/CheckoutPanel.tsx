@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { CreditCard, ArrowLeft, ShieldCheck, Trash2, Check } from "lucide-react";
+import { CreditCard, ArrowLeft, ShieldCheck, Trash2, Check, Receipt } from "lucide-react";
 import ShyndigPayDropin from "./AdyenDropin";
+import TabBillPanel from "./TabBillPanel";
+import { money, type TabZoneRules } from "@/lib/tabs";
 
 import type { SelectedModifier } from "./ItemDetailScreen";
 
