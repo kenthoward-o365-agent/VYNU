@@ -1386,6 +1386,57 @@ export default function KnowledgeBase() {
           </SubSection>
         </Section>
 
+        {/* Service Modes & Ready Alerts */}
+        <Section id="service-modes" title="Service Modes &amp; Ready Alerts" icon={BellRing} hidden={isHidden("service-modes")}>
+          <SubSection title="Not every venue runs food to the table">
+            <p>Some venues deliver every plate to the table; others call the diner to the bar, the kitchen window or a hostess station. <strong>Service mode</strong> tells H&L OrderNOW which of those two models applies, so the diner is told the right thing and gets a nudge when their food is ready.</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Delivered to table</strong> — staff run the order out. The diner sees the normal Received → Preparing → Ready → Served tracker.</li>
+              <li><strong>Diner collects at the counter</strong> — the diner is told where to collect at checkout, and is alerted the moment the order is marked Ready.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Venue-wide default vs per-zone override">
+            <p>The same two-level model used for payments applies here, and the settings screen makes the hierarchy explicit:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Venue-wide defaults</strong> — the card at the top of <strong>Settings → Zones &amp; service</strong>. Set the service mode, the collection point wording and the ready-alert channels once, and every zone follows it. Single-outlet venues never need to touch anything else.</li>
+              <li><strong>Per-zone override</strong> — each zone card has an override toggle. Turn it on only where a zone behaves differently (e.g. the bistro is delivered to table while the rooftop bar is collect-at-counter). Zones without an override display &quot;Following venue default&quot; so nothing is ambiguous.</li>
+            </ul>
+            <p>Payment timing works exactly the same way: a venue-wide pay-at-order / pay-at-end default, with a per-zone payment override for venues that need it. Zone headers show badges (e.g. &quot;Collect at counter&quot;, &quot;Pay at order (zone rule)&quot;) so you can read the whole estate at a glance.</p>
+          </SubSection>
+
+          <SubSection title="Configuring collect-at-counter">
+            <StepList steps={[
+              "Settings → Zones & service.",
+              "On the venue-wide defaults card, choose 'Diner collects at the counter' if that's how most of the venue works.",
+              "Type the collection point exactly as a diner would look for it — 'Main bar', 'Kitchen window', 'Hostess station'.",
+              "Choose the ready-alert channels: SMS, in-app alert, or both.",
+              "For any zone that differs, open the zone card, switch on the service override and set that zone's mode and collection point.",
+              "Save. The change applies to the next order — no QR reprint, no diner app update.",
+            ]} />
+          </SubSection>
+
+          <SubSection title="What the diner sees">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>At checkout</strong> — collect-at-counter zones show a clear &quot;You'll collect this at …&quot; note before payment, so there is no expectation of table service.</li>
+              <li><strong>On the order tracker</strong> — the status reads <strong>Collect</strong> rather than Served, and names the collection point.</li>
+              <li><strong>When staff mark the order Ready</strong> — an in-app alert appears immediately in the diner app, and an SMS is sent to the mobile on the order (&quot;Your order #123 is ready — collect at the Main bar&quot;).</li>
+              <li>The diner does not need to keep the app open; the SMS is the safety net for the diner who has pocketed their phone.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="How the alert fires">
+            <p>Marking an order <strong>Ready</strong> on the Orders board (or from the POS via the sync) triggers the ready-notification service. It resolves the zone's service mode, builds the message from the collection point, writes the in-app alert and sends the SMS through the venue's messaging provider.</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Only orders in collect-at-counter zones fire a collection alert; delivered-to-table zones behave as before.</li>
+              <li>One alert per order — re-opening and re-marking Ready does not spam the diner.</li>
+              <li>If SMS credentials are not configured, the SMS step is simulated and logged; the in-app alert always fires. Check this before a demo.</li>
+              <li>Guest orders without a mobile number get the in-app alert only.</li>
+            </ul>
+            <Tip>Pair collect-at-counter with Display Terminals at the collection station: the station screen shows what to hand over while the diner is already walking towards it.</Tip>
+          </SubSection>
+        </Section>
+
         {/* Pub+ Loyalty */}
         <Section id="pubplus" title="Pub+ Loyalty" icon={Gift} hidden={isHidden("pubplus")}>
           <SubSection title="What Pub+ is">
