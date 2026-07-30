@@ -117,6 +117,17 @@ const CheckoutPanel = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paymentEnabled, total + (selectedTip ?? 0)]);
 
+  const fetchTabRules = async () => {
+    if (!tableId) return;
+    const { data, error } = await (supabase as any).rpc("get_table_tab_rules", {
+      _venue_id: venueId,
+      _table_id: tableId,
+    });
+    if (error) return;
+    setTabRules(data as TabZoneRules);
+  };
+
+
   const fetchGratuityConfig = async () => {
     const { data } = await supabase.rpc("get_venue_public_info", { _venue_id: venueId });
     const settings = (data as any)?.[0]?.settings;
