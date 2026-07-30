@@ -705,16 +705,37 @@ const CheckoutPanel = ({
       card.expiry_year &&
       card.cvc.length >= 3);
 
+  // In tab mode we only show payment UI when a deposit (pre-auth) is required.
+  const paymentUiNeeded = tabMode === "pay_now" || needsPreauth;
+
   // Show Drop-in only when payments enabled, no stored card selected, we have methods + key,
   // and we're NOT in mock mode (mock mode falls back to the legacy test-card form).
   const showDropin =
+    paymentUiNeeded &&
     paymentEnabled && !selectedStoredCard && !!paymentMethodsResponse && !!shyndigPayClientKey && !isMockMode;
 
   // Show legacy form whenever Drop-in can't render (no client key / mock mode)
   const showLegacyForm =
-    paymentEnabled && !showDropin;
+    paymentUiNeeded && paymentEnabled && !showDropin;
 
-  const canProceedLegacy = paymentEnabled ? isLegacyCardValid : true;
+  const canProceedLegacy =
+    tabMode === "tab" ? (needsPreauth ? !!isLegacyCardValid : true) : paymentEnabled ? isLegacyCardValid : true;
+
+  if (showTabBill && tabRules?.open_tab_id) {
+    return (
+      <TabBillPanel
+        venueId={venueId}
+        tabId={tabRules.open_tab_id}
+        dinerId={dinerId}
+        allowSplit={tabRules.allow_split_payments !== false}
+        onBack={() => setShowTabBill(false)}
+        onSettled={() => {
+          setShowTabBill(false);
+          fetchTabRules();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)] pb-32">
@@ -736,6 +757,57 @@ const CheckoutPanel = ({
           Group order{groupDisplayName ? ` · ${groupDisplayName}` : ""} — kitchen holds your bundle until everyone's ready (or ~90s after your last order).
         </div>
       )}
+
+      {/* Pay now vs run a tab — only in areas where the venue allows tabs */}
+      {tabsAvailable && (
+        <div className="mx-5 mb-3 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setTabMode("pay_now")}
+              className={`rounded-xl border p-3 text-left transition-colors ${
+                tabMode === "pay_now" ? "border-primary bg-primary/10" : "border-border bg-card"
+              }`}
+            >
+              <span className="block text-sm font-semibold">Pay now</span>
+              <span className="block text-[11px] text-muted-foreground">Settle this round</span>
+            </button>
+            <button
+              onClick={() => setTabMode("tab")}
+              className={`rounded-xl border p-3 text-left transition-colors ${
+                tabMode === "tab" ? "border-primary bg-primary/10" : "border-border bg-card"
+              }`}
+            >
+              <span className="block text-sm font-semibold flex items-center gap-1.5">
+                <Receipt className="h-3.5 w-3.5" /> Put it on a tab
+              </span>
+              <span className="block text-[11px] text-muted-foreground">Pay at the end</span>
+            </button>
+          </div>
+
+          {tabMode === "tab" && (
+            <p className="text-xs text-muted-foreground">
+              {needsPreauth
+                ? `A ${money(preauthAmount)} deposit is held on your card to open the tab — it comes off your final bill.`
+                : tabRules?.open_tab_id
+                ? "This round joins the tab already open on your table."
+                : "Order as many rounds as you like, then settle the whole bill in the app."}
+              {tabRules?.max_tab_amount
+                ? ` Tab limit ${money(tabRules.max_tab_amount)}.`
+                : ""}
+            </p>
+          )}
+
+          {tabRules?.open_tab_id && (
+            <button
+              onClick={() => setShowTabBill(true)}
+              className="w-full rounded-xl border border-primary/40 bg-primary/5 px-3 py-2 text-sm font-medium text-primary"
+            >
+              View tab &amp; pay
+            </button>
+          )}
+        </div>
+      )}
+
 
       <div className="flex-1 px-5 pb-4 space-y-5">
         {/* Order Summary */}
