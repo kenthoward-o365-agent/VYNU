@@ -36,15 +36,16 @@ Deno.serve(async (req) => {
   const orderId = String(body.order_id ?? "");
   if (!venueId || !orderId) return json(400, { error: "venue_id and order_id required" });
 
-  const { data: isManager } = await userClient.rpc("is_venue_manager", {
-    _user_id: user.id, _venue_id: venueId,
-  });
-  if (!isManager) return json(403, { error: "Not authorised" });
-
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
+
+  const { data: isManager } = await admin.rpc("is_venue_manager", {
+    _user_id: user.id, _venue_id: venueId,
+  });
+  if (!isManager) return json(403, { error: "Not authorised" });
+
 
   // Validate order belongs to venue
   const { data: ord } = await admin.from("orders")

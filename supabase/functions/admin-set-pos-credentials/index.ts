@@ -20,11 +20,21 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Pure service client: used for role checks (role helpers are not callable by anon/authenticated).
   const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  // Caller-scoped client: set_pos_credential re-checks auth.uid() internally.
+  const callerScoped = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { global: { headers: { Authorization: authHeader } } },
   );
+
+
+
 
   const { data: claims, error: claimsErr } = await supabase.auth.getClaims(authHeader.slice(7));
   if (claimsErr || !claims?.claims?.sub) {
@@ -67,7 +77,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: secretId, error } = await supabase.rpc("set_pos_credential", {
+    const { data: secretId, error } = await callerScoped.rpc("set_pos_credential", {
       _venue_id: venue_id,
       _field: field,
       _value: value,
