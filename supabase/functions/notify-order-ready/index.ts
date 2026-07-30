@@ -118,10 +118,11 @@ Deno.serve(async (req) => {
     if (inAppEnabled) {
       const { error } = await admin.from("notifications").insert({
         venue_id: order.venue_id,
-        type: "order_ready",
+        kind: "order_ready",
         title: "Your order is ready",
-        message,
-        metadata: { order_id: order.id, pickup_location: pickupLocation },
+        body: message,
+        diner_id: order.customer_id ?? null,
+        payload: { order_id: order.id, pickup_location: pickupLocation },
       } as any);
       inApp = !error;
     }

@@ -400,6 +400,16 @@ export default function Orders() {
     const { error } = await supabase.from("orders").update({ status: newStatus as any }).eq("id", orderId);
     if (error) { toast.error(error.message); return; }
     toast.success(`Order moved to ${statusByName(newStatus).label}`);
+    if (newStatus === "ready") {
+      // Counter-pickup zones text the diner and raise an in-app alert; the
+      // function no-ops for table-delivery zones.
+      supabase.functions
+        .invoke("notify-order-ready", { body: { order_id: orderId } })
+        .then(({ data }) => {
+          if ((data as any)?.sms?.sent) toast.success("Diner texted — order ready for collection");
+        })
+        .catch(() => {});
+    }
     fetchOrders();
   };
 
