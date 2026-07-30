@@ -20,20 +20,30 @@ interface Table {
   id: string;
   table_number: string;
   zone: string | null;
+  zone_id: string | null;
   capacity: number | null;
   qr_code: string | null;
   status: string | null;
 }
+
+interface Zone {
+  id: string;
+  name: string;
+  color: string;
+}
+
+const NO_ZONE = "__none__";
 
 type TableInsert = Database["public"]["Tables"]["tables"]["Insert"];
 
 export default function Tables() {
   const { venue } = useVenue();
   const [tables, setTables] = useState<Table[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [qrDialogTable, setQrDialogTable] = useState<Table | null>(null);
   const [previewTable, setPreviewTable] = useState<Table | null>(null);
-  const [form, setForm] = useState({ table_number: "", zone: "", capacity: "4", pos_table_id: "" });
+  const [form, setForm] = useState({ table_number: "", zone_id: NO_ZONE, capacity: "4", pos_table_id: "" });
   const printRef = useRef<HTMLDivElement>(null);
 
   const getLiveUrl = (table: Table) => {
@@ -44,8 +54,12 @@ export default function Tables() {
 
   const fetchTables = useCallback(async () => {
     if (!venue) return;
-    const { data } = await supabase.from("tables").select("*").eq("venue_id", venue.id).order("table_number");
+    const [{ data }, { data: zoneRows }] = await Promise.all([
+      supabase.from("tables").select("*").eq("venue_id", venue.id).order("table_number"),
+      supabase.from("venue_zones").select("id, name, color").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
+    ]);
     setTables((data as Table[]) || []);
+    setZones(((zoneRows as any[]) || []) as Zone[]);
   }, [venue]);
 
   useEffect(() => { fetchTables(); }, [fetchTables]);
