@@ -124,7 +124,7 @@ export default function MenuBuilder() {
 
   const fetchData = async () => {
     if (!venue) return;
-    const [itemsRes, catsRes, taxesRes, tfRes, daRes, mcdaRes, midaRes, costsRes] = await Promise.all([
+    const [itemsRes, catsRes, taxesRes, tfRes, daRes, mcdaRes, midaRes, costsRes, menusRes, zonesRes] = await Promise.all([
       // food_cost is staff-only (column SELECT revoked); fetch separately via RPC.
       supabase.from("menu_items").select("id,venue_id,name,description,price,prep_time_minutes,allergens,dietary_tags,category_id,is_available,image_url,plu,pos_id,display_order,created_at,updated_at").eq("venue_id", venue.id).order("display_order"),
       supabase.from("menu_categories").select("*").eq("venue_id", venue.id).order("display_order"),
@@ -134,6 +134,8 @@ export default function MenuBuilder() {
       supabase.from("menu_category_display_areas" as any).select("category_id, display_area_id, menu_categories!inner(venue_id)").eq("menu_categories.venue_id", venue.id),
       supabase.from("menu_item_display_areas" as any).select("menu_item_id, display_area_id, menu_items!inner(venue_id)").eq("menu_items.venue_id", venue.id),
       supabase.rpc("get_menu_item_food_costs", { _venue_id: venue.id }),
+      supabase.from("venue_menus").select("*").eq("venue_id", venue.id).order("display_order"),
+      supabase.from("venue_zones").select("id, name, color, menu_id, is_active").eq("venue_id", venue.id).order("display_order"),
     ]);
     const costMap: Record<string, number | null> = {};
     ((costsRes.data as any[]) || []).forEach((r) => { costMap[r.id] = r.food_cost; });
@@ -143,6 +145,13 @@ export default function MenuBuilder() {
     setVenueTaxes((taxesRes.data as any as TaxConfig[]) || []);
     setTimeFrames((tfRes.data as any[]) || []);
     setDisplayAreas(((daRes.data as any[]) || []) as DisplayAreaOption[]);
+
+    const menuRows = ((menusRes.data as any[]) || []) as VenueMenu[];
+    setMenus(menuRows);
+    setZones((((zonesRes.data as any[]) || []) as ZoneRef[]));
+    setActiveMenuId((current) =>
+      current && menuRows.some((m) => m.id === current) ? current : menuRows[0]?.id ?? null
+    );
 
     const catMap: Record<string, string[]> = {};
     ((mcdaRes.data as any[]) || []).forEach(r => {
@@ -160,6 +169,15 @@ export default function MenuBuilder() {
   };
 
   useEffect(() => { fetchData(); }, [venue]);
+
+  // Categories in the menu currently being edited
+  const visibleCategories = menus.length > 0
+    ? categories.filter((c) => c.menu_id === activeMenuId)
+    : categories;
+  const visibleCategoryIds = new Set(visibleCategories.map((c) => c.id));
+  const visibleItems = menus.length > 0
+    ? items.filter((i) => !i.category_id || visibleCategoryIds.has(i.category_id))
+    : items;
 
   // Fetch POS integration info when in POS mode
   useEffect(() => {
