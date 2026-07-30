@@ -25,11 +25,12 @@ interface ChatMessage {
 }
 
 const EXAMPLES = [
-  "Show me how to add a menu item",
-  "Walk me through refunding an order",
-  "How do I connect H&L Exceed POS?",
+  "How do I set up zones and a second menu?",
+  "Let the bistro run tabs and split the bill",
+  "Add a public holiday surcharge date",
   "What was last night's revenue?",
 ];
+
 
 export default function CoPilotPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { user } = useAuth();

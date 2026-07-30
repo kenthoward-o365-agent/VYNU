@@ -84,6 +84,67 @@ export const WALKTHROUGHS: Walkthrough[] = [
     ],
   },
   {
+    id: "create-zone",
+    title: "Create a zone (Bar, Bistro, Rooftop)",
+    description: "Add a trading zone, give it a menu, and set how diners pay in it.",
+    steps: [
+      { route: "/settings", selector: '[data-copilot-target="/settings"]', title: "Open Settings", body: "Settings is in the sidebar." },
+      { title: "Open the Zones tile", body: "Zones is the tile at the bottom right of the settings hub. It replaced the old Open Tabs tile." },
+      { title: "Add a zone", body: "Click Add Zone and name it exactly as your team says it on the floor — Public Bar, Bistro, Rooftop. Add a colour so it's easy to spot on the Tables board." },
+      { title: "Assign a menu", body: "In the Menu section of the zone card, pick the one menu this zone serves. Several zones can share a menu, but a zone serves exactly one." },
+      { title: "Set payment rules", body: "In the Payments section choose Pay on order or Run a tab, then set optional card pre-auth, pre-auth amount, tab limit and split payments." },
+      { route: "/tables", selector: '[data-copilot-target="/tables"]', title: "Use it on tables", body: "On Tables the Zone field is now a dropdown of your zones. Assigning a zone never changes a table's QR URL — don't reprint stickers." },
+    ],
+  },
+  {
+    id: "add-menu",
+    title: "Add a second menu for another outlet",
+    description: "Create a menu and tie it to a zone in Menu Builder.",
+    steps: [
+      { route: "/menu", selector: '[data-copilot-target="/menu"]', title: "Open Menu Builder", body: "Click Menu in the sidebar." },
+      { title: "Use the zone / menu switcher", body: "The switcher at the top of the page controls which menu you're editing. Everything below it — categories, items, images, modifiers, pricing — applies to the selected menu only." },
+      { title: "Create or duplicate a menu", body: "Add a new menu, or duplicate an existing one to copy every category and item across — the quickest way to spin up a second outlet menu." },
+      { title: "Set the menu schedule", body: "Give the menu active days plus a start and end time (e.g. Lunch 11:00–15:00). Item time frames still apply on top of this." },
+      { title: "Attach it to a zone", body: "Back in Settings → Zones, set the zone's menu to your new menu. Diners scanning a table in that zone now get this menu." },
+    ],
+  },
+  {
+    id: "enable-tabs",
+    title: "Let a zone run tabs and split the bill",
+    description: "Turn on open tabs, pre-auth and split payments for one zone.",
+    steps: [
+      { route: "/settings", selector: '[data-copilot-target="/settings"]', title: "Open Settings", body: "Settings is in the sidebar." },
+      { title: "Open Zones", body: "Zones is the tile at the bottom right. Open the zone you want to run tabs in (e.g. Bistro)." },
+      { title: "Switch on tabs", body: "In the Payments section, choose Run a tab. Orders in this zone now accumulate against one tab per table." },
+      { title: "Pre-auth and limits", body: "Optionally require a card pre-authorisation and set the hold amount, plus a maximum tab value that prompts the diner to settle." },
+      { title: "Allow split payments", body: "Turn this on so a table can settle with several payments and mixed methods — card, wallet, gift card, voucher, cash or loyalty points." },
+      { route: "/orders", selector: '[data-copilot-target="/orders"]', title: "Watch the Open Tabs panel", body: "Orders → Open Tabs lists every live tab with balance due and pre-auth status. Clear it before close." },
+    ],
+  },
+  {
+    id: "surcharge-special-dates",
+    title: "Surcharge a public holiday or event date",
+    description: "Add custom date ranges to a surcharge.",
+    steps: [
+      { route: "/settings", selector: '[data-copilot-target="/settings"]', title: "Open Settings", body: "Settings is in the sidebar." },
+      { selector: '[data-copilot-target="settings-payments"]', title: "Payments → Surcharges", body: "Open Payments and scroll to the Surcharges section." },
+      { title: "Open the surcharge", body: "Open your weekend/public-holiday surcharge, or create a new one with a clear name — diners see this name on the bill." },
+      { title: "Add a special date range", body: "Under Special dates click Add date range, set a start and end date (same date twice for a single day) and label it — Christmas Day, Melbourne Cup, Grand Prix." },
+      { title: "Save", body: "The surcharge now applies automatically on those dates regardless of weekday. No one has to remember to switch it on." },
+    ],
+  },
+  {
+    id: "enable-pubplus",
+    title: "Turn on Pub+ across a group",
+    description: "Enable the group-wide Pub+ loyalty programme.",
+    steps: [
+      { route: "/group", title: "Open the Group dashboard", body: "Pub+ is switched on at the parent company, not per venue. Pick the parent company at the top." },
+      { title: "Open the Pub+ tab", body: "Configure earn rate, tiers, benefits and the join copy diners see." },
+      { title: "Activate", body: "Every child venue instantly inherits Pub+ as its active loyalty programme. Members and points are shared across all venues in the group." },
+      { title: "Pub+ API (placeholder)", body: "Admin → Integrations → Pub+ holds the placeholder for the real ALH Pub+ API. Until credentials exist, all Pub+ activity stays inside H&L OrderNOW." },
+    ],
+  },
+  {
     id: "open-knowledge-base",
     title: "Browse the Knowledge Base",
     description: "Where the full how-to library lives.",
@@ -91,6 +152,7 @@ export const WALKTHROUGHS: Walkthrough[] = [
       { route: "/knowledge-base", selector: '[data-copilot-target="/knowledge-base"]', title: "Knowledge Base", body: "The full library — search any topic. Bookmark for later." },
     ],
   },
+
 ];
 
 export const WALKTHROUGH_INDEX = WALKTHROUGHS.map((w) => ({
