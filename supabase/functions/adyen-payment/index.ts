@@ -628,7 +628,7 @@ Deno.serve(async (req) => {
     // Re-open & refund a (partially) closed order via H&L Pay.
     // Body: { venue_id, order_id, amount, reason? }
     if (action === "refund") {
-      const { order_id, amount, reason } = body;
+      const { order_id, amount, reason, refund_request_id } = body;
       if (!order_id || !amount || amount <= 0) {
         return json({ error: "order_id and positive amount are required" }, 400);
       }
@@ -712,13 +712,18 @@ Deno.serve(async (req) => {
         return json({ error: "H&L Pay not configured for this venue" }, 400);
       }
 
-      // PAY-04: deterministic idempotency key so a double-submit / client retry
-      // returns the original refund instead of issuing a second one. Including the
-      // remaining balance means a *legitimate* later refund of the same amount
-      // (now against a smaller balance) produces a distinct key and is not blocked.
+      // PAY-04: use a STABLE per-refund idempotency key supplied by the client (or
+      // generated here as a fallback). A retry of the SAME refund reuses the same
+      // id, so Adyen deduplicates it — even after the first attempt was already
+      // logged and the remaining balance changed. Two DISTINCT refunds carry
+      // distinct ids, so neither is wrongly deduped. (The previous key mixed in the
+      // mutable remaining balance, so a retry after logging produced a new key and
+      // could issue a second refund — see PR review.)
       const refundCents = Math.round(Number(amount) * 100);
-      const remainingCents = Math.round(remainingRefundable * 100);
-      const refundIdempotencyKey = `refund:${order_id}:${refundCents}:${remainingCents}`;
+      const refundRequestId =
+        typeof refund_request_id === "string" && refund_request_id.length > 0
+          ? refund_request_id
+          : crypto.randomUUID();
 
       const refundResp = await fetch(
         `${baseUrl}/payments/${order.payment_psp_reference}/refunds`,
@@ -727,7 +732,7 @@ Deno.serve(async (req) => {
           headers: {
             "Content-Type": "application/json",
             "X-API-Key": apiKey,
-            "Idempotency-Key": refundIdempotencyKey,
+            "Idempotency-Key": refundRequestId,
           },
           body: JSON.stringify({
             merchantAccount,
@@ -735,10 +740,9 @@ Deno.serve(async (req) => {
               value: refundCents,
               currency: config.default_currency || "AUD",
             },
-            // Include remainingCents (as in the idempotency key) so two legitimate
-            // same-amount partial refunds get distinct references for reconciliation,
-            // while a true double-submit reuses the same reference and is deduped.
-            reference: `REFUND_${order_id}_${refundCents}_${remainingCents}`,
+            // Stable per-refund reference (matches the idempotency key): a retry
+            // reuses it and Adyen deduplicates; distinct refunds stay distinct.
+            reference: `REFUND_${refundRequestId}`,
             merchantRefundReason: reason || "Requested by venue",
           }),
         },
@@ -756,6 +760,7 @@ Deno.serve(async (req) => {
         status: refundResult.status || "received",
         amount,
         reason: reason || null,
+        refund_request_id: refundRequestId,
       });
     }
 
