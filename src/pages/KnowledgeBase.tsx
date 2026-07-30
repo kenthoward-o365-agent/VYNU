@@ -8,7 +8,7 @@ import {
   BookOpen, LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
   TrendingUp, Users, Settings, BarChart3, ChevronRight, Rocket, Sparkles,
   SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X, Monitor, Sliders, Plug,
-  MonitorSmartphone, Search, Layers, Percent
+  MonitorSmartphone, Search, Layers, Percent, BellRing
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
