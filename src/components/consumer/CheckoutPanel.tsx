@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateTaxes, type TaxConfig } from "@/lib/tax-utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -66,14 +65,6 @@ const CheckoutPanel = ({
     item.price + item.modifiers.reduce((s, m) => s + (Number(m.price) || 0), 0);
   const total = items.reduce((sum, item) => sum + lineUnitPrice(item) * item.quantity, 0);
 
-  // Legacy raw-card form (used only as fallback in mock mode without an Adyen client key)
-  const [card, setCard] = useState({
-    number: "",
-    expiry_month: "",
-    expiry_year: "",
-    cvc: "",
-    holder_name: "",
-  });
   const [saveCard, setSaveCard] = useState(false);
   const [storedCards, setStoredCards] = useState<StoredCard[]>([]);
   const [selectedStoredCard, setSelectedStoredCard] = useState<string | null>(null);
@@ -92,6 +83,13 @@ const CheckoutPanel = ({
   const [shyndigPayClientKey, setShyndigPayClientKey] = useState<string | null>(null);
   const [isMockMode, setIsMockMode] = useState(false);
   const [loadingMethods, setLoadingMethods] = useState(false);
+  // Per-venue wallet identifiers returned by the backend (PAY-05) — no hardcoded
+  // placeholders; wallet buttons are hidden when a venue's real id is missing.
+  const [walletConfig, setWalletConfig] = useState<{
+    applePayMerchantId: string | null;
+    googlePayMerchantId: string | null;
+    gatewayMerchantId: string | null;
+  } | null>(null);
 
   useEffect(() => {
     checkPaymentEnabled();
@@ -137,7 +135,9 @@ const CheckoutPanel = ({
     });
     const row = Array.isArray(data) ? data[0] : data;
     setPaymentEnabled(!!row?.is_active);
-    // Environment is no longer exposed publicly; default to test for safety.
+    // Default to "test" until the payment_methods response tells us the venue's
+    // real environment (PAY-07) — the Drop-in must initialise in the SAME
+    // environment the server processes against.
     setPaymentEnvironment("test");
   };
 
@@ -171,6 +171,12 @@ const CheckoutPanel = ({
       const key = data?.client_key || (import.meta as any).env?.VITE_ADYEN_CLIENT_KEY || null;
       setShyndigPayClientKey(key);
       setIsMockMode(!!data?.mock_mode);
+      // PAY-05: per-venue wallet identifiers (no hardcoded placeholders).
+      if (data?.wallets) setWalletConfig(data.wallets);
+      // PAY-07: align the client Drop-in environment with the server's.
+      if (data?.environment === "live" || data?.environment === "test") {
+        setPaymentEnvironment(data.environment);
+      }
     } catch (e) {
       console.error("Failed to load payment methods:", e);
     }
@@ -465,12 +471,10 @@ const CheckoutPanel = ({
           paymentBody.stored_card_token = selectedStoredCard;
           paymentBody.shopper_reference = storedCard?.shopper_reference || shopperRef;
         } else {
-          paymentBody.card = card;
+          // PAY-01: no raw card data is ever collected in the browser. This branch
+          // is reached only in simulated (mock) mode — the backend authorises the
+          // simulated payment purely on its mock flag, not on any card number.
           paymentBody.shopper_reference = shopperRef;
-          if (saveCard && dinerId) {
-            paymentBody.store_card = true;
-            paymentBody.diner_id = dinerId;
-          }
         }
 
         const resp = await fetch(
@@ -483,8 +487,8 @@ const CheckoutPanel = ({
           await finalizePaidOrder(orderId, !!result?.mock_mode);
         } else {
           const hint = result?.mock_mode
-            ? "Tap 'Fill test card for me' to use the simulator's test card."
-            : "Please check your card details and try again.";
+            ? "Simulated payment could not be completed. Please try again."
+            : "Please try again or use a different payment method.";
           toast.error(
             `Payment ${result.resultCode || "failed"}: ${result.refusalReason || hint}`
           );
@@ -515,28 +519,25 @@ const CheckoutPanel = ({
     }
   };
 
-  const formatCardNumber = (value: string) => {
-    const digits = value.replace(/\D/g, "").slice(0, 16);
-    return digits.replace(/(\d{4})/g, "$1 ").trim();
-  };
-
-  const isLegacyCardValid =
-    selectedStoredCard ||
-    (card.number.replace(/\s/g, "").length >= 15 &&
-      card.expiry_month &&
-      card.expiry_year &&
-      card.cvc.length >= 3);
-
   // Show Drop-in only when payments enabled, no stored card selected, we have methods + key,
-  // and we're NOT in mock mode (mock mode falls back to the legacy test-card form).
+  // and we're NOT in mock mode.
   const showDropin =
     paymentEnabled && !selectedStoredCard && !!paymentMethodsResponse && !!shyndigPayClientKey && !isMockMode;
 
-  // Show legacy form whenever Drop-in can't render (no client key / mock mode)
-  const showLegacyForm =
-    paymentEnabled && !showDropin;
+  // PAY-01: mock/simulated mode collects NO card data — the diner just taps a
+  // "simulate payment" button (the footer button drives processLegacyPayment).
+  const showMockPay = paymentEnabled && isMockMode && !selectedStoredCard;
 
-  const canProceedLegacy = paymentEnabled ? isLegacyCardValid : true;
+  // PAY-01: when the hosted Drop-in cannot load in a real (non-mock) venue we must
+  // NOT fall back to a raw card form — show an unavailable message instead.
+  const showPaymentUnavailable =
+    paymentEnabled && !isMockMode && !showDropin && !selectedStoredCard && !loadingMethods;
+
+  // The footer button can complete payment only for: stored card, mock simulate,
+  // or the confirm-only (payments disabled) flow. Never for the unavailable state.
+  const canProceedLegacy = !paymentEnabled
+    ? true
+    : !!selectedStoredCard || showMockPay;
 
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)] pb-32">
@@ -667,8 +668,8 @@ const CheckoutPanel = ({
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   This venue isn't fully connected to the payment processor yet, so no card will
-                  actually be charged. Use test card <code className="font-mono">4111 1111 1111 1111</code> to
-                  simulate a successful order. Wallet payments are disabled in this mode.
+                  actually be charged. Tap the button below to place a simulated order. Card and
+                  wallet payments are disabled in this mode.
                 </p>
               </div>
             )}
@@ -735,6 +736,17 @@ const CheckoutPanel = ({
                   <CreditCard className="h-4 w-4" />
                   Pay with card or wallet
                 </Label>
+                {dinerId && (
+                  <div className="flex items-center justify-between rounded-xl bg-muted/50 p-3">
+                    <div>
+                      <p className="text-sm font-medium">Save card for next time</p>
+                      <p className="text-xs text-muted-foreground">
+                        Securely stored by H&L Pay — we never see your full card number
+                      </p>
+                    </div>
+                    <Switch checked={saveCard} onCheckedChange={setSaveCard} />
+                  </div>
+                )}
                 <ShyndigPayDropin
                   paymentMethodsResponse={paymentMethodsResponse}
                   amount={total + tipAmount}
@@ -743,6 +755,9 @@ const CheckoutPanel = ({
                   environment={paymentEnvironment}
                   clientKey={shyndigPayClientKey || undefined}
                   merchantName="H&L Pay"
+                  applePayMerchantId={walletConfig?.applePayMerchantId || undefined}
+                  googlePayMerchantId={walletConfig?.googlePayMerchantId || undefined}
+                  gatewayMerchantId={walletConfig?.gatewayMerchantId || undefined}
                   onSubmit={handleDropinSubmit}
                   onAdditionalDetails={handleDropinAdditionalDetails}
                   onError={(e) => {
@@ -759,113 +774,21 @@ const CheckoutPanel = ({
               </p>
             )}
 
-            {/* Legacy raw card form — fallback when Drop-in can't render (no client key) */}
-            {showLegacyForm && !selectedStoredCard && (
-              <div className="space-y-4">
-                <Label className="text-sm font-semibold flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Card Details
-                </Label>
-                {isMockMode && (
-                  <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-[11px] text-warning-foreground space-y-2">
-                    <p>
-                      <strong>H&L Pay test mode.</strong> No card will actually be charged. Only the
-                      test card <code className="font-mono">4111 1111 1111 1111</code> will simulate
-                      a successful payment.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setCard({
-                          number: "4111 1111 1111 1111",
-                          holder_name: card.holder_name || "Test Diner",
-                          expiry_month: "12",
-                          expiry_year: String(new Date().getFullYear() + 2),
-                          cvc: "737",
-                        })
-                      }
-                      className="text-xs font-semibold underline underline-offset-2 hover:no-underline"
-                    >
-                      Fill test card for me
-                    </button>
-                  </div>
-                )}
+            {/* PAY-01: mock/simulated mode — no card entry. The footer button
+                submits a simulated payment. */}
+            {showMockPay && (
+              <div className="rounded-xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                Tap <strong>Pay</strong> below to place a simulated order — no card details are
+                collected or charged in test mode.
+              </div>
+            )}
 
-                <div>
-                  <Input
-                    placeholder="Card number"
-                    value={card.number}
-                    onChange={(e) =>
-                      setCard((c) => ({ ...c, number: formatCardNumber(e.target.value) }))
-                    }
-                    inputMode="numeric"
-                    maxLength={19}
-                    className="text-base"
-                  />
-                </div>
-
-                <div>
-                  <Input
-                    placeholder="Cardholder name"
-                    value={card.holder_name}
-                    onChange={(e) =>
-                      setCard((c) => ({ ...c, holder_name: e.target.value }))
-                    }
-                    className="text-base"
-                  />
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <Input
-                    placeholder="MM"
-                    value={card.expiry_month}
-                    onChange={(e) =>
-                      setCard((c) => ({
-                        ...c,
-                        expiry_month: e.target.value.replace(/\D/g, "").slice(0, 2),
-                      }))
-                    }
-                    inputMode="numeric"
-                    maxLength={2}
-                  />
-                  <Input
-                    placeholder="YYYY"
-                    value={card.expiry_year}
-                    onChange={(e) =>
-                      setCard((c) => ({
-                        ...c,
-                        expiry_year: e.target.value.replace(/\D/g, "").slice(0, 4),
-                      }))
-                    }
-                    inputMode="numeric"
-                    maxLength={4}
-                  />
-                  <Input
-                    placeholder="CVC"
-                    value={card.cvc}
-                    onChange={(e) =>
-                      setCard((c) => ({
-                        ...c,
-                        cvc: e.target.value.replace(/\D/g, "").slice(0, 4),
-                      }))
-                    }
-                    inputMode="numeric"
-                    maxLength={4}
-                    type="password"
-                  />
-                </div>
-
-                {dinerId && !isMockMode && (
-                  <div className="flex items-center justify-between rounded-xl bg-muted/50 p-3">
-                    <div>
-                      <p className="text-sm font-medium">Save card for next time</p>
-                      <p className="text-xs text-muted-foreground">
-                        Securely stored by H&L Pay — we never see your full card number
-                      </p>
-                    </div>
-                    <Switch checked={saveCard} onCheckedChange={setSaveCard} />
-                  </div>
-                )}
+            {/* PAY-01: real venue where the secure payment form could not load — we
+                never fall back to a raw card form. */}
+            {showPaymentUnavailable && (
+              <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+                The secure payment form is temporarily unavailable. Please refresh and try again, or
+                ask the venue for help — do not enter card details anywhere else.
               </div>
             )}
 
