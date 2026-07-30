@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2, DollarSign, CreditCard, BarChart3, Package } from "lucide-react";
+import { ArrowLeft, Settings, Users, Plus, Eye, EyeOff, Gift, Building2, Trash2, DollarSign, CreditCard, BarChart3, Package, Beer } from "lucide-react";
 import BillingConfigTab from "@/components/venue/BillingConfigTab";
 import ProcessorCredentialsTab from "@/components/admin/ProcessorCredentialsTab";
 import VenuePerformanceTab from "@/components/admin/VenuePerformanceTab";
