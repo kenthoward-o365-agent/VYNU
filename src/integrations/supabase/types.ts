@@ -5401,8 +5401,13 @@ export type Database = {
           max_tab_amount: number | null
           menu_id: string | null
           name: string
+          notify_inapp_on_ready: boolean
+          notify_sms_on_ready: boolean
+          payment_override: boolean
+          pickup_location_label: string | null
           preauth_amount: number
           require_preauth: boolean
+          service_mode: string
           tabs_enabled: boolean
           updated_at: string
           venue_id: string
@@ -5418,8 +5423,13 @@ export type Database = {
           max_tab_amount?: number | null
           menu_id?: string | null
           name: string
+          notify_inapp_on_ready?: boolean
+          notify_sms_on_ready?: boolean
+          payment_override?: boolean
+          pickup_location_label?: string | null
           preauth_amount?: number
           require_preauth?: boolean
+          service_mode?: string
           tabs_enabled?: boolean
           updated_at?: string
           venue_id: string
@@ -5435,8 +5445,13 @@ export type Database = {
           max_tab_amount?: number | null
           menu_id?: string | null
           name?: string
+          notify_inapp_on_ready?: boolean
+          notify_sms_on_ready?: boolean
+          payment_override?: boolean
+          pickup_location_label?: string | null
           preauth_amount?: number
           require_preauth?: boolean
+          service_mode?: string
           tabs_enabled?: boolean
           updated_at?: string
           venue_id?: string
@@ -5464,6 +5479,9 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
+          default_payment_timing: string
+          default_pickup_location: string | null
+          default_service_mode: string
           email: string | null
           group_id: string | null
           id: string
@@ -5492,6 +5510,9 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          default_payment_timing?: string
+          default_pickup_location?: string | null
+          default_service_mode?: string
           email?: string | null
           group_id?: string | null
           id?: string
@@ -5520,6 +5541,9 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string
+          default_payment_timing?: string
+          default_pickup_location?: string | null
+          default_service_mode?: string
           email?: string | null
           group_id?: string | null
           id?: string
@@ -5716,6 +5740,8 @@ export type Database = {
           created_at: string
           extra_wait_minutes: number
           id: string
+          pickup_location: string
+          service_mode: string
           status: string
           throttled_until: string
           total: number
