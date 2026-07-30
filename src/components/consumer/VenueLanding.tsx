@@ -1,9 +1,12 @@
+import { useEffect, useState } from "react";
 import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
-import { MapPin, Utensils, Gift, UserPlus, LogIn } from "lucide-react";
+import { MapPin, Utensils, Gift, UserPlus, LogIn, Beer } from "lucide-react";
 import LandingSectionRenderer from "@/components/landing-editor/LandingSectionRenderer";
 import { parseLandingPayload } from "@/components/landing-editor/types";
 import SessionModeChooser, { type SessionMode } from "./SessionModeChooser";
+import { supabase } from "@/integrations/supabase/client";
+import { isPubPlusProgram, pubPlusCopy, type PubPlusCopy } from "@/lib/pubplus";
 
 interface VenueLandingProps {
   venue: {
