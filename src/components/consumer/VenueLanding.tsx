@@ -1,9 +1,12 @@
+import { useEffect, useState } from "react";
 import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
-import { MapPin, Utensils, Gift, UserPlus, LogIn } from "lucide-react";
+import { MapPin, Utensils, Gift, UserPlus, LogIn, Beer } from "lucide-react";
 import LandingSectionRenderer from "@/components/landing-editor/LandingSectionRenderer";
 import { parseLandingPayload } from "@/components/landing-editor/types";
 import SessionModeChooser, { type SessionMode } from "./SessionModeChooser";
+import { supabase } from "@/integrations/supabase/client";
+import { isPubPlusProgram, pubPlusCopy, type PubPlusCopy } from "@/lib/pubplus";
 
 interface VenueLandingProps {
   venue: {
@@ -63,6 +66,22 @@ const VenueLanding = ({
   onSignin,
 }: VenueLandingProps) => {
   const showChooser = !!(venue.id && tableId) && sessionMode === null;
+
+  // Pub+ is group-owned: when it's the active program for this venue, the
+  // rewards card speaks Pub+ language (no app download, no barcode).
+  const [pubPlus, setPubPlus] = useState<{ name: string; copy: PubPlusCopy } | null>(null);
+  useEffect(() => {
+    if (!venue.id) return;
+    let cancelled = false;
+    supabase
+      .rpc("get_active_loyalty_program", { p_venue_id: venue.id })
+      .then(({ data }) => {
+        const chosen: any = Array.isArray(data) ? data[0] : data;
+        if (cancelled || !chosen || !isPubPlusProgram(chosen)) return;
+        setPubPlus({ name: chosen.name, copy: pubPlusCopy(chosen.rules) });
+      });
+    return () => { cancelled = true; };
+  }, [venue.id]);
 
   const ChooserOrActions = () => {
     if (showChooser) {
@@ -141,12 +160,27 @@ const VenueLanding = ({
       {!showChooser && (
         <div className="bg-accent/50 rounded-2xl border border-primary/20 p-4 mt-6 w-full max-w-xs">
           <div className="flex items-center gap-2 mb-2">
-            <Gift className="h-5 w-5 text-primary" />
-            <p className="text-sm font-semibold text-foreground">Earn rewards</p>
+            {pubPlus ? (
+              <Beer className="h-5 w-5 text-primary" />
+            ) : (
+              <Gift className="h-5 w-5 text-primary" />
+            )}
+            <p className="text-sm font-semibold text-foreground">
+              {pubPlus ? `${pubPlus.name} members` : "Earn rewards"}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Sign up for our loyalty program and earn points with every order.
-          </p>
+          {pubPlus ? (
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p>{pubPlus.copy.earnLine}</p>
+              <p>{pubPlus.copy.coinLine}</p>
+              <p>{pubPlus.copy.sharedLine}</p>
+              <p className="text-foreground/80">Just sign in — no app to download, no barcode to scan.</p>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Sign up for our loyalty program and earn points with every order.
+            </p>
+          )}
         </div>
       )}
       <p className="text-muted-foreground text-xs mt-4">

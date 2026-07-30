@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { Cable, ExternalLink, RefreshCw, Settings } from "lucide-react";
 import HLPosPanel from "@/components/venue/HLPosPanel";
+import PubPlusIntegrationCard from "@/components/admin/PubPlusIntegrationCard";
 
 interface Provider {
   id: string;
@@ -89,6 +90,7 @@ export default function AdminIntegrations() {
         <TabsList>
           <TabsTrigger value="providers">Providers ({providers.length})</TabsTrigger>
           <TabsTrigger value="connections">Connections ({connections.length})</TabsTrigger>
+          <TabsTrigger value="loyalty">Loyalty</TabsTrigger>
         </TabsList>
 
         <TabsContent value="providers" className="space-y-4">
@@ -175,6 +177,10 @@ export default function AdminIntegrations() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="loyalty" className="space-y-4">
+          <PubPlusIntegrationCard />
         </TabsContent>
       </Tabs>
 

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Eye, EyeOff, Check, X, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { isPubPlusProgram } from "@/lib/pubplus";
 
 interface DinerSignupProps {
   venueId: string;
@@ -195,8 +196,10 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
         const grpSettings = (grp?.settings && typeof grp.settings === "object") ? grp.settings as any : {};
         groupOptedIn = !!grpSettings.global_loyalty;
       }
+      // Pub+ is parent-owned and has no venue/group opt-out — the parent toggle
+      // enrols every child venue, so it bypasses the legacy global_loyalty flag.
       const allPrograms = (allProgramsRaw || []).filter((p: any) =>
-        p.venue_id === venueId || (p.group_id && groupOptedIn)
+        p.venue_id === venueId || (p.group_id && (groupOptedIn || isPubPlusProgram(p)))
       );
 
       if (allPrograms.length > 0 && profile) {

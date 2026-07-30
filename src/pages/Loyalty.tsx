@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Gift, Plus, Trash2, Star, Cake, Award, DollarSign, Sparkles, Settings2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
+import PubPlusVenueStatusCard from "@/components/venue/PubPlusVenueStatusCard";
 
 interface LoyaltyRules {
   points_per_dollar?: number;
@@ -125,6 +126,11 @@ export default function Loyalty() {
 
   return (
     <div className="space-y-6">
+      {/* Pub+ — group-managed, read-only at venue level */}
+      {venue && (
+        <PubPlusVenueStatusCard venueId={venue.id} groupId={(venue as any).group_id} />
+      )}
+
       {/* H&L OrderNOW Loyalty (built-in) */}
       <Card className="border-primary/30">
         <CardHeader>
