@@ -542,16 +542,18 @@ Deno.serve(async (req) => {
     }
     const userId = userRes.user.id;
 
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
     // Auth: any staff member of this venue. (Frontend further gates by nav permission 'copilot'.)
-    const { data: isStaff } = await sbUser.rpc("is_venue_staff", { _user_id: userId, _venue_id: venue_id });
-    const { data: isPlatformAdmin } = await sbUser.rpc("has_role", { _user_id: userId, _role: "tabless_admin" });
+    // Role helpers are executed with the service client — they are not callable by anon/authenticated.
+    const { data: isStaff } = await sb.rpc("is_venue_staff", { _user_id: userId, _venue_id: venue_id });
+    const { data: isPlatformAdmin } = await sb.rpc("has_role", { _user_id: userId, _role: "tabless_admin" });
     if (!isStaff && !isPlatformAdmin) {
       return new Response(JSON.stringify({ error: "forbidden" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     // Handle conversation management actions
     if (action === "load") {
