@@ -19,6 +19,8 @@ interface Provider {
   auth_type: string;
   status: string;
   is_active: boolean;
+  is_default: boolean;
+  display_order: number;
   capabilities: Record<string, boolean>;
   docs_url: string | null;
 }

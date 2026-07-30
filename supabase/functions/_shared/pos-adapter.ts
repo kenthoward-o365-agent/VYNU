@@ -78,9 +78,11 @@ export interface PosAdapter {
 
 // Whitelisted slugs; prevents arbitrary path imports.
 const KNOWN: Record<string, () => Promise<{ default: PosAdapter }>> = {
-  doshii:    () => import("../adapters/doshii/index.ts"),
-  hl_exceed: () => import("../adapters/hl_exceed/index.ts"),
-  mock:      () => import("../adapters/mock/index.ts"),
+  hl_exceed:  () => import("../adapters/hl_exceed/index.ts"),
+  doshii:     () => import("../adapters/doshii/index.ts"),
+  square:     () => import("../adapters/square/index.ts"),
+  lightspeed: () => import("../adapters/lightspeed/index.ts"),
+  mock:       () => import("../adapters/mock/index.ts"),
 };
 
 const cache = new Map<string, PosAdapter>();
