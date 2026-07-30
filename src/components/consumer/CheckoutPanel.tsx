@@ -1150,6 +1150,10 @@ const CheckoutPanel = ({
           >
             {processing
               ? "Processing..."
+              : tabMode === "tab"
+              ? needsPreauth
+                ? `Hold ${money(preauthAmount)} & open tab`
+                : `Add to tab — ${money(total + tipAmount)}`
               : paymentEnabled
               ? sessionMode === "group"
                 ? `Pay & send to table — $${(total + tipAmount).toFixed(2)}`
