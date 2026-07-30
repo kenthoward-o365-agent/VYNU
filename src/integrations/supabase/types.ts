@@ -5622,6 +5622,10 @@ export type Database = {
         }[]
       }
       get_tab_summary: { Args: { _tab_id: string }; Returns: Json }
+      get_table_tab_rules: {
+        Args: { _table_id: string; _venue_id: string }
+        Returns: Json
+      }
       get_terminal_by_token: {
         Args: { _token: string }
         Returns: {
@@ -5790,6 +5794,21 @@ export type Database = {
           host_first_name: string
           id: string
           opened_at: string
+        }[]
+      }
+      list_open_tabs: {
+        Args: { _venue_id: string }
+        Returns: {
+          balance_due: number
+          label: string
+          opened_at: string
+          preauth_status: string
+          status: string
+          tab_id: string
+          table_number: string
+          total_ordered: number
+          total_paid: number
+          zone: string
         }[]
       }
       list_sibling_venues: {
