@@ -64,7 +64,10 @@ interface ActiveOrder {
   total: number;
   created_at: string;
   extra_wait_minutes?: number;
+  service_mode?: string | null;
+  pickup_location?: string | null;
 }
+
 
 const OPEN_ORDER_STATUSES: ActiveOrder["status"][] = ["received", "preparing", "ready"];
 const TERMINAL_ORDER_STATUSES = new Set<ActiveOrder["status"]>(["paid", "cancelled", "refunded"]);
