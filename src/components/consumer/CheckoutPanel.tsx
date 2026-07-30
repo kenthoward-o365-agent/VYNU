@@ -257,7 +257,7 @@ const CheckoutPanel = ({
    * Creates an order in the DB and returns its ID + audit date.
    * Shared by Drop-in flow, stored-card flow, and confirm-only flow.
    */
-  const createOrderRow = async (): Promise<string> => {
+  const createOrderRow = async (opts?: { tabId?: string | null }): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
     const authUserId = session?.user?.id || null;
 
