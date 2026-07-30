@@ -737,7 +737,10 @@ function GroupDinersTab({ group, groupVenues }: { group: any; groupVenues: any[]
       });
 
       const dinerIds = Array.from(dinerMap.keys());
-      const { data: profiles } = await supabase.from("diner_profiles").select("*").in("id", dinerIds);
+      const { data: allProfiles } = await supabase.rpc("list_venue_diner_profiles" as any, {
+        _venue_ids: venueIds,
+      });
+      const profiles = ((allProfiles as any[]) || []).filter((p) => dinerIds.includes(p.id));
 
       const result: DinerRow[] = (profiles || []).map((p: any) => ({
         id: p.id,
