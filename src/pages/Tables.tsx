@@ -140,7 +140,23 @@ export default function Tables() {
             <DialogHeader><DialogTitle>Add Table</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <Input placeholder="Table number (e.g. 1, A1)" value={form.table_number} onChange={(e) => setForm((f) => ({ ...f, table_number: e.target.value }))} />
-              <Input placeholder="Zone (e.g. Patio, Main)" value={form.zone} onChange={(e) => setForm((f) => ({ ...f, zone: e.target.value }))} />
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Zone</Label>
+                <Select value={form.zone_id} onValueChange={(v) => setForm((f) => ({ ...f, zone_id: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select a zone" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_ZONE}>No zone</SelectItem>
+                    {zones.map((z) => (
+                      <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {zones.length === 0
+                    ? "No zones yet — create them in Settings → Zones."
+                    : "The zone decides which menu this QR shows and whether diners can run a tab."}
+                </p>
+              </div>
               <Input type="number" placeholder="Capacity" value={form.capacity} onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))} />
               <details className="border border-border rounded-lg">
                 <summary className="px-4 py-2.5 text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground">POS Integration</summary>
