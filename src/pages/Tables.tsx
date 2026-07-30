@@ -299,7 +299,7 @@ export default function Tables() {
             </div>
             <div className="flex flex-col gap-2 border-t border-border p-4">
               <p className="text-center text-xs break-all text-muted-foreground">{getPreviewUrl(previewTable)}</p>
-              <Button variant="outline" size="sm" className="w-full" onClick={() => window.open(getPreviewUrl(previewTable), '_blank')}>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => window.open(getPreviewUrl(previewTable), "_blank", "noopener,noreferrer")}>
                 <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open live page
               </Button>
             </div>

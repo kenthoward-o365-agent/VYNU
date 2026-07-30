@@ -686,7 +686,9 @@ Deno.serve(async (req) => {
       if (remainingRefundable <= 0) {
         return json({ error: "This order has already been fully refunded" }, 400);
       }
-      if (Number(amount) > remainingRefundable + 0.001) {
+      const requestedRefundCents = Math.round(Number(amount) * 100);
+      const remainingRefundableCents = Math.round(remainingRefundable * 100);
+      if (requestedRefundCents > remainingRefundableCents) {
         return json({ error: "Refund amount exceeds the remaining refundable balance" }, 400);
       }
 
