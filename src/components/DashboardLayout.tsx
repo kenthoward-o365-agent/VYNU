@@ -211,7 +211,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const showSelfOnboard = !!venue && perms.can("settings") && onboardingStatus !== "completed" && onboardingStatus !== "dismissed";
 
   const showVenueNav = !!venue;
-  const showGroupNav = showVenueNav && !isTablessAdmin && isGroupAdmin;
+  const showGroupNav = isTablessAdmin ? true : showVenueNav && isGroupAdmin;
   const filteredVenueNav = venueNavItems.filter(
     (item) => perms.can(item.navKey) && (!item.feature || features.has(item.feature)),
   );
