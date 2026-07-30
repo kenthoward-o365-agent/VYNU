@@ -724,6 +724,9 @@ const ConsumerOrder = () => {
           total={activeOrder.total}
           createdAt={activeOrder.created_at}
           extraWaitMinutes={activeOrder.extra_wait_minutes ?? 0}
+          serviceMode={(activeOrder.service_mode as "table_delivery" | "counter_pickup" | null) ?? undefined}
+          pickupLocation={activeOrder.pickup_location ?? undefined}
+
         />
       )}
 
