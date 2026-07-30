@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: secretId, error } = await supabase.rpc("set_pos_credential", {
+    const { data: secretId, error } = await callerScoped.rpc("set_pos_credential", {
       _venue_id: venue_id,
       _field: field,
       _value: value,
