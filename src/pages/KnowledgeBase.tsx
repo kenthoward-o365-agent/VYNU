@@ -1062,8 +1062,28 @@ export default function KnowledgeBase() {
 
 
         {/* POS Integration — H&L Exceed Web Orders */}
-        <Section id="pos-integration" title="POS Integration — H&L Exceed Web Orders" icon={Plug} hidden={isHidden("pos-integration")}>
+        <Section id="pos-integration" title="POS Integrations" icon={Plug} hidden={isHidden("pos-integration")}>
+          <SubSection title="Supported POS providers">
+            <p>The POS Integrations screen in the Admin Panel now lists five providers as connectable cards. <strong>H&L Exceed is the first card and the default</strong> for every new venue — the others exist for group sites running mixed estates or for pilots.</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>H&L Exceed</strong> (default) — direct Web Orders API integration. Full order push, PLU mapping, status webhooks and refund acknowledgement. Everything below in this section describes this adapter.</li>
+              <li><strong>Doshii</strong> — middleware connector for venues already brokering POS traffic through Doshii.</li>
+              <li><strong>Lightspeed</strong> — order push and product pull for Lightspeed Restaurant sites.</li>
+              <li><strong>Square</strong> — order push and catalogue pull for Square POS sites.</li>
+              <li><strong>Mock Provider</strong> — a sandbox adapter that accepts and acknowledges every order. Use it to test the full order → POS → status flow without touching a real till.</li>
+            </ul>
+            <p>Each card shows connection status (Not connected / Connected / Error), a Connect button that opens the credentials dialog, and a Test Connection action. Only one provider can be active per venue at a time — connecting a second provider replaces the first.</p>
+            <StepList steps={[
+              "Admin → Integrations → POS. H&L Exceed appears first and is pre-selected.",
+              "Click Connect on the provider your venue runs.",
+              "Enter the credentials for that provider (API URL + key for H&L Exceed; provider-specific fields for the others).",
+              "Hit Test Connection — green means the adapter authenticated and can reach the till.",
+              "Enable Auto-push so paid orders queue to the POS within seconds.",
+            ]} />
+            <Tip>Start any new site on Mock Provider, place three test orders, confirm they show as pushed and acknowledged, then swap to the real provider. It separates 'our integration is broken' from 'your POS credentials are wrong' in about five minutes.</Tip>
+          </SubSection>
           <SubSection title="What this integration does">
+
             <p>
               When a diner places an order through H&L OrderNOW, we can push that order straight into your H&L Exceed POS via the <strong>H&L Web Orders API</strong>. The order opens on the POS exactly as if a staff member had keyed it in — same docket, same PLUs, same tender, same table. No double-handling, no re-keying at end of service.
             </p>
