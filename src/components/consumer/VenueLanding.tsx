@@ -67,6 +67,22 @@ const VenueLanding = ({
 }: VenueLandingProps) => {
   const showChooser = !!(venue.id && tableId) && sessionMode === null;
 
+  // Pub+ is group-owned: when it's the active program for this venue, the
+  // rewards card speaks Pub+ language (no app download, no barcode).
+  const [pubPlus, setPubPlus] = useState<{ name: string; copy: PubPlusCopy } | null>(null);
+  useEffect(() => {
+    if (!venue.id) return;
+    let cancelled = false;
+    supabase
+      .rpc("get_active_loyalty_program", { p_venue_id: venue.id })
+      .then(({ data }) => {
+        const chosen: any = Array.isArray(data) ? data[0] : data;
+        if (cancelled || !chosen || !isPubPlusProgram(chosen)) return;
+        setPubPlus({ name: chosen.name, copy: pubPlusCopy(chosen.rules) });
+      });
+    return () => { cancelled = true; };
+  }, [venue.id]);
+
   const ChooserOrActions = () => {
     if (showChooser) {
       return (
