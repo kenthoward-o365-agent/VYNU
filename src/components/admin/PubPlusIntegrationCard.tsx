@@ -34,7 +34,7 @@ const blank = (groupId: string): PubPlusIntegration => ({
   group_id: groupId,
   enabled: false,
   environment: "sandbox",
-  base_url: "https://poseidon-uat.eagleeye.com",
+  base_url: "https://wallet-uat.uk.eagleeye.com/2.0",
   client_id: "",
   parent_identity_number: "",
   auto_earn_on_paid: true,
@@ -220,8 +220,8 @@ export default function PubPlusIntegrationCard() {
                       environment: v as PubPlusIntegration["environment"],
                       base_url:
                         v === "production"
-                          ? "https://poseidon.eagleeye.com"
-                          : "https://poseidon-uat.eagleeye.com",
+                          ? "https://wallet.uk.eagleeye.com/2.0"
+                          : "https://wallet-uat.uk.eagleeye.com/2.0",
                     })
                   }
                 >
