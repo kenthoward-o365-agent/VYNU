@@ -5574,6 +5574,17 @@ export type Database = {
           venue_type: string
         }[]
       }
+      list_venue_diner_profiles: {
+        Args: { _venue_ids: string[] }
+        Returns: {
+          allergens: string[]
+          display_name: string
+          email: string
+          id: string
+          phone: string
+          preferences: Json
+        }[]
+      }
       loadtest_top_queries: {
         Args: never
         Returns: {
