@@ -25,7 +25,7 @@ import SurchargeSettingsTab from "@/components/venue/SurchargeSettingsTab";
 import IntegrationsSettingsTab from "@/components/venue/IntegrationsSettingsTab";
 import RolesManager from "@/components/venue/RolesManager";
 import TableSessionsSettingsTab from "@/components/venue/TableSessionsSettingsTab";
-import TabsSettingsTab from "@/components/venue/TabsSettingsTab";
+import ZonesSettingsTab from "@/components/venue/ZonesSettingsTab";
 import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
 
 const venueTypes = [
