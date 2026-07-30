@@ -122,6 +122,20 @@ export const WALKTHROUGHS: Walkthrough[] = [
     ],
   },
   {
+    id: "collect-at-counter",
+    title: "Set up collect-at-counter and ready alerts",
+    description: "Tell diners where to collect and text them when the food is ready.",
+    steps: [
+      { route: "/settings", selector: '[data-copilot-target="/settings"]', title: "Open Settings", body: "Settings is in the sidebar." },
+      { title: "Open Zones & service", body: "Open the Zones & service tile. The card at the top holds your venue-wide defaults; the zone cards below can override them." },
+      { title: "Choose the venue-wide service mode", body: "Pick 'Delivered to table' or 'Diner collects at the counter'. Every zone follows this unless you override it." },
+      { title: "Name the collection point", body: "Type it exactly as a diner would look for it — Main bar, Kitchen window, Hostess station. It appears at checkout and on the order tracker." },
+      { title: "Pick the alert channels", body: "Choose SMS, in-app alert, or both. When staff mark an order Ready the diner is notified straight away." },
+      { title: "Override a single zone", body: "If one outlet differs (bistro delivers, rooftop collects), open that zone card, switch on the service override and set its own mode and collection point." },
+      { route: "/orders", selector: '[data-copilot-target="/orders"]', title: "Fire the alert", body: "On the Orders board, moving an order to Ready sends the alert. Zones with table service are unaffected." },
+    ],
+  },
+  {
     id: "surcharge-special-dates",
     title: "Surcharge a public holiday or event date",
     description: "Add custom date ranges to a surcharge.",

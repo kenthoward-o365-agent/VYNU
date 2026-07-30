@@ -8,7 +8,7 @@ import {
   BookOpen, LayoutDashboard, UtensilsCrossed, Tag, QrCode, ClipboardList,
   TrendingUp, Users, Settings, BarChart3, ChevronRight, Rocket, Sparkles,
   SlidersHorizontal, Gift, Bot, CreditCard, Receipt, FileText, Menu, X, Monitor, Sliders, Plug,
-  MonitorSmartphone, Search, Layers, Percent
+  MonitorSmartphone, Search, Layers, Percent, BellRing
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +30,7 @@ const tocItems: TocItem[] = [
   { id: "tables-qr", label: "Tables & QR", icon: QrCode },
   { id: "orders", label: "Orders", icon: ClipboardList },
   { id: "open-tabs", label: "Open Tabs & Split Payments", icon: Receipt },
+  { id: "service-modes", label: "Service Modes & Ready Alerts", icon: BellRing },
   { id: "display-terminals", label: "Display Terminals", icon: Monitor },
   { id: "operational-throttling", label: "Operational Throttling", icon: Sliders },
   { id: "analytics", label: "Analytics", icon: TrendingUp },
@@ -1385,6 +1386,57 @@ export default function KnowledgeBase() {
           </SubSection>
         </Section>
 
+        {/* Service Modes & Ready Alerts */}
+        <Section id="service-modes" title="Service Modes &amp; Ready Alerts" icon={BellRing} hidden={isHidden("service-modes")}>
+          <SubSection title="Not every venue runs food to the table">
+            <p>Some venues deliver every plate to the table; others call the diner to the bar, the kitchen window or a hostess station. <strong>Service mode</strong> tells H&L OrderNOW which of those two models applies, so the diner is told the right thing and gets a nudge when their food is ready.</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Delivered to table</strong> — staff run the order out. The diner sees the normal Received → Preparing → Ready → Served tracker.</li>
+              <li><strong>Diner collects at the counter</strong> — the diner is told where to collect at checkout, and is alerted the moment the order is marked Ready.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="Venue-wide default vs per-zone override">
+            <p>The same two-level model used for payments applies here, and the settings screen makes the hierarchy explicit:</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Venue-wide defaults</strong> — the card at the top of <strong>Settings → Zones &amp; service</strong>. Set the service mode, the collection point wording and the ready-alert channels once, and every zone follows it. Single-outlet venues never need to touch anything else.</li>
+              <li><strong>Per-zone override</strong> — each zone card has an override toggle. Turn it on only where a zone behaves differently (e.g. the bistro is delivered to table while the rooftop bar is collect-at-counter). Zones without an override display &quot;Following venue default&quot; so nothing is ambiguous.</li>
+            </ul>
+            <p>Payment timing works exactly the same way: a venue-wide pay-at-order / pay-at-end default, with a per-zone payment override for venues that need it. Zone headers show badges (e.g. &quot;Collect at counter&quot;, &quot;Pay at order (zone rule)&quot;) so you can read the whole estate at a glance.</p>
+          </SubSection>
+
+          <SubSection title="Configuring collect-at-counter">
+            <StepList steps={[
+              "Settings → Zones & service.",
+              "On the venue-wide defaults card, choose 'Diner collects at the counter' if that's how most of the venue works.",
+              "Type the collection point exactly as a diner would look for it — 'Main bar', 'Kitchen window', 'Hostess station'.",
+              "Choose the ready-alert channels: SMS, in-app alert, or both.",
+              "For any zone that differs, open the zone card, switch on the service override and set that zone's mode and collection point.",
+              "Save. The change applies to the next order — no QR reprint, no diner app update.",
+            ]} />
+          </SubSection>
+
+          <SubSection title="What the diner sees">
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>At checkout</strong> — collect-at-counter zones show a clear &quot;You'll collect this at …&quot; note before payment, so there is no expectation of table service.</li>
+              <li><strong>On the order tracker</strong> — the status reads <strong>Collect</strong> rather than Served, and names the collection point.</li>
+              <li><strong>When staff mark the order Ready</strong> — an in-app alert appears immediately in the diner app, and an SMS is sent to the mobile on the order (&quot;Your order #123 is ready — collect at the Main bar&quot;).</li>
+              <li>The diner does not need to keep the app open; the SMS is the safety net for the diner who has pocketed their phone.</li>
+            </ul>
+          </SubSection>
+
+          <SubSection title="How the alert fires">
+            <p>Marking an order <strong>Ready</strong> on the Orders board (or from the POS via the sync) triggers the ready-notification service. It resolves the zone's service mode, builds the message from the collection point, writes the in-app alert and sends the SMS through the venue's messaging provider.</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li>Only orders in collect-at-counter zones fire a collection alert; delivered-to-table zones behave as before.</li>
+              <li>One alert per order — re-opening and re-marking Ready does not spam the diner.</li>
+              <li>If SMS credentials are not configured, the SMS step is simulated and logged; the in-app alert always fires. Check this before a demo.</li>
+              <li>Guest orders without a mobile number get the in-app alert only.</li>
+            </ul>
+            <Tip>Pair collect-at-counter with Display Terminals at the collection station: the station screen shows what to hand over while the diner is already walking towards it.</Tip>
+          </SubSection>
+        </Section>
+
         {/* Pub+ Loyalty */}
         <Section id="pubplus" title="Pub+ Loyalty" icon={Gift} hidden={isHidden("pubplus")}>
           <SubSection title="What Pub+ is">
@@ -1421,8 +1473,32 @@ export default function KnowledgeBase() {
             </ul>
           </SubSection>
 
-          <SubSection title="Pub+ API integration (placeholder)">
-            <p>The Pub+ programme we've built is <em>self-contained</em> — it does not yet talk to ALH's Pub+ platform. A placeholder integration card sits in the Admin Panel under <strong>Admin → Integrations → Pub+</strong>, ready for the real API: member lookup, points balance sync, earn/burn posting and tier reconciliation. Until credentials are issued, the card shows as not configured and all Pub+ activity stays inside H&L OrderNOW.</p>
+          <SubSection title="Pub+ API integration — Eagle Eye AIR">
+            <p>Pub+ now has a real integration path. ALH's Pub+ runs on the <strong>Eagle Eye AIR</strong> platform, and H&L OrderNOW talks to it directly from <strong>Admin → POS Integrations → Loyalty → Pub+</strong>. The integration is configured per <em>group</em> (parent company), because Pub+ members and points are group-wide.</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Settings</strong> — environment base URL (sandbox or production), client ID, parent identity number, identity type (BARCODE by default) and an &quot;earn automatically on paid orders&quot; switch. The client secret is stored as a backend secret, never in the browser.</li>
+              <li><strong>Test connection</strong> — pings Eagle Eye's wallet service with signed credentials and records the result, timestamp and message on the card.</li>
+              <li><strong>Link</strong> — resolves a diner's Pub+ wallet from their membership number and stores the wallet, account and current points balance against their OrderNOW profile.</li>
+              <li><strong>Balance</strong> — refreshes the live points balance from Eagle Eye.</li>
+              <li><strong>Earn</strong> — posts the paid basket (line items, quantities, unit costs, venue site ID) to Eagle Eye so points land on the member's real Pub+ wallet. One earn per order, guarded against duplicates.</li>
+              <li><strong>Redeem</strong> — burns points against the Eagle Eye account and re-syncs the balance.</li>
+            </ul>
+            <p>Every call is authenticated with Eagle Eye's signed-hash scheme and logged with its payload, response and outcome, so failures are diagnosable without guesswork.</p>
+          </SubSection>
+
+          <SubSection title="Replacing the barcode scan">
+            <p>Today an ALH diner opens the Pub+ app and has a barcode scanned at the bar to earn points. In H&L OrderNOW the diner links their membership <em>once</em>:</p>
+            <StepList steps={[
+              "Diner opens their profile in the ordering app and taps the Pub+ membership card.",
+              "They either scan their physical Pub+ card with the phone camera (the app reads the barcode in-browser) or type the number printed under it.",
+              "We resolve the wallet with Eagle Eye and show their live points balance in the app.",
+              "From then on every order they place through the QR earns automatically at payment — no card, no scan, no staff involvement.",
+            ]} />
+            <Tip>This is the pitch to ALH: the member, the wallet and the points economy stay exactly as they are on Eagle Eye — we simply remove the barcode scan and let ordering do the earning.</Tip>
+          </SubSection>
+
+          <SubSection title="Simulation mode">
+            <p>Until ALH issue credentials, the integration runs in <strong>simulation mode</strong>: links, balances and earn events are recorded inside H&L OrderNOW so the whole diner journey can be demonstrated end to end, and every simulated call is logged as such. The moment the client ID and secret are loaded, the same flows switch to live Eagle Eye calls with no code change.</p>
             <Tip>When pitching to a group, run Pub+ end-to-end on a test parent company first: enable at parent, join as a diner at one child venue, order at a second child venue and show the shared balance. That demo is the whole value proposition in 90 seconds.</Tip>
           </SubSection>
         </Section>

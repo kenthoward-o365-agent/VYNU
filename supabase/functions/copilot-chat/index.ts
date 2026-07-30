@@ -101,8 +101,22 @@ const KB_TOPICS: { id: string; label: string; summary: string; details: string[]
       "Each venue still sees its own earn/redeem liability in reporting so the group can settle inter-venue redemption internally.",
       "Diner sign-up: Pub+ branded CTA on the venue landing page, Pub+ benefits on the diner sign-up form, a join prompt after the first paid order, and the AI agent can enrol or apply a redemption mid-conversation.",
       "Difference vs the real ALH programme: ALH Pub+ needs a downloaded app and a barcode scan in venue; in H&L OrderNOW the diner just signs in after scanning the table QR.",
-      "The Pub+ API integration is a PLACEHOLDER only — Admin → Integrations → Pub+. No live connection to ALH's platform yet; all Pub+ activity currently stays inside H&L OrderNOW.",
+      "Pub+ API integration is LIVE-CAPABLE via the Eagle Eye AIR platform (ALH's loyalty platform): Admin → POS Integrations → Loyalty → Pub+. Configured per group with base URL (sandbox/production), client ID, parent identity number, identity type (BARCODE) and auto-earn-on-paid. The client secret is a backend secret.",
+      "Eagle Eye actions supported: test connection, link a member's wallet from their card number, refresh points balance, earn (posts the paid basket line-by-line at payment), redeem (burns points).",
+      "Barcode replacement: the diner links their Pub+ card once — camera scan in the diner app or typing the number under the barcode — then every QR order earns automatically with no scan at the bar.",
+      "If Eagle Eye credentials are absent the integration runs in SIMULATION mode: links, balances and earns are recorded locally and logged as simulated, so the full journey can be demoed. No code change is needed when credentials land.",
       "Site managers can view (not override) inherited Pub+ rules from Admin → Venue → Pub+.",
+    ] },
+  { id: "service-modes", label: "Service Modes & Ready Alerts", summary: "Delivered-to-table vs diner-collects-at-counter, set venue-wide with per-zone overrides, plus SMS and in-app alerts when an order is ready.",
+    details: [
+      "Two service modes: 'Delivered to table' (staff run the order out) and 'Diner collects at the counter' (diner is told where to collect and alerted when Ready).",
+      "Set under Settings → Zones & service. The venue-wide defaults card at the top sets the service mode, collection point wording and alert channels for the whole venue; each zone card has an optional override for zones that differ. Zones without an override show 'Following venue default'.",
+      "Payment timing follows the same two-level model: a venue-wide pay-at-order / pay-at-end default plus an optional per-zone payment override. Zone headers show badges like 'Collect at counter' and 'Pay at order (zone rule)'.",
+      "Collection point should be worded as the diner would look for it: 'Main bar', 'Kitchen window', 'Hostess station'.",
+      "Diner experience: a 'You'll collect this at …' note at checkout, the tracker reads Collect instead of Served, and marking the order Ready fires an in-app alert plus an SMS naming the collection point.",
+      "One alert per order — re-marking Ready does not re-notify. Guest orders without a mobile get the in-app alert only.",
+      "If SMS credentials are not configured the SMS is simulated and logged; the in-app alert always fires. Check this before a demo.",
+      "Changes apply from the next order — no QR reprint needed.",
     ] },
   { id: "surcharges", label: "Gratuities & Surcharges", summary: "Tip prompts, weekend/public-holiday surcharges, and custom special date ranges for holidays and events.",
     details: [
@@ -678,7 +692,8 @@ RECENTLY SHIPPED (be confident about these; use search_knowledge_base / get_know
 - Zones: Settings → Zones (bottom-right tile) creates real zones (Public Bar, Bistro, Rooftop). Each zone carries one menu plus its own payment rules. The Tables page Zone field is now a dropdown, and QR URLs never change when a zone changes.
 - Multiple menus: a venue can run several menus (one per zone, menus can be shared). Menu Builder has a zone/menu switcher; Import Menu, Enhance/Generate Images and Modifiers are all scoped to the selected menu. "Missing" imported items usually means the switcher is on another menu.
 - Open tabs & split payments: per-zone pay-on-order vs run-a-tab, optional card pre-auth + amount, max tab amount, split evenly or custom, mixed tenders (card, wallets, gift card, voucher, cash, loyalty points). Staff manage live tabs from Orders → Open Tabs.
-- Pub+ loyalty: group-wide programme enabled at the parent company (Group dashboard → Pub+). All child venues inherit it and share members and points. The Pub+ API integration is a placeholder only.
+- Service modes & ready alerts: venue-wide default (delivered to table vs diner collects at counter) with optional per-zone override, a collection point label, and SMS + in-app alerts when an order is marked Ready. Same two-level model applies to pay-at-order vs pay-at-end. Settings → Zones & service.
+- Pub+ loyalty: group-wide programme enabled at the parent company (Group dashboard → Pub+). All child venues inherit it and share members and points. The Pub+ API now integrates with the Eagle Eye AIR platform (link, balance, earn, redeem) from Admin → POS Integrations → Loyalty → Pub+; it runs in simulation mode until ALH credentials are loaded, and the diner links their card once instead of scanning a barcode at the bar.
 - Surcharges now support custom special date ranges for public holidays and events, on top of weekday rules.
 - POS Integrations lists five providers — H&L Exceed (default/first), Doshii, Lightspeed, Square, Mock Provider — one active per venue.
 
