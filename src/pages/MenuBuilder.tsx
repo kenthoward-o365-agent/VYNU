@@ -15,6 +15,7 @@ import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, Fil
 import { Checkbox } from "@/components/ui/checkbox";
 import ImageEnhancerDialog from "@/components/menu/ImageEnhancerDialog";
 import DisplayAreaPicker, { type DisplayAreaOption } from "@/components/menu/DisplayAreaPicker";
+import MenuZoneSwitcher, { type VenueMenu, type ZoneRef } from "@/components/menu/MenuZoneSwitcher";
 import { cn } from "@/lib/utils";
 import { resizeFileToWebP } from "@/lib/image-utils";
 import { toast } from "sonner";
@@ -47,6 +48,7 @@ interface Category {
   name: string;
   display_order: number | null;
   is_active: boolean | null;
+  menu_id?: string | null;
 }
 
 const allergenOptions = ["Gluten", "Dairy", "Nuts", "Shellfish", "Eggs", "Soy", "Fish", "Sesame"];
@@ -65,6 +67,9 @@ export default function MenuBuilder() {
   const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
   const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [menus, setMenus] = useState<VenueMenu[]>([]);
+  const [zones, setZones] = useState<ZoneRef[]>([]);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [catDialogOpen, setCatDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -119,7 +124,7 @@ export default function MenuBuilder() {
 
   const fetchData = async () => {
     if (!venue) return;
-    const [itemsRes, catsRes, taxesRes, tfRes, daRes, mcdaRes, midaRes, costsRes] = await Promise.all([
+    const [itemsRes, catsRes, taxesRes, tfRes, daRes, mcdaRes, midaRes, costsRes, menusRes, zonesRes] = await Promise.all([
       // food_cost is staff-only (column SELECT revoked); fetch separately via RPC.
       supabase.from("menu_items").select("id,venue_id,name,description,price,prep_time_minutes,allergens,dietary_tags,category_id,is_available,image_url,plu,pos_id,display_order,created_at,updated_at").eq("venue_id", venue.id).order("display_order"),
       supabase.from("menu_categories").select("*").eq("venue_id", venue.id).order("display_order"),
@@ -129,6 +134,8 @@ export default function MenuBuilder() {
       supabase.from("menu_category_display_areas" as any).select("category_id, display_area_id, menu_categories!inner(venue_id)").eq("menu_categories.venue_id", venue.id),
       supabase.from("menu_item_display_areas" as any).select("menu_item_id, display_area_id, menu_items!inner(venue_id)").eq("menu_items.venue_id", venue.id),
       supabase.rpc("get_menu_item_food_costs", { _venue_id: venue.id }),
+      supabase.from("venue_menus").select("*").eq("venue_id", venue.id).order("display_order"),
+      supabase.from("venue_zones").select("id, name, color, menu_id, is_active").eq("venue_id", venue.id).order("display_order"),
     ]);
     const costMap: Record<string, number | null> = {};
     ((costsRes.data as any[]) || []).forEach((r) => { costMap[r.id] = r.food_cost; });
@@ -138,6 +145,13 @@ export default function MenuBuilder() {
     setVenueTaxes((taxesRes.data as any as TaxConfig[]) || []);
     setTimeFrames((tfRes.data as any[]) || []);
     setDisplayAreas(((daRes.data as any[]) || []) as DisplayAreaOption[]);
+
+    const menuRows = ((menusRes.data as any[]) || []) as VenueMenu[];
+    setMenus(menuRows);
+    setZones((((zonesRes.data as any[]) || []) as ZoneRef[]));
+    setActiveMenuId((current) =>
+      current && menuRows.some((m) => m.id === current) ? current : menuRows[0]?.id ?? null
+    );
 
     const catMap: Record<string, string[]> = {};
     ((mcdaRes.data as any[]) || []).forEach(r => {
@@ -155,6 +169,15 @@ export default function MenuBuilder() {
   };
 
   useEffect(() => { fetchData(); }, [venue]);
+
+  // Categories in the menu currently being edited
+  const visibleCategories = menus.length > 0
+    ? categories.filter((c) => c.menu_id === activeMenuId)
+    : categories;
+  const visibleCategoryIds = new Set(visibleCategories.map((c) => c.id));
+  const visibleItems = menus.length > 0
+    ? items.filter((i) => !i.category_id || visibleCategoryIds.has(i.category_id))
+    : items;
 
   // Fetch POS integration info when in POS mode
   useEffect(() => {
@@ -346,7 +369,7 @@ export default function MenuBuilder() {
 
   const addCategory = async () => {
     if (!venue || !newCatName.trim()) return;
-    const { error } = await supabase.from("menu_categories").insert({ venue_id: venue.id, name: newCatName.trim() });
+    const { error } = await supabase.from("menu_categories").insert({ venue_id: venue.id, name: newCatName.trim(), menu_id: activeMenuId } as any);
     if (error) { toast.error(error.message); return; }
     toast.success("Category added");
     setNewCatName("");
@@ -464,7 +487,7 @@ export default function MenuBuilder() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Menu Builder</h2>
-          <p className="text-muted-foreground">{items.length} items across {categories.length} categories</p>
+          <p className="text-muted-foreground">{visibleItems.length} items across {visibleCategories.length} categories</p>
         </div>
 
 
@@ -525,10 +548,21 @@ export default function MenuBuilder() {
         )}
       </div>
 
+      {venue && (
+        <MenuZoneSwitcher
+          venueId={venue.id}
+          menus={menus}
+          zones={zones}
+          activeMenuId={activeMenuId}
+          onSelect={setActiveMenuId}
+          onChanged={fetchData}
+          readOnly={isPosMode}
+        />
+      )}
 
 
       {/* Item list grouped by category */}
-      {categories.length === 0 && items.length === 0 ? (
+      {visibleCategories.length === 0 && visibleItems.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <UtensilsCrossed className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -542,7 +576,7 @@ export default function MenuBuilder() {
           <div className="space-y-6">
             {/* Uncategorized items */}
             {(() => {
-              const uncatItems = filterByDietary(items.filter((i) => !i.category_id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              const uncatItems = filterByDietary(visibleItems.filter((i) => !i.category_id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
               return uncatItems.length > 0 ? (
                 <div>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
@@ -572,7 +606,7 @@ export default function MenuBuilder() {
                 </div>
               ) : null;
             })()}
-            {categories.map((cat) => {
+            {visibleCategories.map((cat) => {
               const catItems = filterByDietary(items.filter((i) => i.category_id === cat.id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
               const catAreaIds = categoryAreas[cat.id] || [];
               const catAreaObjs = catAreaIds.map(id => displayAreas.find(a => a.id === id)).filter(Boolean) as DisplayAreaOption[];
@@ -676,7 +710,7 @@ export default function MenuBuilder() {
               <Select value={form.category_id} onValueChange={(v) => setForm((f) => ({ ...f, category_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
-                  {categories.map((c) => (
+                  {visibleCategories.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>

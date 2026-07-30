@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -20,20 +21,30 @@ interface Table {
   id: string;
   table_number: string;
   zone: string | null;
+  zone_id: string | null;
   capacity: number | null;
   qr_code: string | null;
   status: string | null;
 }
+
+interface Zone {
+  id: string;
+  name: string;
+  color: string;
+}
+
+const NO_ZONE = "__none__";
 
 type TableInsert = Database["public"]["Tables"]["tables"]["Insert"];
 
 export default function Tables() {
   const { venue } = useVenue();
   const [tables, setTables] = useState<Table[]>([]);
+  const [zones, setZones] = useState<Zone[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [qrDialogTable, setQrDialogTable] = useState<Table | null>(null);
   const [previewTable, setPreviewTable] = useState<Table | null>(null);
-  const [form, setForm] = useState({ table_number: "", zone: "", capacity: "4", pos_table_id: "" });
+  const [form, setForm] = useState({ table_number: "", zone_id: NO_ZONE, capacity: "4", pos_table_id: "" });
   const printRef = useRef<HTMLDivElement>(null);
 
   const getLiveUrl = (table: Table) => {
@@ -44,8 +55,12 @@ export default function Tables() {
 
   const fetchTables = useCallback(async () => {
     if (!venue) return;
-    const { data } = await supabase.from("tables").select("*").eq("venue_id", venue.id).order("table_number");
+    const [{ data }, { data: zoneRows }] = await Promise.all([
+      supabase.from("tables").select("*").eq("venue_id", venue.id).order("table_number"),
+      supabase.from("venue_zones").select("id, name, color").eq("venue_id", venue.id).eq("is_active", true).order("display_order"),
+    ]);
     setTables((data as Table[]) || []);
+    setZones(((zoneRows as any[]) || []) as Zone[]);
   }, [venue]);
 
   useEffect(() => { fetchTables(); }, [fetchTables]);
@@ -55,7 +70,7 @@ export default function Tables() {
     const newTable: TableInsert = {
       venue_id: venue.id,
       table_number: form.table_number,
-      zone: form.zone || null,
+      zone_id: form.zone_id === NO_ZONE ? null : form.zone_id,
       capacity: parseInt(form.capacity) || 4,
       pos_table_id: form.pos_table_id || null,
     };
@@ -65,7 +80,7 @@ export default function Tables() {
     await supabase.from("tables").update({ qr_code: qrUrl }).eq("id", data.id);
     toast.success("Table added");
     setDialogOpen(false);
-    setForm({ table_number: "", zone: "", capacity: "4", pos_table_id: "" });
+    setForm({ table_number: "", zone_id: NO_ZONE, capacity: "4", pos_table_id: "" });
     fetchTables();
   };
 
@@ -126,7 +141,23 @@ export default function Tables() {
             <DialogHeader><DialogTitle>Add Table</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <Input placeholder="Table number (e.g. 1, A1)" value={form.table_number} onChange={(e) => setForm((f) => ({ ...f, table_number: e.target.value }))} />
-              <Input placeholder="Zone (e.g. Patio, Main)" value={form.zone} onChange={(e) => setForm((f) => ({ ...f, zone: e.target.value }))} />
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Zone</Label>
+                <Select value={form.zone_id} onValueChange={(v) => setForm((f) => ({ ...f, zone_id: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select a zone" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_ZONE}>No zone</SelectItem>
+                    {zones.map((z) => (
+                      <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {zones.length === 0
+                    ? "No zones yet — create them in Settings → Zones."
+                    : "The zone decides which menu this QR shows and whether diners can run a tab."}
+                </p>
+              </div>
               <Input type="number" placeholder="Capacity" value={form.capacity} onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))} />
               <details className="border border-border rounded-lg">
                 <summary className="px-4 py-2.5 text-sm font-medium cursor-pointer text-muted-foreground hover:text-foreground">POS Integration</summary>

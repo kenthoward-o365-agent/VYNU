@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard, Receipt, Bot, Plug, Percent, Globe, ArrowLeft, ChevronRight } from "lucide-react";
+import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard, Receipt, Bot, Plug, Percent, Globe, ArrowLeft, ChevronRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import SippaAISettings from "@/components/venue/SippaAISettings";
 import PaymentSettingsTab from "@/components/venue/PaymentSettingsTab";
@@ -25,7 +25,7 @@ import SurchargeSettingsTab from "@/components/venue/SurchargeSettingsTab";
 import IntegrationsSettingsTab from "@/components/venue/IntegrationsSettingsTab";
 import RolesManager from "@/components/venue/RolesManager";
 import TableSessionsSettingsTab from "@/components/venue/TableSessionsSettingsTab";
-import TabsSettingsTab from "@/components/venue/TabsSettingsTab";
+import ZonesSettingsTab from "@/components/venue/ZonesSettingsTab";
 import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
 
 const venueTypes = [
@@ -323,9 +323,9 @@ export default function VenueSettings() {
       { key: "surcharges", label: "Surcharges", description: "Weekend & public holiday surcharges", icon: Percent, to: "/settings?tab=surcharges" },
       { key: "taxes", label: "Taxes", description: "GST and tax configuration", icon: Receipt, to: "/settings?tab=taxes" },
       { key: "table-sessions", label: "Table Sessions", description: "Session length and behaviour", icon: Users, to: "/settings?tab=table-sessions" },
-      { key: "tabs", label: "Open Tabs", description: "Run a tab by area, pre-auth & split payments", icon: Receipt, to: "/settings?tab=tabs" },
       { key: "integrations", label: "Integrations", description: "POS and third-party connectors", icon: Plug, to: "/settings?tab=integrations" },
       { key: "landing", label: "Landing Page Editor", description: "Customise your public venue page", icon: Globe, to: "/settings/landing-page" },
+      { key: "zones", label: "Zones", description: "Outlets, their menu & payment rules", icon: MapPin, to: "/settings?tab=zones" },
     ];
     return (
       <div className="space-y-6">
@@ -694,8 +694,11 @@ export default function VenueSettings() {
             <TabsContent value="table-sessions" className="space-y-6">
               <TableSessionsSettingsTab venueId={venue.id} />
             </TabsContent>
+            <TabsContent value="zones" className="space-y-6">
+              <ZonesSettingsTab venueId={venue.id} />
+            </TabsContent>
             <TabsContent value="tabs" className="space-y-6">
-              <TabsSettingsTab venueId={venue.id} />
+              <ZonesSettingsTab venueId={venue.id} />
             </TabsContent>
           </>
         )}
