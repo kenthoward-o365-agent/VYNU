@@ -1896,6 +1896,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_ordrup_builtin: boolean
+          is_pubplus: boolean
           name: string
           program_type: Database["public"]["Enums"]["loyalty_program_type"]
           rules: Json | null
@@ -1908,6 +1909,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_ordrup_builtin?: boolean
+          is_pubplus?: boolean
           name: string
           program_type?: Database["public"]["Enums"]["loyalty_program_type"]
           rules?: Json | null
@@ -1920,6 +1922,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_ordrup_builtin?: boolean
+          is_pubplus?: boolean
           name?: string
           program_type?: Database["public"]["Enums"]["loyalty_program_type"]
           rules?: Json | null
