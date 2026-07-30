@@ -126,21 +126,35 @@ export default function Modifiers() {
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiMenuItems, setAiMenuItems] = useState<{ id: string; name: string }[]>([]);
+  // Menu scoping — modifiers are venue-wide, but assignment is done per menu.
+  const [menus, setMenus] = useState<{ id: string; name: string }[]>([]);
+  const [menuCatMap, setMenuCatMap] = useState<Record<string, string | null>>({});
+  const [activeMenuId, setActiveMenuId] = useState<string>("all");
   const [savingAi, setSavingAi] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!venue) return;
     setLoading(true);
-    const [catsRes, modsRes, assignRes, itemsRes] = await Promise.all([
+    const [catsRes, modsRes, assignRes, itemsRes, menusRes, menuCatsRes] = await Promise.all([
       supabase.from("modifier_categories").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("modifiers").select("*").eq("venue_id", venue.id).order("display_order"),
       supabase.from("menu_item_modifiers").select("*"),
       supabase.from("menu_items").select("id, name, category_id").eq("venue_id", venue.id).order("name"),
-    ]);
+      supabase.from("venue_menus").select("id, name").eq("venue_id", venue.id).order("display_order"),
+      supabase.from("menu_categories").select("id, menu_id").eq("venue_id", venue.id),
+    ]) as any[];
     setCategories((catsRes.data as any) || []);
     setModifiers(modsRes.data || []);
     setAssignments(assignRes.data || []);
     setMenuItems(itemsRes.data || []);
+    const menuRows = ((menusRes?.data as any[]) || []) as { id: string; name: string }[];
+    setMenus(menuRows);
+    const mcMap: Record<string, string | null> = {};
+    ((menuCatsRes?.data as any[]) || []).forEach((c) => { mcMap[c.id] = c.menu_id ?? null; });
+    setMenuCatMap(mcMap);
+    setActiveMenuId((current) =>
+      current !== "all" && menuRows.some((m) => m.id === current) ? current : (menuRows[0]?.id ?? "all")
+    );
     if (!selectedCatId && catsRes.data?.length) setSelectedCatId(catsRes.data[0].id);
     setLoading(false);
   }, [venue, selectedCatId]);
@@ -289,6 +303,9 @@ export default function Modifiers() {
   };
 
   const selectedCatModifiers = modifiers.filter(m => m.category_id === selectedCatId);
+  const visibleMenuItems = activeMenuId === "all" || menus.length === 0
+    ? menuItems
+    : menuItems.filter(i => i.category_id && menuCatMap[i.category_id] === activeMenuId);
 
   if (loading) {
     return <div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -447,6 +464,18 @@ export default function Modifiers() {
           ) : (
             <Card>
               <CardContent className="pt-6 space-y-3">
+                {menus.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Menu</span>
+                    <Select value={activeMenuId} onValueChange={setActiveMenuId}>
+                      <SelectTrigger className="h-8 w-[220px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {menus.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                        <SelectItem value="all">All menus</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Tick to assign a category. Toggle to mark Required. Use the reorder button on each row to set the order optional categories appear to diners.
                 </p>
@@ -464,7 +493,7 @@ export default function Modifiers() {
                       </tr>
                     </thead>
                     <tbody>
-                      {menuItems.map(item => {
+                      {visibleMenuItems.map(item => {
                         const itemAssignmentCount = assignments.filter(a => a.menu_item_id === item.id).length;
                         return (
                         <tr key={item.id} className="border-b last:border-0 hover:bg-muted/50">

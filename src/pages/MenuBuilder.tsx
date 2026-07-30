@@ -381,7 +381,7 @@ export default function MenuBuilder() {
     if (!venue) return;
     setImporting(true);
     try {
-      const body: any = { venue_id: venue.id };
+      const body: any = { venue_id: venue.id, menu_id: activeMenuId };
       if (importMode === "url") {
         body.url = importUrl;
       } else if (importPdfBase64) {
@@ -1060,7 +1060,8 @@ export default function MenuBuilder() {
           open={enhanceDialogOpen}
           onOpenChange={setEnhanceDialogOpen}
           venueId={venue.id}
-          items={items as any}
+          items={visibleItems as any}
+          scopedItemIds={menus.length > 0 ? visibleItems.map((i) => i.id) : undefined}
           onComplete={fetchData}
         />
       )}

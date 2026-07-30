@@ -42,10 +42,12 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   venueId: string;
   items: { id: string; name: string; description?: string | null; image_url: string | null; image_ai_status?: string | null }[];
+  /** When set, all queries/generation are scoped to these menu item ids (current menu). */
+  scopedItemIds?: string[];
   onComplete: () => void;
 }
 
-export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items, onComplete }: Props) {
+export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items, scopedItemIds, onComplete }: Props) {
   const ENHANCE_REQUEST_TIMEOUT_MS = 90_000;
   const ENHANCE_DELAY_MS = 1_500;
   const [tab, setTab] = useState("enhance");
@@ -217,8 +219,10 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
   );
 
   const dispatchGeneration = useCallback(async (chunk?: MissingImageItem[]) => {
-    const payload = chunk?.length
-      ? { venueId, items: chunk.map((i) => ({ id: i.id, name: i.name, description: i.description })) }
+    // Always scope to the current menu's items when a scope is provided.
+    const target = chunk?.length ? chunk : (scopedItemIds ? missingImageItems : undefined);
+    const payload = target?.length
+      ? { venueId, items: target.map((i) => ({ id: i.id, name: i.name, description: i.description })) }
       : { venueId };
 
     const { data, error } = await supabase.functions.invoke("batch-generate-images", {
@@ -227,7 +231,8 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
     if (error) throw error;
     if (data?.error) throw new Error(data.error);
     return data;
-  }, [venueId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venueId, scopedItemIds, missingImageItems]);
 
   // Clean up polling on unmount
   useEffect(() => {
@@ -241,23 +246,32 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
   useEffect(() => {
     if (genProcessing && !pollingRef.current) {
       pollingRef.current = setInterval(async () => {
-        const { data: pending } = await supabase
-          .from("menu_items")
-          .select("id, name, image_url, image_ai_status")
-          .eq("venue_id", venueId)
-          .in("image_ai_status", ["queued", "processing"] as any[]);
+        const scope = <T extends { in: (c: string, v: any[]) => T }>(q: T) =>
+          scopedItemIds ? q.in("id", scopedItemIds) : q;
 
-        const { data: completed } = await supabase
-          .from("menu_items")
-          .select("id, name, image_url, image_ai_status")
-          .eq("venue_id", venueId)
-          .in("image_ai_status", ["generated", "failed"] as any[]);
+        const { data: pending } = await scope(
+          supabase
+            .from("menu_items")
+            .select("id, name, image_url, image_ai_status")
+            .eq("venue_id", venueId)
+            .in("image_ai_status", ["queued", "processing"] as any[]) as any
+        );
 
-        const { count: remainingMissing } = await supabase
-          .from("menu_items")
-          .select("id", { count: "exact", head: true })
-          .eq("venue_id", venueId)
-          .is("image_url", null);
+        const { data: completed } = await scope(
+          supabase
+            .from("menu_items")
+            .select("id, name, image_url, image_ai_status")
+            .eq("venue_id", venueId)
+            .in("image_ai_status", ["generated", "failed"] as any[]) as any
+        );
+
+        const { count: remainingMissing } = await scope(
+          supabase
+            .from("menu_items")
+            .select("id", { count: "exact", head: true })
+            .eq("venue_id", venueId)
+            .is("image_url", null) as any
+        );
 
         const generated = (completed || []).filter(
           (c) => c.image_ai_status === "generated" && c.image_url
