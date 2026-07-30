@@ -67,7 +67,7 @@ export default function GroupDashboard() {
   const { user } = useAuth();
   const { group: activeGroup, groups, venues, isGroupAdmin, isTablessAdmin, refetch } = useVenue();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const group = activeGroup ?? groups.find((g) => g.id === selectedGroupId) ?? (isTablessAdmin ? groups[0] : null) ?? null;
+  const group = groups.find((g) => g.id === selectedGroupId) ?? activeGroup ?? (isTablessAdmin ? groups[0] : null) ?? null;
   const groupVenues = venues.filter((v) => v.group_id === group?.id);
 
   /* ── No group: creation UI ── */
