@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { User, Receipt, Star, MapPin, Pencil, Check, X, LogOut, Sparkles, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import PubPlusMembershipCard from "@/components/consumer/PubPlusMembershipCard";
 
 const COMMON_ALLERGENS = [
   "Gluten", "Dairy", "Eggs", "Soy", "Peanuts", "Tree Nuts",
@@ -498,6 +499,14 @@ export default function DinerProfile({ venueId, groupId, onSignup, onSignin }: D
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Pub+ card link (only renders when the group has the integration set up) */}
+      {profile?.id && groupId && (
+        <>
+          <Separator />
+          <PubPlusMembershipCard dinerId={profile.id} groupId={groupId} />
+        </>
       )}
 
       {/* Loyalty */}
