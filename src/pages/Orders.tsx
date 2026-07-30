@@ -13,6 +13,7 @@ import RefundDialog from "@/components/orders/RefundDialog";
 import ReopenStatusDialog from "@/components/orders/ReopenStatusDialog";
 import PairTerminalDialog from "@/components/orders/PairTerminalDialog";
 import ThrottleStatusBar from "@/components/orders/ThrottleStatusBar";
+import OpenTabsPanel from "@/components/orders/OpenTabsPanel";
 import SessionFireBar, { type SessionInfo } from "@/components/orders/SessionFireBar";
 import { usePermissions } from "@/hooks/use-permissions";
 import { applyRealtimePatch, prependFetchedRow, type RealtimePayload } from "@/lib/realtime-patch";
