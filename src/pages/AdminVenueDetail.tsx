@@ -317,6 +317,9 @@ export default function AdminVenueDetail() {
           <TabsTrigger value="billing"><DollarSign className="h-3.5 w-3.5 mr-1" />Commercials</TabsTrigger>
           <TabsTrigger value="payments"><CreditCard className="h-3.5 w-3.5 mr-1" />Payments</TabsTrigger>
           <TabsTrigger value="loyalty"><Gift className="h-3.5 w-3.5 mr-1" />Loyalty</TabsTrigger>
+          {venue?.group_id && (
+            <TabsTrigger value="pubplus"><Beer className="h-3.5 w-3.5 mr-1" />Pub+</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="package">
