@@ -47,6 +47,7 @@ interface Category {
   name: string;
   display_order: number | null;
   is_active: boolean | null;
+  menu_id?: string | null;
 }
 
 const allergenOptions = ["Gluten", "Dairy", "Nuts", "Shellfish", "Eggs", "Soy", "Fish", "Sesame"];
