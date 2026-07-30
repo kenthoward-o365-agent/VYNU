@@ -906,7 +906,16 @@ const CheckoutPanel = ({
           </div>
         )}
 
-        {paymentEnabled && (
+        {tabMode === "tab" && !needsPreauth && paymentEnabled && (
+          <div className="bg-muted rounded-xl p-4 text-center">
+            <p className="text-sm text-muted-foreground">
+              No payment now — this round goes on your tab. Settle the whole bill from "View tab
+              &amp; pay" whenever you're ready.
+            </p>
+          </div>
+        )}
+
+        {paymentEnabled && paymentUiNeeded && (
           <>
             <Separator />
 
