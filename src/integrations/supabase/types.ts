@@ -2975,9 +2975,11 @@ export type Database = {
           capabilities: Json
           config_schema: Json
           created_at: string
+          display_order: number
           docs_url: string | null
           id: string
           is_active: boolean
+          is_default: boolean
           logo_url: string | null
           name: string
           slug: string
@@ -2990,9 +2992,11 @@ export type Database = {
           capabilities?: Json
           config_schema?: Json
           created_at?: string
+          display_order?: number
           docs_url?: string | null
           id?: string
           is_active?: boolean
+          is_default?: boolean
           logo_url?: string | null
           name: string
           slug: string
@@ -3005,9 +3009,11 @@ export type Database = {
           capabilities?: Json
           config_schema?: Json
           created_at?: string
+          display_order?: number
           docs_url?: string | null
           id?: string
           is_active?: boolean
+          is_default?: boolean
           logo_url?: string | null
           name?: string
           slug?: string

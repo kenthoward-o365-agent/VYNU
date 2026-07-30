@@ -19,6 +19,8 @@ interface Provider {
   auth_type: string;
   status: string;
   is_active: boolean;
+  is_default: boolean;
+  display_order: number;
   capabilities: Record<string, boolean>;
   docs_url: string | null;
 }
@@ -45,7 +47,7 @@ export default function AdminIntegrations() {
   async function load() {
     setLoading(true);
     const [{ data: provs }, { data: conns }] = await Promise.all([
-      (supabase as any).from("pos_providers").select("*").order("name"),
+      (supabase as any).from("pos_providers").select("*").order("display_order").order("name"),
       (supabase as any).from("venue_pos_integrations")
         .select("id, venue_id, connection_status, last_sync_at, last_error, pos_providers(slug,name), venues(name)")
         .order("last_sync_at", { ascending: false, nullsFirst: false }),
@@ -100,9 +102,10 @@ export default function AdminIntegrations() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex flex-wrap items-center gap-2">
                         {p.name}
                         <Badge variant={releaseColor(p.status)}>{p.status.toUpperCase()}</Badge>
+                        {p.is_default && <Badge variant="secondary">DEFAULT</Badge>}
                       </CardTitle>
                       <CardDescription className="mt-1">{p.slug} · {p.auth_type}</CardDescription>
                     </div>
