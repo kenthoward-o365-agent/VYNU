@@ -433,6 +433,52 @@ const CheckoutPanel = ({
     browserInfo: any,
     helpers: { resolve: (res: any) => void; reject: (err?: any) => void }
   ) => {
+    // Tab mode with a required deposit: authorise the pre-auth, open the tab,
+    // then push this round onto the tab (nothing else is charged now).
+    if (tabMode === "tab") {
+      let tabId: string | null = null;
+      try {
+        tabId = await ensureTab();
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: any = {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        };
+        if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/adyen-payment`,
+          {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              action: "create_payment",
+              venue_id: venueId,
+              amount: preauthAmount,
+              currency: "AUD",
+              reference: `preauth_${tabId}`,
+              return_url: window.location.href,
+              payment_method: paymentMethod,
+              browser_info: browserInfo,
+              shopper_reference: dinerId ? `diner_${dinerId}` : `anon_${Date.now()}`,
+              diner_id: dinerId || undefined,
+            }),
+          }
+        );
+        const result = await resp.json();
+        helpers.resolve({ resultCode: result.resultCode, action: result.action });
+        if (result.resultCode === "Authorised") {
+          await preauthAndAddToTab(result, tabId);
+        } else if (["Refused", "Error", "Cancelled"].includes(result.resultCode)) {
+          toast.error(`Pre-authorisation ${result.resultCode}: ${result.refusalReason || "Please try again"}`);
+        }
+      } catch (e: any) {
+        console.error("Tab pre-auth error", e);
+        helpers.reject();
+        toast.error(e.message || "Couldn't open your tab. Please try again.");
+      }
+      return;
+    }
+
     let orderId: string | null = null;
     try {
       orderId = await createOrderRow();
