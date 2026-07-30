@@ -297,6 +297,8 @@ const CheckoutPanel = ({
         customer_notes: tipAmount > 0 ? `Tip: $${tipAmount.toFixed(2)}` : null,
         session_id: sessionIdToStamp,
         session_mode: sessionIdToStamp ? "group" : "solo",
+        tab_id: opts?.tabId ?? null,
+        payment_status: opts?.tabId ? "unpaid" : "paid",
       } as any);
     if (orderError) throw orderError;
 
