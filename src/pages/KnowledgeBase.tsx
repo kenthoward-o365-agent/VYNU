@@ -1473,8 +1473,32 @@ export default function KnowledgeBase() {
             </ul>
           </SubSection>
 
-          <SubSection title="Pub+ API integration (placeholder)">
-            <p>The Pub+ programme we've built is <em>self-contained</em> — it does not yet talk to ALH's Pub+ platform. A placeholder integration card sits in the Admin Panel under <strong>Admin → Integrations → Pub+</strong>, ready for the real API: member lookup, points balance sync, earn/burn posting and tier reconciliation. Until credentials are issued, the card shows as not configured and all Pub+ activity stays inside H&L OrderNOW.</p>
+          <SubSection title="Pub+ API integration — Eagle Eye AIR">
+            <p>Pub+ now has a real integration path. ALH's Pub+ runs on the <strong>Eagle Eye AIR</strong> platform, and H&L OrderNOW talks to it directly from <strong>Admin → POS Integrations → Loyalty → Pub+</strong>. The integration is configured per <em>group</em> (parent company), because Pub+ members and points are group-wide.</p>
+            <ul className="list-disc list-inside space-y-1 pl-1">
+              <li><strong>Settings</strong> — environment base URL (sandbox or production), client ID, parent identity number, identity type (BARCODE by default) and an &quot;earn automatically on paid orders&quot; switch. The client secret is stored as a backend secret, never in the browser.</li>
+              <li><strong>Test connection</strong> — pings Eagle Eye's wallet service with signed credentials and records the result, timestamp and message on the card.</li>
+              <li><strong>Link</strong> — resolves a diner's Pub+ wallet from their membership number and stores the wallet, account and current points balance against their OrderNOW profile.</li>
+              <li><strong>Balance</strong> — refreshes the live points balance from Eagle Eye.</li>
+              <li><strong>Earn</strong> — posts the paid basket (line items, quantities, unit costs, venue site ID) to Eagle Eye so points land on the member's real Pub+ wallet. One earn per order, guarded against duplicates.</li>
+              <li><strong>Redeem</strong> — burns points against the Eagle Eye account and re-syncs the balance.</li>
+            </ul>
+            <p>Every call is authenticated with Eagle Eye's signed-hash scheme and logged with its payload, response and outcome, so failures are diagnosable without guesswork.</p>
+          </SubSection>
+
+          <SubSection title="Replacing the barcode scan">
+            <p>Today an ALH diner opens the Pub+ app and has a barcode scanned at the bar to earn points. In H&L OrderNOW the diner links their membership <em>once</em>:</p>
+            <StepList steps={[
+              "Diner opens their profile in the ordering app and taps the Pub+ membership card.",
+              "They either scan their physical Pub+ card with the phone camera (the app reads the barcode in-browser) or type the number printed under it.",
+              "We resolve the wallet with Eagle Eye and show their live points balance in the app.",
+              "From then on every order they place through the QR earns automatically at payment — no card, no scan, no staff involvement.",
+            ]} />
+            <Tip>This is the pitch to ALH: the member, the wallet and the points economy stay exactly as they are on Eagle Eye — we simply remove the barcode scan and let ordering do the earning.</Tip>
+          </SubSection>
+
+          <SubSection title="Simulation mode">
+            <p>Until ALH issue credentials, the integration runs in <strong>simulation mode</strong>: links, balances and earn events are recorded inside H&L OrderNOW so the whole diner journey can be demonstrated end to end, and every simulated call is logged as such. The moment the client ID and secret are loaded, the same flows switch to live Eagle Eye calls with no code change.</p>
             <Tip>When pitching to a group, run Pub+ end-to-end on a test parent company first: enable at parent, join as a diner at one child venue, order at a second child venue and show the shared balance. That demo is the whole value proposition in 90 seconds.</Tip>
           </SubSection>
         </Section>
