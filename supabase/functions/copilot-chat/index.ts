@@ -579,7 +579,7 @@ Deno.serve(async (req) => {
     }
 
     // Admin check for financial tools — is venue owner or platform admin
-    const { data: isManager } = await sbUser.rpc("is_venue_manager", { _user_id: userId, _venue_id: venue_id });
+    const { data: isManager } = await sb.rpc("is_venue_manager", { _user_id: userId, _venue_id: venue_id });
     const isAdmin = !!isPlatformAdmin || !!isManager;
 
     // Venue context
