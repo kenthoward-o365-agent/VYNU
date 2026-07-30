@@ -91,8 +91,32 @@ Deno.serve(async (req) => {
     const wantSync =
       body.sync === true || req.headers.get("x-sync-loyalty") === "1";
 
+    // Mirror the earn to Pub+ (Eagle Eye AIR) when the venue's group has the
+    // integration enabled. Fire-and-forget: never blocks the local award.
+    const mirrorToPubPlus = async () => {
+      try {
+        const { data: venue } = await admin
+          .from("venues").select("group_id").eq("id", order.venue_id).maybeSingle();
+        if (!venue?.group_id) return;
+        const { data: cfg } = await admin
+          .from("pubplus_integrations")
+          .select("enabled, auto_earn_on_paid")
+          .eq("group_id", venue.group_id)
+          .maybeSingle();
+        if (!cfg?.enabled || !cfg.auto_earn_on_paid) return;
+        await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/pubplus-air`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: authHeader },
+          body: JSON.stringify({ action: "earn", order_id }),
+        });
+      } catch (e) {
+        console.error("pubplus mirror failed", e);
+      }
+    };
+
     if (wantSync) {
       const result = await awardLoyalty(admin, { order_id, diner_id });
+      await mirrorToPubPlus();
       return json(result, result.error ? 500 : 200);
     }
 
@@ -105,6 +129,8 @@ Deno.serve(async (req) => {
       console.error("enqueue_job failed", error);
       return json({ error: "Failed to enqueue loyalty job" }, 500);
     }
+
+    void mirrorToPubPlus();
 
     return json({ enqueued: true, msg_id: msgId });
   } catch (err) {
