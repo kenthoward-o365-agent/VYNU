@@ -3513,6 +3513,234 @@ export type Database = {
         }
         Relationships: []
       }
+      pubplus_integrations: {
+        Row: {
+          auto_earn_on_paid: boolean
+          base_url: string
+          client_id: string | null
+          created_at: string
+          enabled: boolean
+          environment: string
+          group_id: string | null
+          id: string
+          identity_type: string
+          last_test_at: string | null
+          last_test_message: string | null
+          last_test_ok: boolean | null
+          parent_identity_number: string | null
+          updated_at: string
+          venue_id: string | null
+        }
+        Insert: {
+          auto_earn_on_paid?: boolean
+          base_url?: string
+          client_id?: string | null
+          created_at?: string
+          enabled?: boolean
+          environment?: string
+          group_id?: string | null
+          id?: string
+          identity_type?: string
+          last_test_at?: string | null
+          last_test_message?: string | null
+          last_test_ok?: boolean | null
+          parent_identity_number?: string | null
+          updated_at?: string
+          venue_id?: string | null
+        }
+        Update: {
+          auto_earn_on_paid?: boolean
+          base_url?: string
+          client_id?: string | null
+          created_at?: string
+          enabled?: boolean
+          environment?: string
+          group_id?: string | null
+          id?: string
+          identity_type?: string
+          last_test_at?: string | null
+          last_test_message?: string | null
+          last_test_ok?: boolean | null
+          parent_identity_number?: string | null
+          updated_at?: string
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pubplus_integrations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "venue_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pubplus_integrations_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pubplus_member_links: {
+        Row: {
+          created_at: string
+          diner_id: string
+          ee_account_id: string | null
+          ee_consumer_id: string | null
+          ee_wallet_id: string | null
+          group_id: string | null
+          id: string
+          identity_type: string
+          identity_value: string
+          last_error: string | null
+          last_synced_at: string | null
+          points_balance: number
+          program_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          diner_id: string
+          ee_account_id?: string | null
+          ee_consumer_id?: string | null
+          ee_wallet_id?: string | null
+          group_id?: string | null
+          id?: string
+          identity_type?: string
+          identity_value: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          points_balance?: number
+          program_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          diner_id?: string
+          ee_account_id?: string | null
+          ee_consumer_id?: string | null
+          ee_wallet_id?: string | null
+          group_id?: string | null
+          id?: string
+          identity_type?: string
+          identity_value?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          points_balance?: number
+          program_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pubplus_member_links_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pubplus_member_links_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "venue_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pubplus_member_links_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pubplus_transactions: {
+        Row: {
+          amount_cents: number | null
+          created_at: string
+          diner_id: string | null
+          ee_reference: string | null
+          error_message: string | null
+          group_id: string | null
+          id: string
+          kind: string
+          order_id: string | null
+          payload: Json
+          points_delta: number
+          response: Json | null
+          status: string
+          updated_at: string
+          venue_id: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          created_at?: string
+          diner_id?: string | null
+          ee_reference?: string | null
+          error_message?: string | null
+          group_id?: string | null
+          id?: string
+          kind: string
+          order_id?: string | null
+          payload?: Json
+          points_delta?: number
+          response?: Json | null
+          status?: string
+          updated_at?: string
+          venue_id?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          created_at?: string
+          diner_id?: string | null
+          ee_reference?: string | null
+          error_message?: string | null
+          group_id?: string | null
+          id?: string
+          kind?: string
+          order_id?: string | null
+          payload?: Json
+          points_delta?: number
+          response?: Json | null
+          status?: string
+          updated_at?: string
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pubplus_transactions_diner_id_fkey"
+            columns: ["diner_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pubplus_transactions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "venue_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pubplus_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pubplus_transactions_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sms_subscribers: {
         Row: {
           created_at: string
