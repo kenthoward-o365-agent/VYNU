@@ -19,6 +19,7 @@ import PackageFeaturesTab from "@/components/admin/PackageFeaturesTab";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
 import ChildVenueLoyaltyViewer from "@/components/venue/ChildVenueLoyaltyViewer";
 import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
+import PubPlusManager from "@/components/venue/PubPlusManager";
 
 
 import { Switch } from "@/components/ui/switch";
