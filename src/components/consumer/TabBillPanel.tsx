@@ -143,8 +143,8 @@ const TabBillPanel = ({
   };
 
   const handleDropinSubmit = async (
-    state: any,
-    _dropin: any,
+    paymentMethod: any,
+    browserInfo: any,
     helpers: { resolve: (r: any) => void; reject: (e?: any) => void }
   ) => {
     try {
