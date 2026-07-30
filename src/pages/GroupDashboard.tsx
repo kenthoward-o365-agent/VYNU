@@ -14,9 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Building2, DollarSign, ShoppingCart, TrendingUp, Settings, Users, Gift,
-  Plus, Trash2, Pencil, Search, Check, Mail, Phone, AlertTriangle, Star, Cake, Award, Sparkles, Settings2
+  Plus, Trash2, Pencil, Search, Check, Mail, Phone, AlertTriangle, Star, Cake, Award, Sparkles, Settings2, Beer
 } from "lucide-react";
 import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
+import PubPlusManager from "@/components/venue/PubPlusManager";
+
 import { toast } from "@/hooks/use-toast";
 
 /* ── Types ── */
