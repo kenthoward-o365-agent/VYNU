@@ -625,6 +625,8 @@ export default function Orders() {
 
       {venue && <ThrottleStatusBar venueId={venue.id} />}
 
+      {venue && <OpenTabsPanel venueId={venue.id} />}
+
       {/* Order summary cards */}
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
         <Card>
