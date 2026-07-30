@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
+import { safeHttpUrl } from "@/lib/url";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -106,24 +107,40 @@ export default function VenueBilling() {
     if (!el) return;
     const w = window.open("", "_blank", "width=900,height=1100");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>${detail?.invoice.invoice_number ?? "Invoice"}</title>
-      <style>
-        body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:32px;}
-        h1{font-size:22px;margin:0 0 4px} h2{font-size:14px;margin:24px 0 8px;color:#555;text-transform:uppercase;letter-spacing:.05em}
-        table{width:100%;border-collapse:collapse;margin-top:12px}
-        th,td{padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:13px}
-        th{background:#f8fafc;font-weight:600}
-        .right{text-align:right} .muted{color:#666;font-size:12px}
-        .totals td{border:none;padding:4px 10px} .totals .grand{font-weight:700;border-top:2px solid #111}
-        .meta{display:flex;justify-content:space-between;gap:24px;margin-top:16px}
-        .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef;font-size:11px;text-transform:uppercase}
-      </style></head><body>${el.innerHTML}</body></html>`);
-    w.document.close();
+
+    // HLRDRNW-68 · IVA-06 — build the print popup via DOM APIs. Only a static
+    // skeleton + stylesheet are written; the invoice number goes through
+    // textContent and the invoice body is imported as an already-rendered
+    // (React-escaped) DOM node rather than re-parsed from an HTML string.
+    const doc = w.document;
+    doc.write("<!doctype html><html><head></head><body></body></html>");
+    doc.close();
+
+    const titleEl = doc.createElement("title");
+    titleEl.textContent = detail?.invoice.invoice_number ?? "Invoice";
+    doc.head.appendChild(titleEl);
+
+    const style = doc.createElement("style");
+    style.textContent =
+      "body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:32px;}" +
+      "h1{font-size:22px;margin:0 0 4px} h2{font-size:14px;margin:24px 0 8px;color:#555;text-transform:uppercase;letter-spacing:.05em}" +
+      "table{width:100%;border-collapse:collapse;margin-top:12px}" +
+      "th,td{padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:13px}" +
+      "th{background:#f8fafc;font-weight:600}" +
+      ".right{text-align:right} .muted{color:#666;font-size:12px}" +
+      ".totals td{border:none;padding:4px 10px} .totals .grand{font-weight:700;border-top:2px solid #111}" +
+      ".meta{display:flex;justify-content:space-between;gap:24px;margin-top:16px}" +
+      ".badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef;font-size:11px;text-transform:uppercase}";
+    doc.head.appendChild(style);
+
+    doc.body.appendChild(doc.importNode(el, true));
     w.focus();
     setTimeout(() => w.print(), 250);
   };
 
   if (!venueId) return <div className="p-6 text-muted-foreground">Select a venue.</div>;
+
+  const invoicePdfUrl = safeHttpUrl(detail?.invoice.pdf_url);
 
   return (
     <div className="p-6 space-y-6 max-w-6xl">
@@ -201,8 +218,8 @@ export default function VenueBilling() {
                 <Button size="sm" variant="outline" onClick={printInvoice} disabled={!detail}>
                   <Download className="h-4 w-4 mr-2" />Save as PDF
                 </Button>
-                {detail?.invoice.pdf_url && (
-                  <a href={detail.invoice.pdf_url} target="_blank" rel="noreferrer">
+                {invoicePdfUrl && (
+                  <a href={invoicePdfUrl} target="_blank" rel="noreferrer">
                     <Button size="sm" variant="ghost">Official PDF</Button>
                   </a>
                 )}

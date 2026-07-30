@@ -92,22 +92,40 @@ export default function Tables() {
   const printQr = (table: Table) => {
     const svg = document.querySelector(`#qr-zoom svg`) as SVGElement;
     if (!svg) return;
-    const serializer = new XMLSerializer();
-    const source = serializer.serializeToString(svg);
     const win = window.open("", "_blank");
     if (!win) return;
-    win.document.write(`
-      <html><head><title>Table ${table.table_number} QR Code</title>
-      <style>body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:system-ui,sans-serif}
-      h2{margin-bottom:0.5rem}p{color:#666;font-size:0.85rem;margin-top:0.25rem}</style></head>
-      <body>
-        <h2>Table ${table.table_number}</h2>
-        ${source}
-        <p>${venue?.name || ""}</p>
-        <script>window.print();window.close();</script>
-      </body></html>
-    `);
-    win.document.close();
+
+    // HLRDRNW-68 · IVA-06 — build the print popup via DOM APIs so venue-controlled
+    // strings (table number, venue name) go through textContent and can never be
+    // interpreted as HTML/script. Only a static skeleton is written.
+    const doc = win.document;
+    doc.write("<!DOCTYPE html><html><head></head><body></body></html>");
+    doc.close();
+
+    const titleEl = doc.createElement("title");
+    titleEl.textContent = `Table ${table.table_number} QR Code`;
+    doc.head.appendChild(titleEl);
+
+    const style = doc.createElement("style");
+    style.textContent =
+      "body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:system-ui,sans-serif}" +
+      "h2{margin-bottom:0.5rem}p{color:#666;font-size:0.85rem;margin-top:0.25rem}";
+    doc.head.appendChild(style);
+
+    const heading = doc.createElement("h2");
+    heading.textContent = `Table ${table.table_number}`;
+    doc.body.appendChild(heading);
+
+    // The QR SVG is app-generated; import it as a parsed node (no re-serialisation).
+    doc.body.appendChild(doc.importNode(svg, true));
+
+    const caption = doc.createElement("p");
+    caption.textContent = venue?.name || "";
+    doc.body.appendChild(caption);
+
+    win.focus();
+    win.print();
+    win.close();
   };
 
   return (

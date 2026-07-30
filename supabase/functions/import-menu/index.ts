@@ -5,8 +5,26 @@ const corsHeaders = {
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireFeature } from '../_shared/require-feature.ts';
+import { assertPublicUrl, SsrfError } from '../_shared/url-guard.ts';
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+
+// HLRDRNW-68 · IVA-03 — bounds on AI-extracted menu data before it is written.
+const MAX_IMPORT_CATEGORIES = 200;
+const MAX_IMPORT_ITEMS_PER_CATEGORY = 500;
+const MAX_IMPORT_NAME_LEN = 200;
+const MAX_IMPORT_DESC_LEN = 2000;
+
+const boundImportStr = (v: unknown, max: number): string | null => {
+  if (typeof v !== 'string') return null;
+  const t = v.trim();
+  return t.length === 0 ? null : t.slice(0, max);
+};
+
+const boundImportPrice = (v: unknown): number => {
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+};
 
 const EXTRACTION_SCHEMA = {
   name: "extract_menu",
@@ -124,42 +142,16 @@ Deno.serve(async (req) => {
         formattedUrl = `https://${formattedUrl}`;
       }
 
-      // ── SSRF protection — block private/internal/metadata hosts ──
-      let parsedUrl: URL;
+      // ── SSRF protection (HLRDRNW-68 · IVA-03) ──
+      // Resolve the host and reject if it points at any private/link-local/
+      // metadata address (DNS-rebinding and IPv6-mapped forms included), rather
+      // than string-matching the hostname.
       try {
-        parsedUrl = new URL(formattedUrl);
-      } catch {
+        await assertPublicUrl(formattedUrl);
+      } catch (e) {
+        const msg = e instanceof SsrfError ? e.message : 'Invalid URL';
         return new Response(
-          JSON.stringify({ error: 'Invalid URL' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-        return new Response(
-          JSON.stringify({ error: 'Only http(s) URLs are allowed' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      const host = parsedUrl.hostname.toLowerCase();
-      const isBlocked =
-        host === 'localhost' ||
-        host === '0.0.0.0' ||
-        host.endsWith('.local') ||
-        host.endsWith('.internal') ||
-        // IPv4 private / loopback / link-local / metadata
-        /^127\./.test(host) ||
-        /^10\./.test(host) ||
-        /^192\.168\./.test(host) ||
-        /^169\.254\./.test(host) ||
-        /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host) ||
-        /^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\./.test(host) || // CGNAT
-        // IPv6 loopback / link-local / unique-local
-        host === '::1' || host.startsWith('[::1') ||
-        host.startsWith('[fc') || host.startsWith('[fd') ||
-        host.startsWith('[fe80');
-      if (isBlocked) {
-        return new Response(
-          JSON.stringify({ error: 'URL host is not allowed' }),
+          JSON.stringify({ error: msg }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -301,11 +293,21 @@ Be thorough — extract every single menu item you can find.`
     let totalItems = 0;
     let totalCategories = 0;
 
-    for (const cat of extractedMenu.categories) {
+    // HLRDRNW-68 · IVA-03 — the extracted menu is derived from attacker-influenced
+    // scraped/PDF content, so bound the counts and validate each field before it
+    // is written to the live menu.
+    const categoriesToImport = Array.isArray(extractedMenu.categories)
+      ? extractedMenu.categories.slice(0, MAX_IMPORT_CATEGORIES)
+      : [];
+
+    for (const cat of categoriesToImport) {
+      const catName = boundImportStr(cat?.name, MAX_IMPORT_NAME_LEN);
+      if (!catName) continue; // skip nameless / malformed categories
+
       // Create category
       const { data: catData, error: catErr } = await supabase
         .from('menu_categories')
-        .insert({ venue_id, name: cat.name, display_order: totalCategories })
+        .insert({ venue_id, name: catName, display_order: totalCategories })
         .select('id')
         .single();
 
@@ -316,19 +318,28 @@ Be thorough — extract every single menu item you can find.`
       totalCategories++;
 
       // Insert items
-      if (cat.items && cat.items.length > 0) {
-        const itemPayloads = cat.items.map((item: any, idx: number) => ({
-          venue_id,
-          category_id: catData.id,
-          name: item.name,
-          description: item.description || null,
-          price: item.price || 0,
-          allergens: item.allergens || [],
-          dietary_tags: item.dietary_tags || [],
-          display_order: idx,
-          is_available: true,
-        }));
+      const rawItems = Array.isArray(cat.items)
+        ? cat.items.slice(0, MAX_IMPORT_ITEMS_PER_CATEGORY)
+        : [];
+      const itemPayloads = rawItems
+        .map((item: any, idx: number) => {
+          const itemName = boundImportStr(item?.name, MAX_IMPORT_NAME_LEN);
+          if (!itemName) return null;
+          return {
+            venue_id,
+            category_id: catData.id,
+            name: itemName,
+            description: boundImportStr(item?.description, MAX_IMPORT_DESC_LEN),
+            price: boundImportPrice(item?.price),
+            allergens: Array.isArray(item?.allergens) ? item.allergens.slice(0, 50) : [],
+            dietary_tags: Array.isArray(item?.dietary_tags) ? item.dietary_tags.slice(0, 50) : [],
+            display_order: idx,
+            is_available: true,
+          };
+        })
+        .filter(Boolean);
 
+      if (itemPayloads.length > 0) {
         const { error: itemErr } = await supabase.from('menu_items').insert(itemPayloads);
         if (itemErr) {
           console.error('Items insert error:', itemErr);
