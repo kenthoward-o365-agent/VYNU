@@ -102,10 +102,10 @@ export default function Diners() {
     });
 
     const dinerIds = Array.from(dinerMap.keys());
-    const { data: profiles } = await supabase
-      .from("diner_profiles")
-      .select("*")
-      .in("id", dinerIds);
+    const { data: allProfiles } = await supabase.rpc("list_venue_diner_profiles" as any, {
+      _venue_ids: [venue.id],
+    });
+    const profiles = ((allProfiles as any[]) || []).filter((p) => dinerIds.includes(p.id));
 
     const result: DinerWithVisits[] = (profiles || []).map((p: any) => ({
       id: p.id,
