@@ -568,6 +568,53 @@ const CheckoutPanel = ({
 
   /** Stored-card / mock-fallback flow (no Drop-in) */
   const processLegacyPayment = async () => {
+    // Tab mode: either add straight to the tab, or take the deposit first.
+    if (tabMode === "tab") {
+      if (!needsPreauth) return handleAddToTab();
+      setProcessing(true);
+      try {
+        const tabId = await ensureTab();
+        const shopperRef = dinerId ? `diner_${dinerId}` : `anon_${Date.now()}`;
+        const { data: { session } } = await supabase.auth.getSession();
+        const headers: any = {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        };
+        if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+        const body: any = {
+          action: "create_payment",
+          venue_id: venueId,
+          amount: preauthAmount,
+          currency: "AUD",
+          reference: `preauth_${tabId}`,
+          return_url: window.location.href,
+        };
+        if (selectedStoredCard) {
+          const storedCard = storedCards.find((c) => c.token_reference === selectedStoredCard);
+          body.stored_card_token = selectedStoredCard;
+          body.shopper_reference = storedCard?.shopper_reference || shopperRef;
+        } else {
+          body.card = card;
+          body.shopper_reference = shopperRef;
+        }
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/adyen-payment`,
+          { method: "POST", headers, body: JSON.stringify(body) }
+        );
+        const result = await resp.json();
+        if (result.resultCode === "Authorised") {
+          await preauthAndAddToTab(result, tabId);
+        } else {
+          toast.error(`Pre-authorisation ${result.resultCode || "failed"}: ${result.refusalReason || "Please try again"}`);
+        }
+      } catch (e: any) {
+        console.error("Tab pre-auth error", e);
+        toast.error(e.message || "Couldn't open your tab. Please try again.");
+      }
+      setProcessing(false);
+      return;
+    }
+
     setProcessing(true);
     let orderId: string | null = null;
     try {
