@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { url, text, pdf_base64, venue_id } = await req.json();
+    const { url, text, pdf_base64, venue_id, menu_id } = await req.json();
 
     if (!venue_id) {
       return new Response(
@@ -113,6 +113,30 @@ Deno.serve(async (req) => {
 
     const denied = await requireFeature(supabase, venue_id, 'ai.menu_import', corsHeaders);
     if (denied) return denied;
+
+    // Resolve the target menu: the requested one (must belong to the venue),
+    // otherwise the venue's first menu. Categories MUST carry a menu_id or they
+    // are invisible in Menu Builder and to diners.
+    let targetMenuId: string | null = null;
+    if (menu_id) {
+      const { data: menuRow } = await supabase
+        .from('venue_menus')
+        .select('id')
+        .eq('id', menu_id)
+        .eq('venue_id', venue_id)
+        .maybeSingle();
+      targetMenuId = menuRow?.id ?? null;
+    }
+    if (!targetMenuId) {
+      const { data: firstMenu } = await supabase
+        .from('venue_menus')
+        .select('id')
+        .eq('venue_id', venue_id)
+        .order('display_order', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      targetMenuId = firstMenu?.id ?? null;
+    }
 
     let menuText = text || '';
     let pdfData = pdf_base64 || null;
@@ -305,7 +329,7 @@ Be thorough — extract every single menu item you can find.`
       // Create category
       const { data: catData, error: catErr } = await supabase
         .from('menu_categories')
-        .insert({ venue_id, name: cat.name, display_order: totalCategories })
+        .insert({ venue_id, name: cat.name, display_order: totalCategories, menu_id: targetMenuId })
         .select('id')
         .single();
 
