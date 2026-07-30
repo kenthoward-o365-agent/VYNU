@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Sparkles, X, Gift } from "lucide-react";
+import { Sparkles, X, Gift, Beer, Coins } from "lucide-react";
 import { toast } from "sonner";
+import { isPubPlusProgram, pubPlusCopy } from "@/lib/pubplus";
 
 interface LoyaltyJoinPromptProps {
   venueId: string;
@@ -85,6 +86,9 @@ const LoyaltyJoinPrompt = ({
 
   if (!show || !program || !visible) return null;
 
+  const isPubPlus = isPubPlusProgram(program);
+  const pp = isPubPlus ? pubPlusCopy(program.rules) : null;
+
   const handleDismiss = () => {
     localStorage.setItem(DISMISS_KEY_PREFIX + venueId, "1");
     setVisible(false);
@@ -95,11 +99,12 @@ const LoyaltyJoinPrompt = ({
     if (!dinerId || !program) return;
     setJoining(true);
     try {
-      const rules = program.rules && typeof program.rules === "object" ? program.rules : {};
-      const signupBonus = (rules as any).signup_bonus || 0;
-      const { error } = await supabase
-        .from("loyalty_balances")
-        .insert({ diner_id: dinerId, program_id: program.id, balance: signupBonus });
+      // Server-authoritative enrolment: the welcome bonus is computed from the
+      // program's own rules, never supplied by the client.
+      const { error } = await supabase.rpc("enroll_diner_in_loyalty", {
+        _diner_id: dinerId,
+        _program_id: program.id,
+      });
       if (error) throw error;
       toast.success(`You're in — welcome to ${program.name}! 🎉`);
       setVisible(false);
@@ -112,8 +117,9 @@ const LoyaltyJoinPrompt = ({
     }
   };
 
-  const rewardCopy =
-    program.program_type === "stamps"
+  const rewardCopy = pp
+    ? pp.earnLine
+    : program.program_type === "stamps"
       ? "Collect stamps every visit and unlock free items."
       : program.program_type === "tier"
         ? "Climb tiers for exclusive perks and priority service."
@@ -121,18 +127,44 @@ const LoyaltyJoinPrompt = ({
 
   const isOneTap = !!dinerId;
 
+  const bullets: string[] = pp
+    ? [
+        pp.coinLine,
+        pp.sharedLine,
+        pp.signupBonus > 0
+          ? `${pp.signupBonus} bonus points the moment you join.`
+          : "Member-only deals and offers across the group.",
+      ]
+    : [
+        isOneTap ? "Instant enrolment — no forms" : "Get recognised every time you return",
+        isOneTap
+          ? "Rewards stack on top of your other H&L OrderNOW memberships"
+          : "Faster checkout with saved details",
+        "Personalised offers just for you",
+      ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="w-full sm:max-w-md bg-card border border-border rounded-t-2xl sm:rounded-2xl shadow-xl p-6 m-0 sm:m-4 animate-in slide-in-from-bottom duration-300">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Sparkles className="h-5 w-5 text-primary" />
+              {isPubPlus ? (
+                <Beer className="h-5 w-5 text-primary" />
+              ) : (
+                <Sparkles className="h-5 w-5 text-primary" />
+              )}
             </div>
             <div>
               <h3 className="font-bold text-base leading-tight">Join {program.name}</h3>
               <p className="text-xs text-muted-foreground">
-                {isOneTap ? "One tap with your H&L OrderNOW ID" : "Free rewards program"}
+                {isPubPlus
+                  ? isOneTap
+                    ? "One tap — no app, no barcode"
+                    : "Free membership — no app to download"
+                  : isOneTap
+                    ? "One tap with your H&L OrderNOW ID"
+                    : "Free rewards program"}
               </p>
             </div>
           </div>
@@ -148,19 +180,30 @@ const LoyaltyJoinPrompt = ({
         <div className="space-y-3 mb-5">
           <p className="text-sm text-foreground">{rewardCopy}</p>
           <ul className="space-y-1.5 text-sm text-muted-foreground">
-            <li className="flex items-center gap-2">
-              <Gift className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span>{isOneTap ? "Instant enrolment — no forms" : "Get recognised every time you return"}</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Gift className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span>{isOneTap ? "Rewards stack on top of your other H&L OrderNOW memberships" : "Faster checkout with saved details"}</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <Gift className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span>Personalised offers just for you</span>
-            </li>
+            {bullets.map((b) => (
+              <li key={b} className="flex items-center gap-2">
+                {isPubPlus ? (
+                  <Coins className="h-3.5 w-3.5 text-primary shrink-0" />
+                ) : (
+                  <Gift className="h-3.5 w-3.5 text-primary shrink-0" />
+                )}
+                <span>{b}</span>
+              </li>
+            ))}
           </ul>
+
+          {pp && pp.deals.length > 0 && (
+            <div className="rounded-xl border border-border bg-muted/40 p-3 space-y-2">
+              <p className="text-xs font-semibold text-foreground">Member deals</p>
+              {pp.deals.slice(0, 3).map((d, i) => (
+                <div key={i} className="text-xs">
+                  {d.title && <span className="font-medium text-foreground">{d.title}</span>}
+                  {d.title && d.description && <span className="text-muted-foreground"> — </span>}
+                  {d.description && <span className="text-muted-foreground">{d.description}</span>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">
