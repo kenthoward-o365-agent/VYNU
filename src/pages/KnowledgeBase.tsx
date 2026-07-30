@@ -30,6 +30,7 @@ const tocItems: TocItem[] = [
   { id: "tables-qr", label: "Tables & QR", icon: QrCode },
   { id: "orders", label: "Orders", icon: ClipboardList },
   { id: "open-tabs", label: "Open Tabs & Split Payments", icon: Receipt },
+  { id: "service-modes", label: "Service Modes & Ready Alerts", icon: BellRing },
   { id: "display-terminals", label: "Display Terminals", icon: Monitor },
   { id: "operational-throttling", label: "Operational Throttling", icon: Sliders },
   { id: "analytics", label: "Analytics", icon: TrendingUp },
