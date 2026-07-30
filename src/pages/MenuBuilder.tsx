@@ -369,7 +369,7 @@ export default function MenuBuilder() {
 
   const addCategory = async () => {
     if (!venue || !newCatName.trim()) return;
-    const { error } = await supabase.from("menu_categories").insert({ venue_id: venue.id, name: newCatName.trim() });
+    const { error } = await supabase.from("menu_categories").insert({ venue_id: venue.id, name: newCatName.trim(), menu_id: activeMenuId } as any);
     if (error) { toast.error(error.message); return; }
     toast.success("Category added");
     setNewCatName("");
@@ -487,7 +487,7 @@ export default function MenuBuilder() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Menu Builder</h2>
-          <p className="text-muted-foreground">{items.length} items across {categories.length} categories</p>
+          <p className="text-muted-foreground">{visibleItems.length} items across {visibleCategories.length} categories</p>
         </div>
 
 
@@ -551,7 +551,7 @@ export default function MenuBuilder() {
 
 
       {/* Item list grouped by category */}
-      {categories.length === 0 && items.length === 0 ? (
+      {visibleCategories.length === 0 && visibleItems.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <UtensilsCrossed className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -565,7 +565,7 @@ export default function MenuBuilder() {
           <div className="space-y-6">
             {/* Uncategorized items */}
             {(() => {
-              const uncatItems = filterByDietary(items.filter((i) => !i.category_id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              const uncatItems = filterByDietary(visibleItems.filter((i) => !i.category_id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
               return uncatItems.length > 0 ? (
                 <div>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
@@ -595,7 +595,7 @@ export default function MenuBuilder() {
                 </div>
               ) : null;
             })()}
-            {categories.map((cat) => {
+            {visibleCategories.map((cat) => {
               const catItems = filterByDietary(items.filter((i) => i.category_id === cat.id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
               const catAreaIds = categoryAreas[cat.id] || [];
               const catAreaObjs = catAreaIds.map(id => displayAreas.find(a => a.id === id)).filter(Boolean) as DisplayAreaOption[];
@@ -699,7 +699,7 @@ export default function MenuBuilder() {
               <Select value={form.category_id} onValueChange={(v) => setForm((f) => ({ ...f, category_id: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
-                  {categories.map((c) => (
+                  {visibleCategories.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
