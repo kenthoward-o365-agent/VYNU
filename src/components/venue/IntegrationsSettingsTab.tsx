@@ -80,8 +80,9 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
     setLoading(true);
     const [{ data: provs }, { data: integ }, { data: logs }] = await Promise.all([
       (supabase as any).from("pos_providers")
-        .select("id, slug, name, auth_type, status, is_active, capabilities, docs_url")
+        .select("id, slug, name, auth_type, status, is_active, is_default, display_order, capabilities, docs_url")
         .eq("is_active", true)
+        .order("display_order")
         .order("name"),
       (supabase as any).from("venue_pos_integrations")
         .select("id, venue_id, provider_id, pos_provider, connection_status, last_sync_at, last_error, sync_status")
