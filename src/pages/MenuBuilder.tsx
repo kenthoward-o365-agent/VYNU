@@ -15,6 +15,7 @@ import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, Fil
 import { Checkbox } from "@/components/ui/checkbox";
 import ImageEnhancerDialog from "@/components/menu/ImageEnhancerDialog";
 import DisplayAreaPicker, { type DisplayAreaOption } from "@/components/menu/DisplayAreaPicker";
+import MenuZoneSwitcher, { type VenueMenu, type ZoneRef } from "@/components/menu/MenuZoneSwitcher";
 import { cn } from "@/lib/utils";
 import { resizeFileToWebP } from "@/lib/image-utils";
 import { toast } from "sonner";
