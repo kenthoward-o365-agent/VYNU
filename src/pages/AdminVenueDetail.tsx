@@ -633,6 +633,27 @@ export default function AdminVenueDetail() {
             </Card>
           )}
         </TabsContent>
+
+        {venue?.group_id && (
+          <TabsContent value="pubplus" className="space-y-6">
+            {venue.venue_type === "parent" ? (
+              <PubPlusManager
+                groupId={venue.group_id}
+                groupName={groups.find((g) => g.id === venue.group_id)?.name || venue.name}
+                venueCount={childVenues.length}
+              />
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Beer className="h-5 w-5 text-primary" /> Pub+</CardTitle>
+                  <CardDescription>
+                    Pub+ is managed at the parent company level and applies automatically to {venue.name}. Open the parent venue's Pub+ tab to configure it.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            )}
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
