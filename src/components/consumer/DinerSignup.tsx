@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Eye, EyeOff, Check, X, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { isPubPlusProgram } from "@/lib/pubplus";
 
 interface DinerSignupProps {
   venueId: string;
