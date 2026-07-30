@@ -22,6 +22,13 @@ interface CardSurcharge {
   rba_banned: boolean; // true = banned from Oct 1 2026
 }
 
+interface SpecialDate {
+  id: string;
+  label: string;
+  start_date: string; // YYYY-MM-DD
+  end_date: string;   // YYYY-MM-DD (same as start for a single day)
+}
+
 interface TimeSurcharge {
   id: string;
   label: string;
@@ -31,6 +38,7 @@ interface TimeSurcharge {
   all_day: boolean;
   start_time: string;
   end_time: string;
+  special_dates?: SpecialDate[]; // extra calendar dates the surcharge applies to
 }
 
 interface SurchargeConfig {
@@ -120,6 +128,7 @@ export default function SurchargeSettingsTab({ venueId }: { venueId: string }) {
           all_day: true,
           start_time: "00:00",
           end_time: "23:59",
+          special_dates: [],
         },
       ],
     }));
@@ -138,6 +147,51 @@ export default function SurchargeSettingsTab({ venueId }: { venueId: string }) {
     setConfig((prev) => ({
       ...prev,
       time_surcharges: prev.time_surcharges.filter((ts) => ts.id !== id),
+    }));
+  };
+
+  const addSpecialDate = (surchargeId: string) => {
+    const today = new Date().toISOString().split("T")[0];
+    setConfig((prev) => ({
+      ...prev,
+      time_surcharges: prev.time_surcharges.map((ts) =>
+        ts.id === surchargeId
+          ? {
+              ...ts,
+              special_dates: [
+                ...(ts.special_dates || []),
+                { id: crypto.randomUUID(), label: "", start_date: today, end_date: today },
+              ],
+            }
+          : ts
+      ),
+    }));
+  };
+
+  const updateSpecialDate = (surchargeId: string, dateId: string, patch: Partial<SpecialDate>) => {
+    setConfig((prev) => ({
+      ...prev,
+      time_surcharges: prev.time_surcharges.map((ts) =>
+        ts.id === surchargeId
+          ? {
+              ...ts,
+              special_dates: (ts.special_dates || []).map((d) =>
+                d.id === dateId ? { ...d, ...patch } : d
+              ),
+            }
+          : ts
+      ),
+    }));
+  };
+
+  const removeSpecialDate = (surchargeId: string, dateId: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      time_surcharges: prev.time_surcharges.map((ts) =>
+        ts.id === surchargeId
+          ? { ...ts, special_dates: (ts.special_dates || []).filter((d) => d.id !== dateId) }
+          : ts
+      ),
     }));
   };
 
@@ -353,6 +407,65 @@ export default function SurchargeSettingsTab({ venueId }: { venueId: string }) {
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Special dates */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Special dates</Label>
+                        <p className="text-[11px] text-muted-foreground">
+                          Apply this surcharge on specific dates regardless of the day of week — e.g. public holidays, Grand Prix weekend, NYE.
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={() => addSpecialDate(ts.id)}>
+                        <Plus className="h-3.5 w-3.5 mr-1" /> Add date
+                      </Button>
+                    </div>
+                    {(ts.special_dates || []).length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-1">No special dates added.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {(ts.special_dates || []).map((d) => (
+                          <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 p-2">
+                            <Input
+                              value={d.label}
+                              onChange={(e) => updateSpecialDate(ts.id, d.id, { label: e.target.value })}
+                              placeholder="e.g. Grand Prix"
+                              className="h-8 text-sm flex-1 min-w-[140px]"
+                            />
+                            <Input
+                              type="date"
+                              value={d.start_date}
+                              onChange={(e) => {
+                                const start = e.target.value;
+                                updateSpecialDate(ts.id, d.id, {
+                                  start_date: start,
+                                  end_date: d.end_date && d.end_date >= start ? d.end_date : start,
+                                });
+                              }}
+                              className="h-8 w-[150px] text-sm"
+                            />
+                            <span className="text-xs text-muted-foreground">to</span>
+                            <Input
+                              type="date"
+                              min={d.start_date}
+                              value={d.end_date}
+                              onChange={(e) => updateSpecialDate(ts.id, d.id, { end_date: e.target.value })}
+                              className="h-8 w-[150px] text-sm"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => removeSpecialDate(ts.id, d.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Time range */}
