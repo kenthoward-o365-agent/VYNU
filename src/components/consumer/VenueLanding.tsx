@@ -160,12 +160,27 @@ const VenueLanding = ({
       {!showChooser && (
         <div className="bg-accent/50 rounded-2xl border border-primary/20 p-4 mt-6 w-full max-w-xs">
           <div className="flex items-center gap-2 mb-2">
-            <Gift className="h-5 w-5 text-primary" />
-            <p className="text-sm font-semibold text-foreground">Earn rewards</p>
+            {pubPlus ? (
+              <Beer className="h-5 w-5 text-primary" />
+            ) : (
+              <Gift className="h-5 w-5 text-primary" />
+            )}
+            <p className="text-sm font-semibold text-foreground">
+              {pubPlus ? `${pubPlus.name} members` : "Earn rewards"}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Sign up for our loyalty program and earn points with every order.
-          </p>
+          {pubPlus ? (
+            <div className="space-y-1 text-xs text-muted-foreground">
+              <p>{pubPlus.copy.earnLine}</p>
+              <p>{pubPlus.copy.coinLine}</p>
+              <p>{pubPlus.copy.sharedLine}</p>
+              <p className="text-foreground/80">Just sign in — no app to download, no barcode to scan.</p>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Sign up for our loyalty program and earn points with every order.
+            </p>
+          )}
         </div>
       )}
       <p className="text-muted-foreground text-xs mt-4">
