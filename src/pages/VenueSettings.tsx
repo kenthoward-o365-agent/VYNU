@@ -322,6 +322,7 @@ export default function VenueSettings() {
       { key: "surcharges", label: "Surcharges", description: "Weekend & public holiday surcharges", icon: Percent, to: "/settings?tab=surcharges" },
       { key: "taxes", label: "Taxes", description: "GST and tax configuration", icon: Receipt, to: "/settings?tab=taxes" },
       { key: "table-sessions", label: "Table Sessions", description: "Session length and behaviour", icon: Users, to: "/settings?tab=table-sessions" },
+      { key: "tabs", label: "Open Tabs", description: "Run a tab by area, pre-auth & split payments", icon: Receipt, to: "/settings?tab=tabs" },
       { key: "integrations", label: "Integrations", description: "POS and third-party connectors", icon: Plug, to: "/settings?tab=integrations" },
       { key: "landing", label: "Landing Page Editor", description: "Customise your public venue page", icon: Globe, to: "/settings/landing-page" },
     ];
