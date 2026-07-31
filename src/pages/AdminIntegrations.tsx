@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { safeHttpUrl } from "@/lib/url";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -97,7 +98,9 @@ export default function AdminIntegrations() {
 
         <TabsContent value="providers" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {providers.map((p) => (
+            {providers.map((p) => {
+              const docsUrl = safeHttpUrl(p.docs_url);
+              return (
               <Card key={p.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -118,15 +121,16 @@ export default function AdminIntegrations() {
                       <Badge key={k} variant="outline" className="text-xs">{k.replace(/_/g, " ")}</Badge>
                     ))}
                   </div>
-                  {p.docs_url && (
-                    <a href={p.docs_url} target="_blank" rel="noreferrer"
+                  {docsUrl && (
+                    <a href={docsUrl} target="_blank" rel="noreferrer"
                        className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
                       Docs <ExternalLink className="h-3 w-3" />
                     </a>
                   )}
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         </TabsContent>
 

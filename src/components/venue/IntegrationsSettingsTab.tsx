@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { safeHttpUrl } from "@/lib/url";
 import { useVenue } from "@/contexts/VenueContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -190,6 +191,7 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
               {providers.map((p) => {
                 const isActive = integration?.pos_provider === p.slug;
                 const isConnected = isActive && integration?.connection_status === "connected";
+                const docsUrl = safeHttpUrl(p.docs_url);
                 return (
                   <div
                     key={p.id}
@@ -241,8 +243,8 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
                           {isActive ? "Finish setup" : "Connect"}
                         </Button>
                       )}
-                      {p.docs_url && (
-                        <a href={p.docs_url} target="_blank" rel="noreferrer"
+                      {docsUrl && (
+                        <a href={docsUrl} target="_blank" rel="noreferrer"
                            className="inline-flex items-center gap-1 text-xs text-primary hover:underline self-center">
                           Docs <ExternalLink className="h-3 w-3" />
                         </a>
