@@ -64,22 +64,13 @@ export default function RefundDialog({
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
 
-      const pspRef = data?.pspReference || null;
-      const status = (data?.status === "received" || data?.resultCode === "received") ? "received" : "pending";
-
-      // Log refund. Upsert on request_id (ignore duplicates) so a retried refund
-      // does not create a duplicate audit row.
-      const { error: insErr } = await supabase.from("order_refunds").upsert({
-        order_id: orderId,
-        venue_id: venueId,
-        amount: value,
-        reason: reason || null,
-        psp_reference: pspRef,
-        status,
-        requested_by: user.id,
-        request_id: requestId,
-      } as any, { onConflict: "request_id", ignoreDuplicates: true });
-      if (insErr) throw insErr;
+      // The refund is logged SERVER-SIDE by the adyen-payment function, in the same
+      // request that calls the provider and that enforces the refundable balance.
+      // Doing it here was unsafe: the balance the server trusts came from a write the
+      // browser might never complete, and the RLS insert policy on order_refunds is
+      // manager-only while the function also authorises staff with
+      // `can_process_refunds` — so for those users the log write always failed and
+      // the refund went unrecorded after the money had moved.
 
       // Re-open or fully refund the order
       const newRefunded = alreadyRefunded + value;

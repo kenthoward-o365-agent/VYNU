@@ -743,13 +743,50 @@ Deno.serve(async (req) => {
         return json({ error: "Refund amount exceeds the remaining refundable balance" }, 400);
       }
 
+      // PAY-04: record the refund HERE, in the same handler that calls the provider
+      // and that computes the refundable balance above. Previously the only writer
+      // was the browser (RefundDialog), which meant the balance the server enforces
+      // was derived from a log the server did not control:
+      //   * a client crash/timeout after the provider succeeded left the refund
+      //     unrecorded, so a later refund could exceed the true balance; and
+      //   * the RLS insert policy on order_refunds is is_venue_manager-only, while
+      //     this handler also authorises staff holding `can_process_refunds` — for
+      //     those users the insert was rejected EVERY time, so the money moved, the
+      //     operator was shown "Refund failed", and nothing was logged.
+      // Writing through adminClient (service role) bypasses RLS, and the unique
+      // index on request_id makes a repeat call a no-op rather than a duplicate row.
+      const logRefund = async (pspReference: string | null, status: string) => {
+        const { error: logErr } = await adminClient
+          .from("order_refunds")
+          .upsert({
+            order_id: order_id,
+            venue_id: venue_id,
+            amount: requestedRefundCents / 100,
+            reason: reason || null,
+            psp_reference: pspReference,
+            status,
+            requested_by: userId,
+            request_id: refundRequestId,
+          } as any, { onConflict: "request_id", ignoreDuplicates: true });
+        if (logErr) {
+          // The money has already moved; failing the response would tell the operator
+          // the refund did not happen. Surface it in logs and still report success —
+          // the balance may under-count until reconciled, which is why this is an
+          // error-level log.
+          console.error("[adyen-payment] FAILED to log refund", refundRequestId, logErr);
+        }
+      };
+
       // Mock mode — instant success
       if (isMock) {
+        const mockPspReference = `MOCK_REFUND_${Date.now()}`;
+        await logRefund(mockPspReference, "received");
         return json({
-          pspReference: `MOCK_REFUND_${Date.now()}`,
+          pspReference: mockPspReference,
           status: "received",
           amount,
           reason: reason || null,
+          refund_request_id: refundRequestId,
         });
       }
 
@@ -800,9 +837,12 @@ Deno.serve(async (req) => {
         return json({ error: "H&L Pay refund failed" }, 400);
       }
 
+      const refundStatus = refundResult.status || "received";
+      await logRefund(refundResult.pspReference || null, refundStatus);
+
       return json({
         pspReference: refundResult.pspReference,
-        status: refundResult.status || "received",
+        status: refundStatus,
         amount,
         reason: reason || null,
         refund_request_id: refundRequestId,
