@@ -327,7 +327,7 @@ Deno.serve(async (req) => {
       }
 
       // PAY-02: a stored card may only be charged by the authenticated diner who
-      // owns it (or by venue staff). Without this, any caller could charge another
+      // owns it (or by venue owners/managers). Without this, any caller could charge another
       // diner's saved card using its token + the predictable shopper_reference.
       // Mirrors the ownership gate already enforced on list/delete stored cards.
       if (stored_card_token) {

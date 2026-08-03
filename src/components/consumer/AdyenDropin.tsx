@@ -172,7 +172,7 @@ export default function ShyndigPayDropin({
       dropinRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentMethodsResponse, clientKey, environment, applePayMerchantId, googlePayMerchantId, gatewayMerchantId]);
+  }, [paymentMethodsResponse, clientKey, environment, amount, currency, countryCode, merchantName, applePayMerchantId, googlePayMerchantId, gatewayMerchantId]);
 
   if (mountError) {
     return (
