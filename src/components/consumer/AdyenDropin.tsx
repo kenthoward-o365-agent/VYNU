@@ -12,6 +12,12 @@ interface AdyenDropinProps {
   countryCode?: string;
   environment?: "test" | "live";
   clientKey?: string;
+  /** Per-venue Apple Pay merchant id (from venue_payment_config). Wallet is hidden when absent. */
+  applePayMerchantId?: string;
+  /** Per-venue Google Pay merchant id (Google-issued, e.g. BCR2DN4T…). Wallet hidden when absent. */
+  googlePayMerchantId?: string;
+  /** Google-Pay-via-Adyen gateway merchant id (the venue's Adyen merchant account). */
+  gatewayMerchantId?: string;
   /** Called when Drop-in submits a payment — must call resolve/reject from result */
   onSubmit: (
     paymentMethod: any,
@@ -39,6 +45,9 @@ export default function ShyndigPayDropin({
   countryCode = "AU",
   environment = "test",
   clientKey,
+  applePayMerchantId,
+  googlePayMerchantId,
+  gatewayMerchantId,
   onSubmit,
   onAdditionalDetails,
   onPaymentCompleted,
@@ -105,28 +114,44 @@ export default function ShyndigPayDropin({
 
         if (cancelled) return;
 
-        const dropin = new Dropin(checkout, {
-          paymentMethodComponents: [Card, ApplePay, GooglePay],
-          paymentMethodsConfiguration: {
-            card: {
-              hasHolderName: true,
-              holderNameRequired: true,
-              billingAddressRequired: false,
-            },
-            applepay: {
-              amount: { value: Math.round(amount * 100), currency },
-              configuration: { merchantName, merchantId: "merchant.com.ordrpayments" },
-            },
-            googlepay: {
-              amount: { value: Math.round(amount * 100), currency },
-              countryCode,
-              configuration: {
-                merchantName,
-                merchantId: "BCR2DN4T...",
-                gatewayMerchantId: "ShyndigPaymentsAU",
-              },
-            },
+        // PAY-05: configure wallets with the venue's REAL merchant identifiers
+        // (returned by the backend from venue_payment_config) — never a hardcoded
+        // placeholder. Fail closed: only offer a wallet when its production id is
+        // present, so a misconfigured venue does not ship a broken/placeholder
+        // wallet button.
+        const components: any[] = [Card];
+        const paymentMethodsConfiguration: any = {
+          card: {
+            hasHolderName: true,
+            holderNameRequired: true,
+            billingAddressRequired: false,
           },
+        };
+
+        if (applePayMerchantId) {
+          components.push(ApplePay);
+          paymentMethodsConfiguration.applepay = {
+            amount: { value: Math.round(amount * 100), currency },
+            configuration: { merchantName, merchantId: applePayMerchantId },
+          };
+        }
+
+        if (googlePayMerchantId && gatewayMerchantId) {
+          components.push(GooglePay);
+          paymentMethodsConfiguration.googlepay = {
+            amount: { value: Math.round(amount * 100), currency },
+            countryCode,
+            configuration: {
+              merchantName,
+              merchantId: googlePayMerchantId,
+              gatewayMerchantId,
+            },
+          };
+        }
+
+        const dropin = new Dropin(checkout, {
+          paymentMethodComponents: components,
+          paymentMethodsConfiguration,
         });
 
         dropin.mount(containerRef.current);
@@ -147,7 +172,7 @@ export default function ShyndigPayDropin({
       dropinRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentMethodsResponse, clientKey, environment]);
+  }, [paymentMethodsResponse, clientKey, environment, amount, currency, countryCode, merchantName, applePayMerchantId, googlePayMerchantId, gatewayMerchantId]);
 
   if (mountError) {
     return (

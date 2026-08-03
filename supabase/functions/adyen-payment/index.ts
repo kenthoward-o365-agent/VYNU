@@ -46,16 +46,13 @@ const MOCK_PAYMENT_METHODS = {
   ],
 };
 
-const MOCK_TEST_CARDS: Record<string, { resultCode: string; refusalReason?: string }> = {
-  "4111111111111111": { resultCode: "Authorised" },
-  "5555341244441115": { resultCode: "Authorised" },
-  "370000000000002":  { resultCode: "Authorised" },
-  "4871049999990006": { resultCode: "Authorised" },
-  "4000000000000002": { resultCode: "Refused", refusalReason: "Insufficient funds" },
-};
-
 function mockPayment(body: any) {
-  // Stored card always succeeds (in mock, the saved token is itself simulated)
+  // PAY-01: simulated payments NEVER accept real card data. In mock mode the
+  // diner-side UI collects no PAN/CVV — it simply submits a "simulate payment"
+  // request — so authorisation here is based purely on the mock flag, never on a
+  // card number.
+
+  // Stored card (simulated saved token) always succeeds.
   if (body.stored_card_token) {
     return {
       resultCode: "Authorised",
@@ -66,74 +63,40 @@ function mockPayment(body: any) {
     };
   }
 
-  // Drop-in payments — wallet tokens or encrypted card payloads.
-  // In mock mode wallets are NOT supported (the diner-side UI disables those
-  // buttons when mock_mode is true), so anything reaching here that claims to
-  // be a wallet payment is rejected to avoid silent free orders.
-  const pm = body.payment_method;
-  if (pm) {
+  // Wallet / encrypted Drop-in payloads are NOT supported in mock mode (the
+  // diner-side UI disables those buttons when mock_mode is true), so anything
+  // reaching here that claims to be a wallet payment is rejected.
+  if (body.payment_method) {
     return {
       resultCode: "Refused",
       refusalReason:
-        "Simulated mode does not support wallet or encrypted card payments — use a listed test card number.",
+        "Simulated mode does not support wallet or encrypted card payments.",
       merchantReference: body.reference,
       mock_mode: true,
     };
   }
 
-  // Legacy raw-card path — strict match against known test cards only.
-  const cardNumber = body.card?.number?.replace(/\s/g, "") || "";
-  const testResult = MOCK_TEST_CARDS[cardNumber];
-
-  if (!testResult) {
-    return {
-      resultCode: "Refused",
-      refusalReason:
-        cardNumber.length === 0
-          ? "No card number provided"
-          : "Unknown test card — use 4111 1111 1111 1111 in simulated mode",
-      merchantReference: body.reference,
-      mock_mode: true,
-    };
-  }
-
-  const resultCode = testResult.resultCode;
-  const isAuthorised = resultCode === "Authorised";
-
+  // Plain simulated payment (no card data collected). Authorise, and return a
+  // simulated stored-card token when the diner asked to save a card.
   const response: any = {
-    resultCode,
+    resultCode: "Authorised",
     pspReference: `MOCK_${Date.now()}`,
     merchantReference: body.reference,
     mock_mode: true,
   };
 
-  if (!isAuthorised) {
-    response.refusalReason = testResult.refusalReason || "Refused";
-    return response;
-  }
-
   if (body.store_card) {
     response.additionalData = {
       "recurring.recurringDetailReference": `MOCK_TOKEN_${Date.now()}`,
       "recurring.shopperReference": body.shopper_reference,
-      cardSummary: cardNumber.slice(-4),
-      paymentMethod: detectBrand(cardNumber),
+      cardSummary: "1111",
+      paymentMethod: "visa",
     };
   } else {
-    response.additionalData = {
-      cardSummary: cardNumber.slice(-4),
-      paymentMethod: detectBrand(cardNumber),
-    };
+    response.additionalData = { cardSummary: "1111", paymentMethod: "visa" };
   }
 
   return response;
-}
-
-function detectBrand(num: string): string {
-  if (num.startsWith("4")) return "visa";
-  if (num.startsWith("5")) return "mc";
-  if (num.startsWith("3")) return "amex";
-  return "card";
 }
 
 Deno.serve(async (req) => {
@@ -275,8 +238,14 @@ Deno.serve(async (req) => {
           methods: data.paymentMethods || [],
         });
       } else {
+        // PAY-08: log the raw upstream provider body server-side only; return a
+        // generic message so PSP internal detail does not reach the caller.
         const err = await resp.text();
-        return json({ success: false, error: `H&L Pay returned ${resp.status}: ${err}` }, 400);
+        console.error(`[adyen-payment] test_connection upstream ${resp.status}:`, err);
+        return json({
+          success: false,
+          error: "Could not connect to H&L Pay. Check the venue's payment credentials and try again.",
+        }, 400);
       }
     }
 
@@ -285,8 +254,26 @@ Deno.serve(async (req) => {
       const clientKey =
         config.environment === "live" ? config.client_key_live : config.client_key_test;
 
+      // PAY-05: surface the per-venue wallet identifiers so the Drop-in can be
+      // configured with the venue's real Apple/Google Pay merchant ids instead of
+      // hardcoded placeholders. `gatewayMerchantId` for Google-Pay-via-Adyen is the
+      // venue's Adyen merchant account. PAY-07: also return the effective
+      // environment so the client Drop-in initialises in the SAME environment the
+      // server processes against (no test/live mismatch).
+      const wallets = {
+        applePayMerchantId: config.apple_pay_merchant_id || null,
+        googlePayMerchantId: config.google_pay_merchant_id || null,
+        gatewayMerchantId: merchantAccount || null,
+      };
+
       if (isMock) {
-        return json({ ...MOCK_PAYMENT_METHODS, client_key: clientKey || null, mock_mode: true });
+        return json({
+          ...MOCK_PAYMENT_METHODS,
+          client_key: clientKey || null,
+          wallets,
+          environment: config.environment,
+          mock_mode: true,
+        });
       }
 
       if (!apiKey || !merchantAccount) return json({ error: "H&L Pay not configured" }, 400);
@@ -308,14 +295,18 @@ Deno.serve(async (req) => {
         body: JSON.stringify(reqBody),
       });
       const result = await resp.json();
-      // Always include the client_key so the Drop-in can initialise
-      return json({ ...result, client_key: clientKey || null }, resp.ok ? 200 : 400);
+      // Always include the client_key + wallet config + environment so the Drop-in
+      // can initialise consistently with the server.
+      return json(
+        { ...result, client_key: clientKey || null, wallets, environment: config.environment },
+        resp.ok ? 200 : 400,
+      );
     }
 
     // ═══ CREATE PAYMENT ═══
     if (action === "create_payment") {
       const {
-        amount, currency, reference, return_url, card,
+        amount, currency, reference, return_url,
         store_card, shopper_reference, diner_id,
         stored_card_token,
         payment_method,   // From Adyen Drop-in
@@ -324,6 +315,51 @@ Deno.serve(async (req) => {
 
       if (!amount || !reference) {
         return json({ error: "amount and reference required" }, 400);
+      }
+
+      // PAY-01: raw card data (PAN/CVV) must never reach or pass through our
+      // servers. Card capture is exclusively the hosted Drop-in / wallets, which
+      // send a tokenised `payment_method`. Reject any request carrying raw card
+      // fields outright — this keeps the application in PCI DSS SAQ A scope and
+      // closes the anonymous card-testing surface the raw-card path created.
+      if (body.card) {
+        return json({ error: "Raw card data is not accepted" }, 400);
+      }
+
+      // PAY-02: a stored card may only be charged by the authenticated diner who
+      // owns it (or by venue owners/managers). Without this, any caller could charge another
+      // diner's saved card using its token + the predictable shopper_reference.
+      // Mirrors the ownership gate already enforced on list/delete stored cards.
+      if (stored_card_token) {
+        if (!userId) {
+          return json({ error: "Authentication required" }, 401);
+        }
+        const { data: storedCard } = await adminClient
+          .from("diner_stored_cards")
+          .select("diner_id")
+          .eq("venue_id", venue_id)
+          .eq("token_reference", stored_card_token)
+          .maybeSingle();
+        if (!storedCard) {
+          return json({ error: "Stored card not found" }, 404);
+        }
+        const { data: ownerProfile } = await adminClient
+          .from("diner_profiles")
+          .select("id")
+          .eq("id", storedCard.diner_id)
+          .eq("user_id", userId)
+          .maybeSingle();
+        let ownsCard = !!ownerProfile;
+        if (!ownsCard) {
+          const { data: isStaff } = await adminClient.rpc("is_venue_manager", {
+            _user_id: userId,
+            _venue_id: venue_id,
+          });
+          ownsCard = !!isStaff;
+        }
+        if (!ownsCard) {
+          return json({ error: "Not authorized to use this stored card" }, 403);
+        }
       }
 
       // AEA-05/AEA-02: rate-limit the live-charge path. It is callable with only
@@ -426,22 +462,6 @@ Deno.serve(async (req) => {
             paymentRequest.recurringProcessingModel = "CardOnFile";
             paymentRequest.shopperInteraction = "Ecommerce";
           }
-        } else if (card) {
-          // Legacy raw-card path (kept for backwards compat / non-Drop-in clients)
-          paymentRequest.paymentMethod = {
-            type: "scheme",
-            number: card.number?.replace(/\s/g, ""),
-            expiryMonth: card.expiry_month,
-            expiryYear: card.expiry_year,
-            cvc: card.cvc,
-            holderName: card.holder_name || "Customer",
-          };
-          if (store_card && shopper_reference) {
-            paymentRequest.shopperReference = shopper_reference;
-            paymentRequest.storePaymentMethod = true;
-            paymentRequest.recurringProcessingModel = "CardOnFile";
-            paymentRequest.shopperInteraction = "Ecommerce";
-          }
         } else {
           return json({ error: "No payment method provided" }, 400);
         }
@@ -485,7 +505,7 @@ Deno.serve(async (req) => {
         const tokenRef =
           result.additionalData["recurring.recurringDetailReference"] ||
           result.additionalData?.["recurring.shopperReference"];
-        const cardSummary = result.additionalData?.cardSummary || card?.number?.replace(/\s/g, "").slice(-4);
+        const cardSummary = result.additionalData?.cardSummary;
         const cardBrand = result.additionalData?.paymentMethod || result.paymentMethod?.brand;
 
         if (tokenRef) {
@@ -497,8 +517,6 @@ Deno.serve(async (req) => {
             shopper_reference: shopper_reference,
             card_summary: cardSummary,
             card_brand: cardBrand,
-            expiry_month: card?.expiry_month,
-            expiry_year: card?.expiry_year,
             is_default: true,
           });
 
@@ -610,7 +628,7 @@ Deno.serve(async (req) => {
     // Re-open & refund a (partially) closed order via H&L Pay.
     // Body: { venue_id, order_id, amount, reason? }
     if (action === "refund") {
-      const { order_id, amount, reason } = body;
+      const { order_id, amount, reason, refund_request_id } = body;
       if (!order_id || !amount || amount <= 0) {
         return json({ error: "order_id and positive amount are required" }, 400);
       }
@@ -652,21 +670,123 @@ Deno.serve(async (req) => {
 
       if (!order) return json({ error: "Order not found" }, 404);
 
-      // Bound the refund to the order total (ceiling). Prevents a
-      // caller-controlled `amount` from exceeding what was charged.
-      // (Full refundable-balance tracking incl. prior refunds is tracked
-      // under the Payment/PCI ticket.)
-      if (Number(amount) > Number(order.total)) {
-        return json({ error: "Refund amount exceeds the order total" }, 400);
+      // Normalise the requested amount to integer cents up front. All balance
+      // arithmetic below stays in cents: summing dollar floats and converting
+      // afterwards can drift, e.g. 100.00 - (33.33 + 33.33 + 33.34) lands on
+      // 1.4e-14 rather than 0.
+      const requestedRefundCents = Math.round(Number(amount) * 100);
+      if (!Number.isFinite(requestedRefundCents) || requestedRefundCents <= 0) {
+        return json({ error: "Refund amount must be a valid positive number" }, 400);
       }
+
+      // PAY-04: stable per-refund idempotency id supplied by the client (see
+      // RefundDialog), with a server-generated fallback for other callers.
+      const refundRequestId =
+        typeof refund_request_id === "string" && refund_request_id.length > 0
+          ? refund_request_id
+          : crypto.randomUUID();
+      if (refundRequestId.length > 128) {
+        return json({ error: "refund_request_id is too long" }, 400);
+      }
+
+      // PAY-04 (retry replay): if this exact refund id was already processed AND
+      // logged, return the original result rather than refunding again. Without
+      // this, retrying a refund that succeeded but whose response was lost is
+      // rejected by the balance check below — the remaining balance already
+      // reflects it — so the operator sees a failure for a refund that went
+      // through, and the stable-id retry path is dead in the case it exists for.
+      //
+      // Note this deliberately does NOT work by excluding this id from the balance
+      // sum below. On a nullable column `request_id <> $1` evaluates to NULL for
+      // legacy rows, which would drop every pre-request_id refund from the total and
+      // reopen the over-refunding hole. Replaying from our own log also avoids
+      // depending on how long Adyen retains an idempotency key.
+      const { data: priorAttempt } = await adminClient
+        .from("order_refunds")
+        .select("amount, psp_reference, status")
+        .eq("order_id", order_id)
+        .eq("request_id", refundRequestId)
+        .maybeSingle();
+      if (priorAttempt) {
+        return json({
+          pspReference: (priorAttempt as any).psp_reference,
+          status: (priorAttempt as any).status || "received",
+          amount: Number((priorAttempt as any).amount),
+          reason: reason || null,
+          refund_request_id: refundRequestId,
+          replayed: true,
+        });
+      }
+
+      // PAY-04: bound the refund to the REMAINING refundable balance (order total
+      // minus refunds already recorded for this order), not just the order total.
+      // Otherwise repeated refunds could each be up to the full total and
+      // collectively exceed what was charged. EVERY prior refund counts here,
+      // including legacy rows with a NULL request_id.
+      const { data: priorRefunds } = await adminClient
+        .from("order_refunds")
+        .select("amount")
+        .eq("order_id", order_id);
+      const alreadyRefundedCents = (priorRefunds || []).reduce(
+        (sum: number, r: any) => sum + Math.round(Number(r.amount || 0) * 100),
+        0,
+      );
+      const orderTotalCents = Math.round(Number(order.total) * 100);
+      if (!Number.isFinite(orderTotalCents) || orderTotalCents <= 0) {
+        return json({ error: "Invalid order total" }, 500);
+      }
+      const remainingRefundableCents = orderTotalCents - alreadyRefundedCents;
+      if (remainingRefundableCents <= 0) {
+        return json({ error: "This order has already been fully refunded" }, 400);
+      }
+      if (requestedRefundCents > remainingRefundableCents) {
+        return json({ error: "Refund amount exceeds the remaining refundable balance" }, 400);
+      }
+
+      // PAY-04: record the refund HERE, in the same handler that calls the provider
+      // and that computes the refundable balance above. Previously the only writer
+      // was the browser (RefundDialog), which meant the balance the server enforces
+      // was derived from a log the server did not control:
+      //   * a client crash/timeout after the provider succeeded left the refund
+      //     unrecorded, so a later refund could exceed the true balance; and
+      //   * the RLS insert policy on order_refunds is is_venue_manager-only, while
+      //     this handler also authorises staff holding `can_process_refunds` — for
+      //     those users the insert was rejected EVERY time, so the money moved, the
+      //     operator was shown "Refund failed", and nothing was logged.
+      // Writing through adminClient (service role) bypasses RLS, and the unique
+      // index on request_id makes a repeat call a no-op rather than a duplicate row.
+      const logRefund = async (pspReference: string | null, status: string) => {
+        const { error: logErr } = await adminClient
+          .from("order_refunds")
+          .upsert({
+            order_id: order_id,
+            venue_id: venue_id,
+            amount: requestedRefundCents / 100,
+            reason: reason || null,
+            psp_reference: pspReference,
+            status,
+            requested_by: userId,
+            request_id: refundRequestId,
+          } as any, { onConflict: "request_id", ignoreDuplicates: true });
+        if (logErr) {
+          // The money has already moved; failing the response would tell the operator
+          // the refund did not happen. Surface it in logs and still report success —
+          // the balance may under-count until reconciled, which is why this is an
+          // error-level log.
+          console.error("[adyen-payment] FAILED to log refund", refundRequestId, logErr);
+        }
+      };
 
       // Mock mode — instant success
       if (isMock) {
+        const mockPspReference = `MOCK_REFUND_${Date.now()}`;
+        await logRefund(mockPspReference, "received");
         return json({
-          pspReference: `MOCK_REFUND_${Date.now()}`,
+          pspReference: mockPspReference,
           status: "received",
           amount,
           reason: reason || null,
+          refund_request_id: refundRequestId,
         });
       }
 
@@ -680,18 +800,31 @@ Deno.serve(async (req) => {
         return json({ error: "H&L Pay not configured for this venue" }, 400);
       }
 
+      // PAY-04: `refundRequestId` (validated above) is the STABLE per-refund
+      // idempotency key. A retry that reaches Adyen — i.e. the first attempt
+      // succeeded upstream but was never logged, so the replay check above found
+      // nothing — reuses the same key and Adyen deduplicates it. Two DISTINCT
+      // refunds carry distinct ids, so neither is wrongly deduped. (The original
+      // scheme derived the key from the mutable remaining balance, so a retry after
+      // logging produced a NEW key and could issue a second refund.)
       const refundResp = await fetch(
         `${baseUrl}/payments/${order.payment_psp_reference}/refunds`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+          headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": apiKey,
+            "Idempotency-Key": refundRequestId,
+          },
           body: JSON.stringify({
             merchantAccount,
             amount: {
-              value: Math.round(Number(amount) * 100),
+              value: requestedRefundCents,
               currency: config.default_currency || "AUD",
             },
-            reference: `REFUND_${order_id}_${Date.now()}`,
+            // Stable per-refund reference (matches the idempotency key): a retry
+            // reuses it and Adyen deduplicates; distinct refunds stay distinct.
+            reference: `REFUND_${refundRequestId}`,
             merchantRefundReason: reason || "Requested by venue",
           }),
         },
@@ -699,15 +832,20 @@ Deno.serve(async (req) => {
 
       const refundResult = await refundResp.json();
       if (!refundResp.ok) {
-        // Do not echo the full upstream refund body to the caller.
-        return json({ error: refundResult?.message || "H&L Pay refund failed" }, 400);
+        // PAY-08: log the upstream body server-side only; return a generic message.
+        console.error(`[adyen-payment] refund upstream ${refundResp.status}:`, JSON.stringify(refundResult));
+        return json({ error: "H&L Pay refund failed" }, 400);
       }
+
+      const refundStatus = refundResult.status || "received";
+      await logRefund(refundResult.pspReference || null, refundStatus);
 
       return json({
         pspReference: refundResult.pspReference,
-        status: refundResult.status || "received",
+        status: refundStatus,
         amount,
         reason: reason || null,
+        refund_request_id: refundRequestId,
       });
     }
 
