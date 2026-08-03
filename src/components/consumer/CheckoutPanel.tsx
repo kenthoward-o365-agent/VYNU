@@ -191,14 +191,20 @@ const CheckoutPanel = ({
       const key = data?.client_key || (import.meta as any).env?.VITE_ADYEN_CLIENT_KEY || null;
       setShyndigPayClientKey(key);
       setIsMockMode(!!data?.mock_mode);
-      // PAY-05: per-venue wallet identifiers (no hardcoded placeholders).
-      if (data?.wallets) setWalletConfig(data.wallets);
-      // PAY-07: align the client Drop-in environment with the server's.
-      if (data?.environment === "live" || data?.environment === "test") {
-        setPaymentEnvironment(data.environment);
-      }
+      // PAY-05: per-venue wallet identifiers (no hardcoded placeholders). Assigned
+      // unconditionally — clearing when the response omits `wallets` — so a reload
+      // for a different venue, or an error/older response, cannot leave the previous
+      // venue's merchant ids in place and render a wallet button that should be
+      // hidden. Fails closed, which is the point of sourcing these per venue.
+      setWalletConfig(data?.wallets ?? null);
+      // PAY-07: align the client Drop-in environment with the server's, falling back
+      // to "test" rather than retaining a previous (possibly "live") value.
+      setPaymentEnvironment(data?.environment === "live" ? "live" : "test");
     } catch (e) {
       console.error("Failed to load payment methods:", e);
+      // Fail closed on error too: no wallet buttons, no inherited "live".
+      setWalletConfig(null);
+      setPaymentEnvironment("test");
     }
     setLoadingMethods(false);
   };

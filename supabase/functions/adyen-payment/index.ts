@@ -670,24 +670,75 @@ Deno.serve(async (req) => {
 
       if (!order) return json({ error: "Order not found" }, 404);
 
+      // Normalise the requested amount to integer cents up front. All balance
+      // arithmetic below stays in cents: summing dollar floats and converting
+      // afterwards can drift, e.g. 100.00 - (33.33 + 33.33 + 33.34) lands on
+      // 1.4e-14 rather than 0.
+      const requestedRefundCents = Math.round(Number(amount) * 100);
+      if (!Number.isFinite(requestedRefundCents) || requestedRefundCents <= 0) {
+        return json({ error: "Refund amount must be a valid positive number" }, 400);
+      }
+
+      // PAY-04: stable per-refund idempotency id supplied by the client (see
+      // RefundDialog), with a server-generated fallback for other callers.
+      const refundRequestId =
+        typeof refund_request_id === "string" && refund_request_id.length > 0
+          ? refund_request_id
+          : crypto.randomUUID();
+      if (refundRequestId.length > 128) {
+        return json({ error: "refund_request_id is too long" }, 400);
+      }
+
+      // PAY-04 (retry replay): if this exact refund id was already processed AND
+      // logged, return the original result rather than refunding again. Without
+      // this, retrying a refund that succeeded but whose response was lost is
+      // rejected by the balance check below — the remaining balance already
+      // reflects it — so the operator sees a failure for a refund that went
+      // through, and the stable-id retry path is dead in the case it exists for.
+      //
+      // Note this deliberately does NOT work by excluding this id from the balance
+      // sum below. On a nullable column `request_id <> $1` evaluates to NULL for
+      // legacy rows, which would drop every pre-request_id refund from the total and
+      // reopen the over-refunding hole. Replaying from our own log also avoids
+      // depending on how long Adyen retains an idempotency key.
+      const { data: priorAttempt } = await adminClient
+        .from("order_refunds")
+        .select("amount, psp_reference, status")
+        .eq("order_id", order_id)
+        .eq("request_id", refundRequestId)
+        .maybeSingle();
+      if (priorAttempt) {
+        return json({
+          pspReference: (priorAttempt as any).psp_reference,
+          status: (priorAttempt as any).status || "received",
+          amount: Number((priorAttempt as any).amount),
+          reason: reason || null,
+          refund_request_id: refundRequestId,
+          replayed: true,
+        });
+      }
+
       // PAY-04: bound the refund to the REMAINING refundable balance (order total
       // minus refunds already recorded for this order), not just the order total.
       // Otherwise repeated refunds could each be up to the full total and
-      // collectively exceed what was charged.
+      // collectively exceed what was charged. EVERY prior refund counts here,
+      // including legacy rows with a NULL request_id.
       const { data: priorRefunds } = await adminClient
         .from("order_refunds")
         .select("amount")
         .eq("order_id", order_id);
-      const alreadyRefunded = (priorRefunds || []).reduce(
-        (sum: number, r: any) => sum + Number(r.amount || 0),
+      const alreadyRefundedCents = (priorRefunds || []).reduce(
+        (sum: number, r: any) => sum + Math.round(Number(r.amount || 0) * 100),
         0,
       );
-      const remainingRefundable = Number(order.total) - alreadyRefunded;
-      if (remainingRefundable <= 0) {
+      const orderTotalCents = Math.round(Number(order.total) * 100);
+      if (!Number.isFinite(orderTotalCents) || orderTotalCents <= 0) {
+        return json({ error: "Invalid order total" }, 500);
+      }
+      const remainingRefundableCents = orderTotalCents - alreadyRefundedCents;
+      if (remainingRefundableCents <= 0) {
         return json({ error: "This order has already been fully refunded" }, 400);
       }
-      const requestedRefundCents = Math.round(Number(amount) * 100);
-      const remainingRefundableCents = Math.round(remainingRefundable * 100);
       if (requestedRefundCents > remainingRefundableCents) {
         return json({ error: "Refund amount exceeds the remaining refundable balance" }, 400);
       }
@@ -712,19 +763,13 @@ Deno.serve(async (req) => {
         return json({ error: "H&L Pay not configured for this venue" }, 400);
       }
 
-      // PAY-04: use a STABLE per-refund idempotency key supplied by the client (or
-      // generated here as a fallback). A retry of the SAME refund reuses the same
-      // id, so Adyen deduplicates it — even after the first attempt was already
-      // logged and the remaining balance changed. Two DISTINCT refunds carry
-      // distinct ids, so neither is wrongly deduped. (The previous key mixed in the
-      // mutable remaining balance, so a retry after logging produced a new key and
-      // could issue a second refund — see PR review.)
-      const refundCents = Math.round(Number(amount) * 100);
-      const refundRequestId =
-        typeof refund_request_id === "string" && refund_request_id.length > 0
-          ? refund_request_id
-          : crypto.randomUUID();
-
+      // PAY-04: `refundRequestId` (validated above) is the STABLE per-refund
+      // idempotency key. A retry that reaches Adyen — i.e. the first attempt
+      // succeeded upstream but was never logged, so the replay check above found
+      // nothing — reuses the same key and Adyen deduplicates it. Two DISTINCT
+      // refunds carry distinct ids, so neither is wrongly deduped. (The original
+      // scheme derived the key from the mutable remaining balance, so a retry after
+      // logging produced a NEW key and could issue a second refund.)
       const refundResp = await fetch(
         `${baseUrl}/payments/${order.payment_psp_reference}/refunds`,
         {
@@ -737,7 +782,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             merchantAccount,
             amount: {
-              value: refundCents,
+              value: requestedRefundCents,
               currency: config.default_currency || "AUD",
             },
             // Stable per-refund reference (matches the idempotency key): a retry

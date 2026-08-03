@@ -11,10 +11,18 @@
 -- so service-role/definer calls pass while a non-admin JWT is still rejected. This
 -- migration brings set_payment_secret in line with that pattern.
 --
--- Safe because: the function is REVOKEd from PUBLIC/anon and granted only to
--- authenticated + service_role, so a NULL auth.uid() can only originate from a
--- trusted service-role caller — a non-admin authenticated user has a non-NULL
--- auth.uid() and is still rejected.
+-- Safe because: the function is granted to service_role only (see the grants at the
+-- bottom), so a NULL auth.uid() can only originate from a trusted service-role
+-- caller. The auth.uid()-based check is retained as defence in depth in case the
+-- function is ever re-exposed to authenticated callers.
+--
+-- NOTE ON ORDERING: this file is timestamped AFTER
+-- 20260730232240_0d92b507-5500-4cf3-b45c-b603975e744f.sql, which revoked this
+-- function from anon/authenticated/public and granted it to service_role only. The
+-- grants below must converge on that same end state rather than re-widening it — an
+-- earlier revision of this migration re-granted `authenticated` and, because it
+-- sorted before 20260730232240 while executing after it, silently undid that
+-- lockdown.
 
 CREATE OR REPLACE FUNCTION public.set_payment_secret(_venue_id uuid, _field text, _value text)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -42,6 +50,8 @@ BEGIN
   RETURN _new_id;
 END $$;
 
--- Re-assert the grants (idempotent) so anon can never reach the null-bypass path.
-REVOKE ALL ON FUNCTION public.set_payment_secret(uuid,text,text) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.set_payment_secret(uuid,text,text) TO authenticated, service_role;
+-- Re-assert the grants (idempotent), matching the end state established by
+-- 20260730232240: service_role only. CREATE OR REPLACE above preserves existing
+-- privileges, so this is belt-and-braces rather than a change in reachability.
+REVOKE ALL ON FUNCTION public.set_payment_secret(uuid,text,text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.set_payment_secret(uuid,text,text) TO service_role;
