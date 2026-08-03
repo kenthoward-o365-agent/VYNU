@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -27,9 +27,16 @@ export default function RefundDialog({
   const [amount, setAmount] = useState<string>(remaining.toFixed(2));
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  // One idempotency session id per dialog open. Combined with the amount below it
+  // forms a STABLE refund id, so a retry of the same refund (e.g. a timed-out
+  // request that actually succeeded, or a double-click) reuses the same id and is
+  // deduped by Adyen — while a new dialog session, or a changed amount, is a new
+  // refund. Regenerated only when the dialog (re)opens.
+  const sessionIdRef = useRef<string>("");
 
   useEffect(() => {
     if (open) {
+      sessionIdRef.current = crypto.randomUUID();
       setAmount(remaining.toFixed(2));
       setReason("");
     }
@@ -43,9 +50,16 @@ export default function RefundDialog({
 
     setSubmitting(true);
     try {
+      // Stable idempotency id: (per-open session id) + (amount in cents). Reused as
+      // the Adyen Idempotency-Key/reference (server-side) and as the unique key on
+      // the order_refunds log, so retrying the SAME refund can neither charge nor
+      // log it twice, while a different amount (or a new dialog session) is treated
+      // as a distinct refund.
+      const requestId = `${sessionIdRef.current || crypto.randomUUID()}_${Math.round(value * 100)}`;
+
       // Call H&L Pay refund
       const { data, error } = await supabase.functions.invoke("adyen-payment", {
-        body: { action: "refund", venue_id: venueId, order_id: orderId, amount: value, reason },
+        body: { action: "refund", venue_id: venueId, order_id: orderId, amount: value, reason, refund_request_id: requestId },
       });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
@@ -53,8 +67,9 @@ export default function RefundDialog({
       const pspRef = data?.pspReference || null;
       const status = (data?.status === "received" || data?.resultCode === "received") ? "received" : "pending";
 
-      // Log refund
-      const { error: insErr } = await supabase.from("order_refunds").insert({
+      // Log refund. Upsert on request_id (ignore duplicates) so a retried refund
+      // does not create a duplicate audit row.
+      const { error: insErr } = await supabase.from("order_refunds").upsert({
         order_id: orderId,
         venue_id: venueId,
         amount: value,
@@ -62,7 +77,8 @@ export default function RefundDialog({
         psp_reference: pspRef,
         status,
         requested_by: user.id,
-      });
+        request_id: requestId,
+      } as any, { onConflict: "request_id", ignoreDuplicates: true });
       if (insErr) throw insErr;
 
       // Re-open or fully refund the order

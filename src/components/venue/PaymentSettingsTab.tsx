@@ -615,9 +615,11 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
           )}
           <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
             <p>
-              <span className="font-medium text-foreground">Apple Pay domain verification — automatic.</span>{" "}
-              H&L Pay handles the verification file for every venue. Apple Pay only renders on
-              Safari; Google Pay only on Chrome/Android — that's a browser/OS requirement.
+              <span className="font-medium text-foreground">Apple Pay requires domain verification.</span>{" "}
+              A valid Apple Pay domain-association file must be provisioned for this domain before
+              Apple Pay can render — if it hasn't been set up yet, Apple Pay will stay unavailable
+              even on Safari. Contact H&L Pay if the Apple Pay tile above is not green. Apple Pay only
+              renders on Safari; Google Pay only on Chrome/Android — that's a browser/OS requirement.
             </p>
           </div>
         </CardContent>
