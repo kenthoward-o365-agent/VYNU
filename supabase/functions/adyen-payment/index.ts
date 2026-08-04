@@ -571,30 +571,23 @@ Deno.serve(async (req) => {
             if (boundTab && (!venue_id || boundTab.venue_id === venue_id)) {
               // Idempotency: never double-credit the same PSP capture if the
               // Drop-in retries or 3DS replays the call.
-              let alreadyRecorded = false;
-              if (result.pspReference) {
-                const { data: dupe, error: dupeErr } = await adminClient
-                  .from("tab_payments")
-                  .select("id")
-                  .eq("psp_reference", result.pspReference)
-                  .maybeSingle();
-                if (dupeErr) throw dupeErr;
-                alreadyRecorded = !!dupe;
-              }
-
-              if (!alreadyRecorded) {
-                const { error: insertErr } = await adminClient.from("tab_payments").insert({
-                  tab_id: boundTab.id,
-                  venue_id: boundTab.venue_id,
-                  method: "card",
-                  amount: Number(amount),
-                  status: isPreauth ? "authorised" : "paid",
-                  psp_reference: result.pspReference || null,
-                  payer_diner_id: diner_id ?? null,
-                  is_mock: isMock,
-                });
-                if (insertErr) throw insertErr;
-              }
+              //
+              // This is enforced by uq_tab_payments_psp_reference rather than by
+              // checking first. A SELECT-then-INSERT is not atomic — two
+              // concurrent replays can both pass the check and insert. Letting
+              // the unique index reject the second one closes that race, so a
+              // 23505 here means "already recorded", not a failure.
+              const { error: insertErr } = await adminClient.from("tab_payments").insert({
+                tab_id: boundTab.id,
+                venue_id: boundTab.venue_id,
+                method: "card",
+                amount: Number(amount),
+                status: isPreauth ? "authorised" : "paid",
+                psp_reference: result.pspReference || null,
+                payer_diner_id: diner_id ?? null,
+                is_mock: isMock,
+              });
+              if (insertErr && insertErr.code !== "23505") throw insertErr;
 
               if (isPreauth) {
                 const { error: tabUpdateErr } = await adminClient

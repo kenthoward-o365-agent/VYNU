@@ -132,7 +132,46 @@ CREATE TRIGGER trg_enforce_tab_payment_update_authority
   BEFORE UPDATE ON public.tab_payments
   FOR EACH ROW EXECUTE FUNCTION public.enforce_tab_payment_update_authority();
 
--- ── 3. Tighten grants ────────────────────────────────────────────────────────
+-- ── 3. Make PSP de-duplication race-proof ────────────────────────────────────
+
+-- adyen-payment previously guarded against double-crediting with a
+-- SELECT-then-INSERT, which is not atomic: two concurrent Drop-in retries or a
+-- 3DS replay could both pass the SELECT and insert two rows for one capture.
+-- The database is the only place this can be enforced reliably.
+--
+-- A plain (not partial) unique index is deliberate: PostgreSQL treats NULLs as
+-- distinct in a unique index, so rows without a psp_reference — staff cash,
+-- lodged vouchers — are unaffected and can coexist freely. A partial index
+-- would also work, but ON CONFLICT inference against one requires restating the
+-- predicate, which PostgREST cannot express.
+-- If the old racy path already double-credited a capture, the index below will
+-- fail with a bare "could not create unique index". Surface it as something an
+-- operator can act on instead, and name the rows that need reconciling.
+DO $$
+DECLARE
+  _dupes text;
+BEGIN
+  SELECT string_agg(psp_reference || ' (' || n || ' rows)', ', ')
+    INTO _dupes
+    FROM (
+      SELECT psp_reference, count(*) AS n
+        FROM public.tab_payments
+       WHERE psp_reference IS NOT NULL
+       GROUP BY psp_reference
+      HAVING count(*) > 1
+    ) d;
+
+  IF _dupes IS NOT NULL THEN
+    RAISE EXCEPTION
+      'tab_payments already contains duplicate psp_reference values, so the same capture has been credited more than once: %. Reconcile these rows before applying this migration.',
+      _dupes;
+  END IF;
+END $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_tab_payments_psp_reference
+  ON public.tab_payments (psp_reference);
+
+-- ── 4. Tighten grants ────────────────────────────────────────────────────────
 
 -- anon never needs UPDATE; authenticated diners are gated by the policies and
 -- triggers above, and staff UPDATE flows through tab_payments_staff_write.
