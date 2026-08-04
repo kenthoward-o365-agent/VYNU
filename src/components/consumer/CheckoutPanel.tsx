@@ -415,26 +415,13 @@ const CheckoutPanel = ({
 
   /** Pre-auth deposit → opens the tab, then adds this round to it. */
   const preauthAndAddToTab = async (
-    result: any,
+    _result: any,
     tabId: string,
   ) => {
-    await supabase.from("tab_payments").insert({
-      tab_id: tabId,
-      venue_id: venueId,
-      method: "card",
-      amount: preauthAmount,
-      status: "authorised",
-      psp_reference: result?.pspReference || null,
-      payer_diner_id: dinerId,
-      is_mock: !!result?.mock_mode,
-    } as any);
-    await supabase
-      .from("table_tabs")
-      .update({
-        preauth_status: "authorised",
-        preauth_psp_reference: result?.pspReference || null,
-      } as any)
-      .eq("id", tabId);
+    // The authorised pre-auth row and the tab's preauth_status are written
+    // server-side by adyen-payment (reference `preauth_<tabId>`) once Adyen has
+    // authorised. The browser used to insert both itself, which meant a diner
+    // could fabricate an authorisation that never happened.
     await addRoundToTab(tabId);
   };
 

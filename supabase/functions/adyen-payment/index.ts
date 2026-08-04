@@ -542,6 +542,81 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Tab payments are recorded here, not by the browser. Previously the
+      // client inserted its own row into tab_payments, so a diner could claim
+      // to have paid without paying: get_tab_summary counts rows with
+      // status IN ('paid','authorised') toward balance_due, and settle_tab()
+      // then closed the tab. The amount written below is the amount we actually
+      // sent to Adyen and Adyen authorised, so it cannot overstate what moved.
+      // Same treatment IVA-01 gave order pricing.
+      if (
+        result.resultCode === "Authorised" &&
+        (reference?.startsWith("tab_") || reference?.startsWith("preauth_"))
+      ) {
+        const isPreauth = reference.startsWith("preauth_");
+        // tab_<uuid>_<timestamp>   |   preauth_<uuid>
+        const tabId = reference
+          .slice((isPreauth ? "preauth_" : "tab_").length)
+          .split("_")[0];
+
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tabId)) {
+          try {
+            const { data: boundTab } = await adminClient
+              .from("table_tabs")
+              .select("id, venue_id, status")
+              .eq("id", tabId)
+              .maybeSingle();
+
+            // Cross-tenant guard, mirroring the order path.
+            if (boundTab && (!venue_id || boundTab.venue_id === venue_id)) {
+              // Idempotency: never double-credit the same PSP capture if the
+              // Drop-in retries or 3DS replays the call.
+              let alreadyRecorded = false;
+              if (result.pspReference) {
+                const { data: dupe } = await adminClient
+                  .from("tab_payments")
+                  .select("id")
+                  .eq("psp_reference", result.pspReference)
+                  .maybeSingle();
+                alreadyRecorded = !!dupe;
+              }
+
+              if (!alreadyRecorded) {
+                await adminClient.from("tab_payments").insert({
+                  tab_id: boundTab.id,
+                  venue_id: boundTab.venue_id,
+                  method: "card",
+                  amount: Number(amount),
+                  status: isPreauth ? "authorised" : "paid",
+                  psp_reference: result.pspReference || null,
+                  payer_diner_id: diner_id ?? null,
+                  is_mock: isMock,
+                });
+              }
+
+              if (isPreauth) {
+                await adminClient
+                  .from("table_tabs")
+                  .update({
+                    preauth_status: "authorised",
+                    preauth_psp_reference: result.pspReference || null,
+                  })
+                  .eq("id", boundTab.id);
+              }
+            }
+          } catch (e) {
+            // The charge succeeded; do not tell the diner it failed. Surface it
+            // for reconciliation instead — staff can apply the payment manually
+            // from the Open Tabs panel using the PSP reference.
+            console.error("tab payment recording failed", {
+              reference,
+              psp_reference: result.pspReference,
+              error: String(e),
+            });
+          }
+        }
+      }
+
       // Strip Adyen additionalData (BIN/card metadata, internal fields) before
       // returning to the browser; the Drop-in only needs resultCode/action/pspReference.
       const { additionalData: _ad, ...safeResult } = (result ?? {}) as Record<string, unknown>;
