@@ -109,25 +109,29 @@ const TabBillPanel = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venueId, Math.round(amountToPay * 100)]);
 
-  const recordPayment = async (row: {
+  /**
+   * Lodge a gift card / voucher for staff to apply at the bar.
+   *
+   * This is the only payment row the diner app is allowed to write, and it is
+   * always 'pending' — pending rows do not count toward balance_due, so they
+   * cannot settle a tab on their own. Card payments are recorded server-side by
+   * adyen-payment once the PSP has authorised; the browser never asserts that
+   * money moved. Enforced by RLS and by enforce_tab_payment_authority().
+   */
+  const lodgeVoucherForStaff = async (row: {
     method: string;
     amount: number;
-    status: string;
-    psp_reference?: string | null;
-    reference_label?: string | null;
-    is_mock?: boolean;
+    reference_label: string;
   }) => {
     const { error } = await supabase.from("tab_payments").insert({
       tab_id: tabId,
       venue_id: venueId,
       method: row.method,
       amount: row.amount,
-      status: row.status,
-      psp_reference: row.psp_reference ?? null,
-      reference_label: row.reference_label ?? null,
+      status: "pending",
+      reference_label: row.reference_label,
       payer_diner_id: dinerId,
       payer_label: dinerName || null,
-      is_mock: !!row.is_mock,
     } as any);
     if (error) throw error;
   };
@@ -178,13 +182,8 @@ const TabBillPanel = ({
       helpers.resolve({ resultCode: result.resultCode, action: result.action });
 
       if (result.resultCode === "Authorised") {
-        await recordPayment({
-          method: "card",
-          amount: amountToPay,
-          status: "paid",
-          psp_reference: result.pspReference || null,
-          is_mock: !!result.mock_mode,
-        });
+        // The payment row is written server-side by adyen-payment once Adyen
+        // has authorised, so the browser never asserts that money moved.
         toast.success(`${money(amountToPay)} paid off your tab`);
         const settled = await trySettle();
         if (!settled) {
@@ -233,10 +232,9 @@ const TabBillPanel = ({
     if (!voucherCode.trim()) return toast.error("Enter the card or voucher number");
     setBusy(true);
     try {
-      await recordPayment({
+      await lodgeVoucherForStaff({
         method: payMode,
         amount: amountToPay,
-        status: "pending",
         reference_label: voucherCode.trim(),
       });
       toast.success("Sent to staff to apply — they'll confirm at the bar");
