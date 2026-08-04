@@ -2616,6 +2616,7 @@ export type Database = {
           order_id: string
           psp_reference: string | null
           reason: string | null
+          request_id: string | null
           requested_by: string | null
           status: string
           updated_at: string
@@ -2629,6 +2630,7 @@ export type Database = {
           order_id: string
           psp_reference?: string | null
           reason?: string | null
+          request_id?: string | null
           requested_by?: string | null
           status?: string
           updated_at?: string
@@ -2642,6 +2644,7 @@ export type Database = {
           order_id?: string
           psp_reference?: string | null
           reason?: string | null
+          request_id?: string | null
           requested_by?: string | null
           status?: string
           updated_at?: string
