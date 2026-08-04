@@ -95,6 +95,9 @@ export default function HLPosPanel({ venueId }: Props) {
         pos_provider: "hl_exceed",
         provider_id: prov?.id,
         config: cleanConfig,
+        // See PosConnectDialog: a bearer cached under the previous credentials would
+        // survive for ~24h and make the next test connection a no-op.
+        token_cache: null,
       }, { onConflict: "venue_id" });
     if (upErr) { toast.error(upErr.message); setSaving(false); return; }
 

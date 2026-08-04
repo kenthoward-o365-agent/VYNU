@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { safeHttpUrl } from "@/lib/url";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,17 @@ interface SchemaField {
 }
 
 type FieldValue = string | number | boolean;
+
+// `url`-typed fields render as plain text inputs, so a scheme-less value like
+// "handl-sandbox.au.auth0.com/oauth/token" saves happily and only fails much later
+// inside fetch() as "Invalid URL". Add the scheme, then keep the value only if it
+// parses as http(s) — safeHttpUrl also rejects javascript:/data: schemes.
+function normalizeHttpUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return safeHttpUrl(withScheme) ?? null;
+}
 
 interface Provider {
   id: string;
@@ -94,13 +106,26 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
     if (!provider) return;
     const err = validate();
     if (err) { toast.error(err); return; }
+
+    // Normalise url-typed fields before anything is persisted, so a missing scheme is
+    // fixed here rather than surfacing as "Invalid URL" from the adapter's fetch().
+    const cleaned: Record<string, FieldValue> = { ...values };
+    for (const f of schema) {
+      if (f.type !== "url") continue;
+      const raw = cleaned[f.key];
+      if (typeof raw !== "string") continue;
+      const url = normalizeHttpUrl(raw);
+      if (url === null) { toast.error(`${f.label} must be a valid http(s) URL`); return; }
+      cleaned[f.key] = url;
+    }
+    setValues(cleaned);
     setSaving(true);
 
     // Split secrets out — they go to Vault via admin-set-pos-credentials.
     const secretKeys = new Set(schema.filter((f) => f.type === "secret").map((f) => f.key));
     const nonSecret: Record<string, FieldValue> = {};
     const secretEntries: Array<[string, string]> = [];
-    for (const [k, v] of Object.entries(values)) {
+    for (const [k, v] of Object.entries(cleaned)) {
       if (secretKeys.has(k)) {
         if (typeof v === "string" && v.trim().length > 0) secretEntries.push([k, v]);
       } else {
@@ -114,6 +139,10 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
       pos_provider: provider.slug,
       config: nonSecret,
       connection_status: "connecting",
+      // Drop any cached bearer: getHLToken reuses a cached token for ~24h, so a token
+      // minted with the previous credentials would let the next test report "Connected"
+      // without ever validating the ones just saved.
+      token_cache: null,
     };
 
     const { data: existing } = await (supabase as any)
