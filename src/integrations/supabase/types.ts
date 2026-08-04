@@ -6120,6 +6120,10 @@ export type Database = {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
+      is_guest_diner_profile: {
+        Args: { _profile_id: string }
+        Returns: boolean
+      }
       is_venue_manager: {
         Args: { _user_id: string; _venue_id: string }
         Returns: boolean
