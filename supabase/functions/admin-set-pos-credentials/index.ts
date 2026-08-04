@@ -20,20 +20,16 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Pure service client: used for role checks (role helpers are not callable by anon/authenticated).
+  // Pure service client: used for role checks (role helpers are not callable by
+  // anon/authenticated) and for set_pos_credential, which is granted to
+  // service_role only. A caller-scoped client would execute the RPC as
+  // `authenticated` and fail with "permission denied for function" — see
+  // 20260804060000_fix_set_pos_credential_service_role.sql. Authorisation for the
+  // credential write is therefore enforced here, below, before the RPC is called.
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
-
-  // Caller-scoped client: set_pos_credential re-checks auth.uid() internally.
-  const callerScoped = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
-
-
 
 
   const { data: claims, error: claimsErr } = await supabase.auth.getClaims(authHeader.slice(7));
@@ -77,7 +73,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: secretId, error } = await callerScoped.rpc("set_pos_credential", {
+    const { data: secretId, error } = await supabase.rpc("set_pos_credential", {
       _venue_id: venue_id,
       _field: field,
       _value: value,
