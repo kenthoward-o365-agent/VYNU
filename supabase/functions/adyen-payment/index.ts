@@ -573,11 +573,12 @@ Deno.serve(async (req) => {
               // Drop-in retries or 3DS replays the call.
               let alreadyRecorded = false;
               if (result.pspReference) {
-                const { data: dupe } = await adminClient
+                const { data: dupe, error: dupeErr } = await adminClient
                   .from("tab_payments")
                   .select("id")
                   .eq("psp_reference", result.pspReference)
                   .maybeSingle();
+                if (dupeErr) throw dupeErr;
                 alreadyRecorded = !!dupe;
               }
 
