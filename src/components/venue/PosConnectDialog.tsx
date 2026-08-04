@@ -178,7 +178,13 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
               {(() => {
                 const renderField = (f: SchemaField) => {
                   if (f.type === "boolean") {
-                    const on = values[f.key] === true || values[f.key] === "true";
+                    // Mirror the backend's reading of this flag rather than asking
+                    // "is it explicitly on?": the adapter treats anything that is not
+                    // an explicit `false` as on (cfg(ctx,"test_mode",true) !== false in
+                    // _shared/hl-weborders-client.ts). Asking the same question keeps the
+                    // switch honest when the key is absent or holds a stale non-boolean.
+                    // Display only — nothing is written to config until the user toggles.
+                    const on = values[f.key] !== false && values[f.key] !== "false";
                     return (
                       <div key={f.key} className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
