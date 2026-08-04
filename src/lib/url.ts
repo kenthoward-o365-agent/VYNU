@@ -28,6 +28,24 @@ export function safeHttpUrl(raw: unknown): string | undefined {
 }
 
 /**
+ * Normalises an operator-entered URL for storage.
+ *
+ * `url`-typed config fields render as plain text inputs, so a scheme-less value
+ * like "handl-sandbox.au.auth0.com/oauth/token" saves happily and only fails much
+ * later inside fetch() as "Invalid URL". Prepends https:// when no scheme is
+ * present, then keeps the value only if it parses as http(s) — javascript:/data:
+ * and other schemes are rejected.
+ *
+ * Returns "" for blank input, and null when the value cannot be salvaged.
+ */
+export function normalizeHttpUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return safeHttpUrl(withScheme) ?? null;
+}
+
+/**
  * Returns the URL if it is a safe link scheme (http/https/mailto/tel),
  * otherwise undefined. Use for user-facing links that may legitimately be
  * email or phone links.

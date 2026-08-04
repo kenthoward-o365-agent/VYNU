@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeHttpUrl } from "@/lib/url";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,9 +83,21 @@ export default function HLPosPanel({ venueId }: Props) {
 
   async function save() {
     setSaving(true);
-    // 1. Ensure a venue_pos_integrations row exists, write non-secret config
+    // 1. Ensure a venue_pos_integrations row exists, write non-secret config.
+    // url-typed fields are normalised here too (same rule as PosConnectDialog): a
+    // scheme-less host would otherwise persist and fail later as "Invalid URL".
     const cleanConfig: Record<string, unknown> = {};
-    for (const f of schema) if (f.type !== "secret") cleanConfig[f.key] = config[f.key];
+    for (const f of schema) {
+      if (f.type === "secret") continue;
+      const raw = config[f.key];
+      if (f.type === "url" && raw !== undefined && raw !== null) {
+        const url = typeof raw === "string" ? normalizeHttpUrl(raw) : null;
+        if (url === null) { toast.error(`${f.label} must be a valid http(s) URL`); setSaving(false); return; }
+        cleanConfig[f.key] = url;
+        continue;
+      }
+      cleanConfig[f.key] = raw;
+    }
 
     const { data: prov } = await (supabase as any).from("pos_providers")
       .select("id").eq("slug", "hl_exceed").maybeSingle();
