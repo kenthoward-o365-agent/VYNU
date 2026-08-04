@@ -582,7 +582,7 @@ Deno.serve(async (req) => {
               }
 
               if (!alreadyRecorded) {
-                await adminClient.from("tab_payments").insert({
+                const { error: insertErr } = await adminClient.from("tab_payments").insert({
                   tab_id: boundTab.id,
                   venue_id: boundTab.venue_id,
                   method: "card",
@@ -592,16 +592,18 @@ Deno.serve(async (req) => {
                   payer_diner_id: diner_id ?? null,
                   is_mock: isMock,
                 });
+                if (insertErr) throw insertErr;
               }
 
               if (isPreauth) {
-                await adminClient
+                const { error: tabUpdateErr } = await adminClient
                   .from("table_tabs")
                   .update({
                     preauth_status: "authorised",
                     preauth_psp_reference: result.pspReference || null,
                   })
                   .eq("id", boundTab.id);
+                if (tabUpdateErr) throw tabUpdateErr;
               }
             }
           } catch (e) {
