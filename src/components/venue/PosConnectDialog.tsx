@@ -18,21 +18,9 @@ interface SchemaField {
   required?: boolean;
   placeholder?: string;
   help?: string;
-  default?: string | number | boolean;
 }
 
 type FieldValue = string | number | boolean;
-
-// Seed a fresh form from the schema's declared defaults so boolean/number
-// fields (test_mode, serving_type, …) start with their intended values
-// instead of being absent until the user touches them.
-function defaultsFor(p: Provider | null | undefined): Record<string, FieldValue> {
-  const out: Record<string, FieldValue> = {};
-  for (const f of p?.config_schema ?? []) {
-    if (f.default !== undefined) out[f.key] = f.default;
-  }
-  return out;
-}
 
 interface Provider {
   id: string;
@@ -76,13 +64,11 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
     const list = (provs ?? []) as Provider[];
     setProviders(list);
     if (existing?.provider_id) {
-      const prov = list.find((p) => p.id === existing.provider_id);
       setProviderId(existing.provider_id);
-      // Schema defaults fill any keys the saved config is missing; saved values win.
-      setValues({ ...defaultsFor(prov), ...((existing.config ?? {}) as Record<string, FieldValue>) });
+      setValues((existing.config ?? {}) as Record<string, FieldValue>);
     } else if (list.length > 0) {
       setProviderId(list[0].id);
-      setValues(defaultsFor(list[0]));
+      setValues({});
     }
     setLoading(false);
   }
@@ -246,7 +232,7 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
                       <CardContent className="space-y-3">
                         <div>
                           <Label className="text-xs">POS System</Label>
-                          <Select value={providerId} onValueChange={(v) => { setProviderId(v); setValues(defaultsFor(providers.find((p) => p.id === v))); }}>
+                          <Select value={providerId} onValueChange={(v) => { setProviderId(v); setValues({}); }}>
                             <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {providers.map((p) => (
