@@ -113,7 +113,8 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
     for (const f of schema) {
       if (f.type !== "url") continue;
       const raw = cleaned[f.key];
-      if (typeof raw !== "string") continue;
+      if (raw == null) continue;
+      if (typeof raw !== "string") { toast.error(`${f.label} must be a valid http(s) URL`); return; }
       const url = normalizeHttpUrl(raw);
       if (url === null) { toast.error(`${f.label} must be a valid http(s) URL`); return; }
       cleaned[f.key] = url;
