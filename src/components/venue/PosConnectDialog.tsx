@@ -7,16 +7,31 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plug, KeyRound, CheckCircle2 } from "lucide-react";
 
 interface SchemaField {
   key: string;
   label: string;
-  type: "text" | "secret" | "number" | "url";
+  type: "text" | "secret" | "number" | "url" | "boolean";
   required?: boolean;
   placeholder?: string;
   help?: string;
+  default?: string | number | boolean;
+}
+
+type FieldValue = string | number | boolean;
+
+// Seed a fresh form from the schema's declared defaults so boolean/number
+// fields (test_mode, serving_type, …) start with their intended values
+// instead of being absent until the user touches them.
+function defaultsFor(p: Provider | null | undefined): Record<string, FieldValue> {
+  const out: Record<string, FieldValue> = {};
+  for (const f of p?.config_schema ?? []) {
+    if (f.default !== undefined) out[f.key] = f.default;
+  }
+  return out;
 }
 
 interface Provider {
@@ -39,7 +54,7 @@ interface Props {
 export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved }: Props) {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [providerId, setProviderId] = useState<string>("");
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<string, FieldValue>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -61,22 +76,30 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
     const list = (provs ?? []) as Provider[];
     setProviders(list);
     if (existing?.provider_id) {
+      const prov = list.find((p) => p.id === existing.provider_id);
       setProviderId(existing.provider_id);
-      setValues((existing.config ?? {}) as Record<string, string>);
+      // Schema defaults fill any keys the saved config is missing; saved values win.
+      setValues({ ...defaultsFor(prov), ...((existing.config ?? {}) as Record<string, FieldValue>) });
     } else if (list.length > 0) {
       setProviderId(list[0].id);
-      setValues({});
+      setValues(defaultsFor(list[0]));
     }
     setLoading(false);
   }
 
-  function setField(key: string, val: string) {
+  function setField(key: string, val: FieldValue) {
     setValues((v) => ({ ...v, [key]: val }));
+  }
+
+  // A boolean field always holds a value; others count as filled when non-blank.
+  function filled(f: SchemaField): boolean {
+    if (f.type === "boolean") return true;
+    return String(values[f.key] ?? "").trim().length > 0;
   }
 
   function validate(): string | null {
     for (const f of schema) {
-      if (f.required && !(values[f.key] ?? "").trim()) return `${f.label} is required`;
+      if (f.required && !filled(f)) return `${f.label} is required`;
     }
     return null;
   }
@@ -89,11 +112,11 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
 
     // Split secrets out — they go to Vault via admin-set-pos-credentials.
     const secretKeys = new Set(schema.filter((f) => f.type === "secret").map((f) => f.key));
-    const nonSecret: Record<string, string> = {};
+    const nonSecret: Record<string, FieldValue> = {};
     const secretEntries: Array<[string, string]> = [];
     for (const [k, v] of Object.entries(values)) {
       if (secretKeys.has(k)) {
-        if (v && v.trim().length > 0) secretEntries.push([k, v]);
+        if (typeof v === "string" && v.trim().length > 0) secretEntries.push([k, v]);
       } else {
         nonSecret[k] = v;
       }
@@ -128,8 +151,21 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
       }
     }
 
+    // Run the handshake so the status advances past "connecting".
+    // pos-test-connection sets connection_status to "connected" or "error"
+    // based on the live check — without this the row is stuck at "connecting".
+    const { data: testData, error: testErr } = await supabase.functions.invoke("pos-test-connection", {
+      body: { venue_id: venueId },
+    });
+    const testResult = testData as { ok?: boolean; message?: string } | null;
     setSaving(false);
-    toast.success("Integration saved");
+    if (testErr) {
+      toast.error(`Saved, but the connection test failed: ${testErr.message}`);
+    } else if (testResult?.ok) {
+      toast.success("Connected");
+    } else {
+      toast.error(testResult?.message || "Saved, but the connection test failed");
+    }
     onSaved?.();
     onOpenChange(false);
   }
@@ -154,21 +190,37 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
           ) : (
             <>
               {(() => {
-                const renderField = (f: SchemaField) => (
-                  <div key={f.key}>
-                    <Label className="text-xs">
-                      {f.label} {f.required && <span className="text-destructive">*</span>}
-                    </Label>
-                    <Input
-                      className="mt-1 h-9"
-                      type={f.type === "secret" ? "password" : f.type === "number" ? "number" : "text"}
-                      placeholder={f.placeholder ?? (f.type === "secret" ? "Paste credential" : "")}
-                      value={values[f.key] ?? ""}
-                      onChange={(e) => setField(f.key, e.target.value)}
-                    />
-                    {f.help && <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{f.help}</p>}
-                  </div>
-                );
+                const renderField = (f: SchemaField) => {
+                  if (f.type === "boolean") {
+                    const on = values[f.key] === true || values[f.key] === "true";
+                    return (
+                      <div key={f.key} className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <Label className="text-xs">
+                            {f.label} {f.required && <span className="text-destructive">*</span>}
+                          </Label>
+                          {f.help && <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{f.help}</p>}
+                        </div>
+                        <Switch checked={on} onCheckedChange={(c) => setField(f.key, c)} />
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={f.key}>
+                      <Label className="text-xs">
+                        {f.label} {f.required && <span className="text-destructive">*</span>}
+                      </Label>
+                      <Input
+                        className="mt-1 h-9"
+                        type={f.type === "secret" ? "password" : f.type === "number" ? "number" : "text"}
+                        placeholder={f.placeholder ?? (f.type === "secret" ? "Paste credential" : "")}
+                        value={(values[f.key] as string | number | undefined) ?? ""}
+                        onChange={(e) => setField(f.key, e.target.value)}
+                      />
+                      {f.help && <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{f.help}</p>}
+                    </div>
+                  );
+                };
 
                 // Provider slot takes ~2 field-heights; balance fields across the remaining space.
                 const total = schema.length;
@@ -179,7 +231,7 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
                 const card2Fields = schema.slice(card1Count, card1Count + card2Count);
                 const card3Fields = schema.slice(card1Count + card2Count);
 
-                const missing = schema.filter((f) => f.required && !(values[f.key] ?? "").trim());
+                const missing = schema.filter((f) => f.required && !filled(f));
 
                 return (
                   <div className="grid gap-4 lg:grid-cols-3">
@@ -194,7 +246,7 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
                       <CardContent className="space-y-3">
                         <div>
                           <Label className="text-xs">POS System</Label>
-                          <Select value={providerId} onValueChange={(v) => { setProviderId(v); setValues({}); }}>
+                          <Select value={providerId} onValueChange={(v) => { setProviderId(v); setValues(defaultsFor(providers.find((p) => p.id === v))); }}>
                             <SelectTrigger className="mt-1 h-9"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {providers.map((p) => (
@@ -248,7 +300,7 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Filled</span>
                             <span className="font-medium">
-                              {schema.filter((f) => (values[f.key] ?? "").trim().length > 0).length} / {schema.length}
+                              {schema.filter(filled).length} / {schema.length}
                             </span>
                           </div>
                           <div className="flex justify-between">
