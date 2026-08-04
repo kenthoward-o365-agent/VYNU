@@ -56,10 +56,7 @@ const adapter: PosAdapter = {
     let token;
     try {
       token = await getHLToken(db, ctx);
-    } catch (err) {
-      return { ok: false, message: (err as Error).message };
-    }
-    if (!token.access_token) return { ok: false, message: "No access token returned" };
+      ctx.tokenCache = token;
 
     // 3. The orders host itself, which the credential check never touches.
     const probe = await probeWebOrders(db, ctx);

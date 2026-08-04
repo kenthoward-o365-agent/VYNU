@@ -164,12 +164,13 @@ export default function PosConnectDialog({ venueId, open, onOpenChange, onSaved 
         // Don't leave the row at "connecting" with only some secrets in Vault: that
         // reads as a connection in progress when nothing is usable. Mark it failed so
         // the state is explicit and the operator sees why.
-        await (supabase as any).from("venue_pos_integrations")
+        const { error: statusErr } = await (supabase as any).from("venue_pos_integrations")
           .update({
             connection_status: "error",
             last_error: `Failed to store ${field}: ${secErr.message}`,
           })
           .eq("venue_id", venueId);
+        if (statusErr) console.error(statusErr);
         setSaving(false);
         toast.error(`Failed to store ${field}: ${secErr.message}`);
         onSaved?.();

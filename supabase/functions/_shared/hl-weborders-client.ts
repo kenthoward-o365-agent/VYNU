@@ -73,11 +73,13 @@ const REQUIRED_ID_KEYS = ["integrator_id", "recipient_id", "station_no"] as cons
  */
 export function missingOrderIds(ctx: PosAdapterContext): string[] {
   return REQUIRED_ID_KEYS.filter((k) => {
-    const v = ctx.config?.[k];
-    if (v === undefined || v === null || v === "") return true;
-    return !Number.isFinite(typeof v === "number" ? v : Number(v));
+    const raw = ctx.config?.[k];
+    if (raw === undefined || raw === null) return true;
+    const v = typeof raw === "string" ? raw.trim() : raw;
+    if (v === "") return true;
+    const n = typeof v === "number" ? v : Number(v);
+    return !Number.isFinite(n);
   });
-}
 
 export async function getHLToken(
   supabase: SupabaseClient,
