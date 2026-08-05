@@ -80,6 +80,7 @@ export function missingOrderIds(ctx: PosAdapterContext): string[] {
     const n = typeof v === "number" ? v : Number(v);
     return !Number.isFinite(n);
   });
+}
 
 export async function getHLToken(
   supabase: SupabaseClient,
