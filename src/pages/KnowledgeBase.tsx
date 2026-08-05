@@ -1153,10 +1153,10 @@ export default function KnowledgeBase() {
 
           <SubSection title="The four order modes">
             <ul className="list-disc list-inside space-y-2 pl-1">
-              <li><strong>Fast tender (card)</strong> — no table, paid by H&L Pay. We send <code>tenders: [{`{ tendercode: 63, amount }`}]</code> (or whatever you've set as the default tender).</li>
+              <li><strong>Fast tender (card)</strong> — no table, paid by H&L Pay. We send <code>tenders: [{`{ tender_code: 63, amount }`}]</code> (or whatever you've set as the default tender).</li>
               <li><strong>Charge to table</strong> — order has a <code>table_no</code>. We send <code>tenders: []</code> and H&L opens / appends to the table tab.</li>
-              <li><strong>Guest charge (room/hotel)</strong> — payment method <em>guest_charge</em>. We send <code>tendercode: 15</code>.</li>
-              <li><strong>Debtor charge (house account)</strong> — payment method <em>debtor</em>. We send <code>tendercode: 17</code> with the diner's <code>account_id</code>.</li>
+              <li><strong>Guest charge (room/hotel)</strong> — payment method <em>guest_charge</em>. We send <code>tender_code: 15</code>.</li>
+              <li><strong>Debtor charge (house account)</strong> — payment method <em>debtor</em>. We send <code>tender_code: 17</code> with the diner's <code>account_id</code>.</li>
             </ul>
           </SubSection>
 

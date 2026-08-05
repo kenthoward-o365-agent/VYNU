@@ -28,16 +28,19 @@ export interface HLOrderHeader {
   table_no?: number | null;
 }
 
+// plu is `integer` in the H&L schema; keep it numeric here so a stringly-typed
+// posId cannot reach the wire again (it was accepted as `number | string` before
+// and H&L rejected the order with a 400).
 export interface HLSaleItem {
-  plu: number | string;
+  plu: number;
   price: number;
   qty: number;
   description: string;
-  modifier_items?: Array<{ plu: number | string; price: number; qty: number; description: string }>;
+  modifier_items?: Array<{ plu: number; price: number; qty: number; description: string }>;
 }
 
 export interface HLTender {
-  tendercode: number;
+  tender_code: number;
   amount: number;
   surcharge?: number;
   account_id?: string;
@@ -58,6 +61,27 @@ function cfg(ctx: PosAdapterContext, key: string, fallback?: unknown): unknown {
 function num(v: unknown, fallback = 0): number {
   const n = typeof v === "number" ? v : Number(v);
   return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * A line's PLU, or a thrown error if it cannot address a real product.
+ *
+ * pos-outbound-worker resolves posId as `plu || pos_id || ""`, so an unmapped
+ * menu item arrives as "" — and Number("") is 0, which is finite. Passing that
+ * through would send a schema-valid order pointing at item 0 instead of being
+ * rejected: the same silent-misaddressing trap REQUIRED_ID_KEYS guards against
+ * in the header. Fail the push instead, naming the line the way H&L's own
+ * validation errors do so the two can be read side by side.
+ */
+function requirePlu(posId: unknown, where: string): number {
+  const n = num(posId, NaN);
+  if (!Number.isInteger(n) || n <= 0) {
+    throw new Error(
+      `H&L: ${where}.plu is not a usable PLU (got ${JSON.stringify(posId)}) — ` +
+        `map this item to an Exceed PLU before pushing orders`,
+    );
+  }
+  return n;
 }
 
 /** Identifiers an order needs in order to address a real Exceed site. */
@@ -139,13 +163,13 @@ export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): 
   const docket_no = Math.floor(Math.random() * 90000) + 10000;
   const table_no = order.tableExternalId ? num(order.tableExternalId, null as any) : null;
 
-  const sale_items: HLSaleItem[] = order.lineItems.map((li) => ({
-    plu: li.posId,
+  const sale_items: HLSaleItem[] = order.lineItems.map((li, i) => ({
+    plu: requirePlu(li.posId, `sale_items[${i}]`),
     price: Number(li.unitPrice),
     qty: Number(li.quantity),
     description: li.notes ?? "",
-    modifier_items: (li.modifiers ?? []).map((m) => ({
-      plu: m.posId,
+    modifier_items: (li.modifiers ?? []).map((m, j) => ({
+      plu: requirePlu(m.posId, `sale_items[${i}].modifier_items[${j}]`),
       price: Number(m.unitPrice),
       qty: Number(m.quantity),
       description: "",
@@ -161,16 +185,16 @@ export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): 
   if (table_no !== null && table_no !== undefined) {
     tenders = [];
   } else if (order.payment?.method === "guest_charge") {
-    tenders = [{ tendercode: 15, amount: Number(order.payment.amount ?? order.totals.total) }];
+    tenders = [{ tender_code: 15, amount: Number(order.payment.amount ?? order.totals.total) }];
   } else if (order.payment?.method === "debtor") {
     tenders = [{
-      tendercode: 17,
+      tender_code: 17,
       amount: Number(order.payment.amount ?? order.totals.total),
       account_id: order.payment.reference ?? "",
     }];
   } else {
     tenders = [{
-      tendercode: default_tender_code,
+      tender_code: default_tender_code,
       amount: Number(order.payment?.amount ?? order.totals.total),
     }];
   }
