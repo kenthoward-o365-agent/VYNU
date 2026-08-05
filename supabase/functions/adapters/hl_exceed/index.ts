@@ -57,8 +57,9 @@ const adapter: PosAdapter = {
     try {
       token = await getHLToken(db, ctx);
       ctx.tokenCache = token;
-    } catch (err) {
-      return { ok: false, message: (err as Error).message };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return { ok: false, message };
     }
     if (!token.access_token) return { ok: false, message: "No access token returned" };
 
