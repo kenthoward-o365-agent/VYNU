@@ -21,7 +21,9 @@ import {
   getHLToken,
   getOrder,
   mapOutboundOrder,
+  missingOrderIds,
   postOrder,
+  probeWebOrders,
   verifyHLSignature,
 } from "../../_shared/hl-weborders-client.ts";
 
@@ -41,13 +43,26 @@ const adapter: PosAdapter = {
   },
 
   async testConnection(ctx) {
-    try {
-      const tok = await getHLToken(admin(), ctx);
-      if (!tok.access_token) return { ok: false, message: "No access token returned" };
-      return { ok: true, message: "OAuth token acquired — H&L Web Orders reachable" };
-    } catch (err) {
-      return { ok: false, message: (err as Error).message };
+    const db = admin();
+
+    // 1. Per-venue identifiers. Without these an order is addressed to nobody, and
+    //    num() would silently coerce them to 0 at send time instead of erroring.
+    const missing = missingOrderIds(ctx);
+    if (missing.length > 0) {
+      return { ok: false, message: `Missing required configuration: ${missing.join(", ")}` };
     }
+
+    // 2. Credentials — proves the token URL, audience, client id and secret.
+    let token;
+    try {
+      token = await getHLToken(db, ctx);
+      ctx.tokenCache = token;
+
+    // 3. The orders host itself, which the credential check never touches.
+    const probe = await probeWebOrders(db, ctx);
+    if (!probe.ok) return probe;
+
+    return { ok: true, message: `OAuth token acquired — ${probe.message}` };
   },
 
   async pullMenu(_ctx): Promise<NormalisedMenu> {

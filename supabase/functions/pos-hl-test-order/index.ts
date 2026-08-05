@@ -57,14 +57,26 @@ Deno.serve(async (req) => {
   ctx.config = { ...ctx.config, test_mode: true };
 
   const reference = crypto.randomUUID();
-  const payload = mapOutboundOrder({
-    orderId: reference,
-    tableExternalId: null,
-    diner: { name: "Test Diner", memberRef: "" },
-    lineItems: [{ posId: "1", quantity: 1, unitPrice: 0.01, notes: "Tab-Less test order" }],
-    totals: { subtotal: 0.01, tax: 0, total: 0.01 },
-    payment: { method: "card", amount: 0.01 },
-  }, ctx);
+  // mapOutboundOrder throws when the venue is missing integrator/recipient/station ids.
+  // Catch it here so the operator gets that message instead of an opaque 500.
+  let payload: ReturnType<typeof mapOutboundOrder>;
+  try {
+    payload = mapOutboundOrder({
+      orderId: reference,
+      tableExternalId: null,
+      diner: { name: "Test Diner", memberRef: "" },
+      lineItems: [{ posId: "1", quantity: 1, unitPrice: 0.01, notes: "Tab-Less test order" }],
+      totals: { subtotal: 0.01, tax: 0, total: 0.01 },
+      payment: { method: "card", amount: 0.01 },
+    }, ctx);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    await admin.from("pos_sync_log").insert({
+      venue_id: venueId, event_type: "test_order",
+      direction: "outbound", result: "error", error_message: msg,
+    });
+    return json(400, { ok: false, error: msg });
+  }
 
   try {
     const res = await postOrder(admin, ctx, payload);

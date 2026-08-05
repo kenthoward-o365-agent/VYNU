@@ -60,6 +60,27 @@ function num(v: unknown, fallback = 0): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
+/** Identifiers an order needs in order to address a real Exceed site. */
+const REQUIRED_ID_KEYS = ["integrator_id", "recipient_id", "station_no"] as const;
+
+/**
+ * Returns the required identifier keys that are absent or non-numeric.
+ *
+ * num() coerces a missing value to 0, so without this check an incompletely
+ * configured venue produces a structurally valid order addressed to nobody — H&L
+ * either rejects it or routes the docket nowhere, with no error at our end. An
+ * explicit 0 is left alone: that is an operator's choice, not a missing value.
+ */
+export function missingOrderIds(ctx: PosAdapterContext): string[] {
+  return REQUIRED_ID_KEYS.filter((k) => {
+    const raw = ctx.config?.[k];
+    if (raw === undefined || raw === null) return true;
+    const v = typeof raw === "string" ? raw.trim() : raw;
+    if (v === "") return true;
+    const n = typeof v === "number" ? v : Number(v);
+    return !Number.isFinite(n);
+  });
+
 export async function getHLToken(
   supabase: SupabaseClient,
   ctx: PosAdapterContext,
@@ -100,6 +121,12 @@ export async function getHLToken(
 }
 
 export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): HLOrderPayload {
+  // Fail loudly rather than sending header ids of 0 (see missingOrderIds).
+  const missing = missingOrderIds(ctx);
+  if (missing.length > 0) {
+    throw new Error(`H&L configuration incomplete for this venue: ${missing.join(", ")} not set`);
+  }
+
   const testMode = cfg(ctx, "test_mode", true) !== false;
   const integrator_id = num(cfg(ctx, "integrator_id"));
   const recipient_id = num(cfg(ctx, "recipient_id"));
@@ -211,6 +238,48 @@ export async function getOrder(
   let body: unknown = text;
   try { body = JSON.parse(text); } catch { /* keep as text */ }
   return { status: res.status, body };
+}
+
+/**
+ * Connectivity probe for the Web Orders host.
+ *
+ * testConnection only ever reached the identity provider, so a wrong (or
+ * production-vs-sandbox mismatched) web_orders_base_url passed the test and only
+ * failed on the first real order. This performs the documented
+ * GET /api/order/{reference} lookup with a throwaway reference: any HTTP answer
+ * proves DNS/TLS/host and that the bearer is accepted, and a 404 for an unknown
+ * reference is a pass. It creates nothing.
+ */
+export async function probeWebOrders(
+  supabase: SupabaseClient,
+  ctx: PosAdapterContext,
+): Promise<{ ok: boolean; message: string }> {
+  const base = String(cfg(ctx, "web_orders_base_url", "https://weborders.hlcloud.com.au/api/order"));
+  let parsed: URL;
+  try {
+    parsed = new URL(base);
+  } catch {
+    return { ok: false, message: `Web Orders base URL is not a valid absolute URL: ${base}` };
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    return { ok: false, message: `Web Orders base URL must be http(s): ${base}` };
+  }
+
+  try {
+    const res = await getOrder(supabase, ctx, "connectivity-check");
+    if (res.status === 401 || res.status === 403) {
+      return {
+        ok: false,
+        message: `Web Orders rejected the token (${res.status}) — check the OAuth audience for this environment`,
+      };
+    }
+    if (res.status >= 500) {
+      return { ok: false, message: `Web Orders returned ${res.status} at ${parsed.host}` };
+    }
+    return { ok: true, message: `Web Orders reachable at ${parsed.host} (${res.status})` };
+  } catch (err) {
+    return { ok: false, message: `Web Orders unreachable at ${parsed.host}: ${(err as Error).message}` };
+  }
 }
 
 // ---- HMAC verification (webhook) ---------------------------------------

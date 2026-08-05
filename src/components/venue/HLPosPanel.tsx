@@ -81,7 +81,26 @@ export default function HLPosPanel({ venueId }: Props) {
     setConfig((c) => ({ ...c, [key]: value }));
   }
 
+  // Required-field check, mirroring PosConnectDialog.validate(). Without it this panel
+  // would happily save a config missing the identifiers an order needs. A secret counts
+  // as present when it is already in Vault, even though its value is never readable.
+  function missingRequired(): string | null {
+    for (const f of schema) {
+      if (!f.required || f.type === "boolean") continue;
+      if (f.type === "secret") {
+        if (!secretsSet[f.key] && (secrets[f.key] ?? "").trim().length === 0) {
+          return `${f.label} is required`;
+        }
+        continue;
+      }
+      if (String(config[f.key] ?? "").trim().length === 0) return `${f.label} is required`;
+    }
+    return null;
+  }
+
   async function save() {
+    const missing = missingRequired();
+    if (missing) { toast.error(missing); return; }
     setSaving(true);
     // 1. Ensure a venue_pos_integrations row exists, write non-secret config.
     // url-typed fields are normalised here too (same rule as PosConnectDialog): a
