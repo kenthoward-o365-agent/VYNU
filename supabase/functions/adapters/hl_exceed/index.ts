@@ -80,12 +80,13 @@ const adapter: PosAdapter = {
   },
 
   async sendOrder(ctx, order: OutboundOrder) {
-    const payload = mapOutboundOrder(order, ctx);
+    const { payload, unmapped } = mapOutboundOrder(order, ctx);
     const res = await postOrder(admin(), ctx, payload);
     return {
       posOrderId: payload.header.reference,
       accepted: res.status >= 200 && res.status < 300,
       raw: res.body,
+      unmapped,
     };
   },
 

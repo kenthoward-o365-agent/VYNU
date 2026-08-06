@@ -59,9 +59,9 @@ Deno.serve(async (req) => {
   const reference = crypto.randomUUID();
   // mapOutboundOrder throws when the venue is missing integrator/recipient/station ids.
   // Catch it here so the operator gets that message instead of an opaque 500.
-  let payload: ReturnType<typeof mapOutboundOrder>;
+  let mapped: ReturnType<typeof mapOutboundOrder>;
   try {
-    payload = mapOutboundOrder({
+    mapped = mapOutboundOrder({
       orderId: reference,
       tableExternalId: null,
       diner: { name: "Test Diner", memberRef: "" },
@@ -79,18 +79,20 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const res = await postOrder(admin, ctx, payload);
+    const res = await postOrder(admin, ctx, mapped.payload);
     await admin.from("pos_sync_log").insert({
       venue_id: venueId, event_type: "test_order",
       direction: "outbound", result: "success",
     });
-    return json(200, { ok: true, request: payload, response: res });
+    return json(200, {
+      ok: true, request: mapped.payload, response: res, unmapped: mapped.unmapped,
+    });
   } catch (err) {
     const msg = (err as Error).message;
     await admin.from("pos_sync_log").insert({
       venue_id: venueId, event_type: "test_order",
       direction: "outbound", result: "error", error_message: msg,
     });
-    return json(200, { ok: false, request: payload, error: msg });
+    return json(200, { ok: false, request: mapped.payload, error: msg });
   }
 });

@@ -166,13 +166,35 @@ Deno.serve(async (req) => {
             }
 
             const sent = await adapter.sendOrder(ctx, orderPayload);
+
+            // Lines that fell back to a placeholder PLU. The push succeeded and
+            // Sysnet reconciles them downstream, but the substitution must stay
+            // visible: record it on the order and as its own sync-log event so
+            // an operator can find and map the item.
+            const unmapped = sent.unmapped ?? [];
+            const warning = unmapped.length > 0
+              ? `Sent with ${unmapped.length} unmapped item(s) as PLU 0 — ` +
+                unmapped.map((u) => `${u.where} (${u.description})`).join(", ")
+              : null;
+
             if (dbOrderId) {
               await supabase.from("orders").update({
                 pos_order_id: sent.posOrderId ?? dbOrderId,
                 pos_push_status: sent.accepted ? "sent" : "error",
                 pos_pushed_at: new Date().toISOString(),
-                pos_push_error: sent.accepted ? null : "POS did not accept order",
+                pos_push_error: sent.accepted ? warning : "POS did not accept order",
               } as any).eq("id", dbOrderId);
+            }
+
+            if (warning) {
+              console.warn(`[pos-outbound-worker] ${dbOrderId}: ${warning}`);
+              await supabase.from("pos_sync_log").insert({
+                venue_id: venueId,
+                event_type: "order_unmapped_items",
+                direction: "outbound",
+                result: "error",
+                error_message: warning.slice(0, 500),
+              });
             }
             return { ok: true };
           }
