@@ -2,6 +2,31 @@
 // specific vendor implementation. Adapters are LAZY-LOADED by slug to keep
 // edge function cold starts fast as the registry grows to N providers.
 
+/**
+ * A failure caused by our own data or payload rather than by the POS being
+ * unreachable — an unset venue identifier, a rejected order body, a 4xx.
+ *
+ * The circuit breaker exists to stop hammering a POS that is down. Counting
+ * these against it conflated "this one order is malformed" with "Exceed is
+ * offline": five bad orders tripped the breaker, flipped connection_status to
+ * 'error', and took the whole venue's integration down over a data problem that
+ * retrying could never fix. runWithBreaker lets these through without touching
+ * breaker state.
+ */
+export class PosDataError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PosDataError";
+  }
+}
+
+/** A line we could not address to a real POS product. */
+export interface UnmappedLine {
+  where: string;        // e.g. "sale_items[0]" — mirrors H&L's own validation paths
+  description: string;  // human label so an operator can find the item
+  posId: unknown;       // what we actually had, for diagnosis
+}
+
 export interface PosAdapterContext {
   venueId: string;
   config: Record<string, unknown>;        // non-secret venue config (location_id, etc.)
@@ -70,7 +95,10 @@ export interface PosAdapter {
   pullOrders?(ctx: PosAdapterContext, sinceIso: string): Promise<PosOrderUpdate[]>;
   updateOrderStatus?(ctx: PosAdapterContext, externalOrderId: string, status: string): Promise<void>;
   snoozeProduct?(ctx: PosAdapterContext, plu: string, snoozeUntilIso: string | null): Promise<void>;
-  sendOrder?(ctx: PosAdapterContext, order: OutboundOrder): Promise<{ posOrderId: string; accepted: boolean; raw?: unknown }>;
+  // `unmapped` is non-empty when the order was sent with placeholder PLUs. The
+  // push still succeeded; the caller is responsible for flagging it so the
+  // substitution is never silent.
+  sendOrder?(ctx: PosAdapterContext, order: OutboundOrder): Promise<{ posOrderId: string; accepted: boolean; raw?: unknown; unmapped?: UnmappedLine[] }>;
   // Verify an inbound webhook signature. Receives raw bytes + headers.
   verifyWebhook?(ctx: PosAdapterContext, headers: Headers, rawBody: string): boolean;
   testConnection(ctx: PosAdapterContext): Promise<{ ok: boolean; message: string }>;

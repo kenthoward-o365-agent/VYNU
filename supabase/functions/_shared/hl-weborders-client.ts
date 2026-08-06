@@ -11,7 +11,8 @@
 // Refresh 5 minutes before expiry.
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
-import type { PosAdapterContext, OutboundOrder } from "./pos-adapter.ts";
+import { PosDataError } from "./pos-adapter.ts";
+import type { PosAdapterContext, OutboundOrder, UnmappedLine } from "./pos-adapter.ts";
 
 const REFRESH_SKEW_MS = 5 * 60 * 1000;
 
@@ -64,22 +65,37 @@ function num(v: unknown, fallback = 0): number {
 }
 
 /**
- * A line's PLU, or a thrown error if it cannot address a real product.
+ * PLU sent for a line we cannot address to a real Exceed product. Sysnet
+ * recognises it as "needs manual attention" and routes the line accordingly.
+ */
+export const UNMAPPED_PLU = 0;
+
+/**
+ * A line's PLU, falling back to UNMAPPED_PLU and recording the line when it
+ * cannot address a real product.
  *
  * pos-outbound-worker resolves posId as `plu || pos_id || ""`, so an unmapped
- * menu item arrives as "" — and Number("") is 0, which is finite. Passing that
- * through would send a schema-valid order pointing at item 0 instead of being
- * rejected: the same silent-misaddressing trap REQUIRED_ID_KEYS guards against
- * in the header. Fail the push instead, naming the line the way H&L's own
- * validation errors do so the two can be read side by side.
+ * menu item arrives as "". This previously threw, which failed the whole order:
+ * one unmapped garnish meant the kitchen got nothing at all. Sysnet handles the
+ * placeholder downstream, so the order is worth more delivered than rejected.
+ *
+ * The substitution is never silent: every fallback is pushed onto `unmapped`,
+ * which the worker records against the order and the sync log. Sending 0 with no
+ * trace would be the worse failure of the two — a schema-valid order quietly
+ * pointing at the wrong product, which is exactly what REQUIRED_ID_KEYS guards
+ * against in the header. `where` mirrors H&L's own validation paths so ours and
+ * theirs can be read side by side.
  */
-function requirePlu(posId: unknown, where: string): number {
+function resolvePlu(
+  posId: unknown,
+  where: string,
+  description: string,
+  unmapped: UnmappedLine[],
+): number {
   const n = num(posId, NaN);
   if (!Number.isInteger(n) || n <= 0) {
-    throw new Error(
-      `H&L: ${where}.plu is not a usable PLU (got ${JSON.stringify(posId)}) — ` +
-        `map this item to an Exceed PLU before pushing orders`,
-    );
+    unmapped.push({ where, description, posId });
+    return UNMAPPED_PLU;
   }
   return n;
 }
@@ -145,12 +161,24 @@ export async function getHLToken(
   return { access_token: data.access_token, expires_at };
 }
 
-export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): HLOrderPayload {
+/** A mapped order plus any lines that fell back to UNMAPPED_PLU. */
+export interface MappedOrder {
+  payload: HLOrderPayload;
+  unmapped: UnmappedLine[];
+}
+
+export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): MappedOrder {
   // Fail loudly rather than sending header ids of 0 (see missingOrderIds).
+  // Unlike an unmapped line this is not survivable: with no recipient the order
+  // reaches no venue at all, so there is nothing for Sysnet to reconcile.
   const missing = missingOrderIds(ctx);
   if (missing.length > 0) {
-    throw new Error(`H&L configuration incomplete for this venue: ${missing.join(", ")} not set`);
+    throw new PosDataError(
+      `H&L configuration incomplete for this venue: ${missing.join(", ")} not set`,
+    );
   }
+
+  const unmapped: UnmappedLine[] = [];
 
   const testMode = cfg(ctx, "test_mode", true) !== false;
   const integrator_id = num(cfg(ctx, "integrator_id"));
@@ -164,12 +192,17 @@ export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): 
   const table_no = order.tableExternalId ? num(order.tableExternalId, null as any) : null;
 
   const sale_items: HLSaleItem[] = order.lineItems.map((li, i) => ({
-    plu: requirePlu(li.posId, `sale_items[${i}]`),
+    plu: resolvePlu(li.posId, `sale_items[${i}]`, li.notes ?? `line ${i + 1}`, unmapped),
     price: Number(li.unitPrice),
     qty: Number(li.quantity),
     description: li.notes ?? "",
     modifier_items: (li.modifiers ?? []).map((m, j) => ({
-      plu: requirePlu(m.posId, `sale_items[${i}].modifier_items[${j}]`),
+      plu: resolvePlu(
+        m.posId,
+        `sale_items[${i}].modifier_items[${j}]`,
+        `modifier ${j + 1} on line ${i + 1}`,
+        unmapped,
+      ),
       price: Number(m.unitPrice),
       qty: Number(m.quantity),
       description: "",
@@ -199,7 +232,7 @@ export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): 
     }];
   }
 
-  return {
+  const payload: HLOrderPayload = {
     header: {
       test: testMode,
       device_time: new Date().toISOString(),
@@ -218,6 +251,8 @@ export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): 
       ? { first_name: order.diner.name, mobile: order.diner.memberRef ?? "" }
       : null,
   };
+
+  return { payload, unmapped };
 }
 
 export async function postOrder(
@@ -240,7 +275,15 @@ export async function postOrder(
   let body: unknown = text;
   try { body = JSON.parse(text); } catch { /* keep as text */ }
   if (!res.ok) {
-    throw new Error(`H&L POST order ${res.status}: ${text.slice(0, 300)}`);
+    const msg = `H&L POST order ${res.status}: ${text.slice(0, 300)}`;
+    // A 4xx means H&L understood us and refused this order — our payload is
+    // wrong, and retrying it unchanged will fail identically. Only genuine
+    // availability problems (5xx, timeouts, rate limiting) should count towards
+    // the circuit breaker. 408/429 are the two 4xx that are worth retrying.
+    if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
+      throw new PosDataError(msg);
+    }
+    throw new Error(msg);
   }
   return { status: res.status, body };
 }

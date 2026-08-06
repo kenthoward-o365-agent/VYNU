@@ -219,8 +219,19 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
                     </div>
 
                     <div className="flex flex-wrap gap-2 pt-1">
-                      {isConnected ? (
+                      {/* Keyed off isActive, not isConnected: an errored integration is
+                          still this venue's integration, and Test/Reconfigure/Disconnect
+                          are exactly what an operator needs to recover. Gating them on
+                          'connected' meant a failed push flipped the status to 'error'
+                          and left Finish setup as the only control — no way to test, and
+                          no way to disconnect. */}
+                      {isActive ? (
                         <>
+                          {!isConnected && (
+                            <Button size="sm" variant="default" onClick={() => setConnectSlug(p.slug)}>
+                              <Plug className="h-3 w-3 mr-1" /> Finish setup
+                            </Button>
+                          )}
                           <Button size="sm" variant="outline" disabled={testing} onClick={testConnection}>
                             <RefreshCw className={`h-3 w-3 mr-1 ${testing ? "animate-spin" : ""}`} /> Test
                           </Button>
@@ -235,12 +246,11 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
                       ) : (
                         <Button
                           size="sm"
-                          variant={isActive ? "default" : "outline"}
+                          variant="outline"
                           disabled={p.status === "coming_soon" || p.status === "planned"}
                           onClick={() => setConnectSlug(p.slug)}
                         >
-                          <Plug className="h-3 w-3 mr-1" />
-                          {isActive ? "Finish setup" : "Connect"}
+                          <Plug className="h-3 w-3 mr-1" /> Connect
                         </Button>
                       )}
                       {docsUrl && (

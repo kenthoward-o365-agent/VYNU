@@ -5,6 +5,7 @@
 // Also exposes circuit-breaker helpers so all outbound calls share one policy.
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { PosDataError } from "./pos-adapter.ts";
 import type { PosAdapter, PosAdapterContext } from "./pos-adapter.ts";
 
 const FAILURE_THRESHOLD = 5;
@@ -112,6 +113,14 @@ export async function runWithBreaker<T>(
     return { ok: true, value };
   } catch (err) {
     const msg = (err as Error).message ?? String(err);
+    // A bad payload says nothing about whether the POS is reachable. Counting
+    // these tripped the breaker and flipped connection_status to 'error' over a
+    // data problem — taking the venue's whole integration down. (Previously the
+    // settings UI also hid recovery controls when status !== 'connected', making
+    // it harder to recover.) Job-level retry/DLQ still applies; only breaker state is untouched.
+    if (err instanceof PosDataError) {
+      return { ok: false, error: msg, tripped: false };
+    }
     await recordBreakerFailure(supabase, integ.venue_id, msg);
     return { ok: false, error: msg, tripped: false };
   }
