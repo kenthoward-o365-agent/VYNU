@@ -314,6 +314,15 @@ export async function postOrder(
   try { body = JSON.parse(text); } catch { /* keep as text */ }
   if (!res.ok) {
     const msg = `H&L POST order ${res.status}: ${text.slice(0, 300)}`;
+    // The rejected payload, so a validation error can be read against what we
+    // actually sent. customer is redacted (diner name/mobile).
+    const { customer, ...loggable } = payload;
+    console.error("[hl-weborders] POST order failed " + JSON.stringify({
+      reference: payload.header.reference,
+      status: res.status,
+      response: text.slice(0, 1000),
+      request: { ...loggable, ...(customer ? { customer: "[redacted]" } : {}) },
+    }));
     // A 4xx means H&L understood us and refused this order — our payload is
     // wrong, and retrying it unchanged will fail identically. Only genuine
     // availability problems (5xx, timeouts, rate limiting) should count towards
