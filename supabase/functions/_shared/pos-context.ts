@@ -115,9 +115,9 @@ export async function runWithBreaker<T>(
     const msg = (err as Error).message ?? String(err);
     // A bad payload says nothing about whether the POS is reachable. Counting
     // these tripped the breaker and flipped connection_status to 'error' over a
-    // data problem — taking the venue's whole integration down, and (because the
-    // settings UI only offers Disconnect while connected) leaving no way out of
-    // it. Job-level retry/DLQ still applies; only breaker state is untouched.
+    // data problem — taking the venue's whole integration down. (Previously the
+    // settings UI also hid recovery controls when status !== 'connected', making
+    // it harder to recover.) Job-level retry/DLQ still applies; only breaker state is untouched.
     if (err instanceof PosDataError) {
       return { ok: false, error: msg, tripped: false };
     }

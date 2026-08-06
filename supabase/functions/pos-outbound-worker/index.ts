@@ -172,10 +172,10 @@ Deno.serve(async (req) => {
             // visible: record it on the order and as its own sync-log event so
             // an operator can find and map the item.
             const unmapped = sent.unmapped ?? [];
-            const warning = unmapped.length > 0
-              ? `Sent with ${unmapped.length} unmapped item(s) as PLU 0 — ` +
-                unmapped.map((u) => `${u.where} (${u.description})`).join(", ")
-              : null;
+const warning = unmapped.length > 0
+  ? `Sent with ${unmapped.length} unmapped item(s) as PLU 0 — ` +
+    unmapped.map((u) => `${u.where} (${u.description}) posId=${JSON.stringify(u.posId)}`).join(", ")
+  : null;
 
             if (dbOrderId) {
               await supabase.from("orders").update({
@@ -187,7 +187,7 @@ Deno.serve(async (req) => {
             }
 
             if (warning) {
-              console.warn(`[pos-outbound-worker] ${dbOrderId}: ${warning}`);
+console.warn(`[pos-outbound-worker] ${dbOrderId ?? orderPayload.orderId}: ${warning}`);
               await supabase.from("pos_sync_log").insert({
                 venue_id: venueId,
                 event_type: "order_unmapped_items",
