@@ -3,6 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { logAiUsage } from "../_shared/ai-usage.ts";
 import { enforceRateLimit, getClientIp, tooManyRequests } from "../_shared/rate-limit.ts";
 import { readJsonLimited, boundedArray, PayloadTooLargeError, payloadTooLarge } from "../_shared/http.ts";
+import { requireFeature } from "../_shared/require-feature.ts";
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -57,6 +58,13 @@ Deno.serve(async (req) => {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Package enforcement. The guest app does not yet gate on feature flags, so
+    // until it does this is the only thing stopping a venue consuming a feature
+    // its package excludes. Unlike the upsell, chat ordering is the whole
+    // feature rather than an enhancement, so refuse outright.
+    const featureDenied = await requireFeature(sb, venue_id, "ai.chat_ordering", corsHeaders);
+    if (featureDenied) return featureDenied;
 
     // AEA-04/AEA-02: this endpoint is anonymous by design (diner chatbot) and
     // calls a paid AI model, so bound cost-amplification per venue and per IP.

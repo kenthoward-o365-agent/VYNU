@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { logAiUsage } from "../_shared/ai-usage.ts";
 import { enforceRateLimit, getClientIp, tooManyRequests } from "../_shared/rate-limit.ts";
 import { readJsonLimited, boundedArray, PayloadTooLargeError, payloadTooLarge } from "../_shared/http.ts";
+import { hasFeature } from "../_shared/require-feature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,6 +56,19 @@ serve(async (req) => {
     if (!venueRow || venueRow.is_active === false) {
       return new Response(JSON.stringify({ error: "Venue not available", suggestions: [] }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Package enforcement. The guest app does not yet gate on feature flags, so
+    // until it does this is the only thing stopping a venue consuming a feature
+    // its package excludes. Hiding a button is not enforcement; refusing here is.
+    //
+    // Returns 200 with no suggestions rather than 403: the upsell is an optional
+    // enhancement, the client already renders nothing for an empty list, and a
+    // disabled feature is not an error condition worth surfacing to the diner.
+    if (!(await hasFeature(sb, venue_id, "ai.upsell"))) {
+      return new Response(JSON.stringify({ suggestions: [] }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
