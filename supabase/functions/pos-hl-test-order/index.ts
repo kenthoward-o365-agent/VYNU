@@ -65,7 +65,12 @@ Deno.serve(async (req) => {
       orderId: reference,
       tableExternalId: null,
       diner: { name: "Test Diner", memberRef: "" },
-      lineItems: [{ posId: "1", quantity: 1, unitPrice: 0.01, notes: "Tab-Less test order" }],
+      lineItems: [{
+        posId: "1",
+        name: "Tab-Less test order",
+        quantity: 1,
+        unitPrice: 0.01,
+      }],
       totals: { subtotal: 0.01, tax: 0, total: 0.01 },
       payment: { method: "card", amount: 0.01 },
     }, ctx);

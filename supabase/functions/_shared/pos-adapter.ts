@@ -72,10 +72,11 @@ export interface OutboundOrder {
   diner?: { name?: string | null; memberRef?: string | null } | null;
   lineItems: Array<{
     posId: string;                  // PLU on the POS
+    name?: string | null;           // product name — what the docket prints
     quantity: number;
     unitPrice: number;
-    notes?: string | null;
-    modifiers?: Array<{ posId: string; quantity: number; unitPrice: number }>;
+    notes?: string | null;          // kitchen/customer note, distinct from the name
+    modifiers?: Array<{ posId: string; name?: string | null; quantity: number; unitPrice: number }>;
   }>;
   serviceCharges?: Array<{ posId: string; amount: number; label?: string }>;
   payment?: {
