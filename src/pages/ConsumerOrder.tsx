@@ -83,7 +83,7 @@ const ConsumerOrder = () => {
   // a feature does not show a control that would then refuse to work.
   const guestFeatures = useGuestFeatures(venueId);
   const pkgChatEnabled = guestFeatures.has("ai.chat_ordering");
-  const pkgUpsellEnabled = guestFeatures.has("ai.upsell");
+  const pkgUpsellEnabled = !guestFeatures.loading && guestFeatures.has("ai.upsell");
   const [venue, setVenue] = useState<VenueInfo | null>(null);
   const [tableNumber, setTableNumber] = useState("");
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
