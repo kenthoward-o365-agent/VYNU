@@ -61,16 +61,19 @@ export function useGuestFeatures(venueId: string | undefined): GuestFeaturesResu
   // No row, or the lookup failed: match the server's fail-open default so the
   // UI and the endpoints agree. A venue that has a package configured is still
   // gated normally.
-  const tier = (data?.tier as PackageTier) ?? "feast";
+  const rawTier = data?.tier;
+  const tier: PackageTier =
+    rawTier === "bite" || rawTier === "plate" || rawTier === "feast" || rawTier === "custom"
+      ? rawTier
+      : "feast";
   const overrides = (data?.flags as FeatureFlags) ?? {};
 
-  // `feast` is a sentinel for all-on and has an empty preset, so resolveFlags
-  // would report everything as off. Mirror require-feature.ts: on feast, a key
-  // is enabled unless it has been explicitly overridden to false.
+  // Mirror require-feature.ts behavior: on feast, a key is enabled unless explicitly overridden to false.
+  const resolved = tier !== "feast" && tier !== "custom" ? resolveFlags(tier, overrides) : null;
   const has = (key: FeatureKey): boolean => {
     if (tier === "feast") return overrides[key] !== false;
     if (tier === "custom") return overrides[key] === true;
-    return resolveFlags(tier, overrides)[key] === true;
+    return resolved?.[key] === true;
   };
 
   return {
