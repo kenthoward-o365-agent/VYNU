@@ -144,12 +144,16 @@ Deno.serve(async (req) => {
                 tableExternalId: (ord as any).tables?.table_number ?? null,
                 lineItems: items.map((li: any) => ({
                   posId: li.menu_items?.plu || li.menu_items?.pos_id || "",
+                  // H&L requires a description per line and prints it on the
+                  // docket, so the product name has to travel with the PLU.
+                  name: li.menu_items?.name ?? null,
                   quantity: Number(li.quantity),
                   unitPrice: Number(li.unit_price),
                   notes: li.notes ?? null,
                   modifiers: Array.isArray(li.modifiers)
                     ? li.modifiers.map((m: any) => ({
                         posId: m.plu || m.pos_id || "",
+                        name: m.name ?? m.description ?? null,
                         quantity: Number(m.quantity ?? 1),
                         unitPrice: Number(m.price ?? 0),
                       }))

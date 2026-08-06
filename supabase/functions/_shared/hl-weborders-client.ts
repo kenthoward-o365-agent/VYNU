@@ -32,19 +32,24 @@ export interface HLOrderHeader {
 // plu is `integer` in the H&L schema; keep it numeric here so a stringly-typed
 // posId cannot reach the wire again (it was accepted as `number | string` before
 // and H&L rejected the order with a 400).
+// `description` is the product name H&L prints on the docket and is required on
+// both items and modifiers. Line-level notes belong in the separate optional
+// `comment` field — sending them as the description replaced the product name.
 export interface HLSaleItem {
   plu: number;
   price: number;
   qty: number;
   description: string;
+  comment?: string;
   modifier_items?: Array<{ plu: number; price: number; qty: number; description: string }>;
 }
 
+// account_id is an integer in the addorder spec, not a string.
 export interface HLTender {
   tender_code: number;
   amount: number;
   surcharge?: number;
-  account_id?: string;
+  account_id?: number;
 }
 
 export interface HLOrderPayload {
@@ -62,6 +67,15 @@ function cfg(ctx: PosAdapterContext, key: string, fallback?: unknown): unknown {
 function num(v: unknown, fallback = 0): number {
   const n = typeof v === "number" ? v : Number(v);
   return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * "YYYY-MM-DD HH:MM:SS" in UTC, the format the addorder spec documents for
+ * device_time / required_date_time. toISOString() was being sent instead, which
+ * H&L has accepted so far, but nothing guarantees it keeps doing so.
+ */
+function hlDateTime(d: Date): string {
+  return d.toISOString().slice(0, 19).replace("T", " ");
 }
 
 /**
@@ -191,23 +205,30 @@ export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): 
   const docket_no = Math.floor(Math.random() * 90000) + 10000;
   const table_no = order.tableExternalId ? num(order.tableExternalId, null as any) : null;
 
-  const sale_items: HLSaleItem[] = order.lineItems.map((li, i) => ({
-    plu: resolvePlu(li.posId, `sale_items[${i}]`, li.notes ?? `line ${i + 1}`, unmapped),
-    price: Number(li.unitPrice),
-    qty: Number(li.quantity),
-    description: li.notes ?? "",
-    modifier_items: (li.modifiers ?? []).map((m, j) => ({
-      plu: resolvePlu(
-        m.posId,
-        `sale_items[${i}].modifier_items[${j}]`,
-        `modifier ${j + 1} on line ${i + 1}`,
-        unmapped,
-      ),
-      price: Number(m.unitPrice),
-      qty: Number(m.quantity),
-      description: "",
-    })),
-  }));
+  const sale_items: HLSaleItem[] = order.lineItems.map((li, i) => {
+    const itemName = li.name?.trim() || `Item ${i + 1}`;
+    return {
+      plu: resolvePlu(li.posId, `sale_items[${i}]`, itemName, unmapped),
+      price: Number(li.unitPrice),
+      qty: Number(li.quantity),
+      description: itemName,
+      ...(li.notes ? { comment: li.notes } : {}),
+      modifier_items: (li.modifiers ?? []).map((m, j) => {
+        const modName = m.name?.trim() || `Modifier ${j + 1}`;
+        return {
+          plu: resolvePlu(
+            m.posId,
+            `sale_items[${i}].modifier_items[${j}]`,
+            `${modName} (on ${itemName})`,
+            unmapped,
+          ),
+          price: Number(m.unitPrice),
+          qty: Number(m.quantity),
+          description: modName,
+        };
+      }),
+    };
+  });
 
   // Tender selection:
   //  - table_no present → charge-to-table (empty tenders)
@@ -220,10 +241,22 @@ export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): 
   } else if (order.payment?.method === "guest_charge") {
     tenders = [{ tender_code: 15, amount: Number(order.payment.amount ?? order.totals.total) }];
   } else if (order.payment?.method === "debtor") {
+    // account_id is optional to H&L but typed as an integer, so an absent
+    // reference means omit the key (as with customer) rather than fail the order.
+    // A reference that is present but non-numeric is a real data problem: num()
+    // would coerce it to 0 and charge whichever account that is.
+    const rawRef = order.payment.reference;
+    const ref = typeof rawRef === "string" ? rawRef.trim() : rawRef;
+    const accountId = ref === null || ref === undefined || ref === "" ? null : num(ref, NaN);
+    if (accountId !== null && !Number.isInteger(accountId)) {
+      throw new PosDataError(
+        `H&L: debtor account_id must be numeric (got ${JSON.stringify(rawRef)})`,
+      );
+    }
     tenders = [{
       tender_code: 17,
       amount: Number(order.payment.amount ?? order.totals.total),
-      account_id: order.payment.reference ?? "",
+      ...(accountId !== null ? { account_id: accountId } : {}),
     }];
   } else {
     tenders = [{
@@ -235,7 +268,7 @@ export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): 
   const payload: HLOrderPayload = {
     header: {
       test: testMode,
-      device_time: new Date().toISOString(),
+      device_time: hlDateTime(new Date()),
       docket_no,
       serving_type,
       interface_type,
@@ -247,9 +280,14 @@ export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): 
     },
     sale_items,
     tenders,
-    customer: order.diner?.name
-      ? { first_name: order.diner.name, mobile: order.diner.memberRef ?? "" }
-      : null,
+    // Omitted rather than nulled, matching table_no above. customer is optional
+    // to H&L, but an explicit null is not: it rejects the order with
+    // "customer - NULL value found, but an object is required". Only
+    // pos-hl-test-order supplies a diner name, so the null branch never ran in
+    // testing while every real table order failed with a 400.
+    ...(order.diner?.name
+      ? { customer: { first_name: order.diner.name, mobile: order.diner.memberRef ?? "" } }
+      : {}),
   };
 
   return { payload, unmapped };
