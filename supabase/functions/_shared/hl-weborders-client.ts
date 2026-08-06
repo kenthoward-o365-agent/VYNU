@@ -241,18 +241,21 @@ export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): 
   } else if (order.payment?.method === "guest_charge") {
     tenders = [{ tender_code: 15, amount: Number(order.payment.amount ?? order.totals.total) }];
   } else if (order.payment?.method === "debtor") {
-    // account_id is an integer to H&L; a non-numeric reference cannot address an
-    // account, and coercing it to 0 would charge the wrong one.
-    const accountId = num(order.payment.reference, NaN);
-    if (!Number.isInteger(accountId)) {
+    // account_id is optional to H&L but typed as an integer, so an absent
+    // reference means omit the key (as with customer) rather than fail the order.
+    // A reference that is present but non-numeric is a real data problem: num()
+    // would coerce it to 0 and charge whichever account that is.
+    const ref = order.payment.reference;
+    const accountId = ref === null || ref === undefined || ref === "" ? null : num(ref, NaN);
+    if (accountId !== null && !Number.isInteger(accountId)) {
       throw new PosDataError(
-        `H&L: debtor payment needs a numeric account_id (got ${JSON.stringify(order.payment.reference)})`,
+        `H&L: debtor account_id must be numeric (got ${JSON.stringify(ref)})`,
       );
     }
     tenders = [{
       tender_code: 17,
       amount: Number(order.payment.amount ?? order.totals.total),
-      account_id: accountId,
+      ...(accountId !== null ? { account_id: accountId } : {}),
     }];
   } else {
     tenders = [{
