@@ -5839,6 +5839,10 @@ export type Database = {
         Args: { _order_id: string; _token: string }
         Returns: string
       }
+      can_append_guest_order_item: {
+        Args: { _order_id: string }
+        Returns: boolean
+      }
       can_create_table_session: {
         Args: { _table_id: string; _venue_id: string }
         Returns: boolean
