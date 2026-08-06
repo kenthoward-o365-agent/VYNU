@@ -316,7 +316,12 @@ export async function postOrder(
     const msg = `H&L POST order ${res.status}: ${text.slice(0, 300)}`;
     // The rejected payload, so a validation error can be read against what we
     // actually sent. customer is redacted (diner name/mobile).
-    const { customer, ...loggable } = payload;
+    const { customer, sale_items, ...rest } = payload;
+    const loggableSaleItems = sale_items.map(({ comment, ...si }) => ({
+      ...si,
+      ...(comment ? { comment: "[redacted]" } : {}),
+    }));
+    const loggable = { ...rest, sale_items: loggableSaleItems };
     console.error("[hl-weborders] POST order failed " + JSON.stringify({
       reference: payload.header.reference,
       status: res.status,

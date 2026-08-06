@@ -95,10 +95,18 @@ const adapter: PosAdapter = {
     // Full request/response in the function logs: the push happens server-side,
     // so this is the only place it can be observed. customer is redacted — it
     // carries diner name and mobile, which do not belong in logs.
-    const { customer, ...loggablePayload } = payload;
+    const { customer, sale_items, ...rest } = payload;
+    const loggablePayload = {
+      ...rest,
+      sale_items: sale_items.map(({ comment, ...si }) => ({
+        ...si,
+        ...(comment ? { comment: "[redacted]" } : {}),
+      })),
+    };
     console.log("[hl_exceed] sendOrder " + JSON.stringify({
       reference: payload.header.reference,
-      hl_order_id: posOrderId,
+      hl_order_id: typeof hlOrderId === "string" && hlOrderId ? hlOrderId : null,
+      pos_order_id: posOrderId,
       status: res.status,
       request: { ...loggablePayload, ...(customer ? { customer: "[redacted]" } : {}) },
       response: res.body,
