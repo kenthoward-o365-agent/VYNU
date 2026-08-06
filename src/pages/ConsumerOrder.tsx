@@ -16,6 +16,7 @@ import VenueDiscovery from "@/components/consumer/VenueDiscovery";
 import DinerSignup from "@/components/consumer/DinerSignup";
 import DinerProfile from "@/components/consumer/DinerProfile";
 import UpsellPrompt, { UpsellSuggestion } from "@/components/consumer/UpsellPrompt";
+import { useGuestFeatures } from "@/hooks/use-guest-features";
 import LoyaltyJoinPrompt from "@/components/consumer/LoyaltyJoinPrompt";
 import ModeSwitchSheet from "@/components/consumer/ModeSwitchSheet";
 import type { SessionMode } from "@/components/consumer/SessionModeChooser";
@@ -76,6 +77,13 @@ const lastOrderKey = (venueId?: string, tableId?: string) =>
 
 const ConsumerOrder = () => {
   const { venueId, tableId } = useParams<{ venueId: string; tableId: string }>();
+
+  // Package gating for the guest surface. The endpoints enforce independently
+  // (diner-chat and upsell-suggest); this is so a venue whose package excludes
+  // a feature does not show a control that would then refuse to work.
+  const guestFeatures = useGuestFeatures(venueId);
+  const pkgChatEnabled = guestFeatures.has("ai.chat_ordering");
+  const pkgUpsellEnabled = guestFeatures.has("ai.upsell");
   const [venue, setVenue] = useState<VenueInfo | null>(null);
   const [tableNumber, setTableNumber] = useState("");
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -424,7 +432,7 @@ const ConsumerOrder = () => {
   }, [activeOrder?.id, venueId, tableId]);
 
   const fetchUpsell = useCallback(async (item: { id: string; name: string; price: number }) => {
-    if (!upsellEnabled || !venue || shownUpsells.has(item.id)) return;
+    if (!upsellEnabled || !pkgUpsellEnabled || !venue || shownUpsells.has(item.id)) return;
     const cfg = upsellConfigRef.current;
     if (cfg && cfg.contextual_pairing === false) return;
 
@@ -454,7 +462,7 @@ const ConsumerOrder = () => {
     } catch (e) {
       console.error("Upsell fetch error:", e);
     }
-  }, [upsellEnabled, venue, menuItems, shownUpsells, dismissedSuggestions]);
+  }, [upsellEnabled, pkgUpsellEnabled, venue, menuItems, shownUpsells, dismissedSuggestions]);
 
   /**
    * Build a stable cart-line key from {menu_item_id + sorted modifier ids + notes}.
@@ -763,6 +771,7 @@ const ConsumerOrder = () => {
           dismissedSuggestions={dismissedSuggestions}
           onAddToCart={addToCart}
           onDismissSuggestion={(id) => dismissedSuggestions.add(id)}
+          showSuggestions={pkgUpsellEnabled}
           sessionMode={sessionMode ?? "solo"}
           groupDisplayName={groupDisplayName}
           onSwitchMode={cart.length === 0 ? () => setShowModeSwitch(true) : undefined}
@@ -800,7 +809,7 @@ const ConsumerOrder = () => {
       )}
 
       {/* Upsell Prompt Overlay */}
-      {upsellSuggestion && (
+      {upsellSuggestion && upsellEnabled && pkgUpsellEnabled && (
         <UpsellPrompt
           suggestion={upsellSuggestion}
           onAdd={(item) => {
@@ -816,7 +825,7 @@ const ConsumerOrder = () => {
       )}
 
       {/* AI Chat Overlay */}
-      {showChat && venueId && (
+      {showChat && pkgChatEnabled && venueId && (
         <AIChatOverlay
           venueId={venueId}
           onClose={() => setShowChat(false)}
@@ -836,6 +845,7 @@ const ConsumerOrder = () => {
         cartCount={cart.reduce((sum, c) => sum + c.quantity, 0)}
         agentName={agentName}
         agentIconUrl={agentIconUrl}
+        showChat={pkgChatEnabled}
       />
 
       {/* Item Detail overlay */}

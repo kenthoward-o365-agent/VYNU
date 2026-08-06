@@ -34,6 +34,12 @@ interface CartPanelProps {
   dismissedSuggestions?: Set<string>;
   onAddToCart?: (item: { id: string; name: string; price: number }) => void;
   onDismissSuggestion?: (itemId: string) => void;
+  /**
+   * Whether the venue's package includes AI upsell (`ai.upsell`). When false the
+   * suggestions block is not rendered and upsell-suggest is never called.
+   * Defaults to true so existing callers are unaffected.
+   */
+  showSuggestions?: boolean;
   sessionMode?: "solo" | "group";
   groupDisplayName?: string | null;
   groupDinerCount?: number;
@@ -55,6 +61,7 @@ const CartPanel = ({
   dismissedSuggestions,
   onAddToCart,
   onDismissSuggestion,
+  showSuggestions = true,
   sessionMode = "solo",
   groupDisplayName = null,
   groupDinerCount = 1,
@@ -171,7 +178,7 @@ const CartPanel = ({
       </div>
 
       {/* AI Cart Suggestions */}
-      {venueId && venueName && menuItems && onAddToCart && onDismissSuggestion && dismissedSuggestions && (
+      {showSuggestions && venueId && venueName && menuItems && onAddToCart && onDismissSuggestion && dismissedSuggestions && (
         <CartSuggestions
           venueId={venueId}
           venueName={venueName}
