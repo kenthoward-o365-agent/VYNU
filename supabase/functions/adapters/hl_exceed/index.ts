@@ -82,8 +82,39 @@ const adapter: PosAdapter = {
   async sendOrder(ctx, order: OutboundOrder) {
     const { payload, unmapped } = mapOutboundOrder(order, ctx);
     const res = await postOrder(admin(), ctx, payload);
+
+    // H&L answers a successful POST with { success: "<its own order id>" }, and
+    // that id is the only key GET /api/order/{order_id} accepts — our
+    // header.reference is not queryable. It used to be discarded here, which
+    // left every pushed order impossible to look up afterwards.
+    const hlOrderId = (res.body as { success?: unknown } | null)?.success;
+    const posOrderId = typeof hlOrderId === "string" && hlOrderId
+      ? hlOrderId
+      : payload.header.reference;
+
+    // Full request/response in the function logs: the push happens server-side,
+    // so this is the only place it can be observed. customer is redacted — it
+    // carries diner name and mobile, which do not belong in logs.
+    const { customer, sale_items, ...rest } = payload;
+    const loggablePayload = {
+      ...rest,
+      sale_items: sale_items.map(({ comment, ...si }) => ({
+        ...si,
+        ...(comment ? { comment: "[redacted]" } : {}),
+      })),
+    };
+    console.log("[hl_exceed] sendOrder " + JSON.stringify({
+      reference: payload.header.reference,
+      hl_order_id: typeof hlOrderId === "string" && hlOrderId ? hlOrderId : null,
+      pos_order_id: posOrderId,
+      status: res.status,
+      request: { ...loggablePayload, ...(customer ? { customer: "[redacted]" } : {}) },
+      response: res.body,
+      unmapped_count: unmapped.length,
+    }));
+
     return {
-      posOrderId: payload.header.reference,
+      posOrderId,
       accepted: res.status >= 200 && res.status < 300,
       raw: res.body,
       unmapped,
