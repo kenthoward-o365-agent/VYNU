@@ -51,9 +51,7 @@ AS $$
        AND (
          -- (a) order belongs to an active table session, or
          public.is_active_table_session(o.session_id)
-         -- (b) session-less (solo) guest order created very recently, so a
-         --     leaked order id does not allow appending indefinitely.
-         OR (o.session_id IS NULL AND o.created_at > now() - interval '30 minutes')
+          OR (o.session_id IS NULL AND o.created_at > statement_timestamp() - interval '30 minutes')
        )
   )
 $$;
