@@ -59,9 +59,22 @@ serve(async (req) => {
       });
     }
 
-    // Package enforcement. The guest app does not yet gate on feature flags, so
-    // until it does this is the only thing stopping a venue consuming a feature
-    // its package excludes. Hiding a button is not enforcement; refusing here is.
+    // AEA-04/AEA-02: anonymous consumer endpoint calling a paid AI model —
+    // bound cost-amplification per venue and per IP.
+    const ip = getClientIp(req);
+    const rl = await enforceRateLimit(sb, [
+      { key: `upsell-suggest:venue:${venue_id}`, limit: 240, windowSec: 3600 },
+      { key: `upsell-suggest:ip:${ip}`, limit: 120, windowSec: 3600 },
+    ]);
+    if (!rl.allowed) return tooManyRequests(corsHeaders);
+
+    // Package enforcement. The guest app now hides these controls, but a client
+    // can still call this directly, so the endpoint is the real gate.
+    //
+    // Deliberately placed AFTER the rate limiter: returning early above it gave
+    // venues without the feature an uncapped path that still performed the venue
+    // and flag lookups on every request. Denied callers are now bounded by the
+    // same limits as everyone else.
     //
     // Returns 200 with no suggestions rather than 403: the upsell is an optional
     // enhancement, the client already renders nothing for an empty list, and a
@@ -71,15 +84,6 @@ serve(async (req) => {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // AEA-04/AEA-02: anonymous consumer endpoint calling a paid AI model —
-    // bound cost-amplification per venue and per IP.
-    const ip = getClientIp(req);
-    const rl = await enforceRateLimit(sb, [
-      { key: `upsell-suggest:venue:${venue_id}`, limit: 240, windowSec: 3600 },
-      { key: `upsell-suggest:ip:${ip}`, limit: 120, windowSec: 3600 },
-    ]);
-    if (!rl.allowed) return tooManyRequests(corsHeaders);
 
 
     // Build context-aware prompt based on trigger type

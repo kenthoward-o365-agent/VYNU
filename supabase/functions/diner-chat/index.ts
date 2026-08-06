@@ -59,13 +59,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Package enforcement. The guest app does not yet gate on feature flags, so
-    // until it does this is the only thing stopping a venue consuming a feature
-    // its package excludes. Unlike the upsell, chat ordering is the whole
-    // feature rather than an enhancement, so refuse outright.
-    const featureDenied = await requireFeature(sb, venue_id, "ai.chat_ordering", corsHeaders);
-    if (featureDenied) return featureDenied;
-
     // AEA-04/AEA-02: this endpoint is anonymous by design (diner chatbot) and
     // calls a paid AI model, so bound cost-amplification per venue and per IP.
     const ip = getClientIp(req);
@@ -74,6 +67,17 @@ Deno.serve(async (req) => {
       { key: `diner-chat:ip:${ip}`, limit: 60, windowSec: 3600 },
     ]);
     if (!rl.allowed) return tooManyRequests(corsHeaders);
+
+    // Package enforcement. The guest app now hides the chat entry, but a client
+    // can still call this directly, so the endpoint is the real gate. Unlike the
+    // upsell, chat ordering is the whole feature rather than an enhancement, so
+    // refuse outright.
+    //
+    // Deliberately placed AFTER the rate limiter: returning early above it gave
+    // venues without the feature an uncapped path that still performed the venue
+    // and flag lookups on every request.
+    const featureDenied = await requireFeature(sb, venue_id, "ai.chat_ordering", corsHeaders);
+    if (featureDenied) return featureDenied;
 
     const { data: aiConfig } = await sb
       .from("venue_ai_config")
