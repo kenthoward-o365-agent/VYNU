@@ -102,9 +102,12 @@ BEGIN
     AND public.time_within_window(_time, m.start_time, m.end_time)
     AND EXISTS (
       SELECT 1
-      FROM public.menu_categories mc
-      JOIN public.menu_items mi ON mi.category_id = mc.id
-      WHERE mc.menu_id = m.id
+      FROM public.menu_items mi
+      LEFT JOIN public.menu_categories mc ON mc.id = mi.category_id
+      WHERE mi.venue_id = _venue_id
+        AND mi.is_available = true
+        AND (mc.id IS NULL OR mc.venue_id = _venue_id)
+        AND (mc.id IS NULL OR mc.menu_id IS NULL OR mc.menu_id = m.id)
     )
   ORDER BY m.display_order, m.created_at
   LIMIT 1;
