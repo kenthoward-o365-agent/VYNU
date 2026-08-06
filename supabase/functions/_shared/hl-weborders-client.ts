@@ -245,11 +245,12 @@ export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): 
     // reference means omit the key (as with customer) rather than fail the order.
     // A reference that is present but non-numeric is a real data problem: num()
     // would coerce it to 0 and charge whichever account that is.
-    const ref = order.payment.reference;
+    const rawRef = order.payment.reference;
+    const ref = typeof rawRef === "string" ? rawRef.trim() : rawRef;
     const accountId = ref === null || ref === undefined || ref === "" ? null : num(ref, NaN);
     if (accountId !== null && !Number.isInteger(accountId)) {
       throw new PosDataError(
-        `H&L: debtor account_id must be numeric (got ${JSON.stringify(ref)})`,
+        `H&L: debtor account_id must be numeric (got ${JSON.stringify(rawRef)})`,
       );
     }
     tenders = [{
