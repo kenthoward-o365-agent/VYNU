@@ -25,6 +25,7 @@ import { useDinerSession } from "@/hooks/use-diner-session";
 import IdleTimeoutModal from "@/components/consumer/IdleTimeoutModal";
 import DinerResumeGate from "@/components/consumer/DinerResumeGate";
 import { readDinerVisit, writeDinerVisit, clearDinerVisit } from "@/lib/diner-visit";
+import { lastOrderKey } from "@/lib/consumer-order-storage";
 
 interface VenueInfo {
   id: string;
@@ -71,8 +72,6 @@ interface ActiveOrder {
 
 const OPEN_ORDER_STATUSES: ActiveOrder["status"][] = ["received", "preparing", "ready"];
 const TERMINAL_ORDER_STATUSES = new Set<ActiveOrder["status"]>(["paid", "cancelled", "refunded"]);
-const lastOrderKey = (venueId?: string, tableId?: string) =>
-  `shyndig.lastOrder.${venueId || "_"}.${tableId || "_"}`;
 
 const ConsumerOrder = () => {
   const { venueId, tableId } = useParams<{ venueId: string; tableId: string }>();

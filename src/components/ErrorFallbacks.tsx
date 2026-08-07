@@ -1,18 +1,6 @@
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-
-/** Mirrors the key ConsumerOrder writes when an order is placed. */
-const lastOrderKey = (venueId?: string, tableId?: string) =>
-  `shyndig.lastOrder.${venueId || "_"}.${tableId || "_"}`;
-
-function readPlacedOrderId(venueId?: string, tableId?: string): string | null {
-  try {
-    return localStorage.getItem(lastOrderKey(venueId, tableId));
-  } catch {
-    // Private browsing or storage disabled — treated as "unknown" below.
-    return null;
-  }
-}
+import { readLastOrderId } from "@/lib/consumer-order-storage";
 
 /**
  * Generic fallback for the operator dashboard. Staff can retry or reload;
@@ -53,14 +41,10 @@ export function AppErrorFallback({ reset }: { error: Error; reset: () => void })
  */
 export function ConsumerErrorFallback({ reset }: { error: Error; reset: () => void }) {
   const { venueId, tableId } = useParams<{ venueId: string; tableId: string }>();
-  const placedOrderId = readPlacedOrderId(venueId, tableId);
-
-  let storageReadable = true;
-  try {
-    localStorage.getItem("__probe__");
-  } catch {
-    storageReadable = false;
-  }
+  // undefined = storage unreadable (we genuinely do not know)
+  // null      = readable, no order placed
+  const placedOrderId = readLastOrderId(venueId, tableId);
+  const storageReadable = placedOrderId !== undefined;
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background px-6">
