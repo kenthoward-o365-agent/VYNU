@@ -94,6 +94,12 @@ const ConsumerOrder = () => {
   const [tab, setTab] = useState<"feed" | "chat" | "cart" | "profile">("feed");
   const [showChat, setShowChat] = useState(false);
   const [chatMode, setChatMode] = useState<string>("chat_optional");
+  // The venue's AI config and its package can disagree: a venue can be set to
+  // chat_only while its package excludes ai.chat_ordering. Left alone that is a
+  // dead end — the menu feed is suppressed for chat_only, the screen says "tap
+  // the chat icon below", and the tab it refers to is hidden. The diner cannot
+  // order at all. Package wins, and the flow collapses back to a usable menu.
+  const effectiveChatMode = pkgChatEnabled ? chatMode : "chat_optional";
   const [agentName, setAgentName] = useState<string>("H&L OrderNOW");
   const [agentIconUrl, setAgentIconUrl] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
@@ -676,7 +682,7 @@ const ConsumerOrder = () => {
           onModeSelect={handleModeSelect}
           onStart={() => {
             setStarted(true);
-            if (chatMode === "chat_first" || chatMode === "chat_only") {
+            if (pkgChatEnabled && (chatMode === "chat_first" || chatMode === "chat_only")) {
               setShowChat(true);
             }
           }}
@@ -739,7 +745,7 @@ const ConsumerOrder = () => {
       )}
 
       {/* Main Content */}
-      {tab === "feed" && chatMode !== "chat_only" && (
+      {tab === "feed" && effectiveChatMode !== "chat_only" && (
         <MenuFeed
           items={menuItems}
           categories={categories}
@@ -750,7 +756,7 @@ const ConsumerOrder = () => {
           defaultAllergens={dinerAllergens}
         />
       )}
-      {tab === "feed" && chatMode === "chat_only" && !showChat && (
+      {tab === "feed" && effectiveChatMode === "chat_only" && !showChat && (
         <div className="flex-1 flex items-center justify-center px-6 text-center pb-20">
           <div>
             <p className="text-lg font-semibold mb-2">Chat with {venue?.name}'s AI server</p>
