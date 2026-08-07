@@ -24,13 +24,14 @@ import { getPasswordScore } from "@/lib/password";
  * Returns null when the input cannot be resolved to a plausible number.
  */
 export function normalizeAuPhone(raw: string): string | null {
-  const digits = raw.replace(/[^\d+]/g, "");
-  if (!digits) return null;
-  if (digits.startsWith("+")) return digits.length >= 8 ? digits : null;
-  if (digits.startsWith("04") && digits.length === 10) return "+61" + digits.slice(1);
-  if (digits.startsWith("4") && digits.length === 9) return "+61" + digits;
-  if (digits.startsWith("61")) return "+" + digits;
-  return digits.length >= 8 ? "+" + digits : null;
+  const trimmed = raw.trim();
+  const cleaned = trimmed.startsWith("+") ? "+" + trimmed.slice(1).replace(/\D/g, "") : trimmed.replace(/\D/g, "");
+  if (!cleaned) return null;
+  if (cleaned.startsWith("+")) return cleaned.slice(1).length >= 8 ? cleaned : null;
+  if (cleaned.startsWith("04") && cleaned.length === 10) return "+61" + cleaned.slice(1);
+  if (cleaned.startsWith("4") && cleaned.length === 9) return "+61" + cleaned;
+  if (cleaned.startsWith("61")) return cleaned.length >= 8 ? "+" + cleaned : null;
+  return cleaned.length >= 8 ? "+" + cleaned : null;
 }
 
 /** Trimmed, non-empty, and actually shaped like an email address. */
