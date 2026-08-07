@@ -71,7 +71,7 @@ describe("normalizeAuPhone", () => {
     expect(normalizeAuPhone(input)).toBe(expected);
   });
 
-  it.each(["", "   ", "abc", "12345", "+123", "04123"])("rejects %j", (v) => {
+  it.each(["", "   ", "abc", "12345", "+123", "04123", "61", "04+12345678"])("rejects %j", (v) => {
     expect(normalizeAuPhone(v)).toBeNull();
   });
 });
