@@ -856,6 +856,7 @@ const ConsumerOrder = () => {
           venueName={venue.name}
           menuItems={menuItems}
           pricingIndex={pricingIndex}
+          showUpsell={pkgUpsellEnabled}
           onClose={() => setSelectedItem(null)}
           onAdd={(it, qty, mods, notes) => {
             addConfiguredToCart(it, qty, mods, notes);
