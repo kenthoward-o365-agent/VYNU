@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { MessageSquare, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { auMobileSchema } from "@/lib/validation";
 import { toast } from "@/hooks/use-toast";
 
 interface TextReceiptButtonProps {
@@ -20,12 +21,22 @@ const TextReceiptButton = ({ venueId, orderId, defaultPhone, venueName }: TextRe
   const [phone, setPhone] = useState(defaultPhone || "");
   const [optIn, setOptIn] = useState(true);
   const [sending, setSending] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const handleSend = async () => {
-    if (!phone.trim()) {
-      toast({ title: "Phone required", description: "Please enter a mobile number.", variant: "destructive" });
+    // Validate and normalise here rather than only checking for non-blank. The
+    // schema mirrors normalizeAuPhone() in send-receipt-sms, so a number this
+    // accepts is one the function will accept — previously anything non-empty
+    // was sent and silently failed downstream.
+    const parsed = auMobileSchema.safeParse(phone);
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Enter a valid mobile number";
+      setPhoneError(message);
+      toast({ title: "Check the number", description: message, variant: "destructive" });
       return;
     }
+    setPhoneError(null);
+    const normalisedPhone = parsed.data;
     setSending(true);
     try {
       const receiptUrl = window.location.href;
@@ -33,7 +44,7 @@ const TextReceiptButton = ({ venueId, orderId, defaultPhone, venueName }: TextRe
         body: {
           venue_id: venueId,
           order_id: orderId,
-          phone: phone.trim(),
+          phone: normalisedPhone,
           marketing_opt_in: optIn,
           receipt_url: receiptUrl,
         },
@@ -44,7 +55,7 @@ const TextReceiptButton = ({ venueId, orderId, defaultPhone, venueName }: TextRe
         title: simulated ? "Receipt queued (test mode)" : "Receipt sent",
         description: simulated
           ? "SMS is in simulated mode — no real text was sent, but your number was saved."
-          : `We've texted your receipt to ${phone}.`,
+          : `We've texted your receipt to ${normalisedPhone}.`,
       });
       setOpen(false);
     } catch (e: any) {
@@ -86,9 +97,14 @@ const TextReceiptButton = ({ venueId, orderId, defaultPhone, venueName }: TextRe
                 inputMode="tel"
                 placeholder="04xx xxx xxx"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => { setPhone(e.target.value); if (phoneError) setPhoneError(null); }}
                 autoFocus
               />
+              {phoneError && (
+                <p role="alert" aria-live="polite" className="text-destructive text-xs mt-1">
+                  {phoneError}
+                </p>
+              )}
               <p className="text-[11px] text-muted-foreground">Australian mobile numbers supported.</p>
             </div>
 
