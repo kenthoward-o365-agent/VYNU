@@ -112,8 +112,8 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
   // button state and the errors shown can never disagree.
   const signupValues = { firstName, lastName, email, password, phone };
   const signinValues = { email, password };
-  const isSignupValid = signupSchema.safeParse(signupValues).success;
-  const isSigninValid = signinSchema.safeParse(signinValues).success;
+  const isSignupValid = mode === "signup" && signupSchema.safeParse(signupValues).success;
+  const isSigninValid = mode === "signin" && signinSchema.safeParse(signinValues).success;
 
   const handleSignIn = async () => {
     const parsed = signinSchema.safeParse(signinValues);
