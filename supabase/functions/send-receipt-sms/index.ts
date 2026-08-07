@@ -18,13 +18,24 @@ const TWILIO_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
 const TWILIO_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
 const TWILIO_FROM = Deno.env.get("TWILIO_FROM_NUMBER");
 
+// Kept in step with normalizeAuPhone in src/lib/validation.ts. If the two
+// disagree the client accepts numbers this function then rejects, and the
+// receipt silently never arrives.
 function normalizeAuPhone(raw: string): string | null {
-  const digits = raw.replace(/[^\d+]/g, "");
+  const trimmed = raw.trim();
+  // A "+" is only meaningful as the very first character. Anything else is
+  // malformed, and silently stripping it risks texting a different number than
+  // the diner intended, so reject rather than guess.
+  const plusCount = (trimmed.match(/\+/g) || []).length;
+  if (plusCount > 1 || (plusCount === 1 && !trimmed.startsWith("+"))) return null;
+  const hadPlus = trimmed.startsWith("+");
+  const digits = trimmed.replace(/\D/g, "");
   if (!digits) return null;
-  if (digits.startsWith("+")) return digits.length >= 8 ? digits : null;
+  if (hadPlus) return digits.length >= 8 ? "+" + digits : null;
   if (digits.startsWith("04") && digits.length === 10) return "+61" + digits.slice(1);
   if (digits.startsWith("4") && digits.length === 9) return "+61" + digits;
-  if (digits.startsWith("61")) return "+" + digits;
+  // Length check applies here too: a bare "61" is a country code, not a number.
+  if (digits.startsWith("61") && digits.length >= 8) return "+" + digits;
   return digits.length >= 8 ? "+" + digits : null;
 }
 

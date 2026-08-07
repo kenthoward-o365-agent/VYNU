@@ -25,13 +25,20 @@ import { getPasswordScore } from "@/lib/password";
  */
 export function normalizeAuPhone(raw: string): string | null {
   const trimmed = raw.trim();
-  const cleaned = trimmed.startsWith("+") ? "+" + trimmed.slice(1).replace(/\D/g, "") : trimmed.replace(/\D/g, "");
-  if (!cleaned) return null;
-  if (cleaned.startsWith("+")) return cleaned.slice(1).length >= 8 ? cleaned : null;
-  if (cleaned.startsWith("04") && cleaned.length === 10) return "+61" + cleaned.slice(1);
-  if (cleaned.startsWith("4") && cleaned.length === 9) return "+61" + cleaned;
-  if (cleaned.startsWith("61")) return cleaned.length >= 8 ? "+" + cleaned : null;
-  return cleaned.length >= 8 ? "+" + cleaned : null;
+  // A "+" is only meaningful as the very first character. Anything else is
+  // malformed, and silently stripping it risks texting a different number than
+  // the diner intended, so reject rather than guess.
+  const plusCount = (trimmed.match(/\+/g) || []).length;
+  if (plusCount > 1 || (plusCount === 1 && !trimmed.startsWith("+"))) return null;
+  const hadPlus = trimmed.startsWith("+");
+  const digits = trimmed.replace(/\D/g, "");
+  if (!digits) return null;
+  if (hadPlus) return digits.length >= 8 ? "+" + digits : null;
+  if (digits.startsWith("04") && digits.length === 10) return "+61" + digits.slice(1);
+  if (digits.startsWith("4") && digits.length === 9) return "+61" + digits;
+  // Length check applies here too: a bare "61" is a country code, not a number.
+  if (digits.startsWith("61") && digits.length >= 8) return "+" + digits;
+  return digits.length >= 8 ? "+" + digits : null;
 }
 
 /** Trimmed, non-empty, and actually shaped like an email address. */

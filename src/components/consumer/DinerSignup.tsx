@@ -127,8 +127,8 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
 
     try {
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+        email: parsed.data.email,
+        password: parsed.data.password,
       });
 
       if (authError) throw authError;
@@ -170,8 +170,8 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
 
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
+        email: parsed.data.email,
+        password: parsed.data.password,
         options: {
           data: {
             first_name: firstName.trim(),
@@ -190,8 +190,8 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
           user_id: authData.user.id,
           first_name: firstName.trim(),
           last_name: lastName.trim(),
-          display_name: `${firstName.trim()} ${lastName.trim()}`,
-          email: email.trim(),
+          display_name: `${parsed.data.firstName} ${parsed.data.lastName}`,
+          email: parsed.data.email,
           phone: fullPhone,
           country_code: selectedCountry.code,
           birthday: birthday || null,

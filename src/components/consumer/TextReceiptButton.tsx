@@ -23,6 +23,13 @@ const TextReceiptButton = ({ venueId, orderId, defaultPhone, venueName }: TextRe
   const [sending, setSending] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
+  // Without this a stale message is shown — and announced via aria-live — the
+  // next time the dialog opens, before the diner has touched anything.
+  const handleOpenChange = (next: boolean) => {
+    setOpen(next);
+    if (next) setPhoneError(null);
+  };
+
   const handleSend = async () => {
     // Validate and normalise here rather than only checking for non-blank. The
     // schema mirrors normalizeAuPhone() in send-receipt-sms, so a number this
@@ -80,7 +87,7 @@ const TextReceiptButton = ({ venueId, orderId, defaultPhone, venueName }: TextRe
         Text Me a Copy
       </Button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Text your receipt</DialogTitle>

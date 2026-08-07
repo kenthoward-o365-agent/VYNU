@@ -74,6 +74,25 @@ describe("normalizeAuPhone", () => {
   it.each(["", "   ", "abc", "12345", "+123", "04123", "61", "04+12345678"])("rejects %j", (v) => {
     expect(normalizeAuPhone(v)).toBeNull();
   });
+
+  it("rejects a bare country code — 61 is not a phone number", () => {
+    expect(normalizeAuPhone("61")).toBeNull();
+    expect(normalizeAuPhone("+61")).toBeNull();
+  });
+
+  it("rejects a stray + rather than silently stripping it", () => {
+    // Previously "0412345678+" normalised to "+0412345678+".
+    expect(normalizeAuPhone("0412345678+")).toBeNull();
+    expect(normalizeAuPhone("04+12345678")).toBeNull();
+    expect(normalizeAuPhone("++61412345678")).toBeNull();
+  });
+
+  it("never returns a value with more than one +", () => {
+    for (const v of ["+61412345678", "0412345678", "+61 412 345 678", "412345678"]) {
+      const out = normalizeAuPhone(v);
+      if (out !== null) expect(out.match(/\+/g)?.length).toBe(1);
+    }
+  });
 });
 
 describe("auMobileSchema", () => {
