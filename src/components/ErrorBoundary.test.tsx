@@ -6,13 +6,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import React from "react";
 import ErrorBoundary from "./ErrorBoundary";
 import { AppErrorFallback, ConsumerErrorFallback } from "./ErrorFallbacks";
 
-const Boom = (): React.ReactElement => {
+function Boom(): JSX.Element {
   throw new Error("kaboom");
-};
+}
 
 let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
@@ -29,44 +28,36 @@ afterEach(() => {
 
 function renderConsumerAt(path: string) {
   return render(
-    React.createElement(
-      MemoryRouter,
-      { initialEntries: [path] },
-      React.createElement(
-        Routes,
-        null,
-        React.createElement(Route, {
-          path: "/order/:venueId/:tableId",
-          element: React.createElement(
-            ErrorBoundary,
-            { scope: "consumer-order", fallback: ConsumerErrorFallback },
-            React.createElement(Boom),
-          ),
-        }),
-      ),
-    ),
+    <MemoryRouter initialEntries={[path]}>
+      <Routes>
+        <Route
+          path="/order/:venueId/:tableId"
+          element={
+            <ErrorBoundary scope="consumer-order" fallback={ConsumerErrorFallback}>
+              <Boom />
+            </ErrorBoundary>
+          }
+        />
+      </Routes>
+    </MemoryRouter>,
   );
 }
 
 describe("ErrorBoundary", () => {
   it("renders children when nothing throws", () => {
     render(
-      React.createElement(
-        ErrorBoundary,
-        { scope: "test", fallback: AppErrorFallback },
-        React.createElement("p", null, "all good"),
-      ),
+      <ErrorBoundary scope="test" fallback={AppErrorFallback}>
+        <p>all good</p>
+      </ErrorBoundary>,
     );
     expect(screen.getByText("all good")).toBeInTheDocument();
   });
 
   it("renders the fallback instead of unmounting the tree on a render error", () => {
     render(
-      React.createElement(
-        ErrorBoundary,
-        { scope: "app-root", fallback: AppErrorFallback },
-        React.createElement(Boom),
-      ),
+      <ErrorBoundary scope="app-root" fallback={AppErrorFallback}>
+        <Boom />
+      </ErrorBoundary>,
     );
     expect(screen.getByText("Something went wrong")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /reload the page/i })).toBeInTheDocument();
@@ -74,11 +65,9 @@ describe("ErrorBoundary", () => {
 
   it("logs the scope and component stack", () => {
     render(
-      React.createElement(
-        ErrorBoundary,
-        { scope: "app-root", fallback: AppErrorFallback },
-        React.createElement(Boom),
-      ),
+      <ErrorBoundary scope="app-root" fallback={AppErrorFallback}>
+        <Boom />
+      </ErrorBoundary>,
     );
     const logged = consoleErrorSpy.mock.calls.find(
       (c) => c[0] === "[ErrorBoundary] uncaught render error",
