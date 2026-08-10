@@ -157,14 +157,24 @@ Deno.serve(async (req) => {
     }
 
     // Vault is the only home for these — the plaintext columns are gone.
+    //
+    // A failed lookup must NOT be reported as "no secret configured". supabase-js
+    // returns RPC failures in `error` rather than throwing, so discarding it made a
+    // Vault outage or permissions regression indistinguishable from an unconfigured
+    // venue — which drops a correctly-configured test venue into mock mode, where
+    // payments are simulated as Authorised and orders finalise as paid without any
+    // authorisation reaching the processor. Fail the request instead; the outer
+    // handler turns this into a generic 500 with a correlation id.
     const loadSecret = async (field: string): Promise<string | null> => {
-      try {
-        const { data } = await adminClient.rpc("get_payment_secret", {
-          _venue_id: venue_id,
-          _field: field,
-        });
-        return (data as string) || null;
-      } catch { return null; }
+      const { data, error } = await adminClient.rpc("get_payment_secret", {
+        _venue_id: venue_id,
+        _field: field,
+      });
+      if (error) {
+        console.error(`[adyen-payment] secret lookup failed for ${field}`, error);
+        throw new Error(`secret lookup failed for ${field}`);
+      }
+      return (data as string) || null;
     };
     const [vaultApiTest, vaultApiLive, vaultCkTest, vaultCkLive, vaultHmac] = await Promise.all([
       loadSecret("api_key_test"),

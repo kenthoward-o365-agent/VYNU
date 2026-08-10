@@ -17,15 +17,13 @@
 -- matches production, and rewrites the RPC to derive presence from the Vault
 -- reference columns instead.
 
-ALTER TABLE public.venue_payment_config
-  DROP COLUMN IF EXISTS api_key_test,
-  DROP COLUMN IF EXISTS api_key_live,
-  DROP COLUMN IF EXISTS client_key_test,
-  DROP COLUMN IF EXISTS client_key_live,
-  DROP COLUMN IF EXISTS hmac_key;
-
 -- has_* now reflects the Vault reference, which is the only place a credential
 -- lives. The returned shape is unchanged, so callers need no update.
+--
+-- Replaced BEFORE the columns are dropped so this function never references a
+-- dropped column, even momentarily. Postgres records no dependency from a PL/pgSQL
+-- body (or a %ROWTYPE declaration) to a column, so the DROP below would succeed
+-- either way and both statements are in one transaction — this is for clarity.
 CREATE OR REPLACE FUNCTION public.get_venue_payment_config_meta(_venue_id uuid, _provider text DEFAULT NULL)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -75,3 +73,13 @@ $$;
 -- privileges, so this is belt-and-braces rather than a change in reachability.
 REVOKE ALL ON FUNCTION public.get_venue_payment_config_meta(uuid, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_venue_payment_config_meta(uuid, text) TO authenticated, service_role;
+
+-- Now retire the columns themselves. Idempotent: production already dropped these
+-- out-of-band, and their values were backfilled into Vault by 20260612164708 and
+-- nulled by 20260612215744, so there is nothing left to lose.
+ALTER TABLE public.venue_payment_config
+  DROP COLUMN IF EXISTS api_key_test,
+  DROP COLUMN IF EXISTS api_key_live,
+  DROP COLUMN IF EXISTS client_key_test,
+  DROP COLUMN IF EXISTS client_key_live,
+  DROP COLUMN IF EXISTS hmac_key;
