@@ -562,6 +562,11 @@ const CheckoutPanel = ({
             action: "payment_details",
             venue_id: venueId,
             details: details.details,
+            // `paymentData` correlates this completion with the original
+            // /payments call. The Drop-in supplies it alongside `details`, and
+            // omitting it means no 3DS challenge or redirect can ever be
+            // completed — the diner authenticates and the payment stalls.
+            payment_data: details.paymentData,
           }),
         }
       );

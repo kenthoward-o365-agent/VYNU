@@ -234,6 +234,9 @@ const TabBillPanel = ({
             action: "payment_details",
             venue_id: venueId,
             details: details.details,
+            // Required to correlate a 3DS challenge/redirect with the original
+            // /payments call; without it the challenge can never complete.
+            payment_data: details.paymentData,
           }),
         }
       );
