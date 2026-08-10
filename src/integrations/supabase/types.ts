@@ -6058,6 +6058,13 @@ export type Database = {
         }[]
       }
       get_venue_audit_date: { Args: { _venue_id: string }; Returns: string }
+      get_venue_package_public: {
+        Args: { _venue_id: string }
+        Returns: {
+          flags: Json
+          tier: string
+        }[]
+      }
       get_venue_payment_active: {
         Args: { _venue_id: string }
         Returns: {
