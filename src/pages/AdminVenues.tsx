@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Plus, Building2, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { FieldError } from "@/components/ui/field-error";
+import { venueDetailsSchema, fieldErrors } from "@/lib/validation";
 import { toast } from "@/hooks/use-toast";
 
 interface AdminVenue {
@@ -84,6 +86,8 @@ export default function AdminVenues() {
     email: "",
     group_id: "__none__",
   });
+  // Populated on submit, so the admin is not scolded mid-typing.
+  const [formErrs, setFormErrs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -123,7 +127,15 @@ export default function AdminVenues() {
   useEffect(() => { fetchData(); }, [debouncedSearch, statusFilter, typeFilter, page]);
 
   const createVenue = async () => {
-    if (!form.name.trim()) return;
+    // Validated before the venue_groups insert below, not just before the venue
+    // insert — a parent venue creates its group first, so failing later would
+    // leave an orphaned group behind.
+    const parsed = venueDetailsSchema.safeParse(form);
+    if (!parsed.success) {
+      setFormErrs(fieldErrors(parsed.error));
+      return;
+    }
+    setFormErrs({});
     setCreating(true);
 
     let groupId = form.group_id === "__none__" ? null : form.group_id;
@@ -131,7 +143,7 @@ export default function AdminVenues() {
     if (form.venue_type === "parent") {
       const { data: newGroup, error: groupErr } = await supabase
         .from("venue_groups")
-        .insert({ name: form.name.trim() })
+        .insert({ name: parsed.data.name })
         .select("id")
         .single();
       if (groupErr || !newGroup) {
@@ -143,14 +155,14 @@ export default function AdminVenues() {
     }
 
     const insertData: any = {
-      name: form.name.trim(),
+      name: parsed.data.name,
       venue_type: form.venue_type,
-      city: form.city || null,
-      state: form.state || null,
-      address: form.address || null,
-      postcode: form.postcode || null,
-      phone: form.phone || null,
-      email: form.email || null,
+      city: parsed.data.city ?? null,
+      state: parsed.data.state ?? null,
+      address: parsed.data.address ?? null,
+      postcode: parsed.data.postcode ?? null,
+      phone: parsed.data.phone ?? null,
+      email: parsed.data.email ?? null,
       group_id: groupId,
       subscription_status: "trial",
       subscription_plan: "basic",
@@ -163,6 +175,7 @@ export default function AdminVenues() {
       toast({ title: "Venue created" });
       setDialogOpen(false);
       setForm({ name: "", venue_type: "restaurant", city: "", state: "NSW", address: "", postcode: "", phone: "", email: "", group_id: "__none__" });
+      setFormErrs({});
       fetchGroups();
       fetchData();
     }
@@ -193,6 +206,7 @@ export default function AdminVenues() {
               <div>
                 <Label>Venue Name</Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. The Corner Café" className="mt-1" />
+                <FieldError message={formErrs.name} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -213,15 +227,33 @@ export default function AdminVenues() {
                   </Select>
                 </div>
               </div>
-              <Input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+              <div>
+                <Input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                <FieldError message={formErrs.address} />
+              </div>
               <div className="grid grid-cols-3 gap-2">
-                <Input placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-                <Input placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
-                <Input placeholder="Postcode" value={form.postcode} onChange={(e) => setForm({ ...form, postcode: e.target.value })} />
+                <div>
+                  <Input placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+                  <FieldError message={formErrs.city} />
+                </div>
+                <div>
+                  <Input placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+                  <FieldError message={formErrs.state} />
+                </div>
+                <div>
+                  <Input placeholder="Postcode" value={form.postcode} onChange={(e) => setForm({ ...form, postcode: e.target.value })} />
+                  <FieldError message={formErrs.postcode} />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-                <Input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                <div>
+                  <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  <FieldError message={formErrs.phone} />
+                </div>
+                <div>
+                  <Input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                  <FieldError message={formErrs.email} />
+                </div>
               </div>
               <Button onClick={createVenue} disabled={!form.name.trim() || creating} className="w-full">
                 {creating ? "Creating..." : "Create Venue"}

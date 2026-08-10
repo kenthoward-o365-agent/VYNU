@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FieldError } from "@/components/ui/field-error";
+import { venueDetailsSchema, fieldErrors } from "@/lib/validation";
 import { toast } from "sonner";
 
 const venueTypes = [
@@ -34,21 +36,29 @@ export default function Onboarding() {
     phone: "",
     email: "",
   });
+  // Populated on submit, so the operator is not scolded mid-typing.
+  const [errs, setErrs] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    const parsed = venueDetailsSchema.safeParse(form);
+    if (!parsed.success) {
+      setErrs(fieldErrors(parsed.error));
+      return;
+    }
+    setErrs({});
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc("create_venue_with_owner", {
-        _name: form.name,
+        _name: parsed.data.name,
         _venue_type: form.venue_type,
-        _address: form.address || null,
-        _city: form.city || null,
+        _address: parsed.data.address ?? null,
+        _city: parsed.data.city ?? null,
         _state: form.state,
-        _postcode: form.postcode || null,
-        _phone: form.phone || null,
-        _email: form.email || null,
+        _postcode: parsed.data.postcode ?? null,
+        _phone: parsed.data.phone ?? null,
+        _email: parsed.data.email ?? null,
         _display_name: user.user_metadata?.display_name || user.email || null,
       });
       if (error) throw error;
@@ -78,7 +88,10 @@ export default function Onboarding() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Input placeholder="Venue name" value={form.name} onChange={(e) => update("name", e.target.value)} required />
+              <div>
+                <Input placeholder="Venue name" value={form.name} onChange={(e) => update("name", e.target.value)} required />
+                <FieldError message={errs.name} />
+              </div>
               <Select value={form.venue_type} onValueChange={(v) => update("venue_type", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -87,9 +100,15 @@ export default function Onboarding() {
                   ))}
                 </SelectContent>
               </Select>
-              <Input placeholder="Street address" value={form.address} onChange={(e) => update("address", e.target.value)} />
+              <div>
+                <Input placeholder="Street address" value={form.address} onChange={(e) => update("address", e.target.value)} />
+                <FieldError message={errs.address} />
+              </div>
               <div className="grid grid-cols-3 gap-2">
-                <Input placeholder="City" value={form.city} onChange={(e) => update("city", e.target.value)} />
+                <div>
+                  <Input placeholder="City" value={form.city} onChange={(e) => update("city", e.target.value)} />
+                  <FieldError message={errs.city} />
+                </div>
                 <Select value={form.state} onValueChange={(v) => update("state", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -98,10 +117,19 @@ export default function Onboarding() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Input placeholder="Postcode" value={form.postcode} onChange={(e) => update("postcode", e.target.value)} />
+                <div>
+                  <Input placeholder="Postcode" value={form.postcode} onChange={(e) => update("postcode", e.target.value)} />
+                  <FieldError message={errs.postcode} />
+                </div>
               </div>
-              <Input placeholder="Phone" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
-              <Input type="email" placeholder="Contact email" value={form.email} onChange={(e) => update("email", e.target.value)} />
+              <div>
+                <Input placeholder="Phone" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
+                <FieldError message={errs.phone} />
+              </div>
+              <div>
+                <Input type="email" placeholder="Contact email" value={form.email} onChange={(e) => update("email", e.target.value)} />
+                <FieldError message={errs.email} />
+              </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Creating..." : "Create Venue"}
               </Button>

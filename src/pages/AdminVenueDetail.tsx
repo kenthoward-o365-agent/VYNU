@@ -23,6 +23,8 @@ import PubPlusManager from "@/components/venue/PubPlusManager";
 
 
 import { Switch } from "@/components/ui/switch";
+import { FieldError } from "@/components/ui/field-error";
+import { venueDetailsSchema, staffUserSchema, staffEditSchema, fieldErrors } from "@/lib/validation";
 import { toast } from "@/hooks/use-toast";
 
 interface StaffMember {
@@ -70,6 +72,10 @@ export default function AdminVenueDetail() {
     subscription_status: "trial", subscription_plan: "bite", subscription_notes: "",
   });
   const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
+  // Populated on submit, so the admin is not scolded mid-typing.
+  const [detailErrs, setDetailErrs] = useState<Record<string, string>>({});
+  const [newUserErrs, setNewUserErrs] = useState<Record<string, string>>({});
+  const [editUserErrs, setEditUserErrs] = useState<Record<string, string>>({});
 
   // Group settings (for parent venues)
   const [groupSettings, setGroupSettings] = useState<{ global_diners: boolean; global_loyalty: boolean }>({ global_diners: false, global_loyalty: false });
@@ -149,12 +155,22 @@ export default function AdminVenueDetail() {
   const openEditUser = (s: StaffMember) => {
     setEditingStaff(s);
     setEditForm({ display_name: s.display_name || "", role: s.role, password: "" });
+    setEditUserErrs({});
     setShowEditPassword(false);
     setEditUserDialog(true);
   };
 
   const saveEditUser = async () => {
     if (!editingStaff || !venueId) return;
+    // Checked up front rather than between the two calls below: the old order
+    // applied the profile update, then threw on a short password, leaving the
+    // name and role changed but the reset silently skipped.
+    const parsed = staffEditSchema.safeParse(editForm);
+    if (!parsed.success) {
+      setEditUserErrs(fieldErrors(parsed.error));
+      return;
+    }
+    setEditUserErrs({});
     setSavingEdit(true);
     try {
       const { data, error } = await supabase.functions.invoke("admin-create-user", {
@@ -162,16 +178,15 @@ export default function AdminVenueDetail() {
           action: "update",
           staff_id: editingStaff.id,
           venue_id: venueId,
-          display_name: editForm.display_name,
+          display_name: parsed.data.display_name ?? null,
           role: editForm.role,
         },
       });
       if (error || data?.error) throw new Error(data?.error || error?.message || "Failed to update");
 
-      if (editForm.password) {
-        if (editForm.password.length < 8) throw new Error("Password must be at least 8 characters");
+      if (parsed.data.password) {
         const pw = await supabase.functions.invoke("admin-create-user", {
-          body: { action: "set_password", staff_id: editingStaff.id, venue_id: venueId, password: editForm.password },
+          body: { action: "set_password", staff_id: editingStaff.id, venue_id: venueId, password: parsed.data.password },
         });
         if (pw.error || pw.data?.error) throw new Error(pw.data?.error || pw.error?.message || "Failed to set password");
       }
@@ -217,11 +232,21 @@ export default function AdminVenueDetail() {
 
   const saveDetails = async () => {
     if (!venueId) return;
+    // Validate before the write, not after: this page previously sent whatever
+    // was typed straight to the venues table, so a phone of "hello" and an
+    // email of "test" both saved cleanly.
+    const parsed = venueDetailsSchema.safeParse(form);
+    if (!parsed.success) {
+      setDetailErrs(fieldErrors(parsed.error));
+      toast({ title: "Check the highlighted fields", variant: "destructive" });
+      return;
+    }
+    setDetailErrs({});
     setSaving(true);
     const { error } = await supabase.from("venues").update({
-      name: form.name, venue_type: form.venue_type, address: form.address || null,
-      city: form.city || null, state: form.state || null, postcode: form.postcode || null,
-      phone: form.phone || null, email: form.email || null,
+      name: parsed.data.name, venue_type: form.venue_type, address: parsed.data.address ?? null,
+      city: parsed.data.city ?? null, state: parsed.data.state ?? null, postcode: parsed.data.postcode ?? null,
+      phone: parsed.data.phone ?? null, email: parsed.data.email ?? null,
       group_id: form.group_id === "__none__" ? null : form.group_id,
       subscription_status: form.subscription_status,
       subscription_plan: form.subscription_plan,
@@ -249,16 +274,22 @@ export default function AdminVenueDetail() {
   };
 
   const createUser = async () => {
-    if (!venueId || !newUser.email || !newUser.password) return;
+    if (!venueId) return;
+    const parsed = staffUserSchema.safeParse(newUser);
+    if (!parsed.success) {
+      setNewUserErrs(fieldErrors(parsed.error));
+      return;
+    }
+    setNewUserErrs({});
     setCreatingUser(true);
     try {
       const { data, error } = await supabase.functions.invoke("admin-create-user", {
         body: {
-          email: newUser.email,
-          password: newUser.password,
+          email: parsed.data.email,
+          password: parsed.data.password,
           venue_id: venueId,
           role: newUser.role,
-          display_name: newUser.display_name || null,
+          display_name: parsed.data.display_name ?? null,
         },
       });
       if (error) {
@@ -348,20 +379,41 @@ export default function AdminVenueDetail() {
           <Card>
             <CardHeader><CardTitle>Venue Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <Input placeholder="Venue name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <div>
+                <Input placeholder="Venue name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <FieldError message={detailErrs.name} />
+              </div>
               <Select value={form.venue_type} onValueChange={(v) => setForm({ ...form, venue_type: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{venueTypes.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
               </Select>
-              <Input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+              <div>
+                <Input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                <FieldError message={detailErrs.address} />
+              </div>
               <div className="grid grid-cols-3 gap-2">
-                <Input placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-                <Input placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
-                <Input placeholder="Postcode" value={form.postcode} onChange={(e) => setForm({ ...form, postcode: e.target.value })} />
+                <div>
+                  <Input placeholder="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+                  <FieldError message={detailErrs.city} />
+                </div>
+                <div>
+                  <Input placeholder="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+                  <FieldError message={detailErrs.state} />
+                </div>
+                <div>
+                  <Input placeholder="Postcode" value={form.postcode} onChange={(e) => setForm({ ...form, postcode: e.target.value })} />
+                  <FieldError message={detailErrs.postcode} />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-                <Input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                <div>
+                  <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  <FieldError message={detailErrs.phone} />
+                </div>
+                <div>
+                  <Input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                  <FieldError message={detailErrs.email} />
+                </div>
               </div>
               <div>
                 <Label>Parent Company</Label>
@@ -487,8 +539,8 @@ export default function AdminVenueDetail() {
               <DialogContent>
                 <DialogHeader><DialogTitle>Create User Account</DialogTitle></DialogHeader>
                 <div className="space-y-3">
-                  <div><Label>Display Name</Label><Input value={newUser.display_name} onChange={(e) => setNewUser({ ...newUser, display_name: e.target.value })} placeholder="Jane Smith" className="mt-1" /></div>
-                  <div><Label>Email</Label><Input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} placeholder="jane@venue.com" className="mt-1" /></div>
+                  <div><Label>Display Name</Label><Input value={newUser.display_name} onChange={(e) => setNewUser({ ...newUser, display_name: e.target.value })} placeholder="Jane Smith" className="mt-1" /><FieldError message={newUserErrs.display_name} /></div>
+                  <div><Label>Email</Label><Input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} placeholder="jane@venue.com" className="mt-1" /><FieldError message={newUserErrs.email} /></div>
                   <div>
                     <Label>Password</Label>
                     <div className="relative mt-1">
@@ -497,6 +549,7 @@ export default function AdminVenueDetail() {
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
+                    <FieldError message={newUserErrs.password} />
                   </div>
                   <div>
                     <Label>Role</Label>
@@ -509,7 +562,7 @@ export default function AdminVenueDetail() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={createUser} disabled={!newUser.email || !newUser.password || newUser.password.length < 8 || creatingUser} className="w-full">
+                  <Button onClick={createUser} disabled={!staffUserSchema.safeParse(newUser).success || creatingUser} className="w-full">
                     {creatingUser ? "Creating..." : "Create User"}
                   </Button>
                 </div>
@@ -561,6 +614,7 @@ export default function AdminVenueDetail() {
                   <div>
                     <Label>Display Name</Label>
                     <Input value={editForm.display_name} onChange={(e) => setEditForm({ ...editForm, display_name: e.target.value })} className="mt-1" />
+                    <FieldError message={editUserErrs.display_name} />
                   </div>
                   <div>
                     <Label>Role</Label>
@@ -587,6 +641,7 @@ export default function AdminVenueDetail() {
                         {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
+                    <FieldError message={editUserErrs.password} />
                     <p className="text-xs text-muted-foreground mt-1">Min 8 characters if changing.</p>
                   </div>
                   <Button onClick={saveEditUser} disabled={savingEdit} className="w-full">

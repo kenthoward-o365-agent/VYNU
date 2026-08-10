@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { partnerSchema, httpUrlSchema } from "@/lib/validation";
 import { toast } from "sonner";
 
 type PartnerType = "pos" | "crm";
@@ -95,9 +96,13 @@ export default function AdminPartners() {
   useEffect(() => { void load(); }, []);
 
   async function createPartner() {
-    if (!pName) return toast.error("Name required");
+    // This page reports validation through toasts rather than inline messages,
+    // so the schema's message is surfaced the same way as its existing checks.
+    const parsed = partnerSchema.safeParse({ name: pName, contact_email: pEmail });
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     const { error } = await supabase.from("api_partners").insert({
-      name: pName, contact_email: pEmail || null, partner_type: pType, notes: pNotes || null,
+      name: parsed.data.name, contact_email: parsed.data.contact_email ?? null,
+      partner_type: pType, notes: pNotes || null,
     });
     if (error) return toast.error(error.message);
     toast.success("Partner created");
@@ -135,13 +140,17 @@ export default function AdminPartners() {
   }
 
   async function createWebhook() {
-    if (!whDialogPartner || !whVenueId || !whUrl) return toast.error("Venue and URL required");
+    if (!whDialogPartner || !whVenueId) return toast.error("Venue required");
     if (whEvents.length === 0) return toast.error("Select at least one event");
+    // A malformed URL here is stored and then fails on every delivery attempt,
+    // so it is checked before the row is created rather than at send time.
+    const parsedUrl = httpUrlSchema.safeParse(whUrl);
+    if (!parsedUrl.success) return toast.error(parsedUrl.error.issues[0].message);
     // Secret is generated server-side and stored in Vault; we only see it once here.
     const { data, error } = await (supabase as any).rpc("create_api_webhook", {
       _partner_id: whDialogPartner.id,
       _venue_id: whVenueId,
-      _url: whUrl,
+      _url: parsedUrl.data,
       _events: whEvents,
     });
     if (error) return toast.error(error.message);

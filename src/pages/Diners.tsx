@@ -14,6 +14,8 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Users, Mail, Phone, AlertTriangle, Pencil, Plus, Gift, Search, Receipt, ChevronLeft, ChevronRight, Filter, Megaphone, BarChart3, MessageSquare } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { FieldError } from "@/components/ui/field-error";
+import { dinerProfileSchema, fieldErrors } from "@/lib/validation";
 import DinerSegments from "@/components/crm/DinerSegments";
 import DinerCampaigns from "@/components/crm/DinerCampaigns";
 import DinerInsights from "@/components/crm/DinerInsights";
@@ -73,6 +75,8 @@ export default function Diners() {
   const [page, setPage] = useState(1);
   const [editingDiner, setEditingDiner] = useState<DinerWithVisits | null>(null);
   const [editForm, setEditForm] = useState({ display_name: "", email: "", phone: "", allergens: "" });
+  // Populated on submit, so staff are not scolded mid-typing.
+  const [editErrs, setEditErrs] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
   // Loyalty state
@@ -176,6 +180,7 @@ export default function Diners() {
       phone: diner.phone || "",
       allergens: (diner.allergens || []).join(", "),
     });
+    setEditErrs({});
     setAdjustAmount({});
     setSelectedProgramForNew("");
     setDinerOrders([]);
@@ -210,15 +215,21 @@ export default function Diners() {
 
   const saveProfile = async () => {
     if (!editingDiner) return;
+    const parsed = dinerProfileSchema.safeParse(editForm);
+    if (!parsed.success) {
+      setEditErrs(fieldErrors(parsed.error));
+      return;
+    }
+    setEditErrs({});
     setSaving(true);
     const allergens = editForm.allergens.split(",").map((a) => a.trim()).filter(Boolean);
 
     const { error } = await supabase
       .from("diner_profiles")
       .update({
-        display_name: editForm.display_name || null,
-        email: editForm.email || null,
-        phone: editForm.phone || null,
+        display_name: parsed.data.display_name ?? null,
+        email: parsed.data.email ?? null,
+        phone: parsed.data.phone ?? null,
         allergens,
       })
       .eq("id", editingDiner.id);
@@ -228,8 +239,16 @@ export default function Diners() {
     } else {
       toast({ title: "Profile updated" });
       fetchDiners();
+      // Mirror the values actually written, not the raw input, so the open
+      // dialog does not keep showing something different from the stored row.
       setEditingDiner((prev) =>
-        prev ? { ...prev, display_name: editForm.display_name, email: editForm.email, phone: editForm.phone, allergens } : null
+        prev ? {
+          ...prev,
+          display_name: parsed.data.display_name ?? null,
+          email: parsed.data.email ?? null,
+          phone: parsed.data.phone ?? null,
+          allergens,
+        } : null
       );
     }
     setSaving(false);
@@ -445,14 +464,17 @@ export default function Diners() {
                 <div>
                   <Label>Display Name</Label>
                   <Input value={editForm.display_name} onChange={(e) => setEditForm({ ...editForm, display_name: e.target.value })} />
+                  <FieldError message={editErrs.display_name} />
                 </div>
                 <div>
                   <Label>Email</Label>
                   <Input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+                  <FieldError message={editErrs.email} />
                 </div>
                 <div>
                   <Label>Phone</Label>
                   <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
+                  <FieldError message={editErrs.phone} />
                 </div>
                 <div>
                   <Label>Allergens (comma-separated)</Label>
