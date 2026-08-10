@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import ShyndigPayDropin from "./AdyenDropin";
+import { assertPaymentResult, isContinuationResult } from "@/lib/payment-result";
 import {
   money,
   splitEvenly,
@@ -192,6 +193,9 @@ const TabBillPanel = ({
         }
       );
       const result = await resp.json();
+      // Fail closed before resolving: a non-2xx response carries no resultCode,
+      // and resolving the Drop-in with `undefined` makes it render success.
+      assertPaymentResult(resp, result);
       helpers.resolve({ resultCode: result.resultCode, action: result.action });
 
       if (result.resultCode === "Authorised") {
@@ -203,7 +207,7 @@ const TabBillPanel = ({
           setPayAmount("");
           await load();
         }
-      } else if (["Refused", "Error", "Cancelled"].includes(result.resultCode)) {
+      } else if (!isContinuationResult(result.resultCode)) {
         toast.error(`Payment ${result.resultCode}: ${result.refusalReason || "Please try again"}`);
       }
     } catch (e) {
@@ -234,9 +238,12 @@ const TabBillPanel = ({
         }
       );
       const result = await resp.json();
+      assertPaymentResult(resp, result);
       helpers.resolve({ resultCode: result.resultCode, action: result.action });
-    } catch {
+    } catch (e) {
+      console.error("Tab additional details error", e);
       helpers.reject();
+      toast.error("Payment could not be completed. Please try again.");
     }
   };
 

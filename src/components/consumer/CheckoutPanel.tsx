@@ -10,6 +10,7 @@ import { CreditCard, ArrowLeft, ShieldCheck, Trash2, Check, Receipt } from "luci
 import ShyndigPayDropin from "./AdyenDropin";
 import TabBillPanel from "./TabBillPanel";
 import { money, type TabZoneRules } from "@/lib/tabs";
+import { assertPaymentResult, isContinuationResult } from "@/lib/payment-result";
 
 import type { SelectedModifier } from "./ItemDetailScreen";
 
@@ -464,10 +465,11 @@ const CheckoutPanel = ({
           }
         );
         const result = await resp.json();
+        assertPaymentResult(resp, result);
         helpers.resolve({ resultCode: result.resultCode, action: result.action });
         if (result.resultCode === "Authorised") {
           await preauthAndAddToTab(result, tabId);
-        } else if (["Refused", "Error", "Cancelled"].includes(result.resultCode)) {
+        } else if (!isContinuationResult(result.resultCode)) {
           toast.error(`Pre-authorisation ${result.resultCode}: ${result.refusalReason || "Please try again"}`);
         }
       } catch (e: any) {
@@ -512,6 +514,12 @@ const CheckoutPanel = ({
       );
       const result = await resp.json();
 
+      // Fail closed BEFORE resolving the Drop-in: a non-2xx (rate limit,
+      // sanitised server error, relayed upstream rejection) carries no
+      // resultCode, and resolving with `undefined` makes the Drop-in show its
+      // success screen for a payment that never happened.
+      assertPaymentResult(resp, result);
+
       // Pass result back to Drop-in so it can render success/3DS/error
       helpers.resolve({
         resultCode: result.resultCode,
@@ -520,11 +528,10 @@ const CheckoutPanel = ({
 
       if (result.resultCode === "Authorised") {
         await finalizePaidOrder(orderId, !!result?.mock_mode);
-      } else if (
-        result.resultCode === "Refused" ||
-        result.resultCode === "Error" ||
-        result.resultCode === "Cancelled"
-      ) {
+      } else if (!isContinuationResult(result.resultCode)) {
+        // Anything that is not an authorisation and not a Drop-in continuation
+        // (3DS challenge / redirect) is a failure. Treating only Refused, Error
+        // and Cancelled as failures left every other code silently paid.
         toast.error(`Payment ${result.resultCode}: ${result.refusalReason || "Please try again"}`);
         await cleanupOrder(orderId);
       }
@@ -559,9 +566,14 @@ const CheckoutPanel = ({
         }
       );
       const result = await resp.json();
+      // Same fail-closed guard: a failed 3DS details call must not be resolved as
+      // a success, which is how the Drop-in reads a missing resultCode.
+      assertPaymentResult(resp, result);
       helpers.resolve({ resultCode: result.resultCode, action: result.action });
     } catch (e) {
+      console.error("Drop-in additional details error:", e);
       helpers.reject();
+      toast.error("Payment could not be completed. Please try again.");
     }
   };
 

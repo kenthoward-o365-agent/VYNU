@@ -467,10 +467,16 @@ Deno.serve(async (req) => {
           // (encrypted card, applepay token, googlepay token, etc.)
           paymentRequest.paymentMethod = payment_method;
           if (shopper_reference) paymentRequest.shopperReference = shopper_reference;
+          // The shopper is present and entering their card now, so this is always
+          // an Ecommerce interaction. Adyen requires shopperInteraction whenever a
+          // shopperReference is supplied — and we always supply one — so omitting
+          // it refused every payment with "217 Field 'shopperInteraction' is
+          // missing or not valid". It used to be set only on the store-card path,
+          // which meant no guest payment (store_card=false) could ever succeed.
+          paymentRequest.shopperInteraction = "Ecommerce";
           if (store_card && shopper_reference) {
             paymentRequest.storePaymentMethod = true;
             paymentRequest.recurringProcessingModel = "CardOnFile";
-            paymentRequest.shopperInteraction = "Ecommerce";
           }
         } else {
           return json({ error: "No payment method provided" }, 400);
