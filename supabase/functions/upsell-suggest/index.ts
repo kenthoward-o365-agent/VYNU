@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { logAiUsage } from "../_shared/ai-usage.ts";
 import { enforceRateLimit, getClientIp, tooManyRequests } from "../_shared/rate-limit.ts";
 import { readJsonLimited, boundedArray, PayloadTooLargeError, payloadTooLarge } from "../_shared/http.ts";
+import { hasFeature } from "../_shared/require-feature.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,6 +67,23 @@ serve(async (req) => {
       { key: `upsell-suggest:ip:${ip}`, limit: 120, windowSec: 3600 },
     ]);
     if (!rl.allowed) return tooManyRequests(corsHeaders);
+
+    // Package enforcement. The guest app now hides these controls, but a client
+    // can still call this directly, so the endpoint is the real gate.
+    //
+    // Deliberately placed AFTER the rate limiter: returning early above it gave
+    // venues without the feature an uncapped path that still performed the venue
+    // and flag lookups on every request. Denied callers are now bounded by the
+    // same limits as everyone else.
+    //
+    // Returns 200 with no suggestions rather than 403: the upsell is an optional
+    // enhancement, the client already renders nothing for an empty list, and a
+    // disabled feature is not an error condition worth surfacing to the diner.
+    if (!(await hasFeature(sb, venue_id, "ai.upsell"))) {
+      return new Response(JSON.stringify({ suggestions: [] }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
 
     // Build context-aware prompt based on trigger type

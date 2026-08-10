@@ -3,6 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { logAiUsage } from "../_shared/ai-usage.ts";
 import { enforceRateLimit, getClientIp, tooManyRequests } from "../_shared/rate-limit.ts";
 import { readJsonLimited, boundedArray, PayloadTooLargeError, payloadTooLarge } from "../_shared/http.ts";
+import { requireFeature } from "../_shared/require-feature.ts";
 
 const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
@@ -66,6 +67,17 @@ Deno.serve(async (req) => {
       { key: `diner-chat:ip:${ip}`, limit: 60, windowSec: 3600 },
     ]);
     if (!rl.allowed) return tooManyRequests(corsHeaders);
+
+    // Package enforcement. The guest app now hides the chat entry, but a client
+    // can still call this directly, so the endpoint is the real gate. Unlike the
+    // upsell, chat ordering is the whole feature rather than an enhancement, so
+    // refuse outright.
+    //
+    // Deliberately placed AFTER the rate limiter: returning early above it gave
+    // venues without the feature an uncapped path that still performed the venue
+    // and flag lookups on every request.
+    const featureDenied = await requireFeature(sb, venue_id, "ai.chat_ordering", corsHeaders);
+    if (featureDenied) return featureDenied;
 
     const { data: aiConfig } = await sb
       .from("venue_ai_config")
