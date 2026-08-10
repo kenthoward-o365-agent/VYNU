@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { signupSchema, signinSchema, fieldErrors } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,6 +66,14 @@ function getPasswordStrength(pw: string): { score: number; checks: { label: stri
   return { score: checks.filter((c) => c.met).length, checks };
 }
 
+/** Inline field error. aria-live so screen readers announce it on submit. */
+const FieldError = ({ message }: { message?: string }) =>
+  message ? (
+    <p role="alert" aria-live="polite" className="text-destructive text-xs mt-1">
+      {message}
+    </p>
+  ) : null;
+
 const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: DinerSignupProps) => {
   const [mode, setMode] = useState<"signup" | "signin">(initialMode);
   const [firstName, setFirstName] = useState("");
@@ -81,6 +90,9 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
   const [countrySearch, setCountrySearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // Per-field validation messages, keyed by schema field name. Populated on
+  // submit so the diner is not scolded mid-typing.
+  const [fieldErrs, setFieldErrs] = useState<Record<string, string>>({});
   const [resetSent, setResetSent] = useState(false);
 
   const strength = useMemo(() => getPasswordStrength(password), [password]);
@@ -96,18 +108,27 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
     countrySearch ? c.label.toLowerCase().includes(countrySearch.toLowerCase()) || c.code.includes(countrySearch) || c.country.toLowerCase().includes(countrySearch.toLowerCase()) : true
   );
 
-  const isSignupValid = firstName.trim() && lastName.trim() && email.trim() && password.length >= 8 && strength.score >= 3;
-  const isSigninValid = email.trim() && password.length >= 1;
+  // Submit gating and the inline messages come from the same schemas, so the
+  // button state and the errors shown can never disagree.
+  const signupValues = { firstName, lastName, email, password, phone };
+  const signinValues = { email, password };
+  const isSignupValid = mode === "signup" && signupSchema.safeParse(signupValues).success;
+  const isSigninValid = mode === "signin" && signinSchema.safeParse(signinValues).success;
 
   const handleSignIn = async () => {
-    if (!isSigninValid) return;
+    const parsed = signinSchema.safeParse(signinValues);
+    if (!parsed.success) {
+      setFieldErrs(fieldErrors(parsed.error));
+      return;
+    }
+    setFieldErrs({});
     setSubmitting(true);
     setError("");
 
     try {
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+        email: parsed.data.email,
+        password: parsed.data.password,
       });
 
       if (authError) throw authError;
@@ -138,14 +159,19 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
   };
 
   const handleSignUp = async () => {
-    if (!isSignupValid) return;
+    const parsed = signupSchema.safeParse(signupValues);
+    if (!parsed.success) {
+      setFieldErrs(fieldErrors(parsed.error));
+      return;
+    }
+    setFieldErrs({});
     setSubmitting(true);
     setError("");
 
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
+        email: parsed.data.email,
+        password: parsed.data.password,
         options: {
           data: {
             first_name: firstName.trim(),
@@ -164,8 +190,8 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
           user_id: authData.user.id,
           first_name: firstName.trim(),
           last_name: lastName.trim(),
-          display_name: `${firstName.trim()} ${lastName.trim()}`,
-          email: email.trim(),
+          display_name: `${parsed.data.firstName} ${parsed.data.lastName}`,
+          email: parsed.data.email,
           phone: fullPhone,
           country_code: selectedCountry.code,
           birthday: birthday || null,
@@ -288,6 +314,7 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
               placeholder="jane@example.com"
               className="mt-1"
             />
+            <FieldError message={fieldErrs.email} />
           </div>
 
           <div>
@@ -300,6 +327,7 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
                 placeholder="Your password"
                 className="pr-10"
               />
+              <FieldError message={fieldErrs.password} />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -371,10 +399,12 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
           <div>
             <Label className="text-xs font-medium text-muted-foreground">First Name</Label>
             <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jane" className="mt-1" />
+            <FieldError message={fieldErrs.firstName} />
           </div>
           <div>
             <Label className="text-xs font-medium text-muted-foreground">Last Name</Label>
             <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Smith" className="mt-1" />
+            <FieldError message={fieldErrs.lastName} />
           </div>
         </div>
 
@@ -429,6 +459,7 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
               placeholder={selectedCountry.format.replace(/#/g, "0")}
               className="flex-1"
             />
+            <FieldError message={fieldErrs.phone} />
           </div>
         </div>
 
@@ -441,6 +472,7 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
             placeholder="jane@example.com"
             className="mt-1"
           />
+            <FieldError message={fieldErrs.email} />
         </div>
 
         <div>
@@ -453,6 +485,7 @@ const DinerSignup = ({ venueId, onComplete, onBack, initialMode = "signup" }: Di
               placeholder="Create a secure password"
               className="pr-10"
             />
+            <FieldError message={fieldErrs.password} />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
