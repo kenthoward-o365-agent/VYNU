@@ -19,10 +19,14 @@ export interface MenuSection<T> {
 }
 
 /** Bucket for items whose category the snapshot did not return. */
-export const UNCATEGORISED_SECTION_ID = "__uncategorised__";
+export const UNCATEGORIZED_SECTION_ID = "__uncategorized__";
+/** @deprecated Use UNCATEGORIZED_SECTION_ID (American spelling). */
+export const UNCATEGORISED_SECTION_ID = UNCATEGORIZED_SECTION_ID;
 
 /** Heading for that bucket. Deliberately vague — it holds a mixed bag. */
-export const UNCATEGORISED_SECTION_NAME = "More";
+export const UNCATEGORIZED_SECTION_NAME = "More";
+/** @deprecated Use UNCATEGORIZED_SECTION_NAME (American spelling). */
+export const UNCATEGORISED_SECTION_NAME = UNCATEGORIZED_SECTION_NAME;
 
 /**
  * Groups menu items into category sections.
