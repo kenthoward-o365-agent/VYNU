@@ -44,6 +44,17 @@ const TabBillPanel = ({
   const [methodsResponse, setMethodsResponse] = useState<any>(null);
   const [clientKey, setClientKey] = useState<string | null>(null);
   const [isMockMode, setIsMockMode] = useState(false);
+  // PAY-07: the Drop-in must initialise in the SAME environment the server
+  // processes against, so take it from the payment_methods response rather than
+  // assuming test.
+  const [paymentEnvironment, setPaymentEnvironment] = useState<"test" | "live">("test");
+  // PAY-05: per-venue wallet identifiers; a wallet is only offered when its real
+  // id is present.
+  const [walletConfig, setWalletConfig] = useState<{
+    applePayMerchantId?: string | null;
+    googlePayMerchantId?: string | null;
+    gatewayMerchantId?: string | null;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const balance = summary?.balance_due ?? 0;
@@ -99,6 +110,8 @@ const TabBillPanel = ({
         if (data?.paymentMethods) setMethodsResponse(data);
         setClientKey(data?.client_key || null);
         setIsMockMode(!!data?.mock_mode);
+        setPaymentEnvironment(data?.environment === "live" ? "live" : "test");
+        setWalletConfig(data?.wallets || null);
       } catch (e) {
         console.error("Failed to load payment methods", e);
       }
@@ -420,9 +433,12 @@ const TabBillPanel = ({
                     amount={amountToPay}
                     currency="AUD"
                     countryCode="AU"
-                    environment="test"
+                    environment={paymentEnvironment}
                     clientKey={clientKey || undefined}
                     merchantName="H&L Pay"
+                    applePayMerchantId={walletConfig?.applePayMerchantId || undefined}
+                    googlePayMerchantId={walletConfig?.googlePayMerchantId || undefined}
+                    gatewayMerchantId={walletConfig?.gatewayMerchantId || undefined}
                     onSubmit={handleDropinSubmit}
                     onAdditionalDetails={handleDropinAdditionalDetails}
                     onError={(e) => console.error("H&L Pay error:", e)}
