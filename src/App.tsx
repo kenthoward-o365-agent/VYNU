@@ -42,6 +42,8 @@ import BillingSetup from "@/pages/BillingSetup";
 import Developers from "@/pages/Developers";
 import NotFound from "@/pages/NotFound";
 import ConsumerOrder from "@/pages/ConsumerOrder";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import { AppErrorFallback, ConsumerErrorFallback } from "@/components/ErrorFallbacks";
 import ResetPassword from "@/pages/ResetPassword";
 import Modifiers from "@/pages/Modifiers";
 import DinerPreferences from "@/pages/DinerPreferences";
@@ -188,7 +190,17 @@ function RootRoutes() {
   return (
     <Routes>
       {/* Public routes — no auth required */}
-      <Route path="/order/:venueId/:tableId" element={<ConsumerOrder />} />
+      {/* Nested boundary: a failure inside the diner flow must not blank the
+          whole app, and the diner needs a different message to an operator —
+          specifically whether their order was placed. */}
+      <Route
+        path="/order/:venueId/:tableId"
+        element={
+          <ErrorBoundary scope="consumer-order" fallback={ConsumerErrorFallback}>
+            <ConsumerOrder />
+          </ErrorBoundary>
+        }
+      />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/developers" element={<Developers />} />
       <Route path="/billing/setup/:token" element={<BillingSetup />} />
@@ -219,17 +231,19 @@ function RootRoutes() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <RootRoutes />
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  <ErrorBoundary scope="app-root" fallback={AppErrorFallback}>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <RootRoutes />
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
