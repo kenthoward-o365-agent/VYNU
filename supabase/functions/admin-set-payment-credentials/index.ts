@@ -11,18 +11,32 @@ const json = (data: any, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// Allowed credential / config fields the admin can set on venue_payment_config.
-// Anything not in this list is silently ignored.
-const ALLOWED_FIELDS = new Set([
+// Secret fields. These are NOT columns on venue_payment_config — they are logical
+// field names understood by the set_payment_secret / get_payment_secret RPCs, which
+// store the value in Vault and record the reference in `<field>_secret_id`. The
+// matching plaintext columns were dropped once everything moved to Vault, so any
+// query naming them fails the whole statement with 42703.
+const SECRET_FIELDS = new Set([
   "api_key_test",
   "api_key_live",
   "client_key_test",
   "client_key_live",
-  "merchant_account",
   "hmac_key",
+]);
+
+// Plain (non-secret) columns the admin can set directly on venue_payment_config.
+const PLAIN_FIELDS = new Set([
+  "merchant_account",
   "apple_pay_merchant_id",
   "google_pay_merchant_id",
 ]);
+
+// Allowed credential / config fields the admin can set.
+// Anything not in this list is silently ignored.
+const ALLOWED_FIELDS = new Set([...SECRET_FIELDS, ...PLAIN_FIELDS]);
+
+// Vault reference column backing each secret field.
+const secretIdColumn = (field: string) => `${field}_secret_id`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -58,24 +72,35 @@ Deno.serve(async (req) => {
 
     // ── GET (returns whether each field is set, never the actual values) ──
     if (action === "get") {
-      const { data: config } = await adminClient
+      const { data: config, error: getErr } = await adminClient
         .from("venue_payment_config")
         .select(
-          "id, environment, merchant_account, merchant_status, api_key_test, api_key_live, client_key_test, client_key_live, hmac_key, api_key_test_secret_id, api_key_live_secret_id, client_key_test_secret_id, client_key_live_secret_id, hmac_key_secret_id, apple_pay_merchant_id, google_pay_merchant_id"
+          "id, environment, merchant_account, merchant_status, api_key_test_secret_id, api_key_live_secret_id, client_key_test_secret_id, client_key_live_secret_id, hmac_key_secret_id, apple_pay_merchant_id, google_pay_merchant_id"
         )
         .eq("venue_id", venue_id)
         .eq("provider", "ordrpayments")
         .maybeSingle();
 
+      // Never swallow this: a failed read here is indistinguishable from "nothing
+      // configured" in the UI, which previously made saved credentials silently
+      // render as "Not set".
+      if (getErr) {
+        console.error("[admin-set-payment-credentials] get failed", getErr);
+        return json({ error: "Failed to read configuration" }, 500);
+      }
+
       if (!config) {
         return json({ exists: false, environment: "test", fields: {} });
       }
 
-      // A secret is "set" if EITHER the legacy column OR the Vault ref is present.
-      const presence = (legacy: string | null, vaultId: string | null) =>
-        (vaultId ? { set: true, preview: "vault" }
-          : legacy ? { set: true, preview: legacy.length > 4 ? `…${legacy.slice(-4)}` : "set" }
-          : { set: false });
+      // A secret is "set" iff its Vault reference is present.
+      const presence = (vaultId: string | null) =>
+        (vaultId ? { set: true, preview: "vault" } : { set: false });
+
+      const fields: Record<string, { set: boolean; preview?: string }> = {};
+      for (const field of SECRET_FIELDS) {
+        fields[field] = presence((config as any)[secretIdColumn(field)]);
+      }
 
       return json({
         exists: true,
@@ -84,25 +109,13 @@ Deno.serve(async (req) => {
         merchant_account: config.merchant_account || "",
         apple_pay_merchant_id: config.apple_pay_merchant_id || "",
         google_pay_merchant_id: config.google_pay_merchant_id || "",
-        fields: {
-          api_key_test:    presence(config.api_key_test,    (config as any).api_key_test_secret_id),
-          api_key_live:    presence(config.api_key_live,    (config as any).api_key_live_secret_id),
-          client_key_test: presence(config.client_key_test, (config as any).client_key_test_secret_id),
-          client_key_live: presence(config.client_key_live, (config as any).client_key_live_secret_id),
-          hmac_key:        presence(config.hmac_key,        (config as any).hmac_key_secret_id),
-        },
+        fields,
       });
     }
 
 
     // ── SET ──
     if (action === "set") {
-      // Fields that must be stored in Vault, not as plain columns
-      const SECRET_FIELDS = new Set([
-        "api_key_test", "api_key_live",
-        "client_key_test", "client_key_live",
-        "hmac_key",
-      ]);
       const updates: Record<string, any> = {};
       const vaultWrites: Array<{ field: string; value: string }> = [];
       for (const [k, v] of Object.entries(body.fields || {})) {
@@ -117,12 +130,19 @@ Deno.serve(async (req) => {
       }
 
       // Ensure a config row exists
-      const { data: existing } = await adminClient
+      const { data: existing, error: existingErr } = await adminClient
         .from("venue_payment_config")
         .select("id")
         .eq("venue_id", venue_id)
         .eq("provider", "ordrpayments")
         .maybeSingle();
+
+      // A failed lookup must not be read as "no row" — that would attempt an insert
+      // and surface as a misleading unique-violation.
+      if (existingErr) {
+        console.error("[admin-set-payment-credentials] existing lookup failed", existingErr);
+        return json({ error: "Failed to save configuration" }, 500);
+      }
 
       if (!existing) {
         const { error: insErr } = await adminClient
@@ -154,12 +174,24 @@ Deno.serve(async (req) => {
           console.error(`[admin-set-payment-credentials] vault write failed for ${field}`, vErr);
           return json({ error: "Failed to store secret" }, 400);
         }
-        // Also null out any stale plaintext column so it can't drift.
-        await adminClient
+
+        // set_payment_secret writes `<field>_secret_id` but does not report how many
+        // rows it touched, so confirm the reference actually landed on the row this
+        // function reads back. Without this a provider mismatch leaves an orphaned
+        // Vault secret and the field still reads as "Not set".
+        const { data: check, error: checkErr } = await adminClient
           .from("venue_payment_config")
-          .update({ [field]: null })
+          .select(secretIdColumn(field))
           .eq("venue_id", venue_id)
-          .eq("provider", "ordrpayments");
+          .eq("provider", "ordrpayments")
+          .maybeSingle();
+        if (checkErr || !check || !(check as any)[secretIdColumn(field)]) {
+          console.error(
+            `[admin-set-payment-credentials] secret ref not persisted for ${field}`,
+            checkErr
+          );
+          return json({ error: "Failed to store secret" }, 400);
+        }
       }
 
       return json({
@@ -173,11 +205,11 @@ Deno.serve(async (req) => {
     if (action === "clear_field") {
       const field = body.field;
       if (!ALLOWED_FIELDS.has(field)) return json({ error: "Invalid field" }, 400);
-      const SECRET_FIELDS = new Set([
-        "api_key_test", "api_key_live", "client_key_test", "client_key_live", "hmac_key",
-      ]);
-      const patch: Record<string, any> = { [field]: null };
-      if (SECRET_FIELDS.has(field)) patch[`${field}_secret_id`] = null;
+      // Secret fields only exist as a Vault reference column; the plaintext column
+      // is gone, so naming it here would fail the whole UPDATE.
+      const patch: Record<string, any> = SECRET_FIELDS.has(field)
+        ? { [secretIdColumn(field)]: null }
+        : { [field]: null };
       const { error } = await adminClient
         .from("venue_payment_config")
         .update(patch)

@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
       return json({ error: "No payment configuration found for this venue" }, 404);
     }
 
-    // Prefer Vault for secrets; fall back to legacy columns if not yet migrated.
+    // Vault is the only home for these — the plaintext columns are gone.
     const loadSecret = async (field: string): Promise<string | null> => {
       try {
         const { data } = await adminClient.rpc("get_payment_secret", {
@@ -173,11 +173,11 @@ Deno.serve(async (req) => {
       loadSecret("client_key_live"),
       loadSecret("hmac_key"),
     ]);
-    config.api_key_test    = vaultApiTest    ?? config.api_key_test;
-    config.api_key_live    = vaultApiLive    ?? config.api_key_live;
-    config.client_key_test = vaultCkTest     ?? config.client_key_test;
-    config.client_key_live = vaultCkLive     ?? config.client_key_live;
-    config.hmac_key        = vaultHmac       ?? config.hmac_key;
+    config.api_key_test    = vaultApiTest;
+    config.api_key_live    = vaultApiLive;
+    config.client_key_test = vaultCkTest;
+    config.client_key_live = vaultCkLive;
+    config.hmac_key        = vaultHmac;
 
 
     if (!config.is_active && action !== "test_connection") {
