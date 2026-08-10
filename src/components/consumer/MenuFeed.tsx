@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Flame, Leaf, AlertTriangle, Ban, Filter, ChevronRight } from "lucide-react";
 import { optimizedImageUrl } from "@/lib/image-utils";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { resolvePrice, type RuleIndex } from "@/lib/pricing-utils";
+import { groupItemsByCategory } from "@/lib/menu-grouping";
 
 interface MenuItem {
   id: string;
@@ -218,6 +219,14 @@ const MenuFeed = ({
 
   const hasActiveFilters = activeDietaryFilters.length > 0 || activeAllergenAvoid.length > 0;
 
+  // Items are grouped under category headings rather than shown as one flat
+  // list. With a category chip selected, filteredItems is already narrowed to
+  // that category, so this collapses to a single section.
+  const sections = useMemo(
+    () => groupItemsByCategory(filteredItems, categories),
+    [filteredItems, categories],
+  );
+
   if (filteredItems.length === 0) {
     return (
       <div className="flex items-center justify-center h-[calc(100dvh-8rem)] px-6">
@@ -322,17 +331,29 @@ const MenuFeed = ({
       )}
 
       <div className="flex-1 overflow-y-auto px-3 pb-24">
-        <div className="space-y-2 py-2">
-          {filteredItems.map((item) => (
-            <MenuItemRow
-              key={item.id}
-              item={item}
-              onSelect={() => onItemSelect(item)}
-              dimmed={hasActiveFilters && !itemMatchesFilters(item)}
-              pricingIndex={pricingIndex}
-            />
-          ))}
-        </div>
+        {sections.map((section) => (
+          <section key={section.id} aria-labelledby={`menu-section-${section.id}`}>
+            {/* Sticky so the diner can always see which category they are in
+                while scrolling a long menu. */}
+            <h2
+              id={`menu-section-${section.id}`}
+              className="sticky top-0 z-10 -mx-3 px-4 py-2 bg-background/95 backdrop-blur-sm text-xs font-semibold uppercase tracking-wide text-muted-foreground border-b border-border/50"
+            >
+              {section.name}
+            </h2>
+            <div className="space-y-2 py-2">
+              {section.items.map((item) => (
+                <MenuItemRow
+                  key={item.id}
+                  item={item}
+                  onSelect={() => onItemSelect(item)}
+                  dimmed={hasActiveFilters && !itemMatchesFilters(item)}
+                  pricingIndex={pricingIndex}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
       </div>
     </div>
   );
