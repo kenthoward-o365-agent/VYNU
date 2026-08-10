@@ -202,10 +202,16 @@ const MenuFeed = ({
     new Set(items.flatMap((item) => item.dietary_tags || [])),
   ).sort();
 
-  const filteredItems = items.filter((item) => {
-    if (activeCategory && item.category_id !== activeCategory) return false;
-    return true;
-  });
+  // Memoised so the `sections` grouping below has a stable input: a fresh array
+  // each render would defeat its useMemo whenever only filter state changes.
+  const filteredItems = useMemo(
+    () =>
+      items.filter((item) => {
+        if (activeCategory && item.category_id !== activeCategory) return false;
+        return true;
+      }),
+    [items, activeCategory],
+  );
 
   const itemMatchesFilters = (item: MenuItem) => {
     if (activeDietaryFilters.length > 0) {
