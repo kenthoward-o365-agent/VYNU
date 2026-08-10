@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateTaxes, type TaxConfig } from "@/lib/tax-utils";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,21 @@ const CheckoutPanel = ({
   const total = items.reduce((sum, item) => sum + lineUnitPrice(item) * item.quantity, 0);
 
   const [saveCard, setSaveCard] = useState(false);
+
+  /**
+   * Context for a payment that is mid-3DS.
+   *
+   * When Adyen returns a continuation code (ChallengeShopper / RedirectShopper /
+   * IdentifyShopper) the final outcome arrives later in
+   * handleDropinAdditionalDetails, which is a separate callback with no access to
+   * the orderId or tabId from handleDropinSubmit. Without this the 3DS branch
+   * resolved the Drop-in and stopped — the diner was charged but the order was
+   * never finalised (no status change, no diner_visit, no loyalty points, no
+   * navigation to the order screen) and a failed challenge never cleaned up.
+   */
+  const pendingPaymentRef = useRef<
+    { kind: "order"; orderId: string } | { kind: "tab"; tabId: string } | null
+  >(null);
   const [storedCards, setStoredCards] = useState<StoredCard[]>([]);
   const [selectedStoredCard, setSelectedStoredCard] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -439,6 +454,7 @@ const CheckoutPanel = ({
       let tabId: string | null = null;
       try {
         tabId = await ensureTab();
+        pendingPaymentRef.current = { kind: "tab", tabId };
         const { data: { session } } = await supabase.auth.getSession();
         const headers: any = {
           "Content-Type": "application/json",
@@ -468,12 +484,17 @@ const CheckoutPanel = ({
         assertPaymentResult(resp, result);
         helpers.resolve({ resultCode: result.resultCode, action: result.action });
         if (result.resultCode === "Authorised") {
+          pendingPaymentRef.current = null;
           await preauthAndAddToTab(result, tabId);
         } else if (!isContinuationResult(result.resultCode)) {
+          pendingPaymentRef.current = null;
           toast.error(`Pre-authorisation ${result.resultCode}: ${result.refusalReason || "Please try again"}`);
         }
+        // A continuation code leaves pendingPaymentRef set; the 3DS outcome is
+        // handled in handleDropinAdditionalDetails.
       } catch (e: any) {
         console.error("Tab pre-auth error", e);
+        pendingPaymentRef.current = null;
         helpers.reject();
         toast.error(e.message || "Couldn't open your tab. Please try again.");
       }
@@ -483,6 +504,7 @@ const CheckoutPanel = ({
     let orderId: string | null = null;
     try {
       orderId = await createOrderRow();
+      pendingPaymentRef.current = { kind: "order", orderId };
       const shopperRef = dinerId ? `diner_${dinerId}` : `anon_${Date.now()}`;
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -527,18 +549,22 @@ const CheckoutPanel = ({
       });
 
       if (result.resultCode === "Authorised") {
+        pendingPaymentRef.current = null;
         await finalizePaidOrder(orderId, !!result?.mock_mode);
       } else if (!isContinuationResult(result.resultCode)) {
         // Anything that is not an authorisation and not a Drop-in continuation
         // (3DS challenge / redirect) is a failure. Treating only Refused, Error
         // and Cancelled as failures left every other code silently paid.
+        pendingPaymentRef.current = null;
         toast.error(`Payment ${result.resultCode}: ${result.refusalReason || "Please try again"}`);
         await cleanupOrder(orderId);
       }
       // For RedirectShopper / IdentifyShopper / ChallengeShopper the Drop-in
-      // handles the next step itself; we'll get the final result via onAdditionalDetails.
+      // handles the next step itself; we'll get the final result via
+      // onAdditionalDetails, which reads pendingPaymentRef to finalise or clean up.
     } catch (e: any) {
       console.error("Drop-in submit error:", e);
+      pendingPaymentRef.current = null;
       helpers.reject();
       if (orderId) await cleanupOrder(orderId);
       toast.error("Payment failed. Please try again.");
@@ -575,9 +601,30 @@ const CheckoutPanel = ({
       // a success, which is how the Drop-in reads a missing resultCode.
       assertPaymentResult(resp, result);
       helpers.resolve({ resultCode: result.resultCode, action: result.action });
+
+      // Run the SAME post-authorisation path as the non-3DS branch. Resolving the
+      // Drop-in only updates its own UI — without this a 3DS payment was charged
+      // at Adyen while the order was never finalised, and a failed challenge left
+      // the order behind.
+      const pending = pendingPaymentRef.current;
+      if (result.resultCode === "Authorised") {
+        pendingPaymentRef.current = null;
+        if (pending?.kind === "order") {
+          await finalizePaidOrder(pending.orderId, !!result?.mock_mode);
+        } else if (pending?.kind === "tab") {
+          await preauthAndAddToTab(result, pending.tabId);
+        }
+      } else if (!isContinuationResult(result.resultCode)) {
+        pendingPaymentRef.current = null;
+        toast.error(`Payment ${result.resultCode}: ${result.refusalReason || "Please try again"}`);
+        if (pending?.kind === "order") await cleanupOrder(pending.orderId);
+      }
     } catch (e) {
       console.error("Drop-in additional details error:", e);
+      const pending = pendingPaymentRef.current;
+      pendingPaymentRef.current = null;
       helpers.reject();
+      if (pending?.kind === "order") await cleanupOrder(pending.orderId);
       toast.error("Payment could not be completed. Please try again.");
     }
   };

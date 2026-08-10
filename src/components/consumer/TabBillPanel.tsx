@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowLeft, Receipt, ShieldCheck, Gift, CreditCard, Users, RefreshCw } from "lucide-react";
@@ -57,6 +57,8 @@ const TabBillPanel = ({
     gatewayMerchantId?: string | null;
   } | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Amount of a tab payment that is mid-3DS, so the outcome callback can settle it. */
+  const pendingTabPaymentRef = useRef<number | null>(null);
 
   const balance = summary?.balance_due ?? 0;
   const amountToPay = Math.min(
@@ -160,11 +162,33 @@ const TabBillPanel = ({
     return false;
   };
 
+  /**
+   * Post-authorisation path for a tab payment. Shared by the direct branch and the
+   * 3DS branch: when Adyen returns a continuation code the outcome arrives later in
+   * handleDropinAdditionalDetails, which previously resolved the Drop-in and did
+   * nothing else — so a 3DS tab payment settled at Adyen while the tab UI never
+   * updated. `paidAmount` is captured at submit time because amountToPay is
+   * derived from an input the diner could change during the challenge.
+   */
+  const applyTabPaymentSuccess = async (paidAmount: number) => {
+    // The payment row is written server-side by adyen-payment once Adyen has
+    // authorised, so the browser never asserts that money moved.
+    toast.success(`${money(paidAmount)} paid off your tab`);
+    const settled = await trySettle();
+    if (!settled) {
+      setPayAmount("");
+      await load();
+    }
+  };
+
   const handleDropinSubmit = async (
     paymentMethod: any,
     browserInfo: any,
     helpers: { resolve: (r: any) => void; reject: (e?: any) => void }
   ) => {
+    // Amount for this attempt, held across a possible 3DS challenge.
+    const paidAmount = amountToPay;
+    pendingTabPaymentRef.current = paidAmount;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const headers: any = {
@@ -199,19 +223,17 @@ const TabBillPanel = ({
       helpers.resolve({ resultCode: result.resultCode, action: result.action });
 
       if (result.resultCode === "Authorised") {
-        // The payment row is written server-side by adyen-payment once Adyen
-        // has authorised, so the browser never asserts that money moved.
-        toast.success(`${money(amountToPay)} paid off your tab`);
-        const settled = await trySettle();
-        if (!settled) {
-          setPayAmount("");
-          await load();
-        }
+        pendingTabPaymentRef.current = null;
+        await applyTabPaymentSuccess(paidAmount);
       } else if (!isContinuationResult(result.resultCode)) {
+        pendingTabPaymentRef.current = null;
         toast.error(`Payment ${result.resultCode}: ${result.refusalReason || "Please try again"}`);
       }
+      // A continuation code leaves pendingTabPaymentRef set; the 3DS outcome is
+      // handled in handleDropinAdditionalDetails.
     } catch (e) {
       console.error("Tab payment error", e);
+      pendingTabPaymentRef.current = null;
       helpers.reject();
       toast.error("Payment failed. Please try again.");
     }
@@ -243,8 +265,20 @@ const TabBillPanel = ({
       const result = await resp.json();
       assertPaymentResult(resp, result);
       helpers.resolve({ resultCode: result.resultCode, action: result.action });
+
+      // Same post-authorisation path as the direct branch — resolving the Drop-in
+      // alone would leave the tab balance stale after a 3DS challenge.
+      const paidAmount = pendingTabPaymentRef.current;
+      if (result.resultCode === "Authorised") {
+        pendingTabPaymentRef.current = null;
+        await applyTabPaymentSuccess(paidAmount ?? amountToPay);
+      } else if (!isContinuationResult(result.resultCode)) {
+        pendingTabPaymentRef.current = null;
+        toast.error(`Payment ${result.resultCode}: ${result.refusalReason || "Please try again"}`);
+      }
     } catch (e) {
       console.error("Tab additional details error", e);
+      pendingTabPaymentRef.current = null;
       helpers.reject();
       toast.error("Payment could not be completed. Please try again.");
     }
