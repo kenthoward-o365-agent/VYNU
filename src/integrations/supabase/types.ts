@@ -6313,6 +6313,10 @@ export type Database = {
       }
       set_primary_venue: { Args: { _venue_id: string }; Returns: undefined }
       settle_tab: { Args: { _tab_id: string }; Returns: Json }
+      time_within_window: {
+        Args: { _end: string; _start: string; _t: string }
+        Returns: boolean
+      }
       unpair_display_terminal: {
         Args: { _terminal_id: string }
         Returns: boolean
