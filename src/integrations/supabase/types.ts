@@ -3516,6 +3516,24 @@ export type Database = {
         }
         Relationships: []
       }
+      processed_webhook_events: {
+        Row: {
+          event_key: string
+          processed_at: string
+          source: string
+        }
+        Insert: {
+          event_key: string
+          processed_at?: string
+          source: string
+        }
+        Update: {
+          event_key?: string
+          processed_at?: string
+          source?: string
+        }
+        Relationships: []
+      }
       pubplus_integrations: {
         Row: {
           auto_earn_on_paid: boolean
@@ -3743,6 +3761,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rate_limit_counters: {
+        Row: {
+          bucket: string
+          count: number
+          window_start: string
+        }
+        Insert: {
+          bucket: string
+          count?: number
+          window_start: string
+        }
+        Update: {
+          bucket?: string
+          count?: number
+          window_start?: string
+        }
+        Relationships: []
       }
       sms_subscribers: {
         Row: {
@@ -5851,6 +5887,14 @@ export type Database = {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
       }
+      check_rate_limit: {
+        Args: { _bucket: string; _limit: number; _window_seconds: number }
+        Returns: boolean
+      }
+      claim_webhook_event: {
+        Args: { _event_key: string; _source: string }
+        Returns: boolean
+      }
       close_idle_web_sessions: { Args: never; Returns: number }
       close_table_session: { Args: { _session_id: string }; Returns: boolean }
       create_api_webhook: {
@@ -6290,6 +6334,10 @@ export type Database = {
       }
       refresh_diner_venue_stats: {
         Args: { _diner_id: string; _venue_id: string }
+        Returns: undefined
+      }
+      release_webhook_event: {
+        Args: { _event_key: string; _source: string }
         Returns: undefined
       }
       resolve_menu_for_table: {
