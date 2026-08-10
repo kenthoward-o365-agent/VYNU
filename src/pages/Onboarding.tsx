@@ -55,7 +55,7 @@ export default function Onboarding() {
         _venue_type: form.venue_type,
         _address: parsed.data.address ?? null,
         _city: parsed.data.city ?? null,
-        _state: form.state,
+        _state: parsed.data.state ?? null,
         _postcode: parsed.data.postcode ?? null,
         _phone: parsed.data.phone,
         _email: parsed.data.email,
