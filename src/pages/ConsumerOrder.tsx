@@ -16,6 +16,7 @@ import VenueDiscovery from "@/components/consumer/VenueDiscovery";
 import DinerSignup from "@/components/consumer/DinerSignup";
 import DinerProfile from "@/components/consumer/DinerProfile";
 import UpsellPrompt, { UpsellSuggestion } from "@/components/consumer/UpsellPrompt";
+import { useGuestFeatures } from "@/hooks/use-guest-features";
 import LoyaltyJoinPrompt from "@/components/consumer/LoyaltyJoinPrompt";
 import ModeSwitchSheet from "@/components/consumer/ModeSwitchSheet";
 import type { SessionMode } from "@/components/consumer/SessionModeChooser";
@@ -76,6 +77,13 @@ const lastOrderKey = (venueId?: string, tableId?: string) =>
 
 const ConsumerOrder = () => {
   const { venueId, tableId } = useParams<{ venueId: string; tableId: string }>();
+
+  // Package gating for the guest surface. The endpoints enforce independently
+  // (diner-chat and upsell-suggest); this is so a venue whose package excludes
+  // a feature does not show a control that would then refuse to work.
+  const guestFeatures = useGuestFeatures(venueId);
+  const pkgChatEnabled = guestFeatures.has("ai.chat_ordering");
+  const pkgUpsellEnabled = !guestFeatures.loading && guestFeatures.has("ai.upsell");
   const [venue, setVenue] = useState<VenueInfo | null>(null);
   const [tableNumber, setTableNumber] = useState("");
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -86,6 +94,12 @@ const ConsumerOrder = () => {
   const [tab, setTab] = useState<"feed" | "chat" | "cart" | "profile">("feed");
   const [showChat, setShowChat] = useState(false);
   const [chatMode, setChatMode] = useState<string>("chat_optional");
+  // The venue's AI config and its package can disagree: a venue can be set to
+  // chat_only while its package excludes ai.chat_ordering. Left alone that is a
+  // dead end — the menu feed is suppressed for chat_only, the screen says "tap
+  // the chat icon below", and the tab it refers to is hidden. The diner cannot
+  // order at all. Package wins, and the flow collapses back to a usable menu.
+  const effectiveChatMode = pkgChatEnabled ? chatMode : "chat_optional";
   const [agentName, setAgentName] = useState<string>("H&L OrderNOW");
   const [agentIconUrl, setAgentIconUrl] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
@@ -424,7 +438,7 @@ const ConsumerOrder = () => {
   }, [activeOrder?.id, venueId, tableId]);
 
   const fetchUpsell = useCallback(async (item: { id: string; name: string; price: number }) => {
-    if (!upsellEnabled || !venue || shownUpsells.has(item.id)) return;
+    if (!upsellEnabled || !pkgUpsellEnabled || !venue || shownUpsells.has(item.id)) return;
     const cfg = upsellConfigRef.current;
     if (cfg && cfg.contextual_pairing === false) return;
 
@@ -454,7 +468,7 @@ const ConsumerOrder = () => {
     } catch (e) {
       console.error("Upsell fetch error:", e);
     }
-  }, [upsellEnabled, venue, menuItems, shownUpsells, dismissedSuggestions]);
+  }, [upsellEnabled, pkgUpsellEnabled, venue, menuItems, shownUpsells, dismissedSuggestions]);
 
   /**
    * Build a stable cart-line key from {menu_item_id + sorted modifier ids + notes}.
@@ -668,7 +682,7 @@ const ConsumerOrder = () => {
           onModeSelect={handleModeSelect}
           onStart={() => {
             setStarted(true);
-            if (chatMode === "chat_first" || chatMode === "chat_only") {
+            if (pkgChatEnabled && (chatMode === "chat_first" || chatMode === "chat_only")) {
               setShowChat(true);
             }
           }}
@@ -731,7 +745,7 @@ const ConsumerOrder = () => {
       )}
 
       {/* Main Content */}
-      {tab === "feed" && chatMode !== "chat_only" && (
+      {tab === "feed" && effectiveChatMode !== "chat_only" && (
         <MenuFeed
           items={menuItems}
           categories={categories}
@@ -742,7 +756,7 @@ const ConsumerOrder = () => {
           defaultAllergens={dinerAllergens}
         />
       )}
-      {tab === "feed" && chatMode === "chat_only" && !showChat && (
+      {tab === "feed" && effectiveChatMode === "chat_only" && !showChat && (
         <div className="flex-1 flex items-center justify-center px-6 text-center pb-20">
           <div>
             <p className="text-lg font-semibold mb-2">Chat with {venue?.name}'s AI server</p>
@@ -763,6 +777,7 @@ const ConsumerOrder = () => {
           dismissedSuggestions={dismissedSuggestions}
           onAddToCart={addToCart}
           onDismissSuggestion={(id) => dismissedSuggestions.add(id)}
+          showSuggestions={pkgUpsellEnabled}
           sessionMode={sessionMode ?? "solo"}
           groupDisplayName={groupDisplayName}
           onSwitchMode={cart.length === 0 ? () => setShowModeSwitch(true) : undefined}
@@ -800,7 +815,7 @@ const ConsumerOrder = () => {
       )}
 
       {/* Upsell Prompt Overlay */}
-      {upsellSuggestion && (
+      {upsellSuggestion && upsellEnabled && pkgUpsellEnabled && (
         <UpsellPrompt
           suggestion={upsellSuggestion}
           onAdd={(item) => {
@@ -816,7 +831,7 @@ const ConsumerOrder = () => {
       )}
 
       {/* AI Chat Overlay */}
-      {showChat && venueId && (
+      {showChat && pkgChatEnabled && venueId && (
         <AIChatOverlay
           venueId={venueId}
           onClose={() => setShowChat(false)}
@@ -836,6 +851,7 @@ const ConsumerOrder = () => {
         cartCount={cart.reduce((sum, c) => sum + c.quantity, 0)}
         agentName={agentName}
         agentIconUrl={agentIconUrl}
+        showChat={pkgChatEnabled}
       />
 
       {/* Item Detail overlay */}
@@ -846,6 +862,7 @@ const ConsumerOrder = () => {
           venueName={venue.name}
           menuItems={menuItems}
           pricingIndex={pricingIndex}
+          showUpsell={pkgUpsellEnabled}
           onClose={() => setSelectedItem(null)}
           onAdd={(it, qty, mods, notes) => {
             addConfiguredToCart(it, qty, mods, notes);

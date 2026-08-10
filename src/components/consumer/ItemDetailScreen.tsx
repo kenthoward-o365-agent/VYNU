@@ -62,6 +62,12 @@ interface Props {
   venueName: string;
   menuItems: MenuItemForDetail[];
   pricingIndex?: RuleIndex | null;
+  /**
+   * Whether the venue's package includes AI upsell (`ai.upsell`). When false the
+   * contextual pairing suggestion is neither requested nor rendered.
+   * Defaults to true so existing callers are unaffected.
+   */
+  showUpsell?: boolean;
   onClose: () => void;
   onAdd: (
     item: MenuItemForDetail,
@@ -71,7 +77,7 @@ interface Props {
   ) => void;
 }
 
-const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, onClose, onAdd }: Props) => {
+const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, showUpsell = true, onClose, onAdd }: Props) => {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
   const [categories, setCategories] = useState<ModifierCategoryRow[]>([]);
@@ -117,8 +123,11 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
     };
   }, [item.id]);
 
-  // Fire upsell suggestion (contextual_pairing) once per open
+  // Fire upsell suggestion (contextual_pairing) once per open.
+  // Skipped entirely when the venue's package excludes ai.upsell, so the
+  // endpoint is not called at all rather than called and refused.
   useEffect(() => {
+    if (!showUpsell) return;
     let cancelled = false;
     (async () => {
       try {
@@ -149,7 +158,7 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
     return () => {
       cancelled = true;
     };
-  }, [item.id, menuItems, venueName]);
+  }, [item.id, menuItems, venueName, showUpsell]);
 
   // Split into required (top, expanded) and optional (collapsed by default)
   const { requiredGroups, optionalGroups } = useMemo(() => {
@@ -230,7 +239,7 @@ const ItemDetailScreen = ({ item, venueId, venueName, menuItems, pricingIndex, o
     onAdd(item, quantity, Array.from(selected.values()), notes.trim());
   };
 
-  const upsellItem = upsell ? menuItems.find((m) => m.id === upsell.item_id) : null;
+  const upsellItem = showUpsell && upsell ? menuItems.find((m) => m.id === upsell.item_id) : null;
 
   const renderModifierList = (category: ModifierCategoryRow, mods: ModifierRow[]) => {
     const count = countSelectedInCategory(category.id);

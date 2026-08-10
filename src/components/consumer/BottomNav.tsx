@@ -7,6 +7,12 @@ interface BottomNavProps {
   agentName?: string;
   /** Optional custom agent icon uploaded by the venue. When set, replaces the default Spark icon. */
   agentIconUrl?: string | null;
+  /**
+   * Whether the venue's package includes AI chat ordering (`ai.chat_ordering`).
+   * When false the tab is not rendered at all; the row is `justify-around`, so
+   * the remaining three reflow evenly.
+   */
+  showChat?: boolean;
 }
 
 type IconProps = { className?: string };
@@ -47,12 +53,12 @@ const ProfileIcon = ({ className }: IconProps) => (
   </svg>
 );
 
-const BottomNav = ({ active, onNavigate, cartCount = 0, agentName, agentIconUrl }: BottomNavProps) => {
+const BottomNav = ({ active, onNavigate, cartCount = 0, agentName, agentIconUrl, showChat = true }: BottomNavProps) => {
   const chatLabel = agentName || "Chat";
 
   const tabs = [
     { id: "feed" as const, label: "Menu", Icon: MenuIcon },
-    { id: "chat" as const, label: chatLabel, Icon: SparkIcon },
+    ...(showChat ? [{ id: "chat" as const, label: chatLabel, Icon: SparkIcon }] : []),
     { id: "cart" as const, label: "Cart", Icon: CartIcon },
     { id: "profile" as const, label: "Profile", Icon: ProfileIcon },
   ];
