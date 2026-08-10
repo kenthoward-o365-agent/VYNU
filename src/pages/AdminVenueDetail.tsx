@@ -246,7 +246,7 @@ export default function AdminVenueDetail() {
     const { error } = await supabase.from("venues").update({
       name: parsed.data.name, venue_type: form.venue_type, address: parsed.data.address ?? null,
       city: parsed.data.city ?? null, state: parsed.data.state ?? null, postcode: parsed.data.postcode ?? null,
-      phone: parsed.data.phone ?? null, email: parsed.data.email ?? null,
+      phone: parsed.data.phone, email: parsed.data.email,
       group_id: form.group_id === "__none__" ? null : form.group_id,
       subscription_status: form.subscription_status,
       subscription_plan: form.subscription_plan,
@@ -380,7 +380,7 @@ export default function AdminVenueDetail() {
             <CardHeader><CardTitle>Venue Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Input placeholder="Venue name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <Input placeholder="Venue name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 <FieldError message={detailErrs.name} />
               </div>
               <Select value={form.venue_type} onValueChange={(v) => setForm({ ...form, venue_type: v })}>
@@ -407,11 +407,11 @@ export default function AdminVenueDetail() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  <Input placeholder="Phone *" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
                   <FieldError message={detailErrs.phone} />
                 </div>
                 <div>
-                  <Input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                  <Input placeholder="Email *" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                   <FieldError message={detailErrs.email} />
                 </div>
               </div>

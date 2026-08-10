@@ -57,8 +57,8 @@ export default function Onboarding() {
         _city: parsed.data.city ?? null,
         _state: form.state,
         _postcode: parsed.data.postcode ?? null,
-        _phone: parsed.data.phone ?? null,
-        _email: parsed.data.email ?? null,
+        _phone: parsed.data.phone,
+        _email: parsed.data.email,
         _display_name: user.user_metadata?.display_name || user.email || null,
       });
       if (error) throw error;
@@ -89,7 +89,7 @@ export default function Onboarding() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Input placeholder="Venue name" value={form.name} onChange={(e) => update("name", e.target.value)} required />
+                <Input placeholder="Venue name *" value={form.name} onChange={(e) => update("name", e.target.value)} />
                 <FieldError message={errs.name} />
               </div>
               <Select value={form.venue_type} onValueChange={(v) => update("venue_type", v)}>
@@ -123,11 +123,11 @@ export default function Onboarding() {
                 </div>
               </div>
               <div>
-                <Input placeholder="Phone" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
+                <Input placeholder="Phone *" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
                 <FieldError message={errs.phone} />
               </div>
               <div>
-                <Input type="email" placeholder="Contact email" value={form.email} onChange={(e) => update("email", e.target.value)} />
+                <Input type="email" placeholder="Contact email *" value={form.email} onChange={(e) => update("email", e.target.value)} />
                 <FieldError message={errs.email} />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>

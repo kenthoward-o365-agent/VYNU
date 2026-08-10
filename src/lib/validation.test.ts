@@ -19,6 +19,7 @@ import {
   signinSchema,
   smsReceiptSchema,
   checkContactPhone,
+  contactPhoneSchema,
   optionalContactPhoneSchema,
   optionalEmailSchema,
   optionalPostcodeSchema,
@@ -345,17 +346,59 @@ describe("venueDetailsSchema", () => {
     }
   });
 
-  it("requires a name", () => {
-    expect(venueDetailsSchema.safeParse({ ...valid, name: "   " }).success).toBe(false);
+  it.each(["name", "phone", "email"] as const)(
+    "requires %s — all three are diner-facing",
+    (field) => {
+      const r = venueDetailsSchema.safeParse({ ...valid, [field]: "" });
+      expect(r.success).toBe(false);
+      if (!r.success) expect(fieldErrors(r.error)[field]).toMatch(/required/i);
+    },
+  );
+
+  it.each(["name", "phone", "email"] as const)(
+    "rejects whitespace-only %s",
+    (field) => {
+      expect(venueDetailsSchema.safeParse({ ...valid, [field]: "   " }).success).toBe(false);
+    },
+  );
+
+  it("reports all three missing fields at once", () => {
+    const r = venueDetailsSchema.safeParse({ name: "", phone: "", email: "" });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(Object.keys(fieldErrors(r.error)).sort()).toEqual(["email", "name", "phone"]);
+    }
   });
 
-  it("allows contact details to be omitted entirely", () => {
-    const r = venueDetailsSchema.safeParse({ name: "Minimal Venue" });
+  it("still allows the address block to be omitted", () => {
+    // Only name/phone/email are mandatory; address, city, state and postcode
+    // stay optional.
+    const r = venueDetailsSchema.safeParse({
+      name: "Minimal Venue",
+      phone: "02 9999 8888",
+      email: "a@b.com",
+    });
     expect(r.success).toBe(true);
     if (r.success) {
-      expect(r.data.phone).toBeUndefined();
-      expect(r.data.email).toBeUndefined();
+      expect(r.data.address).toBeUndefined();
+      expect(r.data.postcode).toBeUndefined();
     }
+  });
+});
+
+describe("contactPhoneSchema (required variant)", () => {
+  it("rejects blank with a required message, not a format message", () => {
+    const r = contactPhoneSchema.safeParse("");
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0].message).toMatch(/required/i);
+  });
+
+  it("still rejects a non-phone", () => {
+    expect(contactPhoneSchema.safeParse("hello").success).toBe(false);
+  });
+
+  it("accepts and preserves a valid number", () => {
+    expect(contactPhoneSchema.parse("(02) 9999 8888")).toBe("(02) 9999 8888");
   });
 });
 

@@ -206,8 +206,8 @@ export default function VenueSettings() {
       city: parsed.data.city ?? null,
       state: parsed.data.state ?? null,
       postcode: parsed.data.postcode ?? null,
-      phone: parsed.data.phone ?? null,
-      email: parsed.data.email ?? null,
+      phone: parsed.data.phone,
+      email: parsed.data.email,
     }).eq("id", venue.id);
     if (error) toast.error(error.message);
     else { toast.success("Settings saved"); await refetch(); }
@@ -431,7 +431,7 @@ export default function VenueSettings() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Input placeholder="Venue name" value={form.name} onChange={(e) => update("name", e.target.value)} />
+                <Input placeholder="Venue name *" value={form.name} onChange={(e) => update("name", e.target.value)} />
                 <FieldError message={formErrs.name} />
               </div>
               <Select value={form.venue_type} onValueChange={(v) => update("venue_type", v)}>
@@ -457,11 +457,11 @@ export default function VenueSettings() {
                 </div>
               </div>
               <div>
-                <Input placeholder="Phone" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
+                <Input placeholder="Phone *" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
                 <FieldError message={formErrs.phone} />
               </div>
               <div>
-                <Input type="email" placeholder="Email" value={form.email} onChange={(e) => update("email", e.target.value)} />
+                <Input type="email" placeholder="Email *" value={form.email} onChange={(e) => update("email", e.target.value)} />
                 <FieldError message={formErrs.email} />
               </div>
               <Button onClick={save} disabled={loading}>{loading ? "Saving..." : "Save Changes"}</Button>

@@ -181,7 +181,18 @@ const contactPhoneRefinement = (v: string, ctx: z.RefinementCtx) => {
   return checked;
 };
 
-/** Contact phone, kept as typed. Blank is fine; anything entered must be valid. */
+/** Contact phone, kept as typed. Required — blank is rejected. */
+export const contactPhoneSchema = z
+  .string()
+  .trim()
+  .min(1, "Phone number is required")
+  .transform(contactPhoneRefinement);
+
+/**
+ * Contact phone, kept as typed. Blank is fine; anything entered must be valid.
+ * Still used for diner rows, where staff often hold a number or an email but
+ * not both.
+ */
 export const optionalContactPhoneSchema = z
   .string()
   .trim()
@@ -260,6 +271,15 @@ export const httpUrlSchema = z
  * edited: the admin Create Venue dialog, the admin venue detail page, the
  * operator's own Settings page, and first-run Onboarding. They wrote to the same
  * columns with four different (or absent) sets of rules before this.
+ *
+ * Name, phone and email are mandatory. All three are diner-facing — they render
+ * on the venue's landing page — so a venue with no contact number is not a
+ * useful record. Note the `venues` columns stay nullable and rows created before
+ * this rule may hold nulls; the consequence is that editing such a venue now
+ * requires filling in the missing contact details before any other change to it
+ * can be saved.
+ *
+ * Address, city, state and postcode remain optional.
  */
 export const venueDetailsSchema = z.object({
   name: nameSchema("Venue name"),
@@ -267,8 +287,8 @@ export const venueDetailsSchema = z.object({
   city: optionalTextSchema("City", 80),
   state: optionalTextSchema("State", 40),
   postcode: optionalPostcodeSchema,
-  phone: optionalContactPhoneSchema,
-  email: optionalEmailSchema,
+  phone: contactPhoneSchema,
+  email: emailSchema,
 });
 
 /**

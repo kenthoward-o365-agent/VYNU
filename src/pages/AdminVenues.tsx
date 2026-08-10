@@ -161,8 +161,8 @@ export default function AdminVenues() {
       state: parsed.data.state ?? null,
       address: parsed.data.address ?? null,
       postcode: parsed.data.postcode ?? null,
-      phone: parsed.data.phone ?? null,
-      email: parsed.data.email ?? null,
+      phone: parsed.data.phone,
+      email: parsed.data.email,
       group_id: groupId,
       subscription_status: "trial",
       subscription_plan: "basic",
@@ -204,7 +204,7 @@ export default function AdminVenues() {
             <DialogHeader><DialogTitle>Create New Venue</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label>Venue Name</Label>
+                <Label>Venue Name *</Label>
                 <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. The Corner Café" className="mt-1" />
                 <FieldError message={formErrs.name} />
               </div>
@@ -247,11 +247,11 @@ export default function AdminVenues() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  <Input placeholder="Phone *" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
                   <FieldError message={formErrs.phone} />
                 </div>
                 <div>
-                  <Input placeholder="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                  <Input placeholder="Email *" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                   <FieldError message={formErrs.email} />
                 </div>
               </div>
