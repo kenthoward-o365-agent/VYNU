@@ -17,7 +17,7 @@ export function HeroSection({
   children,
 }: HeroSectionProps) {
   return (
-    <section className="relative bg-foreground text-background overflow-hidden">
+    <section className="relative bg-[hsl(203,42%,9%)] text-foreground overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-[hsl(203,42%,16%)] via-[hsl(203,42%,12%)] to-[hsl(203,42%,9%)]" />
       <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_right,hsl(198,70%,55%),transparent_40%)]" />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative pt-32 pb-20 lg:pt-40 lg:pb-28">
@@ -25,7 +25,7 @@ export function HeroSection({
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
             {headline}
           </h1>
-          <p className="text-lg sm:text-xl text-background/80 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg sm:text-xl text-foreground/80 max-w-2xl mx-auto leading-relaxed">
             {subheadline}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -36,7 +36,7 @@ export function HeroSection({
               </a>
             </Button>
             {secondaryCta && (
-              <Button size="lg" variant="outline" className="border-background/30 text-background hover:bg-background/10" asChild>
+              <Button size="lg" variant="outline" className="border-foreground/30 text-foreground hover:bg-foreground/10" asChild>
                 <a href={secondaryCta.href}>{secondaryCta.label}</a>
               </Button>
             )}
