@@ -27,6 +27,13 @@ import IdleTimeoutModal from "@/components/consumer/IdleTimeoutModal";
 import DinerResumeGate from "@/components/consumer/DinerResumeGate";
 import { readDinerVisit, writeDinerVisit, clearDinerVisit } from "@/lib/diner-visit";
 import { lastOrderKey } from "@/lib/consumer-order-storage";
+import {
+  OPEN_ORDER_STATUSES,
+  TERMINAL_ORDER_STATUSES,
+  isOrderPaid,
+  showsProgressTracker,
+  showsReceipt,
+} from "@/lib/order-confirmation";
 
 interface VenueInfo {
   id: string;
@@ -62,7 +69,13 @@ interface MenuCategory {
 
 interface ActiveOrder {
   id: string;
+  /** Fulfilment progress, owned by venue staff. Not a payment signal. */
   status: "received" | "preparing" | "ready" | "served" | "paid" | "cancelled" | "refunded";
+  /**
+   * Whether the money has moved, stamped server-side by adyen-payment. This —
+   * not `status` — is what gates the receipt (HLRDRNW-19).
+   */
+  payment_status?: string | null;
   total: number;
   created_at: string;
   extra_wait_minutes?: number;
@@ -71,8 +84,6 @@ interface ActiveOrder {
 }
 
 
-const OPEN_ORDER_STATUSES: ActiveOrder["status"][] = ["received", "preparing", "ready"];
-const TERMINAL_ORDER_STATUSES = new Set<ActiveOrder["status"]>(["paid", "cancelled", "refunded"]);
 
 const ConsumerOrder = () => {
   const { venueId, tableId } = useParams<{ venueId: string; tableId: string }>();
@@ -343,6 +354,7 @@ const ConsumerOrder = () => {
           setActiveOrder({
             id: row.id,
             status: row.status,
+            payment_status: row.payment_status ?? null,
             total: Number(row.total) || 0,
             created_at: row.created_at,
             extra_wait_minutes: row.extra_wait_minutes ?? 0,
@@ -366,7 +378,7 @@ const ConsumerOrder = () => {
 
       const { data: openOrder } = await supabase
         .from("orders")
-        .select("id, status, total, created_at")
+        .select("id, status, payment_status, total, created_at")
         .eq("venue_id", venueId)
         .or(customerFilters.map((id) => `customer_id.eq.${id}`).join(","))
         .in("status", OPEN_ORDER_STATUSES)
@@ -378,6 +390,7 @@ const ConsumerOrder = () => {
         setActiveOrder({
           id: openOrder.id,
           status: openOrder.status,
+          payment_status: (openOrder as { payment_status?: string | null }).payment_status ?? null,
           total: Number(openOrder.total) || 0,
           created_at: openOrder.created_at,
         });
@@ -565,15 +578,18 @@ const ConsumerOrder = () => {
     setCart((prev) => prev.filter((c) => c.id !== id));
   };
 
-  const handleOrderPlaced = (orderId: string) => {
-    const cartTotal = cart.reduce((sum, item) => {
-      const perUnit = item.price + item.modifiers.reduce((s, m) => s + (m.price || 0), 0);
-      return sum + perUnit * item.quantity;
-    }, 0);
+  const handleOrderPlaced = (orderId: string, placed: { total: number; paid: boolean }) => {
     setActiveOrder({
       id: orderId,
+      // Fulfilment starts at 'received' whether or not the diner has paid — the
+      // kitchen has not touched it yet. Payment is a separate axis.
       status: "received",
-      total: cartTotal,
+      // Taken from the checkout rather than re-derived from the cart: the cart
+      // sum excludes the tip that went onto the order, and the confirmation
+      // presents this as "total paid". The poll reconciles it either way, but
+      // the receipt renders before the first tick.
+      payment_status: placed.paid ? "paid" : "unpaid",
+      total: placed.total,
       created_at: new Date().toISOString(),
     });
     if (venueId && tableId) {
@@ -609,6 +625,9 @@ const ConsumerOrder = () => {
   useEffect(() => {
     if (showCheckout) dinerSession.markCheckout();
   }, [showCheckout, dinerSession]);
+
+  // Server-stamped, so it survives a reload and cannot be claimed by the client.
+  const orderIsPaid = isOrderPaid(activeOrder);
 
   if (loading) {
     return (
@@ -694,8 +713,26 @@ const ConsumerOrder = () => {
 
   return (
     <ConsumerLayout>
-      {/* Receipt view when paid */}
-      {activeOrder && activeOrder.status === "paid" && venue && (
+      {/* Active Order Status — the "what happens next" half of the confirmation.
+          Rendered above the receipt so a paid diner sees progress first, then
+          the tax invoice. */}
+      {activeOrder && showsProgressTracker(activeOrder) && (
+        <OrderStatus
+          orderId={activeOrder.id}
+          status={activeOrder.status as "received" | "preparing" | "ready" | "served" | "paid" | "cancelled"}
+          total={activeOrder.total}
+          createdAt={activeOrder.created_at}
+          extraWaitMinutes={activeOrder.extra_wait_minutes ?? 0}
+          serviceMode={(activeOrder.service_mode as "table_delivery" | "counter_pickup" | null) ?? undefined}
+          pickupLocation={activeOrder.pickup_location ?? undefined}
+          alreadyPaid={orderIsPaid}
+        />
+      )}
+
+      {/* Receipt / tax invoice, gated on payment rather than on fulfilment.
+          orders.status is staff-owned and stays 'received' after the diner pays,
+          so keying off it meant this never rendered (HLRDRNW-19). */}
+      {showsReceipt(activeOrder) && activeOrder && venue && (
         <>
           <ReceiptView
             orderId={activeOrder.id}
@@ -726,20 +763,6 @@ const ConsumerOrder = () => {
           onJoin={() => {}}
           onDismiss={() => setShowOneTapLoyalty(false)}
           onJoined={() => setShowOneTapLoyalty(false)}
-        />
-      )}
-
-      {/* Active Order Status */}
-      {activeOrder && OPEN_ORDER_STATUSES.includes(activeOrder.status) && activeOrder.status !== "refunded" && (
-        <OrderStatus
-          orderId={activeOrder.id}
-          status={activeOrder.status as "received" | "preparing" | "ready" | "served" | "paid" | "cancelled"}
-          total={activeOrder.total}
-          createdAt={activeOrder.created_at}
-          extraWaitMinutes={activeOrder.extra_wait_minutes ?? 0}
-          serviceMode={(activeOrder.service_mode as "table_delivery" | "counter_pickup" | null) ?? undefined}
-          pickupLocation={activeOrder.pickup_location ?? undefined}
-
         />
       )}
 

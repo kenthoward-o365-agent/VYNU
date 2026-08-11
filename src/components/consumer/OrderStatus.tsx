@@ -14,6 +14,11 @@ interface OrderStatusProps {
   serviceMode?: "table_delivery" | "counter_pickup";
   /** Where to collect from when serviceMode is counter_pickup (e.g. "Main Bar"). */
   pickupLocation?: string;
+  /**
+   * The diner has already paid (server-stamped). Suppresses the "Pay Now"
+   * call to action and states so, so a paid diner is never asked to pay twice.
+   */
+  alreadyPaid?: boolean;
 }
 
 const steps: { status: Status; icon: typeof Clock; label: string }[] = [
@@ -32,6 +37,7 @@ const OrderStatus = ({
   extraWaitMinutes = 0,
   serviceMode = "table_delivery",
   pickupLocation,
+  alreadyPaid = false,
 }: OrderStatusProps) => {
   const currentIdx = statusOrder.indexOf(status);
   const isPickup = serviceMode === "counter_pickup";
@@ -56,10 +62,17 @@ const OrderStatus = ({
             <p className="text-muted-foreground text-xs">
               {new Date(createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </p>
+            {/* AC2 — say what happens next, not just that something happened. */}
             {isPickup && status !== "ready" && (
               <p className="text-muted-foreground text-xs mt-1 flex items-center gap-1">
                 <Store className="h-3 w-3" />
                 Collect from {collectAt} — we'll text you when it's ready
+              </p>
+            )}
+            {!isPickup && status !== "ready" && (
+              <p className="text-muted-foreground text-xs mt-1 flex items-center gap-1">
+                <HandPlatter className="h-3 w-3" />
+                Sent to the venue — we'll bring it to your table
               </p>
             )}
             {extraWaitMinutes > 0 && (
@@ -68,7 +81,14 @@ const OrderStatus = ({
               </p>
             )}
           </div>
-          <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
+          <div className="text-right shrink-0">
+            <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
+            {alreadyPaid && (
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-primary/80 leading-tight">
+                Paid
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center justify-between relative">
@@ -122,7 +142,7 @@ const OrderStatus = ({
           </div>
         )}
 
-        {status === "served" && (
+        {status === "served" && !alreadyPaid && (
           <Button className="w-full mt-6 rounded-xl h-12 gap-2">
             <CreditCard className="h-4 w-4" />
             Pay Now — ${total.toFixed(2)}

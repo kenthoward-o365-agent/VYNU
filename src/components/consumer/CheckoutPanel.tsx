@@ -49,7 +49,13 @@ interface CheckoutPanelProps {
   joinedSessionId?: string | null;
   groupDisplayName?: string | null;
   onBack: () => void;
-  onOrderPlaced: (orderId: string) => void;
+  /**
+   * `total` is the amount actually written to the order (cart + tip), not the
+   * cart subtotal — the confirmation shows it as "total paid". `paid` says
+   * whether money moved now: false for a round added to an open tab, or when
+   * the venue has payments disabled.
+   */
+  onOrderPlaced: (orderId: string, placed: { total: number; paid: boolean }) => void;
 }
 
 const CheckoutPanel = ({
@@ -326,7 +332,12 @@ const CheckoutPanel = ({
         session_id: sessionIdToStamp,
         session_mode: sessionIdToStamp ? "group" : "solo",
         tab_id: opts?.tabId ?? null,
-        payment_status: opts?.tabId ? "unpaid" : "paid",
+        // HLRDRNW-19: always 'unpaid' at insert. This row is created BEFORE the
+        // payment is attempted, so claiming 'paid' here marked refused payments
+        // as paid (and RLS denies the client any later correction). adyen-payment
+        // flips it to 'paid' under the service role once Adyen authorises; tab
+        // rounds are flipped by settle_tab when the tab is settled.
+        payment_status: "unpaid",
       } as any);
     if (orderError) throw orderError;
 
@@ -355,7 +366,12 @@ const CheckoutPanel = ({
   };
 
   const finalizePaidOrder = async (orderId: string, isMock = false) => {
-    await supabase.from("orders").update({ status: "paid" as any }).eq("id", orderId);
+    // No status write here. orders.status is fulfilment progress owned by venue
+    // staff, and RLS denies the diner any UPDATE on orders anyway — the write
+    // this used to make (status = 'paid') silently failed on every order, which
+    // is why the receipt never appeared. payment_status is stamped server-side
+    // by adyen-payment on authorisation; the poll below picks it up, and the
+    // `paid: true` flag on onOrderPlaced renders the receipt immediately.
     if (dinerId && !isMock) {
       const taxResult = calculateTaxes(total, venueTaxes);
       await supabase
@@ -389,7 +405,7 @@ const CheckoutPanel = ({
     } else {
       toast.success("Payment successful! 🎉");
     }
-    onOrderPlaced(orderId);
+    onOrderPlaced(orderId, { total: total + tipAmount, paid: true });
   };
 
   // ---------- Open tab ----------
@@ -413,7 +429,7 @@ const CheckoutPanel = ({
   const addRoundToTab = async (tabId: string) => {
     const orderId = await createOrderRow({ tabId });
     toast.success("Added to your tab — pay when you're done");
-    onOrderPlaced(orderId);
+    onOrderPlaced(orderId, { total: total + tipAmount, paid: false });
     return orderId;
   };
 
@@ -745,7 +761,9 @@ const CheckoutPanel = ({
             .maybeSingle();
         }
         toast.success("Order placed! 🎉");
-        onOrderPlaced(orderId);
+        // Payments disabled for this venue — nothing was charged, so this is not
+        // a paid confirmation; the diner settles with staff.
+        onOrderPlaced(orderId, { total: total + tipAmount, paid: false });
       }
     } catch (err: any) {
       console.error("Checkout error:", err);

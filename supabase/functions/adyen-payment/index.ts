@@ -555,13 +555,32 @@ Deno.serve(async (req) => {
       // If authorised, stamp the order with the PSP reference and (when in mock
       // mode) flag it so operators see a clear DEMO badge instead of treating
       // it as real revenue.
+      //
+      // HLRDRNW-19: payment_status is stamped HERE and nowhere else. The browser
+      // used to insert the order with payment_status='paid' before the payment
+      // was even attempted, and then tried to write status='paid' itself — a
+      // write RLS denies. So the row claimed paid on a refusal and never showed
+      // as paid on success. The amount was already bound to the
+      // server-authoritative order total by IVA-01 above, so authorisation here
+      // is the only place that knows the money actually moved.
       if (result.resultCode === "Authorised" && reference?.startsWith("order_")) {
         const orderId = reference.slice("order_".length);
-        const stamp: any = {};
+        const stamp: any = { payment_status: "paid" };
         if (result.pspReference) stamp.payment_psp_reference = result.pspReference;
         if (isMock) stamp.payment_is_mock = true;
-        if (Object.keys(stamp).length > 0) {
-          await adminClient.from("orders").update(stamp).eq("id", orderId);
+        const { error: stampErr } = await adminClient
+          .from("orders")
+          .update(stamp)
+          .eq("id", orderId);
+        // The card has been charged at this point. Log loudly rather than
+        // failing the response: the diner must still get their confirmation,
+        // and a stamp that did not land is a reconciliation problem
+        // (HLRDRNW-29), not a reason to tell them the payment failed.
+        if (stampErr) {
+          console.error(
+            `adyen create_payment: order ${orderId} authorised but payment_status stamp failed`,
+            stampErr,
+          );
         }
       }
 
