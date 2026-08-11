@@ -460,17 +460,30 @@ Deno.serve(async (req) => {
             storedPaymentMethodId: stored_card_token,
           };
           paymentRequest.shopperReference = shopper_reference;
-          paymentRequest.shopperInteraction = "ContAuth";
+          // The diner is at the checkout choosing this saved card, so the
+          // transaction is shopper-initiated: Ecommerce, not ContAuth. ContAuth
+          // declares a merchant-initiated charge with the shopper absent (e.g. a
+          // subscription renewal), which mis-states the transaction to the issuer:
+          // it can skip SCA where it should apply, shift chargeback liability away
+          // from the issuer, and be refused by issuers expecting a prior
+          // shopper-initiated payment on file.
+          paymentRequest.shopperInteraction = "Ecommerce";
           paymentRequest.recurringProcessingModel = "CardOnFile";
         } else if (payment_method) {
           // Drop-in flow — pass through whatever Drop-in produced
           // (encrypted card, applepay token, googlepay token, etc.)
           paymentRequest.paymentMethod = payment_method;
           if (shopper_reference) paymentRequest.shopperReference = shopper_reference;
+          // The shopper is present and entering their card now, so this is always
+          // an Ecommerce interaction. Adyen requires shopperInteraction whenever a
+          // shopperReference is supplied — and we always supply one — so omitting
+          // it refused every payment with "217 Field 'shopperInteraction' is
+          // missing or not valid". It used to be set only on the store-card path,
+          // which meant no guest payment (store_card=false) could ever succeed.
+          paymentRequest.shopperInteraction = "Ecommerce";
           if (store_card && shopper_reference) {
             paymentRequest.storePaymentMethod = true;
             paymentRequest.recurringProcessingModel = "CardOnFile";
-            paymentRequest.shopperInteraction = "Ecommerce";
           }
         } else {
           return json({ error: "No payment method provided" }, 400);
@@ -635,10 +648,16 @@ Deno.serve(async (req) => {
         return json({ resultCode: "Authorised", pspReference: `MOCK_3DS_${Date.now()}`, mock_mode: true });
       }
       if (!apiKey || !merchantAccount) return json({ error: "Not configured" }, 400);
+      // `paymentData` ties this completion back to the original /payments call.
+      // Without it Adyen cannot resolve the challenge, so every 3DS redirect and
+      // challenge flow stalled after the shopper authenticated. Forwarded only
+      // when present — native-3DS completions may omit it.
+      const detailsRequest: any = { details: body.details };
+      if (body.payment_data) detailsRequest.paymentData = body.payment_data;
       const resp = await fetch(`${baseUrl}/payments/details`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
-        body: JSON.stringify({ details: body.details }),
+        body: JSON.stringify(detailsRequest),
       });
       const result = await resp.json();
       const { additionalData: _ad2, ...safeResult } = (result ?? {}) as Record<string, unknown>;
