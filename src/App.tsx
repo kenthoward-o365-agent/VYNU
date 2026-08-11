@@ -55,6 +55,9 @@ import OrderSettings from "@/pages/OrderSettings";
 import SelfOnboard from "@/pages/SelfOnboard";
 import VenueBilling from "@/pages/VenueBilling";
 import OAuthConsent from "@/pages/OAuthConsent";
+import MarketingIndex from "@/pages/Index";
+import Compare from "@/pages/Compare";
+import Features from "@/pages/Features";
 
 const queryClient = new QueryClient({
   defaultOptions: {
