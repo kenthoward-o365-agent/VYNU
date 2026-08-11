@@ -48,6 +48,7 @@ AS $function$
 $function$;
 
 COMMENT ON FUNCTION public.get_diner_order_status(uuid) IS
-  'Diner-facing order status for the confirmation/tracking screen. SECURITY DEFINER because guests can read neither public.orders nor public.venues; returns one order''s presentation fields only, keyed on an unguessable order id. payment_status is server-stamped by adyen-payment and is what the receipt gates on (HLRDRNW-19).';
+  'Diner-facing order status for the confirmation/tracking screen. SECURITY DEFINER because guests cannot read public.orders directly; returns one order''s presentation fields only, keyed on an unguessable order id. payment_status is server-stamped by adyen-payment and is what the receipt gates on (HLRDRNW-19).';
 
+REVOKE ALL ON FUNCTION public.get_diner_order_status(uuid) FROM public;
 GRANT EXECUTE ON FUNCTION public.get_diner_order_status(uuid) TO anon, authenticated, service_role;
