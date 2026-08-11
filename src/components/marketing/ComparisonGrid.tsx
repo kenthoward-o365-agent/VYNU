@@ -6,30 +6,19 @@ type CellValue = "tick" | "dash" | "limited" | "cross";
 
 interface ComparisonRow {
   feature: string;
+  detail: string;
   values: Record<string, CellValue>;
+  notes?: Record<string, string>;
 }
 
-const competitors = ["H&L OrderNOW", "me&u", "Mr Yum", "Chewzie", "Square / Toast"];
+interface ComparisonCategory {
+  category: string;
+  summary: string;
+  rows: ComparisonRow[];
+}
 
-const rows: ComparisonRow[] = [
-  { feature: "Agentic AI ordering (chat replaces the menu)", values: { "H&L OrderNOW": "tick", meu: "dash", "Mr Yum": "dash", Chewzie: "dash", "Square / Toast": "dash" } },
-  { feature: "AI instant campaigns (email/SMS/push/in-app)", values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "dash", "Square / Toast": "dash" } },
-  { feature: "Diner CRM with birthdays, RFM & AI lookalike segments", values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "dash", "Square / Toast": "dash" } },
-  { feature: "Built-in PayFac — Apple Pay, Google Pay, stored cards", values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "dash", "Square / Toast": "tick" } },
-  { feature: "Works fully standalone (no POS required)", values: { "H&L OrderNOW": "tick", meu: "tick", "Mr Yum": "tick", Chewzie: "tick", "Square / Toast": "limited" } },
-  { feature: "Native H&L POS integration", values: { "H&L OrderNOW": "tick", meu: "dash", "Mr Yum": "dash", Chewzie: "dash", "Square / Toast": "dash" } },
-  { feature: "Multi-venue group loyalty", values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "dash", "Square / Toast": "limited" } },
-  { feature: "Order throttling & kitchen pacing", values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "dash", "Square / Toast": "limited" } },
-  { feature: "Permanent QR sticker URLs (never re-print)", values: { "H&L OrderNOW": "tick", meu: "tick", "Mr Yum": "tick", Chewzie: "dash", "Square / Toast": "dash" } },
-  { feature: "AI revenue attribution tile", values: { "H&L OrderNOW": "tick", meu: "dash", "Mr Yum": "dash", Chewzie: "dash", "Square / Toast": "dash" } },
-  { feature: "Australian support, data residency & AUD pricing", values: { "H&L OrderNOW": "tick", meu: "tick", "Mr Yum": "limited", Chewzie: "tick", "Square / Toast": "limited" } },
-  { feature: "Pay-per-order pricing (no SaaS lock-in)", values: { "H&L OrderNOW": "tick", meu: "dash", "Mr Yum": "dash", Chewzie: "dash", "Square / Toast": "dash" } },
-  { feature: "PCI DSS SAQ-A scope", values: { "H&L OrderNOW": "tick", meu: "tick", "Mr Yum": "tick", Chewzie: "tick", "Square / Toast": "tick" } },
-  { feature: "White-label landing pages per venue", values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "dash", "Square / Toast": "dash" } },
-  { feature: "AI co-pilot for managers", values: { "H&L OrderNOW": "tick", meu: "dash", "Mr Yum": "dash", Chewzie: "dash", "Square / Toast": "dash" } },
-];
+const competitors = ["H&L OrderNOW", "me&u", "Mr Yum", "Chewzie", "Square / Toast"] as const;
 
-// Map the value keys to the display competitor names.
 const keyForCompetitor: Record<string, string> = {
   "H&L OrderNOW": "H&L OrderNOW",
   "me&u": "meu",
@@ -37,6 +26,268 @@ const keyForCompetitor: Record<string, string> = {
   Chewzie: "Chewzie",
   "Square / Toast": "Square / Toast",
 };
+
+const categories: ComparisonCategory[] = [
+  {
+    category: "AI & ordering experience",
+    summary:
+      "Every platform in the category renders a digital menu. OrderNOW replaces the menu with an intent conversation — the diner asks for what they feel like and the agent builds the order, handles allergens and upsells in the same breath.",
+    rows: [
+      {
+        feature: "Agentic AI ordering (chat replaces the menu)",
+        detail:
+          "Diner types or speaks intent (\"something spicy under $30, no dairy\") and the agent assembles a valid cart with modifiers.",
+        values: { "H&L OrderNOW": "tick", meu: "dash", "Mr Yum": "dash", Chewzie: "dash", "Square / Toast": "dash" },
+        notes: {
+          meu: "Category-and-tile browsing with search; no conversational ordering.",
+          "Mr Yum": "Rich media menu with filters; browsing, not intent.",
+          Chewzie: "Fast tap-to-order menu; no AI layer.",
+          "Square / Toast": "Standard online-ordering menu UI.",
+        },
+      },
+      {
+        feature: "AI upsell at the point of intent",
+        detail:
+          "Upsells are generated per cart against margin and stock, not a static \"customers also bought\" shelf.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "limited", "Square / Toast": "limited" },
+        notes: {
+          meu: "Rule-based add-on prompts configured per item.",
+          "Mr Yum": "Manually curated recommended items.",
+          Chewzie: "Simple add-on prompts.",
+          "Square / Toast": "Static modifier and combo prompts.",
+        },
+      },
+      {
+        feature: "TikTok-style visual discovery feed",
+        detail: "Vertical scroll of dish media that adds straight to cart.",
+        values: { "H&L OrderNOW": "tick", meu: "dash", "Mr Yum": "limited", Chewzie: "dash", "Square / Toast": "dash" },
+        notes: { "Mr Yum": "Strong photo/video menus, but a grid rather than a feed." },
+      },
+      {
+        feature: "No diner app download required",
+        detail: "Scan to order in the mobile browser; loyalty and history persist without an install.",
+        values: { "H&L OrderNOW": "tick", meu: "tick", "Mr Yum": "tick", Chewzie: "tick", "Square / Toast": "tick" },
+      },
+      {
+        feature: "Allergen & dietary handling in the order flow",
+        detail: "Dietary constraints are held for the whole session and applied to every suggestion.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "tick", Chewzie: "limited", "Square / Toast": "limited" },
+        notes: { meu: "Per-item dietary tags and filters.", Chewzie: "Item tags only.", "Square / Toast": "Item tags only." },
+      },
+    ],
+  },
+  {
+    category: "Marketing, CRM & loyalty",
+    summary:
+      "The QR platforms collect diner data; few of them let you act on it. OrderNOW ships the CRM, the segments and the campaign engine in the same product, and attributes revenue back to the AI that generated it.",
+    rows: [
+      {
+        feature: "AI instant campaigns (email/SMS/push/in-app)",
+        detail: "Describe the promotion in a sentence; the AI writes, segments, schedules and applies send guardrails.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "dash", "Square / Toast": "limited" },
+        notes: {
+          meu: "Marketing tools exist but campaigns are hand-built.",
+          "Mr Yum": "Campaign tooling via the Lightspeed suite; manual authoring.",
+          "Square / Toast": "Square Marketing / Toast Marketing — template-based, no AI authoring.",
+        },
+      },
+      {
+        feature: "Diner CRM with birthdays, RFM & AI lookalike segments",
+        detail: "Birthday captured at signup, RFM tiers computed nightly, lookalike segments generated by the model.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "dash", "Square / Toast": "limited" },
+        notes: {
+          meu: "Diner database with basic segments.",
+          "Mr Yum": "Customer lists and basic segmentation.",
+          "Square / Toast": "Customer directory with rule-based groups.",
+        },
+      },
+      {
+        feature: "Multi-venue group loyalty (shared members & points)",
+        detail:
+          "Turn loyalty on at the parent company and every child venue inherits it — one member, one balance, earn and burn anywhere in the group.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "dash", "Square / Toast": "limited" },
+        notes: {
+          meu: "Venue-scoped loyalty; group sharing is not standard.",
+          "Mr Yum": "Loyalty per venue.",
+          "Square / Toast": "Loyalty per location or per Square account, with limits across brands.",
+        },
+      },
+      {
+        feature: "Pub+ / Eagle Eye AIR loyalty integration",
+        detail: "Native connector to the Eagle Eye AIR platform behind ALH's Pub+ program, including physical card scanning.",
+        values: { "H&L OrderNOW": "tick", meu: "dash", "Mr Yum": "dash", Chewzie: "dash", "Square / Toast": "dash" },
+      },
+      {
+        feature: "AI revenue attribution tile",
+        detail: "Every AI-influenced order is tagged and totalled so you can see exactly what the AI earned this month.",
+        values: { "H&L OrderNOW": "tick", meu: "dash", "Mr Yum": "dash", Chewzie: "dash", "Square / Toast": "dash" },
+      },
+      {
+        feature: "White-label landing pages per venue",
+        detail: "Editable venue landing page with AI build-from-URL, on your own branding.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "dash", "Square / Toast": "limited" },
+        notes: {
+          meu: "Branded venue pages within the me&u shell.",
+          "Mr Yum": "Branded venue pages within the Mr Yum shell.",
+          "Square / Toast": "Site builder, separate product.",
+        },
+      },
+    ],
+  },
+  {
+    category: "Payments",
+    summary:
+      "H&L Pay is built in, not brokered. That means one statement, one settlement, AU-compliant surcharging, and no handoff to a third-party processor mid-checkout.",
+    rows: [
+      {
+        feature: "Built-in PayFac — Apple Pay, Google Pay, stored cards",
+        detail: "Payments are part of the platform, not a bolt-on gateway relationship.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "limited", "Square / Toast": "tick" },
+        notes: {
+          meu: "Processing via third-party acquirers.",
+          "Mr Yum": "Processing via Lightspeed Payments / third parties.",
+          Chewzie: "Processing via third-party gateway.",
+        },
+      },
+      {
+        feature: "Open tabs with optional card pre-auth",
+        detail: "Run a tab at the bar, pre-auth optional per zone, settle at the end of the night.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "dash", Chewzie: "limited", "Square / Toast": "limited" },
+        notes: {
+          meu: "Bar tabs supported in some configurations.",
+          Chewzie: "Tab behaviour depends on POS.",
+          "Square / Toast": "Tabs are a POS-side function, not diner-driven.",
+        },
+      },
+      {
+        feature: "Split bills & multiple tender types (incl. gift cards)",
+        detail: "Split by item, by share or by amount, and stack gift card, loyalty points and card on one bill.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "limited", "Square / Toast": "limited" },
+        notes: {
+          meu: "Split by item or evenly; single tender per payer.",
+          "Mr Yum": "Split payments supported; limited tender mixing.",
+          Chewzie: "Even split.",
+          "Square / Toast": "Mixed tenders at the POS, not in the diner flow.",
+        },
+      },
+      {
+        feature: "Smart surcharging with special dates (public holidays, events)",
+        detail: "Weekend and holiday rates, plus custom date ranges for events like the Grand Prix.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "limited", "Square / Toast": "limited" },
+        notes: {
+          meu: "Fixed weekend/holiday surcharge rules.",
+          "Mr Yum": "Fixed surcharge rules.",
+          Chewzie: "Fixed surcharge rules.",
+          "Square / Toast": "Service-charge rules, limited AU date handling.",
+        },
+      },
+      {
+        feature: "Pay-per-order pricing (no SaaS lock-in)",
+        detail: "No licence fee and no minimum term — you pay only when an order is taken.",
+        values: { "H&L OrderNOW": "tick", meu: "dash", "Mr Yum": "dash", Chewzie: "limited", "Square / Toast": "dash" },
+        notes: { Chewzie: "Low flat monthly fee per venue rather than pure per-order." },
+      },
+      {
+        feature: "PCI DSS SAQ-A scope",
+        detail: "Card data never touches venue infrastructure.",
+        values: { "H&L OrderNOW": "tick", meu: "tick", "Mr Yum": "tick", Chewzie: "tick", "Square / Toast": "tick" },
+      },
+    ],
+  },
+  {
+    category: "Operations & venue fit",
+    summary:
+      "An Australian pub is four venues in one building. Zones let the public bar, bistro, gaming lounge and rooftop each run their own menu, payment timing and service mode from a single dashboard.",
+    rows: [
+      {
+        feature: "Zones with per-area menus, payment timing & service mode",
+        detail: "Each zone sets its menu, pay-at-order vs open tab, and table service vs collect-at-bar.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "limited", "Square / Toast": "limited" },
+        notes: {
+          meu: "Multiple menus per venue; fewer per-area operational controls.",
+          "Mr Yum": "Multiple menus by area or time.",
+          Chewzie: "Menus by area.",
+          "Square / Toast": "Menus per location; area controls are POS-side.",
+        },
+      },
+      {
+        feature: "Order throttling & kitchen pacing",
+        detail: "Auto, Block and Test modes per display station, with diner-visible ETAs that reflect real queue depth.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "limited", "Square / Toast": "limited" },
+        notes: {
+          Chewzie: "Smart Docket Queue provides comparable pacing.",
+          meu: "Basic order pacing controls.",
+          "Mr Yum": "Basic pacing / prep-time controls.",
+          "Square / Toast": "Kitchen display pacing at the POS.",
+        },
+      },
+      {
+        feature: "Pickup mode with SMS + in-app 'order ready' alerts",
+        detail: "For venues that don't run food, per zone.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "limited", "Square / Toast": "tick" },
+        notes: { meu: "Pickup supported; notification depth varies.", "Mr Yum": "Pickup supported.", Chewzie: "Pickup supported." },
+      },
+      {
+        feature: "Permanent QR sticker URLs (never re-print)",
+        detail: "Table URLs are stable UUIDs — re-zone, re-menu or rebrand without new stickers.",
+        values: { "H&L OrderNOW": "tick", meu: "tick", "Mr Yum": "tick", Chewzie: "limited", "Square / Toast": "dash" },
+        notes: { Chewzie: "Stable per-table codes; reprint needed on some changes.", "Square / Toast": "Codes tied to location/menu configuration." },
+      },
+      {
+        feature: "AI co-pilot for managers",
+        detail: "In-dashboard assistant that answers operational questions and runs guided walkthroughs.",
+        values: { "H&L OrderNOW": "tick", meu: "dash", "Mr Yum": "dash", Chewzie: "dash", "Square / Toast": "limited" },
+        notes: { "Square / Toast": "Reporting assistants exist in newer releases." },
+      },
+    ],
+  },
+  {
+    category: "Platform, POS & market fit",
+    summary:
+      "OrderNOW runs standalone or as a native extension of H&L POS — the till most large Australian pub and club groups already run. Support, data and pricing are all Australian.",
+    rows: [
+      {
+        feature: "Native H&L POS integration",
+        detail: "First-party integration with H&L Exceed, not a middleware hop.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "limited", "Square / Toast": "dash" },
+        notes: {
+          meu: "Via Doshii middleware.",
+          "Mr Yum": "Via Doshii middleware.",
+          Chewzie: "Via Doshii middleware.",
+          "Square / Toast": "Own POS only.",
+        },
+      },
+      {
+        feature: "Works fully standalone (no POS required)",
+        detail: "Full ordering, payments, CRM and loyalty with no till at all.",
+        values: { "H&L OrderNOW": "tick", meu: "tick", "Mr Yum": "tick", Chewzie: "tick", "Square / Toast": "limited" },
+        notes: { "Square / Toast": "Requires the vendor's own POS account." },
+      },
+      {
+        feature: "Multi-POS connectors (Doshii, Lightspeed, Square, H&L)",
+        detail: "Group migrations can run mixed estates during rollout.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "limited", "Square / Toast": "dash" },
+      },
+      {
+        feature: "Australian support, data residency & AUD pricing",
+        detail: "AU-hosted data, AU trading-hours support, AUD invoicing.",
+        values: { "H&L OrderNOW": "tick", meu: "tick", "Mr Yum": "limited", Chewzie: "tick", "Square / Toast": "limited" },
+        notes: { "Mr Yum": "AU roots, now part of a global Lightspeed org.", "Square / Toast": "Global platforms with offshore support tiers." },
+      },
+      {
+        feature: "Group-level dashboard, RBAC & audit log",
+        detail: "Parent company view across every child venue with role-based access.",
+        values: { "H&L OrderNOW": "tick", meu: "limited", "Mr Yum": "limited", Chewzie: "dash", "Square / Toast": "limited" },
+      },
+      {
+        feature: "Open API & MCP endpoints for AI agents",
+        detail: "Partner API plus a Model Context Protocol server so external agents can read menus and orders.",
+        values: { "H&L OrderNOW": "tick", meu: "dash", "Mr Yum": "dash", Chewzie: "dash", "Square / Toast": "limited" },
+        notes: { "Square / Toast": "Extensive REST APIs, no agent-native interface." },
+      },
+    ],
+  },
+];
 
 function Cell({ value }: { value: CellValue }) {
   if (value === "tick") {
@@ -74,10 +325,10 @@ function Cell({ value }: { value: CellValue }) {
 export function ComparisonGrid() {
   return (
     <div className="overflow-x-auto">
-      <Card className="min-w-[800px] border border-border/60">
+      <Card className="min-w-[900px] border border-border/60">
         <div className="grid grid-cols-6 text-sm border-b border-border/60">
           <div className="p-4 font-semibold text-foreground sticky left-0 bg-card z-10 border-r border-border/60">
-            Feature
+            Capability
           </div>
           {competitors.map((comp) => (
             <div
@@ -90,24 +341,71 @@ export function ComparisonGrid() {
             </div>
           ))}
         </div>
-        {rows.map((row) => (
-          <div
-            key={row.feature}
-            className="grid grid-cols-6 border-b border-border/60 last:border-b-0 hover:bg-muted/30 transition-colors"
-          >
-            <div className="p-4 font-medium text-foreground sticky left-0 bg-card z-10 border-r border-border/60">
-              {row.feature}
+
+        {categories.map((cat) => (
+          <div key={cat.category}>
+            <div className="bg-muted/50 border-b border-border/60 px-4 py-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-primary">
+                {cat.category}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1 max-w-3xl leading-relaxed">
+                {cat.summary}
+              </p>
             </div>
-            {competitors.map((comp) => (
-              <div key={`${row.feature}-${comp}`} className="p-4 flex items-center justify-center">
-                <Cell value={row.values[keyForCompetitor[comp]] || "dash"} />
+            {cat.rows.map((row) => (
+              <div
+                key={row.feature}
+                className="grid grid-cols-6 border-b border-border/60 hover:bg-muted/30 transition-colors"
+              >
+                <div className="p-4 sticky left-0 bg-card z-10 border-r border-border/60">
+                  <span className="font-medium text-foreground text-sm">{row.feature}</span>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{row.detail}</p>
+                </div>
+                {competitors.map((comp) => {
+                  const key = keyForCompetitor[comp];
+                  const note = row.notes?.[key];
+                  return (
+                    <div
+                      key={`${row.feature}-${comp}`}
+                      className={`p-4 flex flex-col items-center justify-start gap-2 text-center ${
+                        comp === "H&L OrderNOW" ? "bg-primary/5" : ""
+                      }`}
+                    >
+                      <Cell value={row.values[key] || "dash"} />
+                      {note && (
+                        <span className="text-[11px] leading-snug text-muted-foreground">{note}</span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
         ))}
       </Card>
-      <p className="mt-4 text-xs text-muted-foreground">
-        Competitor data is based on publicly available feature documentation and sales materials as of August 2026. Sources available on request.
+
+      <div className="mt-6 flex flex-wrap items-center gap-6 text-xs text-muted-foreground">
+        <span className="flex items-center gap-2">
+          <span className="w-5 h-5 rounded-full bg-accent/10 flex items-center justify-center">
+            <Check className="h-3 w-3 text-accent" />
+          </span>
+          Available as a core capability
+        </span>
+        <span className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-[10px]">Limited</Badge>
+          Partial, higher tier only, or via a third party
+        </span>
+        <span className="flex items-center gap-2">
+          <Minus className="h-3 w-3" />
+          Not a marketed capability
+        </span>
+      </div>
+
+      <p className="mt-4 text-xs text-muted-foreground max-w-3xl leading-relaxed">
+        Competitor assessments are based on publicly available product documentation, pricing pages and sales
+        materials as of August 2026, and on comparative work completed during OrderNOW product design. Vendors
+        ship changes frequently — we re-verify each row quarterly and will correct anything a vendor disputes.
+        Source list available on request.
       </p>
     </div>
   );
