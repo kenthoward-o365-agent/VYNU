@@ -18,6 +18,17 @@ import {
   signupSchema,
   signinSchema,
   smsReceiptSchema,
+  checkContactPhone,
+  contactPhoneSchema,
+  optionalContactPhoneSchema,
+  optionalEmailSchema,
+  optionalPostcodeSchema,
+  httpUrlSchema,
+  venueDetailsSchema,
+  staffUserSchema,
+  staffEditSchema,
+  dinerProfileSchema,
+  partnerSchema,
   fieldErrors,
   checkField,
 } from "./validation";
@@ -214,6 +225,234 @@ describe("smsReceiptSchema", () => {
 
   it("rejects a blank number", () => {
     expect(smsReceiptSchema.safeParse({ phone: "  " }).success).toBe(false);
+  });
+});
+
+describe("checkContactPhone", () => {
+  it('rejects "hello" — a venue saved with this as its phone number', () => {
+    expect(checkContactPhone("hello")).toBeNull();
+  });
+
+  it.each(["", "   ", "abc123456789", "555-CALL-NOW", "12345", "1234567890123456"])(
+    "rejects %j",
+    (v) => expect(checkContactPhone(v)).toBeNull(),
+  );
+
+  it("rejects a + that is not the first character", () => {
+    expect(checkContactPhone("0412+345678")).toBeNull();
+  });
+
+  it.each([
+    "0412 345 678",
+    "(02) 9999 8888",
+    "02 9999 8888",
+    "+61 412 345 678",
+    "1300 123 456",
+    "+1 (555) 123-4567",
+  ])("accepts %j", (v) => expect(checkContactPhone(v)).not.toBeNull());
+
+  it("keeps the number as typed rather than normalising it", () => {
+    // A venue phone is a display value and may be a landline, which
+    // normalizeAuPhone would mangle into "+0299998888".
+    expect(checkContactPhone("(02) 9999 8888")).toBe("(02) 9999 8888");
+  });
+
+  it("trims surrounding whitespace", () => {
+    expect(checkContactPhone("  0412 345 678  ")).toBe("0412 345 678");
+  });
+});
+
+describe("optionalContactPhoneSchema", () => {
+  it("treats blank as absent", () => {
+    expect(optionalContactPhoneSchema.parse("")).toBeUndefined();
+    expect(optionalContactPhoneSchema.parse(undefined)).toBeUndefined();
+  });
+
+  it("rejects a non-blank value that is not a phone number", () => {
+    expect(optionalContactPhoneSchema.safeParse("hello").success).toBe(false);
+  });
+});
+
+describe("optionalEmailSchema", () => {
+  it("treats blank as absent — venues need not have an email", () => {
+    expect(optionalEmailSchema.parse("")).toBeUndefined();
+    expect(optionalEmailSchema.parse(undefined)).toBeUndefined();
+  });
+
+  it('rejects "test" — a venue saved with this as its email', () => {
+    expect(optionalEmailSchema.safeParse("test").success).toBe(false);
+  });
+
+  it("accepts and trims a real address", () => {
+    expect(optionalEmailSchema.parse(" venue@example.com ")).toBe("venue@example.com");
+  });
+});
+
+describe("optionalPostcodeSchema", () => {
+  it.each(["abc", "12", "123456", "20 00", "1a23"])(
+    "rejects %j",
+    (v) => expect(optionalPostcodeSchema.safeParse(v).success).toBe(false),
+  );
+
+  it.each(["2000", "0800"])(
+    "accepts %j",
+    (v) => expect(optionalPostcodeSchema.safeParse(v).success).toBe(true),
+  );
+
+  it("treats blank as absent", () => {
+    expect(optionalPostcodeSchema.parse("")).toBeUndefined();
+  });
+});
+
+describe("httpUrlSchema", () => {
+  it("adds a scheme to a bare host rather than rejecting it", () => {
+    expect(httpUrlSchema.parse("partner.example.com/hook")).toBe("https://partner.example.com/hook");
+  });
+
+  it.each(["javascript:alert(1)", "data:text/html,x", "not a url", ""])(
+    "rejects %j",
+    (v) => expect(httpUrlSchema.safeParse(v).success).toBe(false),
+  );
+
+  it("keeps an explicit https URL", () => {
+    expect(httpUrlSchema.parse("https://example.com/webhook")).toBe("https://example.com/webhook");
+  });
+});
+
+describe("venueDetailsSchema", () => {
+  const valid = {
+    name: "The Corner Café",
+    address: "1 Test St",
+    city: "Sydney",
+    state: "NSW",
+    postcode: "2000",
+    phone: "02 9999 8888",
+    email: "venue@example.com",
+  };
+
+  it("accepts a fully populated venue", () => {
+    expect(venueDetailsSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("rejects the exact bad save this ticket exists for", () => {
+    // Reproduces the reported bug: a venue saved with phone "hello" and
+    // email "test" went straight into the venues table.
+    const r = venueDetailsSchema.safeParse({ ...valid, phone: "hello", email: "test" });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      const errs = fieldErrors(r.error);
+      expect(errs.phone).toMatch(/valid phone/i);
+      expect(errs.email).toMatch(/valid email/i);
+    }
+  });
+
+  it.each(["name", "phone", "email"] as const)(
+    "requires %s — all three are diner-facing",
+    (field) => {
+      const r = venueDetailsSchema.safeParse({ ...valid, [field]: "" });
+      expect(r.success).toBe(false);
+      if (!r.success) expect(fieldErrors(r.error)[field]).toMatch(/required/i);
+    },
+  );
+
+  it.each(["name", "phone", "email"] as const)(
+    "rejects whitespace-only %s",
+    (field) => {
+      expect(venueDetailsSchema.safeParse({ ...valid, [field]: "   " }).success).toBe(false);
+    },
+  );
+
+  it("reports all three missing fields at once", () => {
+    const r = venueDetailsSchema.safeParse({ name: "", phone: "", email: "" });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(Object.keys(fieldErrors(r.error)).sort()).toEqual(["email", "name", "phone"]);
+    }
+  });
+
+  it("still allows the address block to be omitted", () => {
+    // Only name/phone/email are mandatory; address, city, state and postcode
+    // stay optional.
+    const r = venueDetailsSchema.safeParse({
+      name: "Minimal Venue",
+      phone: "02 9999 8888",
+      email: "a@b.com",
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.address).toBeUndefined();
+      expect(r.data.postcode).toBeUndefined();
+    }
+  });
+});
+
+describe("contactPhoneSchema (required variant)", () => {
+  it("rejects blank with a required message, not a format message", () => {
+    const r = contactPhoneSchema.safeParse("");
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0].message).toMatch(/required/i);
+  });
+
+  it("still rejects a non-phone", () => {
+    expect(contactPhoneSchema.safeParse("hello").success).toBe(false);
+  });
+
+  it("accepts and preserves a valid number", () => {
+    expect(contactPhoneSchema.parse("(02) 9999 8888")).toBe("(02) 9999 8888");
+  });
+});
+
+describe("staffUserSchema", () => {
+  it("rejects an invalid email", () => {
+    expect(staffUserSchema.safeParse({ email: "test", password: "longenough1" }).success).toBe(false);
+  });
+
+  it("rejects a password under 8 characters", () => {
+    expect(staffUserSchema.safeParse({ email: "a@b.com", password: "short" }).success).toBe(false);
+  });
+
+  it("does NOT apply the diner signup strength rules", () => {
+    // Deliberate: tightening this would change who an admin can create.
+    expect(staffUserSchema.safeParse({ email: "a@b.com", password: "alllowercase" }).success).toBe(true);
+  });
+});
+
+describe("staffEditSchema", () => {
+  it("treats a blank password as leave-unchanged", () => {
+    expect(staffEditSchema.safeParse({ display_name: "Jane", password: "" }).success).toBe(true);
+  });
+
+  it("rejects a short password when one is being set", () => {
+    expect(staffEditSchema.safeParse({ display_name: "Jane", password: "short" }).success).toBe(false);
+  });
+});
+
+describe("dinerProfileSchema", () => {
+  it("allows a diner with a phone and no email, and the reverse", () => {
+    expect(dinerProfileSchema.safeParse({ phone: "0412 345 678" }).success).toBe(true);
+    expect(dinerProfileSchema.safeParse({ email: "a@b.com" }).success).toBe(true);
+  });
+
+  it("preserves an international number's + rather than stripping it", () => {
+    // diner_profiles.phone holds E.164 from signup; staff edits must not
+    // silently drop the country code.
+    expect(dinerProfileSchema.parse({ phone: "+61412345678" }).phone).toBe("+61412345678");
+  });
+
+  it("rejects junk in either field", () => {
+    expect(dinerProfileSchema.safeParse({ email: "test" }).success).toBe(false);
+    expect(dinerProfileSchema.safeParse({ phone: "hello" }).success).toBe(false);
+  });
+});
+
+describe("partnerSchema", () => {
+  it("requires a name but not an email", () => {
+    expect(partnerSchema.safeParse({ name: "Acme POS" }).success).toBe(true);
+    expect(partnerSchema.safeParse({ name: "" }).success).toBe(false);
+  });
+
+  it("rejects a malformed contact email", () => {
+    expect(partnerSchema.safeParse({ name: "Acme POS", contact_email: "test" }).success).toBe(false);
   });
 });
 

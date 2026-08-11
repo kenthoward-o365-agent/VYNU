@@ -15,6 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
+import { FieldError } from "@/components/ui/field-error";
+import { venueDetailsSchema, staffUserSchema, fieldErrors } from "@/lib/validation";
 import { toast } from "sonner";
 import { Paintbrush, Settings, Users, Plus, Eye, EyeOff, Pencil, Trash2, Gift, Search, Mail, Phone, DollarSign, Sparkles, Cake, Star, Award, Settings2, CreditCard, Receipt, Bot, Plug, Percent, Globe, ArrowLeft, ChevronRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -73,6 +75,9 @@ export default function VenueSettings() {
     postcode: "", phone: "", email: "",
   });
   const [loading, setLoading] = useState(false);
+  // Populated on submit, so the operator is not scolded mid-typing.
+  const [formErrs, setFormErrs] = useState<Record<string, string>>({});
+  const [newUserErrs, setNewUserErrs] = useState<Record<string, string>>({});
 
   // Staff state
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -184,8 +189,26 @@ export default function VenueSettings() {
 
   const save = async () => {
     if (!venue) return;
+    const parsed = venueDetailsSchema.safeParse(form);
+    if (!parsed.success) {
+      setFormErrs(fieldErrors(parsed.error));
+      toast.error("Check the highlighted fields");
+      return;
+    }
+    setFormErrs({});
     setLoading(true);
-    const { error } = await supabase.from("venues").update(form).eq("id", venue.id);
+    // Built field-by-field rather than spreading `form`, so only validated
+    // values reach the table.
+    const { error } = await supabase.from("venues").update({
+      name: parsed.data.name,
+      venue_type: form.venue_type,
+      address: parsed.data.address ?? null,
+      city: parsed.data.city ?? null,
+      state: parsed.data.state ?? null,
+      postcode: parsed.data.postcode ?? null,
+      phone: parsed.data.phone,
+      email: parsed.data.email,
+    }).eq("id", venue.id);
     if (error) toast.error(error.message);
     else { toast.success("Settings saved"); await refetch(); }
     setLoading(false);
@@ -214,17 +237,24 @@ export default function VenueSettings() {
   };
 
   const createUser = async () => {
-    if (!venue || !newUser.email || !newUser.password || !newUser.role_id) return;
+    if (!venue || !newUser.role_id) return;
+    const parsed = staffUserSchema.safeParse(newUser);
+    if (!parsed.success) {
+      setNewUserErrs(fieldErrors(parsed.error));
+      return;
+    }
+    setNewUserErrs({});
     setCreatingUser(true);
     try {
       const roleName = venueRoles.find((r) => r.id === newUser.role_id)?.name || "user";
       await invokeUserFn({
-        email: newUser.email, password: newUser.password,
-        venue_id: venue.id, role_id: newUser.role_id, display_name: newUser.display_name || null,
+        email: parsed.data.email, password: parsed.data.password,
+        venue_id: venue.id, role_id: newUser.role_id, display_name: parsed.data.display_name ?? null,
       });
-      toast.success(`${newUser.email} added as ${roleName}`);
+      toast.success(`${parsed.data.email} added as ${roleName}`);
       setCreateDialog(false);
       setNewUser({ email: "", password: "", display_name: "", role_id: "" });
+      setNewUserErrs({});
       fetchStaff();
     } catch (err: any) {
       toast.error(err.message);
@@ -400,19 +430,40 @@ export default function VenueSettings() {
               <CardDescription>Update your venue information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Input placeholder="Venue name" value={form.name} onChange={(e) => update("name", e.target.value)} />
+              <div>
+                <Input placeholder="Venue name *" value={form.name} onChange={(e) => update("name", e.target.value)} />
+                <FieldError message={formErrs.name} />
+              </div>
               <Select value={form.venue_type} onValueChange={(v) => update("venue_type", v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{venueTypes.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
               </Select>
-              <Input placeholder="Address" value={form.address} onChange={(e) => update("address", e.target.value)} />
-              <div className="grid grid-cols-3 gap-2">
-                <Input placeholder="City" value={form.city} onChange={(e) => update("city", e.target.value)} />
-                <Input placeholder="State" value={form.state} onChange={(e) => update("state", e.target.value)} />
-                <Input placeholder="Postcode" value={form.postcode} onChange={(e) => update("postcode", e.target.value)} />
+              <div>
+                <Input placeholder="Address" value={form.address} onChange={(e) => update("address", e.target.value)} />
+                <FieldError message={formErrs.address} />
               </div>
-              <Input placeholder="Phone" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
-              <Input type="email" placeholder="Email" value={form.email} onChange={(e) => update("email", e.target.value)} />
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Input placeholder="City" value={form.city} onChange={(e) => update("city", e.target.value)} />
+                  <FieldError message={formErrs.city} />
+                </div>
+                <div>
+                  <Input placeholder="State" value={form.state} onChange={(e) => update("state", e.target.value)} />
+                  <FieldError message={formErrs.state} />
+                </div>
+                <div>
+                  <Input placeholder="Postcode" value={form.postcode} onChange={(e) => update("postcode", e.target.value)} />
+                  <FieldError message={formErrs.postcode} />
+                </div>
+              </div>
+              <div>
+                <Input placeholder="Phone *" value={form.phone} onChange={(e) => update("phone", e.target.value)} />
+                <FieldError message={formErrs.phone} />
+              </div>
+              <div>
+                <Input type="email" placeholder="Email *" value={form.email} onChange={(e) => update("email", e.target.value)} />
+                <FieldError message={formErrs.email} />
+              </div>
               <Button onClick={save} disabled={loading}>{loading ? "Saving..." : "Save Changes"}</Button>
             </CardContent>
           </Card>
@@ -460,6 +511,7 @@ export default function VenueSettings() {
                     <div>
                       <Label>Email</Label>
                       <Input type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} placeholder="user@example.com" className="mt-1" />
+                      <FieldError message={newUserErrs.email} />
                     </div>
                     <div>
                       <Label>Password</Label>
@@ -474,11 +526,13 @@ export default function VenueSettings() {
                           {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         </Button>
                       </div>
+                      <FieldError message={newUserErrs.password} />
                       <p className="text-xs text-muted-foreground mt-1">If the user already exists, they'll be added as staff to this venue.</p>
                     </div>
                     <div>
                       <Label>Display Name</Label>
                       <Input value={newUser.display_name} onChange={(e) => setNewUser({ ...newUser, display_name: e.target.value })} placeholder="Optional" className="mt-1" />
+                      <FieldError message={newUserErrs.display_name} />
                     </div>
                     <div>
                       <Label>Role</Label>
@@ -492,7 +546,7 @@ export default function VenueSettings() {
                         Roles control sidebar access and permissions. Manage them in the Roles section above.
                       </p>
                     </div>
-                    <Button onClick={createUser} disabled={!newUser.email || !newUser.password || newUser.password.length < 8 || !newUser.role_id || creatingUser} className="w-full">
+                    <Button onClick={createUser} disabled={!staffUserSchema.safeParse(newUser).success || !newUser.role_id || creatingUser} className="w-full">
                       {creatingUser ? "Creating..." : "Create User"}
                     </Button>
                   </div>

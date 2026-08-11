@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Search, Plus, Shield, Trash2, UserCog } from "lucide-react";
+import { FieldError } from "@/components/ui/field-error";
+import { staffUserSchema, fieldErrors } from "@/lib/validation";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -26,6 +28,8 @@ export default function AdminStaff() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
+  // Populated on submit, so the admin is not scolded mid-typing.
+  const [errs, setErrs] = useState<Record<string, string>>({});
 
   const fetchAdmins = async () => {
     setLoading(true);
@@ -73,11 +77,14 @@ export default function AdminStaff() {
   }, []);
 
   const createAdmin = async () => {
-    if (!form.email.trim() || !form.password.trim()) return;
-    if (form.password.length < 8) {
-      toast({ title: "Password must be at least 8 characters", variant: "destructive" });
+    // The email went unchecked here, so "test" reached the edge function and
+    // came back as an opaque auth error. Inline messages instead.
+    const parsed = staffUserSchema.safeParse(form);
+    if (!parsed.success) {
+      setErrs(fieldErrors(parsed.error));
       return;
     }
+    setErrs({});
     setCreating(true);
 
     try {
@@ -85,8 +92,8 @@ export default function AdminStaff() {
       const res = await supabase.functions.invoke("admin-create-user", {
         body: {
           action: "create_admin",
-          email: form.email.trim(),
-          password: form.password,
+          email: parsed.data.email,
+          password: parsed.data.password,
         },
       });
 
@@ -96,6 +103,7 @@ export default function AdminStaff() {
         toast({ title: "Admin user created" });
         setDialogOpen(false);
         setForm({ email: "", password: "" });
+        setErrs({});
         fetchAdmins();
       }
     } catch (err: any) {
@@ -152,6 +160,7 @@ export default function AdminStaff() {
                   placeholder="admin@example.com"
                   className="mt-1"
                 />
+                <FieldError message={errs.email} />
               </div>
               <div>
                 <Label>Password</Label>
@@ -162,11 +171,12 @@ export default function AdminStaff() {
                   placeholder="Min 8 characters"
                   className="mt-1"
                 />
+                <FieldError message={errs.password} />
                 <p className="text-xs text-muted-foreground mt-1">
                   If the user already exists, their existing account will be granted admin access.
                 </p>
               </div>
-              <Button onClick={createAdmin} disabled={!form.email.trim() || !form.password.trim() || creating} className="w-full">
+              <Button onClick={createAdmin} disabled={!staffUserSchema.safeParse(form).success || creating} className="w-full">
                 {creating ? "Creating..." : "Add Admin"}
               </Button>
             </div>

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sparkles, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { httpUrlSchema } from "@/lib/validation";
 import { toast } from "sonner";
 import type { LandingSection, LandingTheme } from "./types";
 
@@ -24,7 +25,10 @@ export default function AIBuildFromUrlDialog({ open, onClose, venueId, onGenerat
 
   const handleGenerate = async () => {
     if (!venueId) return toast.error("No venue selected");
-    if (!url.trim()) return toast.error("Enter a website URL");
+    // Checked here so a typo fails immediately instead of after a scrape
+    // attempt. A scheme-less "example.com" is accepted and gains https://.
+    const parsedUrl = httpUrlSchema.safeParse(url);
+    if (!parsedUrl.success) return toast.error(parsedUrl.error.issues[0].message);
 
     setLoading(true);
     setStage("Scraping site…");
@@ -34,7 +38,7 @@ export default function AIBuildFromUrlDialog({ open, onClose, venueId, onGenerat
       const t3 = setTimeout(() => setStage("Composing sections…"), 12000);
 
       const { data, error } = await supabase.functions.invoke("landing-from-url", {
-        body: { venue_id: venueId, url: url.trim() },
+        body: { venue_id: venueId, url: parsedUrl.data },
       });
       clearTimeout(t1);
       clearTimeout(t2);

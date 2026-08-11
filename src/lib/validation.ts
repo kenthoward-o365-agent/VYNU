@@ -1,5 +1,5 @@
 /**
- * Shared zod schemas for diner-facing forms.
+ * Shared zod schemas for every form in the app.
  *
  * Single source of truth for what counts as a valid email, mobile number or
  * name, so signup and the SMS receipt capture cannot drift apart. Before this,
@@ -7,11 +7,17 @@
  * that the field was non-empty — and the receipt form only checked the phone
  * was non-blank before handing it to Twilio.
  *
+ * The staff- and admin-facing forms had the same hole for longer: Create/Edit
+ * Venue wrote straight to the `venues` table, so a venue saved with the phone
+ * "hello" and the email "test" — both of which then showed on the diner-facing
+ * landing page and were handed to the receipt sender.
+ *
  * These are UX guards. They stop obvious mistakes at the point of entry; they
  * are not a substitute for server-side validation.
  */
 import { z } from "zod";
 import { getPasswordScore } from "@/lib/password";
+import { normalizeHttpUrl } from "@/lib/url";
 
 /**
  * Normalises an Australian mobile to E.164.
@@ -127,6 +133,199 @@ export const optionalInternationalPhoneSchema = z
     }
     return digits;
   });
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Contact details on the staff- and admin-facing forms
+ *
+ * These fields differ from the diner ones above in one important way: they are
+ * NOT normalised. A venue's phone number is a display value — it is rendered on
+ * the landing page and dialled by a human — and it may legitimately be a
+ * landline ("(02) 9999 8888"), which normalizeAuPhone() above would mangle into
+ * "+0299998888" because it only knows how to resolve mobiles. Likewise a diner
+ * row edited by staff may hold any country's number.
+ *
+ * So we check the shape and keep what was typed. That is enough to reject
+ * "hello" while leaving valid formatting the operator chose intact.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** E.164 caps a number at 15 digits; 8 is the shortest we treat as plausible. */
+const MIN_PHONE_DIGITS = 8;
+const MAX_PHONE_DIGITS = 15;
+
+/** Digits plus the separators people actually type. Notably excludes letters. */
+const PHONE_CHARS = /^[+]?[\d\s().-]+$/;
+
+const PHONE_MESSAGE = "Enter a valid phone number, e.g. 02 9999 8888 or 0412 345 678";
+
+/**
+ * Shape-checks a contact phone without rewriting it. Returns the trimmed input
+ * when it is plausible, or null when it is not.
+ */
+export function checkContactPhone(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  // A "+" is only meaningful as the first character — same rule as
+  // normalizeAuPhone, so the two cannot disagree about what is malformed.
+  if (!PHONE_CHARS.test(trimmed)) return null;
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length < MIN_PHONE_DIGITS || digits.length > MAX_PHONE_DIGITS) return null;
+  return trimmed;
+}
+
+const contactPhoneRefinement = (v: string, ctx: z.RefinementCtx) => {
+  const checked = checkContactPhone(v);
+  if (!checked) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: PHONE_MESSAGE });
+    return z.NEVER;
+  }
+  return checked;
+};
+
+/** Contact phone, kept as typed. Required — blank is rejected. */
+export const contactPhoneSchema = z
+  .string()
+  .trim()
+  .min(1, "Phone number is required")
+  .transform(contactPhoneRefinement);
+
+/**
+ * Contact phone, kept as typed. Blank is fine; anything entered must be valid.
+ * Still used for diner rows, where staff often hold a number or an email but
+ * not both.
+ */
+export const optionalContactPhoneSchema = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v, ctx) => (v ? contactPhoneRefinement(v, ctx) : undefined));
+
+/** Blank is fine, but anything entered must look like an email address. */
+export const optionalEmailSchema = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v, ctx) => {
+    if (!v) return undefined;
+    const result = emailSchema.safeParse(v);
+    if (!result.success) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Enter a valid email address" });
+      return z.NEVER;
+    }
+    return result.data;
+  });
+
+/**
+ * Australian postcodes are exactly four digits.
+ *
+ * The digit count is all we check — not the allocated 0200–9999 range. Four
+ * digits already rejects every realistic typo ("abc", "20 00", a phone number
+ * pasted into the wrong box), whereas encoding the range buys very little and
+ * would wrongly reject a venue recorded against a non-AU postcode.
+ */
+export const optionalPostcodeSchema = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v, ctx) => {
+    if (!v) return undefined;
+    if (!/^\d{4}$/.test(v)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Postcode must be 4 digits" });
+      return z.NEVER;
+    }
+    return v;
+  });
+
+/** Free-text field that is optional but must not be pure whitespace padding. */
+export const optionalTextSchema = (label: string, max = 200) =>
+  z
+    .string()
+    .trim()
+    .max(max, `${label} is too long`)
+    .optional()
+    .transform((v) => v || undefined);
+
+/**
+ * An http(s) URL. Leans on normalizeHttpUrl() so a scheme-less
+ * "partner.example.com/hook" is saved as "https://partner.example.com/hook"
+ * rather than failing much later inside fetch(), and so javascript:/data: URLs
+ * are rejected outright.
+ */
+export const httpUrlSchema = z
+  .string()
+  .trim()
+  .min(1, "URL is required")
+  .transform((v, ctx) => {
+    const normalised = normalizeHttpUrl(v);
+    if (!normalised) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enter a valid http(s) URL, e.g. https://example.com",
+      });
+      return z.NEVER;
+    }
+    return normalised;
+  });
+
+/**
+ * Venue contact details, shared by all four places a venue can be created or
+ * edited: the admin Create Venue dialog, the admin venue detail page, the
+ * operator's own Settings page, and first-run Onboarding. They wrote to the same
+ * columns with four different (or absent) sets of rules before this.
+ *
+ * Name, phone and email are mandatory. All three are diner-facing — they render
+ * on the venue's landing page — so a venue with no contact number is not a
+ * useful record. Note the `venues` columns stay nullable and rows created before
+ * this rule may hold nulls; the consequence is that editing such a venue now
+ * requires filling in the missing contact details before any other change to it
+ * can be saved.
+ *
+ * Address, city, state and postcode remain optional.
+ */
+export const venueDetailsSchema = z.object({
+  name: nameSchema("Venue name"),
+  address: optionalTextSchema("Address"),
+  city: optionalTextSchema("City", 80),
+  state: optionalTextSchema("State", 40),
+  postcode: optionalPostcodeSchema,
+  phone: contactPhoneSchema,
+  email: emailSchema,
+});
+
+/**
+ * Creating a staff or admin login. The 8-character floor deliberately matches
+ * the gate these dialogs already applied — tightening it to the diner signup
+ * strength rules would change who an admin can create, which is a separate
+ * decision from fixing unvalidated input.
+ */
+export const staffUserSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  display_name: optionalTextSchema("Display name", 80),
+});
+
+/** Editing an existing staff member. Password is a blank-means-unchanged reset. */
+export const staffEditSchema = z.object({
+  display_name: optionalTextSchema("Display name", 80),
+  password: z
+    .string()
+    .optional()
+    .refine((v) => !v || v.length >= 8, "Password must be at least 8 characters"),
+});
+
+/**
+ * A diner row edited by venue staff. Every field is optional — staff routinely
+ * hold a phone number for a diner and no email, or the reverse.
+ */
+export const dinerProfileSchema = z.object({
+  display_name: optionalTextSchema("Name", 80),
+  email: optionalEmailSchema,
+  phone: optionalContactPhoneSchema,
+});
+
+export const partnerSchema = z.object({
+  name: nameSchema("Partner name"),
+  contact_email: optionalEmailSchema,
+});
 
 export const signupSchema = z.object({
   firstName: nameSchema("First name"),
