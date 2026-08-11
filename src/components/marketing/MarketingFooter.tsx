@@ -44,12 +44,12 @@ export function MarketingFooter() {
                 (e.target as HTMLImageElement).style.display = "none";
               }}
             />
-            <p className="text-background/70 max-w-sm text-sm leading-relaxed">
+            <p className="text-white/70 max-w-sm text-sm leading-relaxed">
               The agentic ordering, payments, and diner-CRM platform built for Australian hospitality groups.
             </p>
             <Button
               variant="secondary"
-              className="bg-background text-foreground hover:bg-background/90"
+              className="bg-white text-[hsl(203,42%,21%)] hover:bg-white/90"
               asChild
             >
               <a href="mailto:sales@hl-ordernow.com?subject=Book%20a%20demo">Book a demo</a>
@@ -63,7 +63,7 @@ export function MarketingFooter() {
                   <li key={link.label}>
                     <Link
                       to={link.href}
-                      className="text-sm text-background/70 hover:text-background transition-colors"
+                      className="text-sm text-white/70 hover:text-white transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -73,7 +73,7 @@ export function MarketingFooter() {
             </div>
           ))}
         </div>
-        <div className="mt-16 pt-8 border-t border-background/10 flex flex-col sm:flex-row justify-between gap-4 text-sm text-background/60">
+        <div className="mt-16 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-4 text-sm text-white/60">
           <p>© {new Date().getFullYear()} H&L OrderNOW. All rights reserved.</p>
           <p>Built for the H&L POS ecosystem. Australia-first.</p>
         </div>

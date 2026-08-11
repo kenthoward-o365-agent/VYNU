@@ -99,20 +99,20 @@ export default function MarketingIndex() {
       </section>
 
       {/* AI revenue proof band */}
-      <section className="bg-foreground text-background py-16 lg:py-20">
+      <section className="bg-[hsl(203,42%,9%)] text-white py-16 lg:py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-background/70 text-sm uppercase tracking-wide mb-2">Across the network</p>
+          <p className="text-white/70 text-sm uppercase tracking-wide mb-2">Across the network</p>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
             AI-attributed revenue this month
           </h2>
-          <p className="mt-4 text-background/60 text-lg">
+          <p className="mt-4 text-white/60 text-lg">
             Every AI-suggested item, upsell, and campaign tracked back to one tile.
           </p>
           <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-6">
             {proofPoints.map((point) => (
-              <div key={point.label} className="border border-background/10 rounded-xl p-4">
+              <div key={point.label} className="border border-white/10 rounded-xl p-4">
                 <div className="text-2xl font-bold text-primary">{point.value}</div>
-                <div className="text-sm text-background/60 mt-1">{point.label}</div>
+                <div className="text-sm text-white/60 mt-1">{point.label}</div>
               </div>
             ))}
           </div>
