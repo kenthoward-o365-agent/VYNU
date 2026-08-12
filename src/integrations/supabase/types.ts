@@ -6019,6 +6019,7 @@ export type Database = {
           created_at: string
           extra_wait_minutes: number
           id: string
+          payment_status: string
           pickup_location: string
           service_mode: string
           status: string
