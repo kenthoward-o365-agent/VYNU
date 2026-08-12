@@ -75,7 +75,10 @@ export default function PosDeliveryQueuePanel({ venueId }: { venueId: string }) 
       .order("created_at", { ascending: false })
       .limit(50);
 
-    const [{ data: dlqRows }, { data: pendingRows }] = await Promise.all([
+    const [
+      { data: dlqRows, error: dlqErr },
+      { data: pendingRows, error: pendingErr },
+    ] = await Promise.all([
       showResolved ? dlqQuery : dlqQuery.eq("status", "open"),
       db
         .from("orders")
@@ -85,6 +88,12 @@ export default function PosDeliveryQueuePanel({ venueId }: { venueId: string }) 
         .order("created_at", { ascending: false })
         .limit(50),
     ]);
+
+    if (dlqErr || pendingErr) {
+      toast.error(dlqErr?.message ?? pendingErr?.message ?? "Failed to load POS delivery queue");
+      setLoading(false);
+      return;
+    }
 
     setDlq((dlqRows ?? []) as DlqRow[]);
     setPending((pendingRows ?? []) as PendingOrder[]);

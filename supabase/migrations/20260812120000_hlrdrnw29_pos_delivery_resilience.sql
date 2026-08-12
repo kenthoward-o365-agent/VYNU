@@ -216,7 +216,7 @@ BEGIN
     RAISE EXCEPTION 'DLQ entry is already %', _row.status;
   END IF;
 
-  SELECT pgmq.send('jobs_pos_outbound', _row.payload) INTO _msg_id;
+  SELECT pgmq.send(_row.queue, _row.payload) INTO _msg_id;
 
   UPDATE public.pos_outbound_dlq
      SET status      = 'requeued',

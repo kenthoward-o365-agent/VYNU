@@ -534,7 +534,7 @@ async function deadLetter(supabase: SupabaseClient, c: FailureCtx): Promise<bool
 
   // Alert. notifications is already realtime-published and its RLS lets venue
   // staff read venue-scoped rows, so this surfaces without new infrastructure.
-  await supabase.from("notifications").insert({
+  const { error: notifyErr } = await supabase.from("notifications").insert({
     venue_id: c.venueId,
     kind: "pos_push_failed",
     title: c.payload.kind === "send_order"
@@ -543,6 +543,7 @@ async function deadLetter(supabase: SupabaseClient, c: FailureCtx): Promise<bool
     body: `Gave up after ${c.attempt} attempt(s): ${c.error}`.slice(0, 500),
     payload: { order_id: c.orderId, kind: c.payload.kind, msg_id: c.m.msg_id },
   } as any);
+  if (notifyErr) console.error("[pos-outbound-worker] notifications insert failed", notifyErr);
 
   await logSync(supabase, c.venueId, `outbound_${c.payload.kind}_dlq`, "error",
     `Dead-lettered after ${c.attempt} attempt(s): ${c.error}`);
