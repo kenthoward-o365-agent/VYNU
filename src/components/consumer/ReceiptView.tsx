@@ -100,11 +100,15 @@ const ReceiptView = ({
   return (
     <div className="px-4 pt-4 pb-24" id="receipt-container">
       <div className="receipt-content bg-card rounded-2xl border border-border overflow-hidden max-w-md mx-auto">
-        {/* Success header */}
+        {/* Success header. AC2 — the subtitle states what happens next rather
+            than just thanking the diner, and it stays true once the progress
+            tracker above has gone (order served / closed out). */}
         <div className="bg-primary/10 px-5 py-4 text-center">
           <CheckCircle2 className="h-8 w-8 text-primary mx-auto mb-1" />
           <h2 className="text-lg font-bold text-foreground">Payment Successful</h2>
-          <p className="text-xs text-muted-foreground">Thank you for your order</p>
+          <p className="text-xs text-muted-foreground">
+            Your order has been sent to {venue.name} and is being prepared
+          </p>
         </div>
 
         {/* Tax Invoice header */}
