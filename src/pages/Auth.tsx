@@ -78,14 +78,18 @@ export default function Auth() {
 
       const isAdmin = roles?.some((r) => r.role === "tabless_admin") ?? false;
 
-      if (isAdmin) {
-        localStorage.removeItem("tabless_active_venue");
-        toast.success("Welcome, H&L OrderNOW admin");
-        return;
-      }
-
       const trimmedSiteId = siteId.trim().toUpperCase();
+
+      // Admins may sign in without a Site ID to reach the platform Admin
+      // section. Supplying one puts them into that venue through the same
+      // staff check as any operator — so they land on their staff role there,
+      // not on elevated access.
       if (!trimmedSiteId) {
+        if (isAdmin) {
+          localStorage.removeItem("tabless_active_venue");
+          toast.success("Welcome, H&L OrderNOW admin");
+          return;
+        }
         await supabase.auth.signOut();
         toast.error("Site ID is required for venue operators");
         return;
@@ -100,9 +104,22 @@ export default function Auth() {
       // exist by probing the response.
       const SIGNIN_FAILED = "We couldn't sign you in. Please check your email, password, and Site ID.";
 
-      if (lookupError || !venueData || venueData.length === 0) {
+      // An admin who mistypes a Site ID, or names a venue they have no staff
+      // row at, still has a valid platform-admin session — drop them at the
+      // Admin section rather than bouncing them out entirely. No enumeration
+      // concern: the Admin section lists every venue anyway.
+      const failSignIn = async () => {
+        if (isAdmin) {
+          localStorage.removeItem("tabless_active_venue");
+          toast.error("No venue access for that Site ID — signed in as H&L OrderNOW admin");
+          return;
+        }
         await supabase.auth.signOut();
         toast.error(SIGNIN_FAILED);
+      };
+
+      if (lookupError || !venueData || venueData.length === 0) {
+        await failSignIn();
         return;
       }
 
@@ -118,8 +135,7 @@ export default function Auth() {
         .maybeSingle();
 
       if (!staffRow) {
-        await supabase.auth.signOut();
-        toast.error(SIGNIN_FAILED);
+        await failSignIn();
         return;
       }
 
