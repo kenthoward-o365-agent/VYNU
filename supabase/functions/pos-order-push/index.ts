@@ -34,6 +34,11 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const venueId = String(body.venue_id ?? "");
   const orderId = String(body.order_id ?? "");
+  // The worker refuses to push an order that already carries a pos_order_id —
+  // that is what stops a redelivered job creating a second docket in Exceed.
+  // `force` is the operator's explicit override, set only when the UI has
+  // warned them that re-pushing a delivered order can duplicate it.
+  const force = body.force === true;
   if (!venueId || !orderId) return json(400, { error: "venue_id and order_id required" });
 
   const admin = createClient(
@@ -53,12 +58,14 @@ Deno.serve(async (req) => {
   if (!ord || ord.venue_id !== venueId) return json(404, { error: "Order not found" });
 
   const { data: msgId, error } = await admin.rpc("enqueue_pos_job", {
-    _payload: { kind: "send_order", venue_id: venueId, order_id: orderId },
+    _payload: { kind: "send_order", venue_id: venueId, order_id: orderId, force },
   });
   if (error) { console.error("[pos-order-push] enqueue failed", error); return json(500, { error: "Failed to enqueue order" }); }
 
+  // Clear any stale claim so the worker can take this order straight away
+  // rather than waiting out the claim TTL of an attempt that already died.
   await admin.from("orders").update({
-    pos_push_status: "queued", pos_push_error: null,
+    pos_push_status: "queued", pos_push_error: null, pos_push_claimed_at: null,
   } as any).eq("id", orderId);
 
   return json(200, { ok: true, msg_id: msgId });

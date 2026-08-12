@@ -5,6 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ClipboardList, Clock, ChefHat, CheckCircle, DollarSign, ShoppingCart, XCircle, RotateCcw, Undo2, Monitor, Link2, Send, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
@@ -130,6 +134,7 @@ export default function Orders() {
   const [fireGraceSeconds, setFireGraceSeconds] = useState(90);
   const [posIntegration, setPosIntegration] = useState<{ slug: string; connected: boolean } | null>(null);
   const [pushingOrderId, setPushingOrderId] = useState<string | null>(null);
+  const [repushOrder, setRepushOrder] = useState<Order | null>(null);
 
   const statusByName = (name: string) => {
     const vs = venueStatuses.find((s) => s.name === name);
@@ -283,16 +288,28 @@ export default function Orders() {
     });
   };
 
-  const pushOrderToPos = async (orderId: string) => {
+  const pushOrderToPos = async (orderId: string, force = false) => {
     if (!venue) return;
     setPushingOrderId(orderId);
     const { data, error } = await supabase.functions.invoke("pos-order-push", {
-      body: { venue_id: venue.id, order_id: orderId },
+      body: { venue_id: venue.id, order_id: orderId, force },
     });
     setPushingOrderId(null);
     if (error) { toast.error(error.message); return; }
     if ((data as any)?.ok) toast.success("Queued for POS"); else toast.error((data as any)?.error ?? "Push failed");
     fetchOrders();
+  };
+
+  // An order that already carries a POS id has been delivered. The worker
+  // deliberately refuses to send it again (that guard is what stops retries
+  // duplicating dockets), so pushing it a second time is only possible as an
+  // explicit override — and it really does create a second docket in Exceed.
+  const requestPushToPos = (order: Order) => {
+    if (order.pos_push_status === "sent" || order.pos_order_id) {
+      setRepushOrder(order);
+      return;
+    }
+    void pushOrderToPos(order.id);
   };
 
   const refreshOrderFromPos = async (orderId: string) => {
@@ -548,7 +565,12 @@ export default function Orders() {
                   <Badge
                     variant={
                       order.pos_push_status === "sent" ? "default" :
-                      order.pos_push_status === "queued" ? "secondary" :
+                      // 'sending' is a push in flight and 'error' is one that is
+                      // still being retried with backoff — neither is a failure
+                      // yet. Only 'failed' (retries exhausted, in the DLQ) is.
+                      order.pos_push_status === "queued" ||
+                      order.pos_push_status === "sending" ||
+                      order.pos_push_status === "error" ? "secondary" :
                       "destructive"
                     }
                     className="text-[10px]"
@@ -564,7 +586,7 @@ export default function Orders() {
                 <Button
                   className="flex-1 min-w-0 basis-[120px]" size="sm" variant="outline"
                   disabled={!posIntegration.connected || pushingOrderId === order.id}
-                  onClick={() => pushOrderToPos(order.id)}
+                  onClick={() => requestPushToPos(order)}
                 >
                   <Send className="h-3.5 w-3.5 mr-1 shrink-0" />
                   <span className="truncate">{order.pos_push_status === "sent" ? "Re-push" : "Push to POS"}</span>
@@ -771,6 +793,33 @@ export default function Orders() {
         onOpenChange={setPairOpen}
         onPaired={() => window.location.reload()}
       />
+
+      <AlertDialog open={!!repushOrder} onOpenChange={(o) => { if (!o) setRepushOrder(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send this order to the POS again?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This order has already been delivered
+              {repushOrder?.pos_order_id ? ` (POS reference ${repushOrder.pos_order_id})` : ""}.
+              Automatic retries will not re-send a delivered order, so pushing it again is an
+              override — it will create a second docket in the POS. Only do this if staff have
+              confirmed the first one never arrived.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const id = repushOrder?.id;
+                setRepushOrder(null);
+                if (id) void pushOrderToPos(id, true);
+              }}
+            >
+              Send again
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
