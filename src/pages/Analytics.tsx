@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useVenue } from "@/contexts/VenueContext";
 import { useAuditDate } from "@/contexts/AuditDateContext";
 import { supabase } from "@/integrations/supabase/client";
+import { functionErrorMessage } from "@/lib/function-errors";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,12 +93,9 @@ export default function Analytics() {
       },
     });
     setLoading(false);
-    if (error) {
-      toast.error(error.message || "Failed to load insights");
-      return;
-    }
-    if ((res as any)?.error) {
-      toast.error((res as any).error);
+    const failure = await functionErrorMessage({ data: res, error }, "Failed to load insights");
+    if (failure) {
+      toast.error(failure);
       return;
     }
     setData(res as Insights);

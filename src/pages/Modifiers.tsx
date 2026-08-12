@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
+import { functionErrorMessage } from "@/lib/function-errors";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -255,8 +256,8 @@ export default function Modifiers() {
       const { data, error } = await supabase.functions.invoke("generate-modifiers", {
         body: { venue_id: venue.id }
       });
-      if (error) throw error;
-      if (data?.error) { toast.error(data.error); setAiLoading(false); return; }
+      const failure = await functionErrorMessage({ data, error }, "AI generation failed");
+      if (failure) { toast.error(failure); setAiLoading(false); return; }
       setAiSuggestions((data.suggestions || []).map((s: any) => ({ ...s, checked: true })));
       setAiMenuItems(data.menu_items || []);
       setAiDialogOpen(true);

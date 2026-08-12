@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Loader2, Check, X, ImagePlus, ImageOff, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { functionErrorMessage } from "@/lib/function-errors";
 import { toast } from "sonner";
 import { resizeToWebP } from "@/lib/image-utils";
 
@@ -228,8 +229,8 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
     const { data, error } = await supabase.functions.invoke("batch-generate-images", {
       body: payload,
     });
-    if (error) throw error;
-    if (data?.error) throw new Error(data.error);
+    const failure = await functionErrorMessage({ data, error }, "Image generation failed");
+    if (failure) throw new Error(failure);
     return data;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [venueId, scopedItemIds, missingImageItems]);
