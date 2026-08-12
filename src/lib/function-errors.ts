@@ -50,8 +50,8 @@ async function readBodyMessage(context: unknown): Promise<string | null> {
   try {
     const body = await response.json();
     if (response.status >= 500) {
-      // Keep the detail for debugging, but never put it in front of a user.
-      console.error("Edge function failed", response.status, body);
+      // Never surface raw exception text (including via the browser console).
+      console.error("Edge function failed", response.status);
       return null;
     }
     return pickMessage(body);
