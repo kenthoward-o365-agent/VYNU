@@ -2768,6 +2768,8 @@ export type Database = {
           payment_psp_reference: string | null
           payment_status: string
           pos_order_id: string | null
+          pos_push_attempts: number
+          pos_push_claimed_at: string | null
           pos_push_error: string | null
           pos_push_status: string | null
           pos_pushed_at: string | null
@@ -2794,6 +2796,8 @@ export type Database = {
           payment_psp_reference?: string | null
           payment_status?: string
           pos_order_id?: string | null
+          pos_push_attempts?: number
+          pos_push_claimed_at?: string | null
           pos_push_error?: string | null
           pos_push_status?: string | null
           pos_pushed_at?: string | null
@@ -2820,6 +2824,8 @@ export type Database = {
           payment_psp_reference?: string | null
           payment_status?: string
           pos_order_id?: string | null
+          pos_push_attempts?: number
+          pos_push_claimed_at?: string | null
           pos_push_error?: string | null
           pos_push_status?: string | null
           pos_pushed_at?: string | null
@@ -2994,6 +3000,98 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pos_outbound_dlq: {
+        Row: {
+          attempts: number
+          breaker_state: string | null
+          created_at: string
+          id: string
+          kind: string
+          last_error: string | null
+          msg_id: number | null
+          order_id: string | null
+          payload: Json
+          queue: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+          venue_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          breaker_state?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          last_error?: string | null
+          msg_id?: number | null
+          order_id?: string | null
+          payload: Json
+          queue?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+          venue_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          breaker_state?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          last_error?: string | null
+          msg_id?: number | null
+          order_id?: string | null
+          payload?: Json
+          queue?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+          venue_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pos_outbound_dlq_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pos_outbound_job_state: {
+        Row: {
+          attempts: number
+          first_seen_at: string
+          last_error: string | null
+          msg_id: number
+          queue: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          first_seen_at?: string
+          last_error?: string | null
+          msg_id: number
+          queue: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          first_seen_at?: string
+          last_error?: string | null
+          msg_id?: number
+          queue?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       pos_providers: {
         Row: {
@@ -5875,6 +5973,10 @@ export type Database = {
         Args: { _order_id: string; _token: string }
         Returns: string
       }
+      bump_pos_job_attempt: {
+        Args: { _error?: string; _msg_id: number; _queue: string }
+        Returns: number
+      }
       can_append_guest_order_item: {
         Args: { _order_id: string }
         Returns: boolean
@@ -5891,8 +5993,20 @@ export type Database = {
         Args: { _bucket: string; _limit: number; _window_seconds: number }
         Returns: boolean
       }
+      claim_order_for_pos_push: {
+        Args: {
+          _claim_ttl_seconds?: number
+          _force?: boolean
+          _order_id: string
+        }
+        Returns: string
+      }
       claim_webhook_event: {
         Args: { _event_key: string; _source: string }
+        Returns: boolean
+      }
+      clear_pos_job_state: {
+        Args: { _msg_id: number; _queue: string }
         Returns: boolean
       }
       close_idle_web_sessions: { Args: never; Returns: number }
@@ -6324,6 +6438,11 @@ export type Database = {
           terminal_name: string
         }[]
       }
+      pos_dlq_requeue: { Args: { _dlq_id: string }; Returns: number }
+      pos_dlq_resolve: {
+        Args: { _dlq_id: string; _note?: string }
+        Returns: boolean
+      }
       purge_api_idempotency: { Args: never; Returns: number }
       read_pos_credential: {
         Args: { _field: string; _venue_id: string }
@@ -6354,6 +6473,10 @@ export type Database = {
           _venue_type?: string
         }
         Returns: Json
+      }
+      set_job_vt: {
+        Args: { _msg_id: number; _queue: string; _vt_seconds: number }
+        Returns: boolean
       }
       set_payment_secret: {
         Args: { _field: string; _value: string; _venue_id: string }
