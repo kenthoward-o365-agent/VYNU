@@ -72,6 +72,18 @@ export function breakerAllows(integ: IntegrationRow): boolean {
   return true; // half_open: try once
 }
 
+/**
+ * Seconds until an open breaker lets the next call through (0 when it already
+ * does). The outbound worker re-hides a deferred job for exactly this long
+ * instead of retrying into a breaker that is guaranteed to reject it.
+ */
+export function breakerRetryAfterSeconds(integ: IntegrationRow): number {
+  if (breakerAllows(integ)) return 0;
+  const opened = integ.breaker_opened_at ? new Date(integ.breaker_opened_at).getTime() : 0;
+  const readyAt = opened + COOLDOWN_MINUTES * 60 * 1000;
+  return Math.max(1, Math.ceil((readyAt - Date.now()) / 1000));
+}
+
 export async function recordBreakerSuccess(supabase: SupabaseClient, venueId: string) {
   await supabase.from("venue_pos_integrations").update({
     breaker_state: "closed",
@@ -99,13 +111,22 @@ export async function recordBreakerFailure(supabase: SupabaseClient, venueId: st
   }).eq("venue_id", venueId);
 }
 
+export type BreakerResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: string; tripped: boolean; dataError: boolean };
+
 export async function runWithBreaker<T>(
   supabase: SupabaseClient,
   integ: IntegrationRow,
   fn: () => Promise<T>,
-): Promise<{ ok: true; value: T } | { ok: false; error: string; tripped: boolean }> {
+): Promise<BreakerResult<T>> {
   if (!breakerAllows(integ)) {
-    return { ok: false, error: `Circuit open for ${integ.pos_provider}`, tripped: true };
+    return {
+      ok: false,
+      error: `Circuit open for ${integ.pos_provider}`,
+      tripped: true,
+      dataError: false,
+    };
   }
   try {
     const value = await fn();
@@ -119,10 +140,10 @@ export async function runWithBreaker<T>(
     // settings UI also hid recovery controls when status !== 'connected', making
     // it harder to recover.) Job-level retry/DLQ still applies; only breaker state is untouched.
     if (err instanceof PosDataError) {
-      return { ok: false, error: msg, tripped: false };
+      return { ok: false, error: msg, tripped: false, dataError: true };
     }
     await recordBreakerFailure(supabase, integ.venue_id, msg);
-    return { ok: false, error: msg, tripped: false };
+    return { ok: false, error: msg, tripped: false, dataError: false };
   }
 }
 

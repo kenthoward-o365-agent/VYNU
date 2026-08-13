@@ -79,6 +79,29 @@ function hlDateTime(d: Date): string {
 }
 
 /**
+ * Docket number for an order: a stable 5-digit value derived from the order id.
+ *
+ * This used to be Math.random() per call, so every retry of the same order
+ * arrived at Exceed wearing a different docket number. Deriving it from the
+ * order id means a redelivered push is byte-identical to the first one — it
+ * gives H&L a chance to de-duplicate, and when it does not, staff see two
+ * dockets carrying the same number rather than two unrelated-looking orders.
+ *
+ * FNV-1a: no crypto needed, and it has to stay synchronous for mapOutboundOrder.
+ * A collision only means two different orders share a docket number, which is
+ * already true of the random version and is cosmetic — `reference` remains the
+ * identifier both sides key on.
+ */
+export function docketNoFor(orderId: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < orderId.length; i++) {
+    hash ^= orderId.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return (hash % 90000) + 10000;
+}
+
+/**
  * PLU sent for a line we cannot address to a real Exceed product. Sysnet
  * recognises it as "needs manual attention" and routes the line accordingly.
  */
@@ -202,7 +225,7 @@ export function mapOutboundOrder(order: OutboundOrder, ctx: PosAdapterContext): 
   const interface_type = num(cfg(ctx, "interface_type", 0));
   const default_tender_code = num(cfg(ctx, "default_tender_code", 63));
 
-  const docket_no = Math.floor(Math.random() * 90000) + 10000;
+  const docket_no = docketNoFor(order.orderId);
   const table_no = order.tableExternalId ? num(order.tableExternalId, null as any) : null;
 
   const sale_items: HLSaleItem[] = order.lineItems.map((li, i) => {

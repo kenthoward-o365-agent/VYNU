@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import PosConnectDialog from "./PosConnectDialog";
 import HLPosPanel from "./HLPosPanel";
+import PosDeliveryQueuePanel from "./PosDeliveryQueuePanel";
 
 interface Provider {
   id: string;
@@ -283,6 +284,9 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
       {connected && activeProvider?.slug === "hl_exceed" && (
         <HLPosPanel venueId={venueId} />
       )}
+
+      {/* ─── Failed order delivery: retry / reconcile ─────────────────── */}
+      {integration && <PosDeliveryQueuePanel venueId={venueId} />}
 
       {/* ─── STEP 3: Order routing + menu ownership ───────────────────── */}
       <Card className={connected ? "" : "opacity-60"}>
