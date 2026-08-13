@@ -125,16 +125,13 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     const adminFlag = !!roleData;
     setIsTablessAdmin(adminFlag);
 
-    if (venueIds.length > 0 || adminFlag) {
-      let allVenues: Venue[] = [];
-
-      if (adminFlag) {
-        const { data: venueData } = await queryClient.from("venues").select(VENUE_COLUMNS);
-        allVenues = (venueData || []) as Venue[];
-      } else {
-        const { data: venueData } = await queryClient.from("venues").select(VENUE_COLUMNS).in("id", venueIds);
-        allVenues = (venueData || []) as Venue[];
-      }
+    // Venue access is earned through `venue_staff` only — the tabless_admin
+    // role grants the platform Admin section, never venue operations. An admin
+    // who is also staff somewhere gets that venue at that staff role, exactly
+    // like any other operator.
+    if (venueIds.length > 0) {
+      const { data: venueData } = await queryClient.from("venues").select(VENUE_COLUMNS).in("id", venueIds);
+      const allVenues = (venueData || []) as Venue[];
 
       setVenues(allVenues);
 
@@ -146,28 +143,25 @@ export function VenueProvider({ children }: { children: ReactNode }) {
       //  1. Explicit saved selection in this browser (only if user still has access)
       //  2. Server-side primary venue (`venue_staff.is_primary`)
       //  3. Auto-pick only when the user has exactly one venue
-      //  4. Otherwise leave null and force a chooser (admins also start null)
-      let active: Venue | null = saved || primary || null;
+      //  4. Otherwise leave null and force a chooser
+      //
+      // Admins only ever get (1). Entering a venue must be a deliberate act —
+      // signing in with its Site ID, which is what writes that saved selection.
+      // Falling back to a primary/auto-pick would drop an admin into venue
+      // context when they signed in to do platform work.
+      let active: Venue | null = saved || (adminFlag ? null : primary) || null;
       if (!active && !adminFlag && allVenues.length === 1) {
         active = allVenues[0];
       }
       setVenue(active);
-      setVenueRole(active ? staffRoles[active.id] || (adminFlag ? "owner" : null) : null);
+      setVenueRole(active ? staffRoles[active.id] ?? null : null);
 
       const { data: groupStaff } = await queryClient
         .from("venue_group_staff")
         .select("group_id, role")
         .eq("user_id", user.id);
 
-      if (adminFlag) {
-        const { data: allGroups } = await queryClient.from("venue_groups").select("*");
-        setGroups((allGroups || []) as VenueGroup[]);
-        setIsGroupAdmin(true);
-        if (active?.group_id) {
-          const activeGroup = (allGroups || []).find((g: any) => g.id === active.group_id);
-          setGroup((activeGroup as VenueGroup) || null);
-        }
-      } else if (groupStaff && groupStaff.length > 0) {
+      if (groupStaff && groupStaff.length > 0) {
         const groupIds = groupStaff.map((g) => g.group_id);
         const { data: groupData } = await queryClient.from("venue_groups").select("*").in("id", groupIds);
 
@@ -200,7 +194,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     const found = venues.find((v) => v.id === venueId);
     if (found) {
       setVenue(found);
-      setVenueRole(staffRolesMap[venueId] || (isTablessAdmin ? "owner" : null));
+      setVenueRole(staffRolesMap[venueId] ?? null);
       localStorage.setItem("tabless_active_venue", venueId);
       if (found.group_id) {
         const g = groups.find((gr) => gr.id === found.group_id);
@@ -221,6 +215,8 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     !!user &&
     resolvedAccessUserId === user.id &&
     !venue &&
+    // Admins land on the Admin section with no venue by design — the blocking
+    // chooser would trap them there.
     !isTablessAdmin &&
     venues.length > 1;
 

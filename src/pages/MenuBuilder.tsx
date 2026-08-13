@@ -18,6 +18,7 @@ import DisplayAreaPicker, { type DisplayAreaOption } from "@/components/menu/Dis
 import MenuZoneSwitcher, { type VenueMenu, type ZoneRef } from "@/components/menu/MenuZoneSwitcher";
 import { cn } from "@/lib/utils";
 import { resizeFileToWebP } from "@/lib/image-utils";
+import { functionErrorMessage } from "@/lib/function-errors";
 import { toast } from "sonner";
 import { formatItemTaxBreakdown, type TaxConfig } from "@/lib/tax-utils";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
@@ -392,8 +393,8 @@ export default function MenuBuilder() {
 
       const { data, error } = await supabase.functions.invoke("import-menu", { body });
 
-      if (error) { toast.error(error.message); return; }
-      if (data?.error) { toast.error(data.error); return; }
+      const failure = await functionErrorMessage({ data, error }, "Menu import failed");
+      if (failure) { toast.error(failure); return; }
 
       toast.success(`Imported ${data.items_created} items across ${data.categories_created} categories`);
       setImportDialogOpen(false);

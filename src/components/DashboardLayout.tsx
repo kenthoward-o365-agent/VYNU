@@ -211,7 +211,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const showSelfOnboard = !!venue && perms.can("settings") && onboardingStatus !== "completed" && onboardingStatus !== "dismissed";
 
   const showVenueNav = !!venue;
-  const showGroupNav = isTablessAdmin ? true : showVenueNav && isGroupAdmin;
+  const showGroupNav = showVenueNav && isGroupAdmin;
   const filteredVenueNav = venueNavItems.filter(
     (item) => perms.can(item.navKey) && (!item.feature || features.has(item.feature)),
   );
@@ -233,7 +233,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const shift =
     hour < 11 ? "Breakfast" : hour < 15 ? "Lunch" : hour < 17 ? "Afternoon" : hour < 22 ? "Dinner" : "Late";
 
-  const roleLabel = isTablessAdmin ? "Platform Admin" : (venueRole || "Operator");
+  // Reflect the role actually in effect: inside a venue that's the staff role,
+  // even for a platform admin.
+  const roleLabel = venueRole || (isTablessAdmin ? "Platform Admin" : "Operator");
 
   const isActivePath = (item: NavItem) =>
     location.pathname === item.path ||

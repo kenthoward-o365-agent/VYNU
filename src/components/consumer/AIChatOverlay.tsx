@@ -3,6 +3,7 @@ import { Send, X, Sparkles, Users, AlertTriangle, Mic, MicOff, ChevronLeft } fro
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
+import { functionErrorMessage } from "@/lib/function-errors";
 
 interface Message {
   role: "user" | "assistant";
@@ -185,7 +186,8 @@ const AIChatOverlay = ({ venueId, onClose, onAddToCart, menuItems, dinerId, tabl
         },
       });
 
-      if (error) throw error;
+      const failure = await functionErrorMessage({ data, error });
+      if (failure) throw new Error(failure);
 
       const assistantMsg: Message = {
         role: "assistant",

@@ -36,7 +36,9 @@ const ALL_ACCESS: Omit<Permissions, "can"> = {
 /**
  * Loads permissions for the current user at the active venue.
  *
- * - tabless_admin and venue Owner role always get full access.
+ * - The venue Owner role gets full access. The platform `tabless_admin` role
+ *   deliberately grants nothing here: it gates the Admin section only, so an
+ *   admin who is also venue staff operates at their staff role like anyone else.
  * - Sidebar nav + manage-roles + manage-settings come from the user's role
  *   (`venue_role_permissions`).
  * - Order-action permissions (update status / re-open / refund) come from
@@ -45,7 +47,7 @@ const ALL_ACCESS: Omit<Permissions, "can"> = {
  */
 export function usePermissions(): Permissions {
   const { user } = useAuth();
-  const { venue, isTablessAdmin, venueRole } = useVenue();
+  const { venue, venueRole } = useVenue();
   const [perms, setPerms] = useState<Omit<Permissions, "can">>({
     navKeys: new Set(),
     canUpdateOrderStatus: false,
@@ -61,8 +63,8 @@ export function usePermissions(): Permissions {
     let cancelled = false;
 
     const load = async () => {
-      // Admins / owners — full access shortcut
-      if (isTablessAdmin || venueRole === "owner") {
+      // Venue owners — full access shortcut
+      if (venueRole === "owner") {
         if (!cancelled) setPerms({ ...ALL_ACCESS, navKeys: new Set(["*"]) });
         return;
       }
@@ -141,7 +143,7 @@ export function usePermissions(): Permissions {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, venue?.id, isTablessAdmin, venueRole]);
+  }, [user?.id, venue?.id, venueRole]);
 
   const can = (navKey: string) => {
     if (perms.navKeys.has("*")) return true;

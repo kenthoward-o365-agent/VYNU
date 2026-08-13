@@ -65,9 +65,13 @@ const defaultRules: LoyaltyRules = {
 
 export default function GroupDashboard() {
   const { user } = useAuth();
-  const { group: activeGroup, groups, venues, isGroupAdmin, isTablessAdmin, refetch } = useVenue();
+  const { group: activeGroup, groups, venues, isGroupAdmin, refetch } = useVenue();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const group = groups.find((g) => g.id === selectedGroupId) ?? activeGroup ?? (isTablessAdmin ? groups[0] : null) ?? null;
+  // `activeGroup` is only set when the active venue actually belongs to one of
+  // your groups. Fall back to the first group you're staff of, otherwise a
+  // group with no venues assigned yet is unreachable and the create flow loops
+  // back to the create panel.
+  const group = groups.find((g) => g.id === selectedGroupId) ?? activeGroup ?? groups[0] ?? null;
   const groupVenues = venues.filter((v) => v.group_id === group?.id);
 
   /* ── No group: creation UI ── */
@@ -83,7 +87,7 @@ export default function GroupDashboard() {
           <h2 className="text-2xl font-bold text-foreground">{group.name}</h2>
           <p className="text-muted-foreground">Parent Company — {groupVenues.length} venue{groupVenues.length !== 1 ? "s" : ""}</p>
         </div>
-        {isTablessAdmin && groups.length > 1 && (
+        {groups.length > 1 && (
           <select
             className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
             value={group.id}

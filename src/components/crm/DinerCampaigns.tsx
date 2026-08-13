@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useVenue } from "@/contexts/VenueContext";
 import { supabase } from "@/integrations/supabase/client";
+import { functionErrorMessage } from "@/lib/function-errors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,7 +77,8 @@ export default function DinerCampaigns() {
   const send = async (id: string) => {
     if (!confirm("Send this campaign now?")) return;
     const { data, error } = await supabase.functions.invoke("crm-send-campaign", { body: { campaign_id: id } });
-    if (error || (data as any)?.error) toast({ title: "Send failed", description: (data as any)?.error || error?.message, variant: "destructive" });
+    const failure = await functionErrorMessage({ data, error }, "Could not send the campaign.");
+    if (failure) toast({ title: "Send failed", description: failure, variant: "destructive" });
     else { toast({ title: `Sent to ${(data as any).recipients} recipients` }); load(); }
   };
 
@@ -222,7 +224,8 @@ function CampaignEditor({
     toast({ title: campaign ? "Campaign saved" : "Campaign created" });
     if (alsoSend && id) {
       const { data, error } = await supabase.functions.invoke("crm-send-campaign", { body: { campaign_id: id } });
-      if (error || (data as any)?.error) toast({ title: "Send failed", description: (data as any)?.error || error?.message, variant: "destructive" });
+      const failure = await functionErrorMessage({ data, error }, "Could not send the campaign.");
+      if (failure) toast({ title: "Send failed", description: failure, variant: "destructive" });
       else toast({ title: `Sent to ${(data as any).recipients} recipients` });
     }
     onSaved();

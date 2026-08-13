@@ -155,7 +155,7 @@ function AppRoutes() {
         <Route path="/diners" element={<Diners />} />
         <Route path="/diners/preferences" element={<DinerPreferences />} />
         <Route path="/loyalty" element={<Navigate to="/settings" replace />} />
-        <Route path="/group" element={isTablessAdmin ? <GroupDashboard /> : <RequireFeature feature="group.dashboard"><GroupDashboard /></RequireFeature>} />
+        <Route path="/group" element={<RequireFeature feature="group.dashboard"><GroupDashboard /></RequireFeature>} />
         <Route path="/admin/venues" element={<RequireAdmin><AdminVenues /></RequireAdmin>} />
         <Route path="/admin/venues/:venueId" element={<RequireAdmin><AdminVenueDetail /></RequireAdmin>} />
         <Route path="/admin/staff" element={<RequireAdmin><AdminStaff /></RequireAdmin>} />

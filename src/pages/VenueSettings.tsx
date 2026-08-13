@@ -61,13 +61,13 @@ interface VenueRoleOption {
 }
 
 export default function VenueSettings() {
-  const { venue, venueRole, isTablessAdmin, refetch } = useVenue();
+  const { venue, venueRole, refetch } = useVenue();
   const { user, session } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "details";
 
-  const isOwner = venueRole === "owner" || isTablessAdmin;
+  const isOwner = venueRole === "owner";
   const isManager = isOwner || venueRole === "manager";
 
   const [form, setForm] = useState({
