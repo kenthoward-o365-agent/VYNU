@@ -25,3 +25,9 @@ dist-ssr
 
 # Vercel
 .vercel
+# Narrower than the `.env*` the Vercel CLI writes: this repo intentionally
+# tracks .env (public VITE_ keys only, no secrets), and the build depends on it.
+# Only the local overrides — including the VERCEL_OIDC_TOKEN the CLI drops into
+# .env.local — stay out of git.
+.env.local
+.env*.local
