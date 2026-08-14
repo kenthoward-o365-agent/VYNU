@@ -17,7 +17,7 @@ with a working ordering app whose AI silently fails.
 | # | Dependency | Where it lives | Verified by |
 |---|---|---|---|
 | 1 | **Postgres** | Lovable Cloud project `hjcikekaythqjhcuznjf` | `.env`, `supabase/config.toml` |
-| 2 | **AI gateway** | `ai.gateway.lovable.dev/v1/chat/completions` — 13 edge functions | `grep LOVABLE_API_KEY supabase/functions` |
+| 2 | **AI gateway** | `ai.gateway.lovable.dev/v1/chat/completions` — 12 edge functions | `grep -l ai.gateway.lovable.dev supabase/functions/*/index.ts` |
 | 3 | **Connector gateway** | `connector-gateway.lovable.dev` — Firecrawl, Lightspeed | `grep connector-gateway supabase/functions` |
 | 4 | **Repo sync** | Lovable's bot commits to the GitHub repo | commit `e2c2660` |
 
@@ -28,13 +28,30 @@ irreversible act is Phase 9.
 
 ## Phase 0 — Decisions and backups (do this first, change nothing)
 
-### 0.1 Settle the QR code question
+### 0.1 QR codes — not a constraint (confirmed 2026-08-14)
 
-**This is the constraint that governs the whole migration.** QR codes are printed
-on physical stickers and encode an absolute URL. `src/pages/Tables.tsx:17-25` is
-explicit that the host must never derive from the current origin.
+Ordinarily this is the constraint that governs the whole migration: QR codes
+encode an absolute URL on a physical sticker, and if that host is a
+`*.lovable.app` domain it can never be repointed, because Lovable owns the DNS.
+That would mean either keeping a Lovable frontend deployed forever as a
+redirector, or reprinting every sticker.
 
-Run this against the live database and look at what hosts are actually in the wild:
+**It does not apply here.** All existing QR codes are virtual and were generated
+for testing only — nothing is printed and nothing is on a table. The migration is
+therefore free to move `VITE_PUBLIC_APP_URL` to a host you own, and Phase 10 can
+fully retire Lovable.
+
+Two things follow:
+
+1. **Set the QR host to a domain you control before the first sticker is
+   printed.** The window is open now and closes permanently the day a venue goes
+   live on physical stickers.
+2. The product rule still stands in code — `src/pages/Tables.tsx:17-25`
+   deliberately does not derive the host from the current origin, and existing
+   `tables.qr_code` values are returned verbatim. Don't "simplify" that away
+   because today's data is disposable.
+
+To confirm the position before you rely on it:
 
 ```sql
 select split_part(qr_code, '/order/', 1) as host, count(*) as tables
@@ -42,20 +59,6 @@ from public.tables
 where qr_code is not null
 group by 1 order by 2 desc;
 ```
-
-Then pick your situation:
-
-- **All stickers point at a `*.lovable.app` host.** You cannot repoint that
-  hostname — Lovable owns the DNS. Either keep the Lovable frontend deployed
-  forever as a redirector to your new host, or reprint every sticker. Decide now,
-  because it determines whether Phase 9 can ever fully retire Lovable.
-- **Stickers point at a domain you control.** Straightforward — Phase 9 is a DNS
-  change.
-- **Few or no stickers printed yet.** Best case. Move `VITE_PUBLIC_APP_URL` to a
-  domain you own *before* printing anything, and the problem never exists.
-
-> If you take one thing from this document: get the QR host onto a domain you
-> control before you print another sticker.
 
 ### 0.2 Export the secrets
 
@@ -259,25 +262,49 @@ supabase functions deploy
 
 The largest piece of actual engineering, and the one with no mechanical shortcut.
 
-13 functions call `ai.gateway.lovable.dev/v1/chat/completions` with
-`LOVABLE_API_KEY`: `diner-chat`, `copilot-chat`, `upsell-suggest`, `ai-insights`,
-`onboarding-chat`, `import-menu`, `crm-ai-compose`, `generate-menu-image`,
-`enhance-menu-image`, `batch-generate-images`, `generate-modifiers`,
-`landing-from-url`, and the Lightspeed adapter.
+**12** functions call `ai.gateway.lovable.dev/v1/chat/completions` with
+`LOVABLE_API_KEY`. (`adapters/lightspeed` also uses `LOVABLE_API_KEY`, but against
+the *connector* gateway — it is not an AI call site.)
 
-The endpoint is OpenAI-compatible and currently targets `google/gemini-2.5-flash`
-(plus `gemini-3-flash-preview` and image-preview models), so the swap is base
-URL + key + model id rather than a rewrite. Two routes:
+### Status: partly done
 
-- **Keep the wire format.** Point at any OpenAI-compatible provider. Smallest
-  diff; a single shared helper would cover all 13.
-- **Move to Anthropic directly.** More work per call site, but better suited to
-  the agentic tool-use this product is built around.
+`supabase/functions/_shared/ai.ts` now exists and is the single owner of the
+gateway URL, the key, and the role → model mapping. Its defaults reproduce
+today's behaviour exactly, so the swap is env-only for an OpenAI-compatible
+provider:
 
-Whichever you choose, do it as **one shared module** rather than 13 edits — right
-now each function builds its own request. Image generation needs separate
-thought: `generate-menu-image` and `batch-generate-images` use Gemini image
-models, which have no drop-in Anthropic equivalent.
+```
+AI_GATEWAY_URL  AI_API_KEY  AI_MODEL_CHAT  AI_MODEL_CHAT_ADVANCED
+AI_MODEL_IMAGE  AI_MODEL_IMAGE_EDIT
+```
+
+Migrated to it (all image generation):
+
+- [x] `generate-menu-image`
+- [x] `enhance-menu-image`
+- [x] `batch-generate-images`
+
+Still building their own fetch — each needs individual review because they use
+tool-calling loops or structured output rather than a plain completion:
+
+- [ ] `diner-chat`, `copilot-chat`, `onboarding-chat` — chat, tool-calling
+- [ ] `upsell-suggest`, `generate-modifiers`, `import-menu` — tool-calling
+- [ ] `crm-ai-compose`, `landing-from-url` — `response_format`
+- [ ] `ai-insights` — plain completion
+
+**None of this is runtime-tested.** There is no local Supabase stack here, so the
+migrated functions are typechecked (`deno check`) but unexercised. Verify with
+`supabase functions serve` or a deploy to a scratch project before trusting them.
+
+### Choosing a provider
+
+The endpoint is OpenAI-compatible, so pointing at another OpenAI-compatible
+provider needs no code change at all now — set `AI_GATEWAY_URL` and `AI_API_KEY`.
+Moving to the Anthropic Messages API instead means writing one adapter inside
+`aiChat`, which is the single place that knows the wire format.
+
+Image generation needs separate thought either way: the image roles use Gemini
+image models, which have no drop-in Anthropic equivalent.
 
 Also repoint `connector-gateway.lovable.dev`: Firecrawl (`landing-from-url`,
 `import-menu`) needs your own Firecrawl account, and the Lightspeed connector
@@ -373,9 +400,8 @@ Only after a clean billing cycle. Note that this is the point of no return for
 the repo sync, so make sure `supabase/migrations/` is intact in your own repo
 first — a Lovable sync deleted all 223 files once already (commit `e2c2660`).
 
-If step 0.1 concluded that printed stickers point at a `*.lovable.app` host, you
-cannot fully retire Lovable. That frontend has to keep serving redirects for as
-long as those stickers are on tables.
+Because no physical QR stickers exist (step 0.1), nothing forces a Lovable
+frontend to stay alive as a redirector. This retirement can be complete.
 
 ---
 

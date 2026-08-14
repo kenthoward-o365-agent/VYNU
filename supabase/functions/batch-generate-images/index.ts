@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { requireFeature } from "../_shared/require-feature.ts";
+import { aiImage, AiError } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -112,7 +113,6 @@ async function generateAndSaveImage(
   item: ItemToGenerate,
   venueId: string,
   supabaseAdmin: ReturnType<typeof createClient>,
-  lovableApiKey: string
 ) {
   await supabaseAdmin
     .from("menu_items")
@@ -122,33 +122,14 @@ async function generateAndSaveImage(
   const desc = item.description ? ` described as: ${item.description}` : "";
   const prompt = `Generate a professional, appetizing food photography image of "${item.name}"${desc}. The image should look like a high-quality menu photo: well-lit, vibrant colors, clean plating on a neutral background. Top-down or 45-degree angle. No text, no watermarks, no logos. Photorealistic style.`;
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${lovableApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-3.1-flash-image-preview",
-      messages: [{ role: "user", content: prompt }],
-      modalities: ["image", "text"],
-    }),
-  });
-
-  if (!response.ok) {
-    console.error(`AI error for ${item.name}: ${response.status}`);
-    await supabaseAdmin
-      .from("menu_items")
-      .update({ image_ai_status: "failed" })
-      .eq("id", item.id);
-    return;
-  }
-
-  const data = await response.json();
-  const base64Url = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-  if (!base64Url) {
-    console.error(`No image returned for ${item.name}`);
+  // Handled here rather than left to the caller's catch: returning normally on
+  // failure keeps the 1s inter-item pause in processInBackground, which is what
+  // stops a run of 429s from hammering the gateway.
+  let base64Url: string;
+  try {
+    ({ imageUrl: base64Url } = await aiImage({ prompt }));
+  } catch (e) {
+    console.error(`AI error for ${item.name}:`, e instanceof AiError ? e.message : e);
     await supabaseAdmin
       .from("menu_items")
       .update({ image_ai_status: "failed" })
@@ -194,13 +175,12 @@ async function processInBackground(
   items: ItemToGenerate[],
   venueId: string,
   supabaseAdmin: ReturnType<typeof createClient>,
-  lovableApiKey: string,
   supabaseUrl: string,
   supabaseServiceKey: string
 ) {
   for (const item of items) {
     try {
-      await generateAndSaveImage(item, venueId, supabaseAdmin, lovableApiKey);
+      await generateAndSaveImage(item, venueId, supabaseAdmin);
       await new Promise((r) => setTimeout(r, 1000));
     } catch (err) {
       console.error(`Unexpected error for ${item.name}:`, err);
@@ -233,14 +213,6 @@ serve(async (req) => {
     if (!venueId) {
       return new Response(JSON.stringify({ error: "venueId is required" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
-        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -336,7 +308,6 @@ serve(async (req) => {
         batch,
         venueId,
         supabaseAdmin,
-        LOVABLE_API_KEY,
         supabaseUrl,
         supabaseServiceKey
       )

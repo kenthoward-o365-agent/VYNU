@@ -4,16 +4,29 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 type Usage = { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
 
+/**
+ * Structural stand-in for the client. `ReturnType<typeof createClient>` pulls in
+ * the untyped esm.sh generics, whose defaults resolve selected rows to `never`
+ * and make every call site fail `deno check`.
+ */
+type PriceReader = { from: (table: string) => any };
+
+type PriceRow = {
+  model: string;
+  input_per_1k_usd: number | string | null;
+  output_per_1k_usd: number | string | null;
+};
+
 let _priceCache: Record<string, { in: number; out: number }> | null = null;
 let _priceFetchedAt = 0;
 
-async function loadPrices(admin: ReturnType<typeof createClient>) {
+async function loadPrices(admin: PriceReader) {
   const now = Date.now();
   if (_priceCache && now - _priceFetchedAt < 5 * 60_000) return _priceCache;
   const { data } = await admin.from("ai_model_prices").select("model,input_per_1k_usd,output_per_1k_usd");
   const map: Record<string, { in: number; out: number }> = {};
-  for (const r of data || []) {
-    map[r.model as string] = { in: Number(r.input_per_1k_usd), out: Number(r.output_per_1k_usd) };
+  for (const r of (data ?? []) as PriceRow[]) {
+    map[r.model] = { in: Number(r.input_per_1k_usd), out: Number(r.output_per_1k_usd) };
   }
   _priceCache = map;
   _priceFetchedAt = now;
