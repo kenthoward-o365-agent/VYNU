@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         .upsert({ venue_id: record.venue_id, stripe_customer_id: customerId }, { onConflict: "venue_id" });
     }
 
-    const appUrl = Deno.env.get("APP_URL") || "https://hlordernow.lovable.app";
+    const appUrl = Deno.env.get("APP_URL") || "https://vynu-chi.vercel.app";
     const methodTypes = record.methods_allowed
       .filter((m: string) => ["card", "au_becs_debit", "us_bank_account"].includes(m))
       .map((m: string) => m === "becs" ? "au_becs_debit" : m === "ach" ? "us_bank_account" : m);

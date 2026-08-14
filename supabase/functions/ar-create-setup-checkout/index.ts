@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
         .upsert({ venue_id, stripe_customer_id: customerId }, { onConflict: "venue_id" });
     }
 
-    const appUrl = return_url || (Deno.env.get("APP_URL") || "https://hlordernow.lovable.app");
+    const appUrl = return_url || (Deno.env.get("APP_URL") || "https://vynu-chi.vercel.app");
     const successUrl = `${appUrl}/admin/venues/${venue_id}?tab=commercials&setup=success`;
     const cancelUrl = `${appUrl}/admin/venues/${venue_id}?tab=commercials&setup=cancelled`;
 

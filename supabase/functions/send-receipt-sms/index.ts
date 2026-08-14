@@ -121,7 +121,10 @@ Deno.serve(async (req) => {
     // AEA-01: build the receipt link server-side from the (validated) order —
     // never from the request body — so an attacker cannot inject a phishing URL
     // into an SMS sent under the venue's sender ID.
-    const link = `https://hlordernow.lovable.app/order/${venue_id}/_/receipt/${order_id}`;
+    // Was a hardcoded lovable.app host: every receipt SMS already sent carries
+    // that link. Now follows the same APP_URL convention as the ar-* functions.
+    const appUrl = Deno.env.get("APP_URL") || "https://vynu-chi.vercel.app";
+    const link = `${appUrl}/order/${venue_id}/_/receipt/${order_id}`;
     const body = `${venueName}: Thanks for visiting! Your receipt: ${link}${marketing_opt_in ? " — Reply STOP to opt out." : ""}`;
 
     let sendResult: { simulated: boolean; sid?: string } = { simulated: true };

@@ -75,7 +75,7 @@ const KB_TOPICS: { id: string; label: string; summary: string; details: string[]
     details: [
       "Add Table sets the table number + capacity, and now a Zone chosen from a dropdown of the venue's zones.",
       "Download the QR PDF and stick on the table. Re-printing is NOT needed when you rename a table or change its zone — the URL never changes.",
-      "QR URLs are built on https://intent-dine-assist.lovable.app.",
+      "QR URLs are built on the host in VITE_PUBLIC_APP_URL — currently https://vynu-chi.vercel.app.",
     ] },
   { id: "orders", label: "Orders", summary: "Live order board, status flow, refunds, re-opening closed orders, throttled orders, fire-bar, Open Tabs panel.",
     details: [

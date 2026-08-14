@@ -22,7 +22,7 @@ import { toast } from "sonner";
 // Staging sets VITE_PUBLIC_APP_URL to its own host so QR stickers already printed
 // against the staging app keep resolving.
 const CANONICAL_QR_BASE_URL =
-  (import.meta as any).env?.VITE_PUBLIC_APP_URL || "https://hlordernow.lovable.app";
+  (import.meta as any).env?.VITE_PUBLIC_APP_URL || "https://vynu-chi.vercel.app";
 
 interface Table {
   id: string;
