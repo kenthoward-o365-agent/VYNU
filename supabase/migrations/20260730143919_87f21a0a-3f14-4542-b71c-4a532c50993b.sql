@@ -1,0 +1,1 @@
+UPDATE public.tables SET qr_code = REPLACE(qr_code, 'hlordernow.lovable.app', 'intent-dine-assist.lovable.app') WHERE qr_code LIKE '%hlordernow.lovable.app%';
