@@ -53,7 +53,12 @@ and writes production data. There is no local or staging database.
 
 ## Deployment
 
-Vercel, deployed from the CLI (no Git integration):
+Vercel project `vynu`, connected to this repo. Pushing to `main` deploys to
+production; other branches get preview deployments.
+
+Prefer pushing over deploying by hand — a CLI deploy publishes your local
+working tree, which may not match any commit, making "what is live?" ambiguous.
+When you do need it:
 
 ```sh
 npx vercel --scope kent6119-1287s-projects          # preview
@@ -62,6 +67,9 @@ npx vercel --prod --scope kent6119-1287s-projects   # production
 
 `vercel.json` carries the SPA rewrite. Without it, a QR scan cold-loading
 `/order/:venueId/:tableId` would 404.
+
+Environment variables live in the Vercel project, not in the repo. A fresh
+clone needs `npx vercel link` before any CLI command works.
 
 ## Project history
 
