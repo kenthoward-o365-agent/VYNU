@@ -78,7 +78,7 @@ function AppRoutes() {
   useEffect(() => {
     if (!user) return;
     const pending = sessionStorage.getItem("pending_oauth_consent");
-    if (pending && pending.startsWith("/.lovable/oauth/consent")) {
+    if (pending && pending.startsWith("/oauth/consent")) {
       sessionStorage.removeItem("pending_oauth_consent");
       window.location.replace(pending);
     }
@@ -212,9 +212,11 @@ function RootRoutes() {
       <Route path="/billing/setup/:token" element={<BillingSetup />} />
       <Route path="/billing/setup/success" element={<BillingSetup />} />
       <Route path="/billing/setup/cancelled" element={<BillingSetup />} />
-      {/* OAuth consent route for MCP / external agent integrations */}
+      {/* OAuth consent screen for external agent integrations. Was
+          /.lovable/oauth/consent; the MCP server that used it has been removed
+          along with @lovable.dev/mcp-js, so nothing depends on the old path. */}
       <Route
-        path="/.lovable/oauth/consent"
+        path="/oauth/consent"
         element={
           <AuthProvider>
             <OAuthConsent />

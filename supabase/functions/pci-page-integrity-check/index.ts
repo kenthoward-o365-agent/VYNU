@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const baseUrl = Deno.env.get("PCI_CHECK_BASE_URL") || "https://hlordernow.lovable.app";
+  const baseUrl = Deno.env.get("PCI_CHECK_BASE_URL") || "https://vynu-chi.vercel.app";
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,

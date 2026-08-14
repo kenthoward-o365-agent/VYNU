@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     });
     if (error) throw error;
 
-    const appUrl = Deno.env.get("APP_URL") || "https://hlordernow.lovable.app";
+    const appUrl = Deno.env.get("APP_URL") || "https://vynu-chi.vercel.app";
     const url = `${appUrl}/billing/setup/${tokenRaw}`;
 
     await adminClient.from("venue_billing_events").insert({
