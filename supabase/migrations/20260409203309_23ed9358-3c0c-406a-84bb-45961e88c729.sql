@@ -1,1 +1,0 @@
-UPDATE public.menu_items SET image_ai_status = NULL WHERE image_ai_status IN ('queued', 'processing');

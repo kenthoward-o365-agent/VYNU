@@ -1,2 +1,0 @@
-DROP POLICY IF EXISTS "Admins view request log part" ON public.api_request_log_y2026m09;
-CREATE POLICY "Admins view request log part" ON public.api_request_log_y2026m09 FOR SELECT TO authenticated USING (has_role(auth.uid(), 'tabless_admin'));

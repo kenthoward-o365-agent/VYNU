@@ -1,1 +1,0 @@
-ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_is_mock boolean NOT NULL DEFAULT false;

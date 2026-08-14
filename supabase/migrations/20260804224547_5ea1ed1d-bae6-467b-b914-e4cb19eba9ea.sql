@@ -1,1 +1,0 @@
-GRANT EXECUTE ON FUNCTION public.get_user_diner_profile_id() TO anon;
