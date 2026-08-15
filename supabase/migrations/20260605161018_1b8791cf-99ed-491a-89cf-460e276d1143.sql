@@ -31,4 +31,13 @@ CREATE POLICY "Venue staff can read their own billing events"
 REVOKE SELECT (api_key_live, api_key_test, hmac_key, client_key_live)
   ON public.venue_payment_config FROM anon, authenticated;
 
-DROP POLICY IF EXISTS "Diners can subscribe to their own order channel" ON realtime.messages;
+-- REPLAY NOTE (2026-08-14): wrapped for the same reason as the block in
+-- 20260601222556 — realtime.messages is owned by supabase_realtime_admin and
+-- DROP POLICY requires ownership even with IF EXISTS. On a fresh project that
+-- policy was never created, so this is a no-op there.
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS "Diners can subscribe to their own order channel" ON realtime.messages;
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'skipping realtime.messages policy drop: not owner';
+END $$;

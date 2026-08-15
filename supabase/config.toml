@@ -1,1 +1,7 @@
-project_id = "hjcikekaythqjhcuznjf"
+# VYNU's own Supabase project (org: VYNU, region ap-southeast-2). The schema was
+# replayed here from supabase/migrations on 2026-08-14.
+#
+# NOTE: the running app still points at the old Lovable Cloud project via .env —
+# this setting only affects the Supabase CLI. Repointing the app is a separate
+# step, after the data migration. See docs/migration/lovable-cutover.md.
+project_id = "ewdjxdfgvpdcctqikdcy"

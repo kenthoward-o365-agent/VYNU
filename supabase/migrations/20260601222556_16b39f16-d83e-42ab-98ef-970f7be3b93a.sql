@@ -68,29 +68,52 @@ GRANT SELECT (
 ) ON public.venues TO anon;
 
 -- 8) realtime.messages: enable RLS + restrict subscriptions
-ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
+--
+-- REPLAY NOTE (2026-08-14): wrapped so this migration can be replayed onto a
+-- fresh Supabase project. realtime.messages is owned by supabase_realtime_admin,
+-- and on newer projects the postgres role is NOT a member of that role, so both
+-- the ALTER and the CREATE POLICYs fail with 42501 "must be owner of table
+-- messages". The privilege cannot be granted from a migration.
+--
+-- Skipping is safe for this application:
+--   * Newer projects already have RLS enabled on realtime.messages by default
+--     (verified: relrowsecurity = true), so the ALTER is redundant there.
+--   * realtime.messages backs Broadcast/Presence authorisation only. This app
+--     uses postgres_changes exclusively (6 call sites; zero broadcast, presence
+--     or private-channel usage), and postgres_changes is governed by RLS on the
+--     underlying tables — orders, table_sessions and so on — not by these
+--     policies.
+--
+-- If Broadcast or Presence is ever adopted, these policies must be created by
+-- hand in the dashboard as supabase_realtime_admin.
+DO $$
+BEGIN
+  ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Authenticated can subscribe to venue channels" ON realtime.messages;
-CREATE POLICY "Authenticated can subscribe to venue channels"
-ON realtime.messages FOR SELECT TO authenticated
-USING (
-  -- topic patterns like "venue:<uuid>" or "orders:<venue_uuid>" – allow if staff of that venue
-  EXISTS (
-    SELECT 1
-    WHERE (
-      (realtime.topic() ~ '^[a-zA-Z_]+:[0-9a-f-]{36}$')
-      AND public.is_venue_staff(
-        auth.uid(),
-        (regexp_replace(realtime.topic(), '^[a-zA-Z_]+:', ''))::uuid
+  DROP POLICY IF EXISTS "Authenticated can subscribe to venue channels" ON realtime.messages;
+  CREATE POLICY "Authenticated can subscribe to venue channels"
+  ON realtime.messages FOR SELECT TO authenticated
+  USING (
+    -- topic patterns like "venue:<uuid>" or "orders:<venue_uuid>" – allow if staff of that venue
+    EXISTS (
+      SELECT 1
+      WHERE (
+        (realtime.topic() ~ '^[a-zA-Z_]+:[0-9a-f-]{36}$')
+        AND public.is_venue_staff(
+          auth.uid(),
+          (regexp_replace(realtime.topic(), '^[a-zA-Z_]+:', ''))::uuid
+        )
       )
     )
-  )
-);
+  );
 
-DROP POLICY IF EXISTS "Diners can subscribe to their own order channel" ON realtime.messages;
-CREATE POLICY "Diners can subscribe to their own order channel"
-ON realtime.messages FOR SELECT TO authenticated, anon
-USING (
-  -- public topics that don't carry sensitive info; allow only specific prefixes
-  realtime.topic() LIKE 'public:%'
-);
+  DROP POLICY IF EXISTS "Diners can subscribe to their own order channel" ON realtime.messages;
+  CREATE POLICY "Diners can subscribe to their own order channel"
+  ON realtime.messages FOR SELECT TO authenticated, anon
+  USING (
+    -- public topics that don't carry sensitive info; allow only specific prefixes
+    realtime.topic() LIKE 'public:%'
+  );
+EXCEPTION WHEN insufficient_privilege THEN
+  RAISE NOTICE 'skipping realtime.messages RLS: not owner (%), see REPLAY NOTE above', SQLERRM;
+END $$;

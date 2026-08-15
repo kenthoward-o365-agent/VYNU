@@ -1,0 +1,31 @@
+-- Drop enroll_diner_in_loyalty so the next migration can change its return type.
+--
+-- WHY THIS EXISTS
+-- Two migrations define public.enroll_diner_in_loyalty(uuid, uuid) with the same
+-- arguments but different return types, and nothing ever drops it in between:
+--
+--   20260723093001_iam04_loyalty_server_authoritative_enrollment.sql  RETURNS void
+--   20260723112625_12ce1200-fc33-45dc-a262-a67040d7a4db.sql           RETURNS uuid
+--
+-- CREATE OR REPLACE FUNCTION cannot change a return type, so replaying these in
+-- filename order fails with 42P13 "cannot change return type of existing
+-- function".
+--
+-- WHICH ONE IS CORRECT
+-- uuid. src/integrations/supabase/types.ts is generated from the live original
+-- database and records `enroll_diner_in_loyalty` as `Returns: string`, i.e. uuid.
+-- The caller needs the new loyalty_balances id back, which RETURNS void cannot
+-- provide.
+--
+-- WHY THE ORDER IS WRONG
+-- 20260723093001 is hand-authored — descriptive filename, versus the UUID names
+-- Lovable generates. Its timestamp places it 2h20m before the migration it
+-- actually supersedes, so filename order does not reflect the order these were
+-- applied to the original database. Replay is the first time the two have ever
+-- run in this sequence.
+--
+-- Dropping is safe: the very next migration recreates the function with the
+-- correct signature and re-issues its GRANTs, and no view, trigger or constraint
+-- depends on it.
+
+DROP FUNCTION IF EXISTS public.enroll_diner_in_loyalty(uuid, uuid);
