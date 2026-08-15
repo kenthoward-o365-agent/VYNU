@@ -27,16 +27,34 @@ run it via `npx playwright test`.
 
 ## Read this before touching the database
 
-**`.env` points local dev at the live project.** `npm run dev` on a laptop reads
-and writes **production data** — `hjcikekaythqjhcuznjf` is the only database there
-is. No local stack, no staging. Be correspondingly careful with anything that
-mutates orders, payments, or venues.
+**There are now two databases. Know which one you mean.**
 
-**`supabase/migrations/` is the schema's source of truth** — 223 files, ~16k lines,
+| Project | Role |
+|---|---|
+| `hjcikekaythqjhcuznjf` | Lovable Cloud. **Holds all the data and users.** `.env` and the Vercel env vars still point the running app here. |
+| `ewdjxdfgvpdcctqikdcy` | VYNU's own project (org VYNU, `ap-southeast-2`). Schema replayed 2026-08-14. **Empty of data.** `supabase/config.toml` points the CLI here. |
+
+Credentials do not work across the two — each has its own `auth.users`. A login
+failing with "invalid credentials" is usually this, not a bad password.
+
+**`.env` points local dev at the Lovable project.** `npm run dev` on a laptop
+reads and writes **production data**. No local stack, no staging. Be
+correspondingly careful with anything that mutates orders, payments, or venues.
+
+**`supabase/migrations/` is the schema's source of truth** — 227 files, ~16k lines,
 2026-04-07 onward. Read it rather than inferring schema from
 `src/integrations/supabase/types.ts`: the migrations carry the RLS policies,
 `SECURITY DEFINER` settings, function bodies, triggers, indexes and partition
 definitions that the generated types cannot express.
+
+**Filename order is not application order.** Migrations with *descriptive* names
+(`20260804120000_tab_payment_server_authoritative.sql`) are hand-authored; the
+UUID-named ones are Lovable-generated. Hand-authored files carry timestamps that
+do not reflect when they were really applied, and two pairs turned out to
+conflict when finally run in filename order — a function redefined with a
+different return type, and a policy created twice. Both are fixed, but assume
+more may lurk: if you add a migration, do not trust that an earlier-numbered file
+actually ran first.
 
 **Those 223 files were deleted once, and the deletion was invisible.** Commit
 `e2c2660` ("Add integration configuration from remix", `gpt-engineer-app[bot]`,
@@ -51,10 +69,23 @@ exception: the monthly partitions of `api_request_log` and `pos_sync_log`
 (`*_y2026m*`) are created at runtime by `ensure_monthly_partition` /
 `ensure_log_partitions`, not by any migration.
 
-Migrations are applied by Lovable, not from here — `supabase/config.toml` holds
-only `project_id` and there is no local Supabase stack. Treat a new file in
-`migrations/` as a record of something Lovable already applied to production, not
-as pending work.
+**The migrations are replayable.** They were not until 2026-08-14 — a fresh
+project hit four failures, three of them state the Lovable database had that no
+migration creates (runtime-created partitions, and `pg_cron`/`pg_net` enabled by
+hand in the dashboard). Those preconditions are now supplied by the four
+`*_replay_*.sql` migrations. Verified end to end: all 227 apply to an empty
+project, producing every one of the 113 tables with none missing.
+
+Against the VYNU project, apply with the CLI:
+
+```sh
+npx supabase link --project-ref ewdjxdfgvpdcctqikdcy   # prompts for the DB password
+npx supabase db push
+```
+
+Against the **Lovable** project, migrations are applied by Lovable, not from
+here. Treat a new file in `migrations/` bearing a UUID name as a record of
+something Lovable already applied to production, not as pending work.
 
 ---
 

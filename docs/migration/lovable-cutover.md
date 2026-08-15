@@ -114,52 +114,44 @@ Store it outside the repo. This is your rollback for everything that follows.
 
 ---
 
-## Phase 1 — Stand up your own Supabase project
+## Phase 1 — Stand up your own Supabase project ✅ DONE (2026-08-14)
 
-1. Create a new project in **your** Supabase organisation. Match the region to
-   the current one (Australian venues — likely `ap-southeast-2`) so diner
-   latency doesn't regress.
-2. Install the CLI and link it:
-
-```bash
-npm install -g supabase && supabase link --project-ref <your-new-ref>
-```
-
-3. Enable the extensions the migrations assume: `pg_cron`, `pg_net`, `pgcrypto`,
-   `supabase_vault`. **[verify]** — check against the live project's extension
-   list; the migrations reference all four but may assume others.
-
-Nothing live is touched. You can throw this project away and start over.
+Project `ewdjxdfgvpdcctqikdcy`, org VYNU, region `ap-southeast-2` (correct for
+Australian venues), Postgres 17. Extensions are created by the migrations
+themselves — see Phase 2.
 
 ---
 
-## Phase 2 — Replay the schema
+## Phase 2 — Replay the schema ✅ DONE (2026-08-14)
 
-This is the phase the restored migrations bought you. Without them you would be
-reverse-engineering 113 tables and 126 files' worth of RLS policies by hand.
-
-```bash
-supabase db push
+```sh
+npx supabase link --project-ref ewdjxdfgvpdcctqikdcy
+npx supabase db push
 ```
 
-223 migrations, in filename order, 2026-04-07 → 2026-08-13.
+All 227 migrations applied. Verified against the original:
 
-**Verify before continuing.** Compare the result against the live schema:
+| | Original | VYNU |
+|---|---|---|
+| Tables | 113 | 113 — **zero missing** |
+| Enums | 14 | 14 |
+| RLS policies | — | 364 |
+| Functions | — | 126 |
+| Triggers / indexes | — | 77 / 384 |
+| Cron jobs | — | 4 |
 
-```sql
-select count(*) from information_schema.tables  where table_schema = 'public';
-select count(*) from pg_policies                where schemaname  = 'public';
-select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'public';
-```
+`pg_cron`, `pg_net`, `pgmq` and `pgcrypto` all installed.
 
-Run the same three against the live database and diff the numbers. Expect ~118
-tables, ~113 functions. A shortfall means a schema change was applied to
-production without a migration — find it before proceeding.
+**Four defects had to be fixed first**, and they are the reason this phase was
+worth doing early rather than during a cutover window. Three were state the
+Lovable database had that no migration creates — runtime-created log partitions,
+and `pg_cron`/`pg_net` enabled by hand in the dashboard months before the only
+`CREATE EXTENSION` statements were written. The fourth was a latent ordering bug:
+hand-authored migrations carry timestamps that do not reflect when they were
+applied, so two pairs had never actually run in filename order before. See commit
+`1810eed` and the four `*_replay_*.sql` migrations.
 
-The only tables legitimately absent are the runtime-created monthly partitions
-(`api_request_log_y2026m*`, `pos_sync_log_y2026m*`), which
-`ensure_monthly_partition` creates on demand.
+**The database is empty of data.** Phase 3 is what fills it.
 
 ---
 
