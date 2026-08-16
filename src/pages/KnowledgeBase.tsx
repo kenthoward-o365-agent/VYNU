@@ -362,7 +362,7 @@ export default function KnowledgeBase() {
         {/* Vee AI Analytics */}
         <Section id="shyndig-ai-analytics" title="Vee AI Analytics" icon={BarChart3} hidden={isHidden("shyndig-ai-analytics")}>
           <SubSection title="What it tracks">
-            <p>Vee AI Analytics is the &quot;is the AI actually working?&quot; dashboard. It tracks every conversation between a diner and your VYNU agent and shows you how well the agent is converting, upselling, and being received. Use it to tune your agent's tone, opening message, and venue context.</p>
+            <p>Vee AI Analytics is the &quot;is the AI actually working?&quot; dashboard. It tracks every conversation between a diner and Vee (or whatever you've renamed your agent to) and shows you how well the agent is converting, upselling, and being received. Use it to tune your agent's tone, opening message, and venue context.</p>
           </SubSection>
 
           <SubSection title="Headline metrics">

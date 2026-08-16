@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
       .eq("venue_id", venue_id)
       .maybeSingle();
 
-    const agentName = aiConfig?.agent_name || "VYNU";
+    const agentName = aiConfig?.agent_name || "Vee";
     const tone = aiConfig?.tone || "aussie";
     const toneInstruction = tonePrompts[tone] || tonePrompts.aussie;
     const venueContext = aiConfig?.venue_context || "";
