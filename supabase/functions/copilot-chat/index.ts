@@ -80,7 +80,7 @@ const KB_TOPICS: { id: string; label: string; summary: string; details: string[]
   { id: "orders", label: "Orders", summary: "Live order board, status flow, refunds, re-opening closed orders, throttled orders, fire-bar, Open Tabs panel.",
     details: [
       "Status flow: new → in_progress → ready → completed. Cancellations and refunds are tracked separately.",
-      "Refund: open the order card → Refund → confirm. Refund posts back via H&L Pay to the original card.",
+      "Refund: open the order card → Refund → confirm. Refund posts back via VYNU Pay to the original card.",
       "Re-open a closed order from the order detail menu to amend or add items.",
       "Throttled orders show a wait-minute badge; the fire-bar groups items by kitchen station.",
       "Open Tabs panel lists every live tab with balance due and pre-auth status for zones that run tabs.",
@@ -127,11 +127,11 @@ const KB_TOPICS: { id: string; label: string; summary: string; details: string[]
       "A listed special date always wins over the weekday rule. Surcharges are calculated on the subtotal before gratuity and appear as their own line on the bill and receipt.",
       "Best practice: load the next 12 months of state public holidays at the start of the financial year.",
     ] },
-  { id: "settings", label: "Settings", summary: "Venue details, users/roles, zones, loyalty, VYNU AI tone, payments (H&L Pay), gratuities, surcharges, taxes (GST), table sessions, integrations.",
+  { id: "settings", label: "Settings", summary: "Venue details, users/roles, zones, loyalty, VYNU AI tone, payments (VYNU Pay), gratuities, surcharges, taxes (GST), table sessions, integrations.",
     details: [
       "Users tab: invite staff, assign roles (owner, manager, staff). Role drives nav + tool access (e.g. CoPilot financials are admin-only).",
       "Zones tab (bottom-right tile): create zones, assign each a menu, and set pay-on-order vs tabs, pre-auth, tab limits and split payments. This replaced the old Open Tabs tile.",
-      "Payments (H&L Pay): connect your H&L Pay account, set processing currency, manage payout schedule.",
+      "Payments (VYNU Pay): connect your VYNU Pay account, set processing currency, manage payout schedule.",
       "Gratuities & surcharges: default tip suggestions, weekend/public-holiday surcharges with custom special date ranges, GST inclusive/exclusive.",
       "Details tab shows the venue's numeric site ID (e.g. 1000, 1001) — that's the ID staff should quote, not the internal UUID.",
       "Table sessions: choose pay-as-you-go vs end-of-meal billing.",
@@ -160,7 +160,7 @@ const WALKTHROUGHS: { id: string; title: string; description: string; keywords: 
     keywords: ["refund", "refund order", "issue refund", "give refund", "money back"] },
   { id: "view-revenue", title: "See today's revenue", description: "Where today's revenue tiles live.",
     keywords: ["today's revenue", "today revenue", "see revenue", "view revenue", "todays sales", "today sales", "where is revenue"] },
-  { id: "configure-payments", title: "Configure H&L Pay payments", description: "Payments, gratuities, surcharges, GST.",
+  { id: "configure-payments", title: "Configure VYNU Pay payments", description: "Payments, gratuities, surcharges, GST.",
     keywords: ["configure payments", "set up payments", "setup payments", "h&l pay", "hl pay", "gratuities", "gst", "tip", "tipping"] },
   { id: "pos-integration", title: "Connect a POS", description: "Pair H&L Exceed (or Doshii / Lightspeed / Square / Mock) so orders push automatically.",
     keywords: ["connect pos", "connect h&l exceed", "h&l exceed", "hl exceed", "pos integration", "pair pos", "setup pos", "set up pos", "doshii", "lightspeed", "square pos", "mock provider"] },
@@ -336,7 +336,7 @@ const tools = [
     type: "function",
     function: {
       name: "get_invoices",
-      description: "Venue's H&L Pay invoices. Admins only.",
+      description: "Venue's VYNU Pay invoices. Admins only.",
       parameters: {
         type: "object",
         properties: {
@@ -686,7 +686,7 @@ RULES
 - For "how do I…" or "where is…" questions: ALWAYS call search_knowledge_base first. If the result includes a walkthrough whose id matches what the user wants to do, call start_walkthrough with that id — the UI will visually highlight each control step-by-step (Step 1, Next, Step 2…). After launching, reply with one short confirmation like "Starting the walkthrough — follow the highlighted steps." Do NOT also repeat the steps in text. If no walkthrough matches, call get_knowledge_article for the most relevant topic and answer in clear numbered steps with a markdown link to /knowledge-base#<topic_id>.
 - Markdown is fine. Keep most replies under ~150 words. Use tables/lists for multi-row data.
 - Financial tools (invoices, subscription) are admins-only — if the user lacks access the tool will say so; relay that gently.
-- Never expose internal infra names. The payments product is "H&L Pay".
+- Never expose internal infra names. The payments product is "VYNU Pay".
 
 RECENTLY SHIPPED (be confident about these; use search_knowledge_base / get_knowledge_article for detail)
 - Zones: Settings → Zones (bottom-right tile) creates real zones (Public Bar, Bistro, Rooftop). Each zone carries one menu plus its own payment rules. The Tables page Zone field is now a dropdown, and QR URLs never change when a zone changes.

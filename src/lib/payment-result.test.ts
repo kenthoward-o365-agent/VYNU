@@ -37,8 +37,8 @@ describe("assertPaymentResult", () => {
 
   it("throws on a sanitised 500, which carries only a generic message", () => {
     expect(() =>
-      assertPaymentResult(res(500), { error: "H&L Pay processing error", correlation_id: "abc-123" })
-    ).toThrow(/H&L Pay processing error/);
+      assertPaymentResult(res(500), { error: "VYNU Pay processing error", correlation_id: "abc-123" })
+    ).toThrow(/VYNU Pay processing error/);
   });
 
   it("throws with the status when a non-2xx body has no error field", () => {

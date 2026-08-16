@@ -202,7 +202,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
       } catch (e) {
         console.warn("[PCI audit] failed to record audit entries", e);
       }
-      toast.success("H&L Pay settings saved");
+      toast.success("VYNU Pay settings saved");
     }
     setSaving(false);
   };
@@ -235,7 +235,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
       if (resp.ok && result.success) {
         setTestResult({
           success: true,
-          message: result.message || "H&L Pay connection verified successfully.",
+          message: result.message || "VYNU Pay connection verified successfully.",
         });
         const methodTypes = (result.methods || []).map((m: any) => m.type);
         setAvailableMethods(methodTypes);
@@ -250,7 +250,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
   };
 
   const startOnboarding = () => {
-    toast.info("H&L Pay merchant onboarding is coming soon. Our team will be in touch.");
+    toast.info("VYNU Pay merchant onboarding is coming soon. Our team will be in touch.");
   };
 
   const copyMerchantId = () => {
@@ -287,16 +287,16 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
               <p className="font-medium text-sm">
                 {config.is_active
                   ? isMockMode
-                    ? "H&L Pay active in TEST mode"
-                    : "H&L Pay active — LIVE transactions"
-                  : "H&L Pay not enabled"}
+                    ? "VYNU Pay active in TEST mode"
+                    : "VYNU Pay active — LIVE transactions"
+                  : "VYNU Pay not enabled"}
               </p>
               <p className="text-xs text-muted-foreground">
                 {config.is_active
                   ? isMockMode
                     ? "Simulated payments — use test cards below to verify your flow."
                     : "Live payment processing — real transactions will be charged."
-                  : "Enable H&L Pay below to accept payments from diners."}
+                  : "Enable VYNU Pay below to accept payments from diners."}
               </p>
             </div>
             <Badge
@@ -313,15 +313,15 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         </CardContent>
       </Card>
 
-      {/* H&L Pay Merchant Account */}
+      {/* VYNU Pay Merchant Account */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            H&L Pay Merchant Account
+            VYNU Pay Merchant Account
           </CardTitle>
           <CardDescription>
-            H&L Pay handles your merchant account, funding, statements, and chargebacks.
+            VYNU Pay handles your merchant account, funding, statements, and chargebacks.
             No third-party processor accounts to manage.
           </CardDescription>
         </CardHeader>
@@ -330,7 +330,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             <div>
               <Label>Application status</Label>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Set automatically by the H&L Pay underwriting team.
+                Set automatically by the VYNU Pay underwriting team.
               </p>
             </div>
             <Badge variant={STATUS_VARIANT[config.merchant_status]}>
@@ -341,7 +341,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
           <Separator />
 
           <div>
-            <Label>H&L Pay Merchant ID</Label>
+            <Label>VYNU Pay Merchant ID</Label>
             <div className="flex items-center gap-2 mt-1.5">
               <Input
                 value={config.merchant_id_ordrpay || "—"}
@@ -378,7 +378,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             Payment Behaviour
           </CardTitle>
           <CardDescription>
-            Control how H&L Pay processes payments at this venue.
+            Control how VYNU Pay processes payments at this venue.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -526,7 +526,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
             </Button>
             <Button variant="outline" onClick={testConnection} disabled={testing}>
               <ShieldCheck className="h-4 w-4 mr-2" />
-              {testing ? "Testing..." : "Test H&L Pay connection"}
+              {testing ? "Testing..." : "Test VYNU Pay connection"}
             </Button>
           </div>
 
@@ -564,7 +564,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
         <CardContent className="space-y-3">
           {availableMethods === null ? (
             <p className="text-sm text-muted-foreground">
-              Run <span className="font-medium">Test H&L Pay connection</span> above to detect
+              Run <span className="font-medium">Test VYNU Pay connection</span> above to detect
               which payment methods are enabled on your account.
             </p>
           ) : (
@@ -618,7 +618,7 @@ export default function PaymentSettingsTab({ venueId }: { venueId: string }) {
               <span className="font-medium text-foreground">Apple Pay requires domain verification.</span>{" "}
               A valid Apple Pay domain-association file must be provisioned for this domain before
               Apple Pay can render — if it hasn't been set up yet, Apple Pay will stay unavailable
-              even on Safari. Contact H&L Pay if the Apple Pay tile above is not green. Apple Pay only
+              even on Safari. Contact VYNU Pay if the Apple Pay tile above is not green. Apple Pay only
               renders on Safari; Google Pay only on Chrome/Android — that's a browser/OS requirement.
             </p>
           </div>

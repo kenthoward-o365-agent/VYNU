@@ -44,7 +44,7 @@ export default function AdminBilling() {
   return (
     <div className="p-6 space-y-6 max-w-[1600px]">
       <div>
-        <h1 className="text-2xl font-bold">H&L Pay — Accounts Receivable</h1>
+        <h1 className="text-2xl font-bold">VYNU Pay — Accounts Receivable</h1>
         <p className="text-sm text-muted-foreground">Recurring billing, invoices, and collections for all venues.</p>
       </div>
 

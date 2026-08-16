@@ -348,7 +348,7 @@ export default function VenueSettings() {
       { key: "users", label: "Users & Roles", description: "Staff accounts and permissions", icon: Users, to: "/settings?tab=users" },
       { key: "loyalty", label: "Loyalty", description: "Earning rules and rewards", icon: Gift, to: "/settings?tab=loyalty" },
       { key: "sippa", label: "VYNU AI", description: "AI assistant configuration", icon: Bot, to: "/settings?tab=sippa" },
-      { key: "payments", label: "Payments", description: "H&L Pay setup and payouts", icon: CreditCard, to: "/settings?tab=payments" },
+      { key: "payments", label: "Payments", description: "VYNU Pay setup and payouts", icon: CreditCard, to: "/settings?tab=payments" },
       { key: "gratuities", label: "Gratuities", description: "Tip presets and rules", icon: DollarSign, to: "/settings?tab=gratuities" },
       { key: "surcharges", label: "Surcharges", description: "Weekend & public holiday surcharges", icon: Percent, to: "/settings?tab=surcharges" },
       { key: "taxes", label: "Taxes", description: "GST and tax configuration", icon: Receipt, to: "/settings?tab=taxes" },

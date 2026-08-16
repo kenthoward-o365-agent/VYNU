@@ -12,7 +12,7 @@ import { ShieldAlert, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 /**
  * INTERNAL — visible only to platform admins.
  *
- * Lets an H&L Pay platform admin paste the underlying processor credentials
+ * Lets an VYNU Pay platform admin paste the underlying processor credentials
  * (test/live API + client keys, merchant account, HMAC) for a venue.
  * These never appear in the venue-facing Settings → Payments tab.
  *

@@ -84,7 +84,7 @@ const TabBillPanel = ({
     load();
   }, [load]);
 
-  // Load H&L Pay methods for the amount being paid
+  // Load VYNU Pay methods for the amount being paid
   useEffect(() => {
     if (amountToPay <= 0) return;
     let cancelled = false;
@@ -479,13 +479,13 @@ const TabBillPanel = ({
                     countryCode="AU"
                     environment={paymentEnvironment}
                     clientKey={clientKey || undefined}
-                    merchantName="H&L Pay"
+                    merchantName="VYNU Pay"
                     applePayMerchantId={walletConfig?.applePayMerchantId || undefined}
                     googlePayMerchantId={walletConfig?.googlePayMerchantId || undefined}
                     gatewayMerchantId={walletConfig?.gatewayMerchantId || undefined}
                     onSubmit={handleDropinSubmit}
                     onAdditionalDetails={handleDropinAdditionalDetails}
-                    onError={(e) => console.error("H&L Pay error:", e)}
+                    onError={(e) => console.error("VYNU Pay error:", e)}
                   />
                 ) : (
                   <p className="text-sm text-muted-foreground">
@@ -526,7 +526,7 @@ const TabBillPanel = ({
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5" />
-          <span>Secured by H&L Pay</span>
+          <span>Secured by VYNU Pay</span>
         </div>
       </div>
     </div>

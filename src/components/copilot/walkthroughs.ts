@@ -50,7 +50,7 @@ export const WALKTHROUGHS: Walkthrough[] = [
     steps: [
       { route: "/orders", selector: '[data-copilot-target="/orders"]', title: "Open Orders", body: "Click Orders in the sidebar to see the live order board." },
       { selector: '[data-copilot-target="order-card"]', title: "Pick the order", body: "Click on the order you want to refund." },
-      { selector: '[data-copilot-target="refund-button"]', title: "Refund", body: "Press Refund and confirm. The refund posts back to the original card via H&L Pay." },
+      { selector: '[data-copilot-target="refund-button"]', title: "Refund", body: "Press Refund and confirm. The refund posts back to the original card via VYNU Pay." },
     ],
   },
   {
@@ -65,11 +65,11 @@ export const WALKTHROUGHS: Walkthrough[] = [
   },
   {
     id: "configure-payments",
-    title: "Configure H&L Pay payments",
+    title: "Configure VYNU Pay payments",
     description: "Set up payments, gratuities and surcharges.",
     steps: [
       { route: "/settings", selector: '[data-copilot-target="/settings"]', title: "Open Settings", body: "Settings is in the sidebar." },
-      { selector: '[data-copilot-target="settings-payments"]', title: "Payments section", body: "Open the Payments tab to enable H&L Pay and add your account." },
+      { selector: '[data-copilot-target="settings-payments"]', title: "Payments section", body: "Open the Payments tab to enable VYNU Pay and add your account." },
       { selector: '[data-copilot-target="settings-gratuities"]', title: "Gratuities & surcharges", body: "Configure default tip suggestions, surcharges (weekend/public holiday) and GST handling." },
     ],
   },

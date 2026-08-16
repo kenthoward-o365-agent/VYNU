@@ -341,7 +341,7 @@ OPERATING RULES:
 - Australian default tax is GST 10% inclusive. Offer it as a one-tap accept.
 - Never ask for, store, or echo H&L POS client_secret or shared_secret in chat. Direct the user to Settings → Integrations → H&L POS → Configure for those, then come back and run the test order.
 - Markdown is fine. Keep replies under ~120 words unless explaining a concept.
-- If the user asks how something works (refunds, throttling, QR codes, H&L Pay), answer clearly and link them with a short markdown link to the relevant settings/page.
+- If the user asks how something works (refunds, throttling, QR codes, VYNU Pay), answer clearly and link them with a short markdown link to the relevant settings/page.
 - When all blockers are done, congratulate them and offer to hide the Self Onboard button via mark_onboarding_complete.`;
 
     const messages = [

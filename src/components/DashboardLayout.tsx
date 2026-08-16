@@ -89,7 +89,7 @@ const adminNavItems = [
   { path: "/admin/dashboard", label: "Dashboard", icon: IconDashboard },
   { path: "/admin/venues", label: "Venues", icon: IconVenues },
   { path: "/admin/financials", label: "Finance", icon: IconFinance },
-  { path: "/admin/billing", label: "H&L Pay", icon: IconHLPay },
+  { path: "/admin/billing", label: "VYNU Pay", icon: IconHLPay },
   { path: "/admin/staff", label: "Staff", icon: IconStaff },
   { path: "/admin/partners", label: "Partners", icon: IconPartners },
   { path: "/admin/integrations", label: "POS", icon: IconPOS },

@@ -51,7 +51,7 @@ export default function BillingSetup() {
               <CheckCircle2 className="h-12 w-12 mx-auto text-green-500" />
               <h1 className="text-xl font-semibold">Payment method saved</h1>
               <p className="text-sm text-muted-foreground">
-                Your payment details are securely stored. H&L Pay will use this for your monthly platform invoices.
+                Your payment details are securely stored. VYNU Pay will use this for your monthly platform invoices.
                 You can close this window.
               </p>
             </>
@@ -71,14 +71,14 @@ export default function BillingSetup() {
               <h1 className="text-xl font-semibold">Link invalid or expired</h1>
               <p className="text-sm text-muted-foreground">{error}</p>
               <p className="text-xs text-muted-foreground">
-                Contact your H&L Pay administrator for a new setup link.
+                Contact your VYNU Pay administrator for a new setup link.
               </p>
             </>
           )}
 
           <div className="pt-4 border-t flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <ShieldCheck className="h-3.5 w-3.5" />
-            PCI-DSS compliant · Card details handled by Stripe, never by H&L Pay
+            PCI-DSS compliant · Card details handled by Stripe, never by VYNU Pay
           </div>
         </CardContent>
       </Card>

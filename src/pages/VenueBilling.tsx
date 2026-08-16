@@ -231,7 +231,7 @@ export default function VenueBilling() {
             <Loader2 className="animate-spin h-5 w-5" />
           ) : (
             <div id="invoice-print-area">
-              <h1>H&L Pay — Tax Invoice</h1>
+              <h1>VYNU Pay — Tax Invoice</h1>
               <div className="muted">Invoice {detail.invoice.invoice_number}</div>
 
               <div className="meta" style={{ display: "flex", justifyContent: "space-between", gap: 24, marginTop: 16 }}>

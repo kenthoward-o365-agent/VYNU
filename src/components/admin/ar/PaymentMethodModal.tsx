@@ -51,7 +51,7 @@ export default function PaymentMethodModal({
           <DialogTitle>Add payment method — {venueName}</DialogTitle>
           <DialogDescription>
             You'll be redirected to a secure Stripe-hosted page to enter card or bank details.
-            No payment information ever touches H&L Pay servers — full PCI-DSS SAQ A compliance.
+            No payment information ever touches VYNU Pay servers — full PCI-DSS SAQ A compliance.
           </DialogDescription>
         </DialogHeader>
 
@@ -88,7 +88,7 @@ export default function PaymentMethodModal({
 
         <p className="text-xs text-muted-foreground">
           Powered by Stripe. Card numbers are entered on Stripe's secure infrastructure
-          and never transmitted to or stored by H&L Pay.
+          and never transmitted to or stored by VYNU Pay.
         </p>
       </DialogContent>
     </Dialog>

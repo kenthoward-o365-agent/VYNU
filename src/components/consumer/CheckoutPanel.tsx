@@ -102,7 +102,7 @@ const CheckoutPanel = ({
   const [gratuityDecline, setGratuityDecline] = useState("No thanks");
   const [selectedTip, setSelectedTip] = useState<number | null>(null);
 
-  // H&L Pay Drop-in state
+  // VYNU Pay Drop-in state
   const [paymentMethodsResponse, setPaymentMethodsResponse] = useState<any>(null);
   const [shyndigPayClientKey, setShyndigPayClientKey] = useState<string | null>(null);
   const [isMockMode, setIsMockMode] = useState(false);
@@ -209,7 +209,7 @@ const CheckoutPanel = ({
       if (data?.paymentMethods) {
         setPaymentMethodsResponse(data);
       }
-      // Read client key returned by the H&L Pay backend (per-venue)
+      // Read client key returned by the VYNU Pay backend (per-venue)
       const key = data?.client_key || (import.meta as any).env?.VITE_ADYEN_CLIENT_KEY || null;
       setShyndigPayClientKey(key);
       setIsMockMode(!!data?.mock_mode);
@@ -1069,7 +1069,7 @@ const CheckoutPanel = ({
               </div>
             )}
 
-            {/* H&L Pay Drop-in — Apple Pay / Google Pay / hosted card */}
+            {/* VYNU Pay Drop-in — Apple Pay / Google Pay / hosted card */}
             {showDropin && (
               <div className="space-y-3">
                 <Label className="text-sm font-semibold flex items-center gap-2">
@@ -1081,7 +1081,7 @@ const CheckoutPanel = ({
                     <div>
                       <p className="text-sm font-medium">Save card for next time</p>
                       <p className="text-xs text-muted-foreground">
-                        Securely stored by H&L Pay — we never see your full card number
+                        Securely stored by VYNU Pay — we never see your full card number
                       </p>
                     </div>
                     <Switch checked={saveCard} onCheckedChange={setSaveCard} />
@@ -1094,14 +1094,14 @@ const CheckoutPanel = ({
                   countryCode="AU"
                   environment={paymentEnvironment}
                   clientKey={shyndigPayClientKey || undefined}
-                  merchantName="H&L Pay"
+                  merchantName="VYNU Pay"
                   applePayMerchantId={walletConfig?.applePayMerchantId || undefined}
                   googlePayMerchantId={walletConfig?.googlePayMerchantId || undefined}
                   gatewayMerchantId={walletConfig?.gatewayMerchantId || undefined}
                   onSubmit={handleDropinSubmit}
                   onAdditionalDetails={handleDropinAdditionalDetails}
                   onError={(e) => {
-                    console.error("H&L Pay error:", e);
+                    console.error("VYNU Pay error:", e);
                   }}
                 />
               </div>
@@ -1134,7 +1134,7 @@ const CheckoutPanel = ({
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Secured by H&L Pay</span>
+              <span>Secured by VYNU Pay</span>
             </div>
           </>
         )}

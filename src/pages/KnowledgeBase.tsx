@@ -242,7 +242,7 @@ export default function KnowledgeBase() {
               "Build your menu: create categories, add items with descriptions and prices.",
               "Use AI Import to upload an existing menu (PDF or photo) and auto-populate items.",
               "Set up your tables and generate QR codes in Tables &amp; QR.",
-              "Set up H&L Pay payments in Settings → Payments.",
+              "Set up VYNU Pay payments in Settings → Payments.",
               "Set up tax rules in Settings → Taxes.",
               "Customise your VYNU AI agent personality in Settings → VYNU AI.",
               "Print and place QR stickers on each table — you're live!",
@@ -291,7 +291,7 @@ export default function KnowledgeBase() {
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Online LED</strong> — H&L Green when the browser reports network up, red when offline. Reacts immediately to <code>online</code> / <code>offline</code> events.</li>
               <li><strong>Printer</strong> — placeholder &quot;Ready&quot; LED today; will read from real docket-printer status when that signal lands.</li>
-              <li><strong>Card Terminal</strong> — same — &quot;Ready&quot; placeholder until live H&L Pay terminal status is wired in.</li>
+              <li><strong>Card Terminal</strong> — same — &quot;Ready&quot; placeholder until live VYNU Pay terminal status is wired in.</li>
               <li><strong>Version</strong> — current app build (<code>VITE_APP_VERSION</code>, defaults to <code>v1.0</code>).</li>
               <li><strong>Sign Out</strong>, theme toggle, sidebar pin, and Co-Pilot trigger all live here.</li>
             </ul>
@@ -630,7 +630,7 @@ export default function KnowledgeBase() {
             <p>On finished orders (terminal statuses), operators with permission see <strong>&quot;Re-open &amp; Refund&quot;</strong>. This:</p>
             <ol className="list-decimal list-inside space-y-1 pl-1">
               <li>Moves the order back to a working status (Selected → Re-opened).</li>
-              <li>Processes a full or partial refund through H&L Pay.</li>
+              <li>Processes a full or partial refund through VYNU Pay.</li>
             </ol>
             <p>Use this workflow when a diner changes their mind after paying or something was wrong with the order. If you just need to move the order back in the kitchen flow without money changing hands, use the dimmed status button to step back to a non-terminal status.</p>
           </SubSection>
@@ -1098,7 +1098,7 @@ export default function KnowledgeBase() {
 
           <SubSection title="How it works end-to-end">
             <ol className="list-decimal list-inside space-y-1 pl-1">
-              <li>Diner checks out in VYNU → order row is written to our database and charged via H&L Pay.</li>
+              <li>Diner checks out in VYNU → order row is written to our database and charged via VYNU Pay.</li>
               <li>A database trigger checks the venue's POS integration. If it's <em>connected</em> and <em>auto-push</em> is on, a <code>send_order</code> job is enqueued on our background worker.</li>
               <li>The worker fetches an OAuth bearer token from H&L (cached for ~24h), maps our order to the H&L Web Orders payload, and POSTs to <code>https://weborders.hlcloud.com.au/api/order</code>.</li>
               <li>H&L returns a success/failure. We write <code>pos_push_status</code>, <code>pos_pushed_at</code>, and any error back onto the order, and log the full request/response to <code>pos_sync_log</code>.</li>
@@ -1153,7 +1153,7 @@ export default function KnowledgeBase() {
 
           <SubSection title="The four order modes">
             <ul className="list-disc list-inside space-y-2 pl-1">
-              <li><strong>Fast tender (card)</strong> — no table, paid by H&L Pay. We send <code>tenders: [{`{ tender_code: 63, amount }`}]</code> (or whatever you've set as the default tender).</li>
+              <li><strong>Fast tender (card)</strong> — no table, paid by VYNU Pay. We send <code>tenders: [{`{ tender_code: 63, amount }`}]</code> (or whatever you've set as the default tender).</li>
               <li><strong>Charge to table</strong> — order has a <code>table_no</code>. We send <code>tenders: []</code> and H&L opens / appends to the table tab.</li>
               <li><strong>Guest charge (room/hotel)</strong> — payment method <em>guest_charge</em>. We send <code>tender_code: 15</code>.</li>
               <li><strong>Debtor charge (house account)</strong> — payment method <em>debtor</em>. We send <code>tender_code: 17</code> with the diner's <code>account_id</code>.</li>
@@ -1361,7 +1361,7 @@ export default function KnowledgeBase() {
           <SubSection title="Split payments and mixed tenders">
             <p>When split payments are allowed, a bill can be settled with any combination of:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Card</strong>, <strong>Apple Pay</strong>, <strong>Google Pay</strong> — taken in the diner app via H&L Pay.</li>
+              <li><strong>Card</strong>, <strong>Apple Pay</strong>, <strong>Google Pay</strong> — taken in the diner app via VYNU Pay.</li>
               <li><strong>Gift card</strong> and <strong>Voucher / comp</strong> — applied against the balance with a reference label so it reconciles.</li>
               <li><strong>Cash</strong> — recorded by staff on the Open Tabs panel when the diner pays at the bar.</li>
               <li><strong>Loyalty points</strong> — redeemed against the balance at your configured rate.</li>
@@ -1563,7 +1563,7 @@ export default function KnowledgeBase() {
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Update Order Status</strong> — show or hide the status buttons on each order card (Received → Preparing → Ready → …).</li>
               <li><strong>Re-open Closed Orders</strong> — show a <em>Re-open</em> button on closed orders (Paid / Served / Cancelled) that lets the user move it back to an active status. <strong>No money is moved.</strong></li>
-              <li><strong>Process Refunds</strong> — show the <em>Re-open &amp; Refund</em> button that re-opens the order <em>and</em> processes a refund through H&L Pay.</li>
+              <li><strong>Process Refunds</strong> — show the <em>Re-open &amp; Refund</em> button that re-opens the order <em>and</em> processes a refund through VYNU Pay.</li>
             </ul>
 
             <p className="mt-3"><strong>Worked examples:</strong></p>
@@ -1659,13 +1659,13 @@ GF is well-handled; DF on most dishes; nut-free kitchen.`}</p>
 
             <Tip>If diners ask the agent the same question repeatedly (e.g. &quot;do you have parking?&quot;), add the answer to Venue Context — the agent will start answering it confidently first time.</Tip>
           </SubSection>
-          <SubSection title="Payments — H&L Pay">
-            <p>H&L Pay is VYNU&apos;s built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don&apos;t need a separate processor account or API keys.</p>
+          <SubSection title="Payments — VYNU Pay">
+            <p>VYNU Pay is VYNU&apos;s built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don&apos;t need a separate processor account or API keys.</p>
             <SubSection title="Onboarding flow">
               <ol className="list-decimal list-inside space-y-1 pl-1">
                 <li><strong>Application</strong> — submit your venue and business details.</li>
                 <li><strong>Underwriting</strong> — our risk team reviews your application (usually 1–3 business days).</li>
-                <li><strong>Approval</strong> — once approved, your H&L Pay merchant ID is issued and Settings → Payments shows the &quot;Approved&quot; badge.</li>
+                <li><strong>Approval</strong> — once approved, your VYNU Pay merchant ID is issued and Settings → Payments shows the &quot;Approved&quot; badge.</li>
                 <li><strong>Funding</strong> — settled funds land in your nominated bank account on a daily rolling schedule.</li>
               </ol>
             </SubSection>
@@ -1678,7 +1678,7 @@ GF is well-handled; DF on most dishes; nut-free kitchen.`}</p>
               </ul>
             </SubSection>
             <SubSection title="Wallets — Apple Pay &amp; Google Pay">
-              <p>Apple Pay and Google Pay are enabled automatically on your H&L Pay account, including domain verification. Diners on Safari (iPhone/Mac) see Apple Pay; diners on Chrome/Android see Google Pay. Anonymous guests can pay with their wallet too — no account or card entry required.</p>
+              <p>Apple Pay and Google Pay are enabled automatically on your VYNU Pay account, including domain verification. Diners on Safari (iPhone/Mac) see Apple Pay; diners on Chrome/Android see Google Pay. Anonymous guests can pay with their wallet too — no account or card entry required.</p>
             </SubSection>
             <Tip>Use the test card numbers shown in Settings → Payments to verify your full ordering and payment flow before going live.</Tip>
           </SubSection>

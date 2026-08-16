@@ -21,9 +21,9 @@ export const FEATURE_GROUPS = [
   },
   {
     id: "payments",
-    label: "Payments (H&L Pay)",
+    label: "Payments (VYNU Pay)",
     features: [
-      { key: "pay.hl_pay_checkout", label: "H&L Pay checkout (Apple/Google Pay, cards)" },
+      { key: "pay.hl_pay_checkout", label: "VYNU Pay checkout (Apple/Google Pay, cards)" },
       { key: "pay.surcharging", label: "Surcharging configuration" },
       { key: "pay.refunds_reopen", label: "Refunds & re-open orders" },
       { key: "pay.gratuities", label: "Gratuities / tipping" },

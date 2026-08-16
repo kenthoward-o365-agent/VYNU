@@ -16,7 +16,7 @@ const json = (data: any, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// ── H&L Pay — Mock Responses ──
+// ── VYNU Pay — Mock Responses ──
 // In mock mode we expose card + applepay + googlepay so the Drop-in UI
 // renders the wallet buttons even without real processor credentials.
 const MOCK_PAYMENT_METHODS = {
@@ -31,7 +31,7 @@ const MOCK_PAYMENT_METHODS = {
       name: "Apple Pay",
       configuration: {
         merchantId: "MOCK_APPLEPAY",
-        merchantName: "H&L Pay (Test)",
+        merchantName: "VYNU Pay (Test)",
       },
     },
     {
@@ -39,7 +39,7 @@ const MOCK_PAYMENT_METHODS = {
       name: "Google Pay",
       configuration: {
         merchantId: "MOCK_GOOGLEPAY",
-        merchantName: "H&L Pay (Test)",
+        merchantName: "VYNU Pay (Test)",
         gatewayMerchantId: "MOCK_GATEWAY",
       },
     },
@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
 
     // Mock whenever we're in test mode AND the venue isn't fully provisioned
     // (no test API key, no client key, or merchant_account looks invalid).
-    // This lets venues demo the full payment flow before H&L Pay credentials land.
+    // This lets venues demo the full payment flow before VYNU Pay credentials land.
     const merchantAccountLooksValid =
       !!config.merchant_account &&
       !config.merchant_account.includes("@") &&
@@ -220,12 +220,12 @@ Deno.serve(async (req) => {
       if (isMock) {
         return json({
           success: true,
-          message: "H&L Pay test mode active — test cards will simulate payments.",
+          message: "VYNU Pay test mode active — test cards will simulate payments.",
         });
       }
 
       if (!apiKey || !merchantAccount) {
-        return json({ error: "H&L Pay account not yet provisioned for this venue" }, 400);
+        return json({ error: "VYNU Pay account not yet provisioned for this venue" }, 400);
       }
 
       const resp = await fetch(`${baseUrl}/paymentMethods`, {
@@ -244,7 +244,7 @@ Deno.serve(async (req) => {
         const methods = (data.paymentMethods || []).map((m: any) => m.name || m.type);
         return json({
           success: true,
-          message: `Connected to H&L Pay. Available methods: ${methods.join(", ")}`,
+          message: `Connected to VYNU Pay. Available methods: ${methods.join(", ")}`,
           methods: data.paymentMethods || [],
         });
       } else {
@@ -254,7 +254,7 @@ Deno.serve(async (req) => {
         console.error(`[adyen-payment] test_connection upstream ${resp.status}:`, err);
         return json({
           success: false,
-          error: "Could not connect to H&L Pay. Check the venue's payment credentials and try again.",
+          error: "Could not connect to VYNU Pay. Check the venue's payment credentials and try again.",
         }, 400);
       }
     }
@@ -286,7 +286,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      if (!apiKey || !merchantAccount) return json({ error: "H&L Pay not configured" }, 400);
+      if (!apiKey || !merchantAccount) return json({ error: "VYNU Pay not configured" }, 400);
 
       const reqBody: any = {
         merchantAccount,
@@ -744,7 +744,7 @@ Deno.serve(async (req) => {
     }
 
     // ═══ REFUND ═══
-    // Re-open & refund a (partially) closed order via H&L Pay.
+    // Re-open & refund a (partially) closed order via VYNU Pay.
     // Body: { venue_id, order_id, amount, reason? }
     if (action === "refund") {
       const { order_id, amount, reason, refund_request_id } = body;
@@ -911,12 +911,12 @@ Deno.serve(async (req) => {
 
       if (!order.payment_psp_reference) {
         return json({
-          error: "This order has no recorded H&L Pay payment reference and cannot be refunded automatically. Please process this refund manually.",
+          error: "This order has no recorded VYNU Pay payment reference and cannot be refunded automatically. Please process this refund manually.",
         }, 400);
       }
 
       if (!apiKey || !merchantAccount) {
-        return json({ error: "H&L Pay not configured for this venue" }, 400);
+        return json({ error: "VYNU Pay not configured for this venue" }, 400);
       }
 
       // PAY-04: `refundRequestId` (validated above) is the STABLE per-refund
@@ -953,7 +953,7 @@ Deno.serve(async (req) => {
       if (!refundResp.ok) {
         // PAY-08: log the upstream body server-side only; return a generic message.
         console.error(`[adyen-payment] refund upstream ${refundResp.status}:`, JSON.stringify(refundResult));
-        return json({ error: "H&L Pay refund failed" }, 400);
+        return json({ error: "VYNU Pay refund failed" }, 400);
       }
 
       const refundStatus = refundResult.status || "received";
@@ -970,6 +970,6 @@ Deno.serve(async (req) => {
 
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err: any) {
-    return safeErrorResponse("adyen-payment", err, corsHeaders, 500, "H&L Pay processing error");
+    return safeErrorResponse("adyen-payment", err, corsHeaders, 500, "VYNU Pay processing error");
   }
 });

@@ -58,9 +58,9 @@ export default function VenuePaymentMethodSection({ venueId, venueName }: { venu
   return (
     <Card>
       <CardHeader>
-        <CardTitle>H&L Pay — Payment method</CardTitle>
+        <CardTitle>VYNU Pay — Payment method</CardTitle>
         <CardDescription>
-          Securely collected via Stripe (PCI-DSS SAQ A). Card numbers never touch H&L Pay servers.
+          Securely collected via Stripe (PCI-DSS SAQ A). Card numbers never touch VYNU Pay servers.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

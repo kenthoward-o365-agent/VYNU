@@ -92,11 +92,11 @@ export async function computeReadiness(sb: any, venueId: string): Promise<Readin
     },
     {
       id: "payments",
-      title: "H&L Pay onboarding",
+      title: "VYNU Pay onboarding",
       blocker: true,
       status: payRes.data?.merchant_status === "approved" && payRes.data?.is_active ? "done" :
               payRes.data ? "in_progress" : "todo",
-      detail: payRes.data ? `Status: ${payRes.data.merchant_status}` : "Submit H&L Pay onboarding.",
+      detail: payRes.data ? `Status: ${payRes.data.merchant_status}` : "Submit VYNU Pay onboarding.",
       deep_link: "/settings/payments",
     },
     {
