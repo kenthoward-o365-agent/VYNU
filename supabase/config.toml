@@ -1,7 +1,82 @@
 # VYNU's own Supabase project (org: VYNU, region ap-southeast-2). The schema was
-# replayed here from supabase/migrations on 2026-08-14.
-#
-# NOTE: the running app still points at the old Lovable Cloud project via .env —
-# this setting only affects the Supabase CLI. Repointing the app is a separate
-# step, after the data migration. See docs/migration/lovable-cutover.md.
+# replayed here from supabase/migrations on 2026-08-14. `.env`, the Vercel env
+# vars and this file all point here. See docs/migration/lovable-cutover.md.
 project_id = "ewdjxdfgvpdcctqikdcy"
+
+# ---------------------------------------------------------------------------
+# Per-function JWT verification.
+#
+# Everything not listed here defaults to verify_jwt = true (caller must present
+# a valid Supabase JWT). The functions below are public by design; each one was
+# verified (2026-08-16) to carry its own protection in the function body before
+# being listed. The Lovable-era dashboard settings were never exported, so this
+# list was rebuilt from code analysis — docs/migration/lovable-cutover.md §0.3.
+# ---------------------------------------------------------------------------
+
+# --- Diner path (no login exists for diners; rate-limited in-body) ---
+[functions.diner-chat]
+verify_jwt = false           # rate-limit + feature-gate in body
+
+[functions.send-receipt-sms]
+verify_jwt = false           # rate-limit in body
+
+[functions.adyen-payment]
+verify_jwt = false           # diner payment path; rejects raw card fields; rate-limited
+
+[functions.ar-verify-onboarding-token]
+verify_jwt = false           # single-use hashed token verified in body
+
+[functions.csp-report]
+verify_jwt = false           # browser-sent CSP violation reports; cannot carry auth
+
+# --- Cron-invoked (Bearer CRON_SECRET compared in body, not a JWT) ---
+[functions.session-tick]
+verify_jwt = false
+
+[functions.throttle-tick]
+verify_jwt = false
+
+[functions.process-job-queue]
+verify_jwt = false
+
+[functions.pos-outbound-worker]
+verify_jwt = false
+
+[functions.ar-generate-invoices]
+verify_jwt = false
+
+[functions.ar-charge-due-invoices]
+verify_jwt = false
+
+[functions.partner-webhook-dispatch]
+verify_jwt = false
+
+[functions.pci-page-integrity-check]
+verify_jwt = false
+
+# --- External callers (HMAC signature / API key / provider signature) ---
+[functions.pos-hl-webhook]
+verify_jwt = false           # HMAC via per-venue shared_secret from Vault
+
+[functions.pos-order-webhook]
+verify_jwt = false           # HMAC verified in body
+
+[functions.ar-stripe-webhook]
+verify_jwt = false           # stripe-signature verified via STRIPE_WEBHOOK_SECRET
+
+[functions.pos-product-sync]
+verify_jwt = false           # HMAC verified in body
+
+[functions.partner-pos]
+verify_jwt = false           # Bearer sk_pos_* API keys via _shared/api-auth.ts
+
+[functions.partner-crm]
+verify_jwt = false           # Bearer sk_crm_* API keys via _shared/api-auth.ts
+
+# --- Enforce user auth in-body (auth.getUser()); gateway JWT check would
+# --- reject the anon-key flows these support, so verification stays in-body ---
+[functions.pubplus-air]
+verify_jwt = false
+
+[functions.landing-from-url]
+verify_jwt = false

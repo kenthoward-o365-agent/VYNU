@@ -213,9 +213,16 @@ payment and seeing "success".
 
 ---
 
-## Phase 5 — Deploy the edge functions
+## Phase 5 — Deploy the edge functions ✅ DONE (2026-08-16)
 
-All 57 are in the repo, so this part is mechanical.
+All 56 functions deployed to `ewdjxdfgvpdcctqikdcy`. The 21 public ones carry
+`verify_jwt = false` in `supabase/config.toml` — the Lovable dashboard list was
+unrecoverable, so the 0.3 code-analysis list was used, after verifying each
+function's in-body auth (CRON_SECRET compare, HMAC, Stripe signature, sk_* API
+keys, or auth.getUser()). `CRON_SECRET`/`APP_URL` set as secrets; Vault seeded
+with `cron_secret`/`project_url`; cron verified firing. Vendor secrets
+(Stripe, Twilio, Doshii, Lightspeed, PubPlus) deliberately NOT set — VYNU gets
+its own accounts, not the H&L instance's. Original steps for reference:
 
 1. Write the `verify_jwt` settings from step 0.3 into `supabase/config.toml`
    **before deploying** — this is the step that is invisible in the repo today

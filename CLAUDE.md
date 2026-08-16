@@ -60,14 +60,18 @@ Credentials never work across the two — each has its own `auth.users`.
 **`npm run dev` writes to the VYNU database directly.** There is no local stack
 or staging. The data is sparse today, but treat it as production.
 
-**⚠️ Edge functions are NOT yet deployed to the VYNU project.** They were only
-ever deployed (by Lovable) to the old project. Any feature that calls a
-function — diner chat, payments, POS sync, menu import — will fail against
-`ewdjxdfgvpdcctqikdcy` until someone runs `npx supabase functions deploy`,
-sets the secrets (`STRIPE_SECRET_KEY`, `CRON_SECRET`, `TWILIO_*`, AI vars…),
-and writes per-function `verify_jwt` settings into `supabase/config.toml`
-(see the trap below). The full checklist is `docs/migration/lovable-cutover.md`
-Phases 5–7.
+**Edge functions ARE deployed to the VYNU project (2026-08-16).** All 56
+deployed via `npx supabase functions deploy`; the 21 public-by-design ones
+carry `verify_jwt = false` blocks in `supabase/config.toml` (each verified to
+have in-body auth first). `CRON_SECRET` + `APP_URL` are set as function
+secrets, and Vault holds matching `cron_secret` + `project_url`, so the cron
+jobs fire (verified in `cron.job_run_details`). **Vendor secrets are still
+unset** — `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `TWILIO_*`, `DOSHII_*`,
+`LIGHTSPEED_API_KEY`, `PUBPLUS_EE_CLIENT_SECRET`, and the AI provider vars
+(`AI_PROVIDER`/`ANTHROPIC_API_KEY` or `AI_GATEWAY_URL`/`AI_API_KEY`) — so
+Stripe AR, SMS, those POS connectors and all AI calls fail at runtime until
+VYNU-own accounts are provisioned. Deliberate: VYNU must not reuse the H&L
+instance's vendor credentials.
 
 ### Migrations
 

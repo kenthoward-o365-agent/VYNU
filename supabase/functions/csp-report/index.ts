@@ -46,7 +46,9 @@ Deno.serve(async (req) => {
       { onConflict: "url,script_src,integrity_hash" },
     );
 
-    return new Response("ok", { status: 204, headers: corsHeaders });
+    // 204 must not carry a body — Response("ok", {status: 204}) throws in Deno,
+    // which used to route every successful report through the catch below.
+    return new Response(null, { status: 204, headers: corsHeaders });
   } catch (e) {
     console.error("[csp-report] failed", e);
     return new Response("error", { status: 200, headers: corsHeaders });
