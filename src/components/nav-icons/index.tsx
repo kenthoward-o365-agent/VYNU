@@ -222,3 +222,55 @@ export const IconKnowledge = (p: IconProps) => (
     <path d="M21 5.5c0-.8-.7-1.5-1.5-1.5H14a2 2 0 0 0-2 2v14a1.5 1.5 0 0 1 1.5-1.5H21V5.5z" />
   </Svg>
 );
+
+/* ---------- Guest suite ---------- */
+
+// Concierge — service bell, the front-desk metaphor.
+export const IconConcierge = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 17a8 8 0 0 1 16 0" />
+    <path d="M2.5 17h19" />
+    <path d="M12 9V7" />
+    <circle cx="12" cy="5.8" r="1.2" />
+    <path d="M19.5 20h-15" />
+  </Svg>
+);
+
+// Reserve — calendar with a confirmed slot.
+export const IconReserve = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="5" width="18" height="16" rx="2" />
+    <path d="M3 9.5h18" />
+    <path d="M8 3v4M16 3v4" />
+    <path d="M9 15l2 2 4-4" />
+  </Svg>
+);
+
+// Functions — two raised glasses, the event toast.
+export const IconFunctions = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7 3.5 5.5 10a3.2 3.2 0 0 0 2.6 3.7L7 20.5" />
+    <path d="M17 3.5 18.5 10a3.2 3.2 0 0 1-2.6 3.7L17 20.5" />
+    <path d="M5 20.5h4M15 20.5h4" />
+    <path d="M6.2 6.5h3.2M14.6 6.5h3.2" />
+  </Svg>
+);
+
+// Club — member card with star.
+export const IconClub = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M3 9h18" />
+    <path d="M8.5 13.2l.9 1.8 2-.3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2 .3.9-1.8z" />
+    <path d="M14.5 14h4M14.5 16.5h2.5" />
+  </Svg>
+);
+
+// Discover — compass.
+export const IconDiscover = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M15.5 8.5l-2 5-5 2 2-5 5-2z" />
+    <circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none" />
+  </Svg>
+);

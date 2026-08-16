@@ -28,6 +28,7 @@ import {
   IconDashboard, IconSparkAI, IconMenu, IconPricing, IconTables, IconOrders,
   IconOrderCfg, IconAnalytics, IconDiners, IconDayEnd, IconBilling, IconSettings,
   IconGroup, IconVenues, IconFinance, IconHLPay, IconStaff, IconPartners, IconPOS, IconKnowledge,
+  IconConcierge, IconReserve, IconFunctions, IconClub, IconDiscover,
 } from "@/components/nav-icons";
 
 interface NavItem {
@@ -75,6 +76,11 @@ const venueNavItems: NavItem[] = [
   { path: "/orders/settings", label: "Order Cfg", icon: IconOrderCfg, navKey: "orders", feature: "core.orders_board" },
   { path: "/analytics", label: "Analytics", icon: IconAnalytics, navKey: "analytics", feature: "reporting.core_dashboard" },
   { path: "/diners", label: "Diners", icon: IconDiners, navKey: "diners", feature: "crm.diner_profiles" },
+  { path: "/concierge", label: "Concierge", icon: IconConcierge, navKey: "concierge", feature: "concierge.inbox" },
+  { path: "/reserve", label: "Reserve", icon: IconReserve, navKey: "reserve", feature: "reserve.bookings" },
+  { path: "/reserve/functions", label: "Functions", icon: IconFunctions, navKey: "reserve", feature: "reserve.functions" },
+  { path: "/club", label: "Club", icon: IconClub, navKey: "club", feature: "club.membership" },
+  { path: "/discover/manage", label: "Discover", icon: IconDiscover, navKey: "discover", feature: "discover.feed" },
   { path: "/reporting", label: "DayEnd", icon: IconDayEnd, navKey: "settings", feature: "reporting.advanced" },
   { path: "/billing", label: "Billing", icon: IconBilling, navKey: "settings" },
   { path: "/settings", label: "Settings", icon: IconSettings, navKey: "settings" },

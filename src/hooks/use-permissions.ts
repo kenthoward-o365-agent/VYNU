@@ -165,6 +165,11 @@ export const NAV_KEYS = {
   order_statuses: "orders", // sub-item
   diners: "diners",
   loyalty: "loyalty",
+  concierge: "concierge",
+  reserve: "reserve",
+  functions: "reserve", // sub-item of Reserve
+  club: "club",
+  discover: "discover",
   analytics: "analytics",
   sippa_analytics: "sippa_analytics",
   knowledge_base: "knowledge_base",
@@ -181,6 +186,10 @@ export const TOP_LEVEL_NAV: Array<{ key: string; label: string }> = [
   { key: "pricing", label: "Pricing (incl. Rule Types)" },
   { key: "diners", label: "Diners" },
   { key: "loyalty", label: "Loyalty" },
+  { key: "concierge", label: "Concierge (calls, SMS, WhatsApp)" },
+  { key: "reserve", label: "Reserve (incl. Functions)" },
+  { key: "club", label: "Club (member scheme)" },
+  { key: "discover", label: "Discover (offers feed)" },
   { key: "analytics", label: "Analytics" },
   { key: "sippa_analytics", label: "Vee AI Analytics" },
   { key: "knowledge_base", label: "Knowledge Base" },

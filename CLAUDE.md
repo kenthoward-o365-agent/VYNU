@@ -179,6 +179,30 @@ ones authenticate via HMAC / API key / token — read the function body, and whe
 deploying to the VYNU project, write the `verify_jwt = false` blocks into
 `config.toml` first (candidate list in the cutover runbook, Phase 0.3/5).
 
+### Guest-suite modules (added 2026-08-16, from the VYNU deck)
+
+Concierge, Reserve, Functions, Club and Discover — migration
+`20260817001000_guest_suite_modules.sql` (14 tables), pages under `src/pages/`
+(`Concierge`, `Reserve`, `FunctionsEvents`, `Club`, `DiscoverManage`,
+`DiscoverFeed`), pure helpers + tests in `src/lib/guest-suite.ts`. Feature keys
+live in the `suite` group in `src/lib/packages.ts`: plate gets
+reserve/functions/discover, feast adds concierge + club (mirrors the deck's
+$99 Suite / $149 Concierge / $199 Club pricing).
+
+Rules encoded in schema comments and worth keeping:
+
+- **Club/gaming signals are staff-side only** — `club_signals` must never be
+  granted to `anon` or surfaced on any diner-facing page.
+- `booking_events` and `concierge_messages` are **append-only** (no
+  UPDATE/DELETE grants) — the deck's ledger-proof guest-record principle.
+- The public surface is exactly one: `/discover` (RootRoutes) reading the
+  `get_discover_feed` SECURITY DEFINER RPC. Staff manage at `/discover/manage`.
+- `concierge-inbound` (public function) is the omnichannel webhook: token auth
+  via `CONCIERGE_WEBHOOK_TOKEN` (set 2026-08-16, fail-closed), Twilio
+  form-encoding or JSON, answers via `aiChat` role `chat`, can create bookings
+  (`source: 'concierge'`), falls back to `needs_human` when no AI provider is
+  configured.
+
 ### The AI layer — `_shared/ai.ts`
 
 **Every AI call goes through this module.** Call sites ask for a *role*

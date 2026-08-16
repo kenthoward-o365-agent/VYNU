@@ -114,6 +114,19 @@ export const FEATURE_GROUPS = [
     ],
   },
   {
+    id: "suite",
+    label: "Guest suite",
+    features: [
+      { key: "concierge.inbox", label: "Concierge inbox (calls, SMS, WhatsApp)", note: "The front door — every dialogue on the guest record" },
+      { key: "concierge.voice_agent", label: "Vee voice concierge", note: "AI answers, books and remembers" },
+      { key: "reserve.bookings", label: "Reserve — table reservations" },
+      { key: "reserve.functions", label: "Functions — event & space enquiries" },
+      { key: "club.membership", label: "Club — member scheme (gaming venues)", note: "Signals are staff-side only, never diner-visible" },
+      { key: "club.promo_screens", label: "Club — promo screens & campaigns" },
+      { key: "discover.feed", label: "Discover — public offers & experiences feed" },
+    ],
+  },
+  {
     id: "ops",
     label: "Ops & platform",
     features: [
@@ -192,6 +205,11 @@ export const PACKAGE_PRESETS: Record<Exclude<PackageTier, "custom">, FeatureFlag
     "reporting.advanced": true,
     "ops.self_onboard": true,
     "ops.knowledge_base": true,
+    // Guest suite (deck: the $99 Suite = Reserve, Functions, Ordering,
+    // Loyalty, Discover; Concierge and Club are the higher add-ons → feast).
+    "reserve.bookings": true,
+    "reserve.functions": true,
+    "discover.feed": true,
   },
   feast: Object.fromEntries(ALL_FEATURE_KEYS.map((k) => [k, true])) as FeatureFlags,
 };

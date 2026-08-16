@@ -55,6 +55,12 @@ import OrderSettings from "@/pages/OrderSettings";
 import SelfOnboard from "@/pages/SelfOnboard";
 import VenueBilling from "@/pages/VenueBilling";
 import OAuthConsent from "@/pages/OAuthConsent";
+import Concierge from "@/pages/Concierge";
+import Reserve from "@/pages/Reserve";
+import FunctionsEvents from "@/pages/FunctionsEvents";
+import Club from "@/pages/Club";
+import DiscoverManage from "@/pages/DiscoverManage";
+import DiscoverFeed from "@/pages/DiscoverFeed";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -151,6 +157,11 @@ function AppRoutes() {
         <Route path="/sippa-analytics" element={<RequireFeature feature="ai.spark_analytics"><SippaAnalyticsPage /></RequireFeature>} />
         <Route path="/diners" element={<Diners />} />
         <Route path="/diners/preferences" element={<DinerPreferences />} />
+        <Route path="/concierge" element={<RequireFeature feature="concierge.inbox"><Concierge /></RequireFeature>} />
+        <Route path="/reserve" element={<RequireFeature feature="reserve.bookings"><Reserve /></RequireFeature>} />
+        <Route path="/reserve/functions" element={<RequireFeature feature="reserve.functions"><FunctionsEvents /></RequireFeature>} />
+        <Route path="/club" element={<RequireFeature feature="club.membership"><Club /></RequireFeature>} />
+        <Route path="/discover/manage" element={<RequireFeature feature="discover.feed"><DiscoverManage /></RequireFeature>} />
         <Route path="/loyalty" element={<Navigate to="/settings" replace />} />
         <Route path="/group" element={<RequireFeature feature="group.dashboard"><GroupDashboard /></RequireFeature>} />
         <Route path="/admin/venues" element={<RequireAdmin><AdminVenues /></RequireAdmin>} />
@@ -206,6 +217,9 @@ function RootRoutes() {
         }
       />
       <Route path="/reset-password" element={<ResetPassword />} />
+      {/* Public Discover feed — the guest-facing surface of the guest suite.
+          The staff manager lives at /discover/manage inside the auth shell. */}
+      <Route path="/discover" element={<DiscoverFeed />} />
       <Route path="/developers" element={<Developers />} />
       <Route path="/billing/setup/:token" element={<BillingSetup />} />
       <Route path="/billing/setup/success" element={<BillingSetup />} />

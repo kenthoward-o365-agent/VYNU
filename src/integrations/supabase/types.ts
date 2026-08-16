@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.15"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       ai_model_prices: {
@@ -514,6 +539,45 @@ export type Database = {
         }
         Relationships: []
       }
+      api_request_log_y2026m11: {
+        Row: {
+          api_key_id: string | null
+          created_at: string
+          id: string
+          latency_ms: number | null
+          method: string
+          partner_id: string | null
+          path: string
+          request_id: string | null
+          status_code: number
+          venue_id: string | null
+        }
+        Insert: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method: string
+          partner_id?: string | null
+          path: string
+          request_id?: string | null
+          status_code: number
+          venue_id?: string | null
+        }
+        Update: {
+          api_key_id?: string | null
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          method?: string
+          partner_id?: string | null
+          path?: string
+          request_id?: string | null
+          status_code?: number
+          venue_id?: string | null
+        }
+        Relationships: []
+      }
       api_webhook_deliveries: {
         Row: {
           attempt_count: number
@@ -710,6 +774,143 @@ export type Database = {
           },
         ]
       }
+      booking_events: {
+        Row: {
+          actor: string | null
+          booking_id: string
+          created_at: string
+          event: string
+          id: number
+          meta: Json
+          venue_id: string
+        }
+        Insert: {
+          actor?: string | null
+          booking_id: string
+          created_at?: string
+          event: string
+          id?: never
+          meta?: Json
+          venue_id: string
+        }
+        Update: {
+          actor?: string | null
+          booking_id?: string
+          created_at?: string
+          event?: string
+          id?: never
+          meta?: Json
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_events_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_events_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          diner_profile_id: string | null
+          duration_minutes: number
+          guest_email: string | null
+          guest_name: string
+          guest_phone: string | null
+          id: string
+          notes: string | null
+          occasion: string | null
+          party_size: number
+          source: string
+          space_id: string | null
+          starts_at: string
+          status: string
+          table_id: string | null
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          diner_profile_id?: string | null
+          duration_minutes?: number
+          guest_email?: string | null
+          guest_name: string
+          guest_phone?: string | null
+          id?: string
+          notes?: string | null
+          occasion?: string | null
+          party_size: number
+          source?: string
+          space_id?: string | null
+          starts_at: string
+          status?: string
+          table_id?: string | null
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          diner_profile_id?: string | null
+          duration_minutes?: number
+          guest_email?: string | null
+          guest_name?: string
+          guest_phone?: string | null
+          id?: string
+          notes?: string | null
+          occasion?: string | null
+          party_size?: number
+          source?: string
+          space_id?: string | null
+          starts_at?: string
+          status?: string
+          table_id?: string | null
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_diner_profile_id_fkey"
+            columns: ["diner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "venue_spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages_log: {
         Row: {
           content: string
@@ -808,6 +1009,380 @@ export type Database = {
             foreignKeyName: "chat_sessions_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_members: {
+        Row: {
+          created_at: string
+          diner_profile_id: string | null
+          display_name: string | null
+          external_ref: string | null
+          id: string
+          joined_at: string
+          member_no: string
+          program_id: string
+          status: string
+          tier_key: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          diner_profile_id?: string | null
+          display_name?: string | null
+          external_ref?: string | null
+          id?: string
+          joined_at?: string
+          member_no: string
+          program_id: string
+          status?: string
+          tier_key?: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          diner_profile_id?: string | null
+          display_name?: string | null
+          external_ref?: string | null
+          id?: string
+          joined_at?: string
+          member_no?: string
+          program_id?: string
+          status?: string
+          tier_key?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_members_diner_profile_id_fkey"
+            columns: ["diner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_members_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "club_programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_members_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_programs: {
+        Row: {
+          created_at: string
+          external_system: string | null
+          id: string
+          is_active: boolean
+          name: string
+          tiers: Json
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          external_system?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          tiers?: Json
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          external_system?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          tiers?: Json
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_programs_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_promos: {
+        Row: {
+          body: string | null
+          created_at: string
+          ends_at: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          placement: string
+          sort_order: number
+          starts_at: string | null
+          title: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          placement?: string
+          sort_order?: number
+          starts_at?: string | null
+          title: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          placement?: string
+          sort_order?: number
+          starts_at?: string | null
+          title?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_promos_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_signals: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          created_at: string
+          id: number
+          kind: string
+          member_id: string
+          note: string | null
+          occurred_at: string
+          venue_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          id?: never
+          kind: string
+          member_id: string
+          note?: string | null
+          occurred_at?: string
+          venue_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          id?: never
+          kind?: string
+          member_id?: string
+          note?: string | null
+          occurred_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_signals_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "club_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_signals_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      concierge_conversations: {
+        Row: {
+          booking_id: string | null
+          channel: string
+          created_at: string
+          diner_profile_id: string | null
+          ended_at: string | null
+          guest_name: string | null
+          guest_phone: string | null
+          id: string
+          last_message_at: string
+          outcome: string | null
+          started_at: string
+          status: string
+          summary: string | null
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          channel: string
+          created_at?: string
+          diner_profile_id?: string | null
+          ended_at?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
+          id?: string
+          last_message_at?: string
+          outcome?: string | null
+          started_at?: string
+          status?: string
+          summary?: string | null
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          channel?: string
+          created_at?: string
+          diner_profile_id?: string | null
+          ended_at?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
+          id?: string
+          last_message_at?: string
+          outcome?: string | null
+          started_at?: string
+          status?: string
+          summary?: string | null
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concierge_conversations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "concierge_conversations_diner_profile_id_fkey"
+            columns: ["diner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "concierge_conversations_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      concierge_messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: number
+          meta: Json
+          role: string
+          venue_id: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: never
+          meta?: Json
+          role: string
+          venue_id: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: never
+          meta?: Json
+          role?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concierge_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "concierge_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "concierge_messages_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      concierge_settings: {
+        Row: {
+          channels: Json
+          created_at: string
+          forward_to_phone: string | null
+          greeting: string | null
+          is_enabled: boolean
+          phone_number: string | null
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          channels?: Json
+          created_at?: string
+          forward_to_phone?: string | null
+          greeting?: string | null
+          is_enabled?: boolean
+          phone_number?: string | null
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          channels?: Json
+          created_at?: string
+          forward_to_phone?: string | null
+          greeting?: string | null
+          is_enabled?: boolean
+          phone_number?: string | null
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concierge_settings_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: true
             referencedRelation: "venues"
             referencedColumns: ["id"]
           },
@@ -1680,6 +2255,65 @@ export type Database = {
         }
         Relationships: []
       }
+      discover_posts: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          cta: string
+          ends_at: string | null
+          id: string
+          image_url: string | null
+          is_published: boolean
+          kind: string
+          published_at: string | null
+          starts_at: string | null
+          title: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta?: string
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          kind?: string
+          published_at?: string | null
+          starts_at?: string | null
+          title: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta?: string
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          kind?: string
+          published_at?: string | null
+          starts_at?: string | null
+          title?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discover_posts_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       display_terminal_areas: {
         Row: {
           created_at: string
@@ -1762,6 +2396,142 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "display_terminals_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      function_enquiries: {
+        Row: {
+          budget_cents: number | null
+          contact_email: string | null
+          contact_name: string
+          contact_phone: string | null
+          created_at: string
+          diner_profile_id: string | null
+          event_date: string | null
+          event_type: string | null
+          id: string
+          notes: string | null
+          package_id: string | null
+          party_size: number | null
+          source: string
+          space_id: string | null
+          status: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          budget_cents?: number | null
+          contact_email?: string | null
+          contact_name: string
+          contact_phone?: string | null
+          created_at?: string
+          diner_profile_id?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          id?: string
+          notes?: string | null
+          package_id?: string | null
+          party_size?: number | null
+          source?: string
+          space_id?: string | null
+          status?: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          budget_cents?: number | null
+          contact_email?: string | null
+          contact_name?: string
+          contact_phone?: string | null
+          created_at?: string
+          diner_profile_id?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          id?: string
+          notes?: string | null
+          package_id?: string | null
+          party_size?: number | null
+          source?: string
+          space_id?: string | null
+          status?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "function_enquiries_diner_profile_id_fkey"
+            columns: ["diner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "diner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "function_enquiries_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "function_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "function_enquiries_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "venue_spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "function_enquiries_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      function_packages: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          min_guests: number
+          name: string
+          price_per_head_cents: number | null
+          sort_order: number
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          min_guests?: number
+          name: string
+          price_per_head_cents?: number | null
+          sort_order?: number
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          min_guests?: number
+          name?: string
+          price_per_head_cents?: number | null
+          sort_order?: number
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "function_packages_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
             referencedRelation: "venues"
@@ -3407,6 +4177,42 @@ export type Database = {
         }
         Relationships: []
       }
+      pos_sync_log_y2026m11: {
+        Row: {
+          created_at: string
+          direction: string
+          error_message: string | null
+          event_type: string
+          id: string
+          items_synced: number | null
+          payload_hash: string | null
+          result: string
+          venue_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          items_synced?: number | null
+          payload_hash?: string | null
+          result?: string
+          venue_id?: string
+        }
+        Relationships: []
+      }
       pos_webhook_events: {
         Row: {
           event_id: string
@@ -4311,6 +5117,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles_audit: {
+        Row: {
+          action: string
+          id: string
+          performed_at: string
+          performed_by: string | null
+          role: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action: string
+          id?: string
+          performed_at?: string
+          performed_by?: string | null
+          role?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          id?: string
+          performed_at?: string
+          performed_by?: string | null
+          role?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       venue_ai_config: {
         Row: {
           agent_icon_url: string | null
@@ -4560,6 +5393,50 @@ export type Database = {
             foreignKeyName: "venue_billing_events_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_booking_settings: {
+        Row: {
+          advance_days: number
+          auto_confirm: boolean
+          created_at: string
+          default_duration_minutes: number
+          interval_minutes: number
+          is_enabled: boolean
+          max_party_size: number
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          advance_days?: number
+          auto_confirm?: boolean
+          created_at?: string
+          default_duration_minutes?: number
+          interval_minutes?: number
+          is_enabled?: boolean
+          max_party_size?: number
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          advance_days?: number
+          auto_confirm?: boolean
+          created_at?: string
+          default_duration_minutes?: number
+          interval_minutes?: number
+          is_enabled?: boolean
+          max_party_size?: number
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_booking_settings_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: true
             referencedRelation: "venues"
             referencedColumns: ["id"]
           },
@@ -5597,6 +6474,53 @@ export type Database = {
           },
         ]
       }
+      venue_spaces: {
+        Row: {
+          capacity_max: number
+          capacity_min: number
+          created_at: string
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          sort_order: number
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          capacity_max?: number
+          capacity_min?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          capacity_max?: number
+          capacity_min?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_spaces_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       venue_staff: {
         Row: {
           can_process_refunds: boolean
@@ -5962,6 +6886,7 @@ export type Database = {
       }
     }
     Functions: {
+      _mask_secret_value: { Args: { _v: string }; Returns: string }
       _payment_secret_column: { Args: { _field: string }; Returns: string }
       ack_job: { Args: { _msg_id: number; _queue: string }; Returns: boolean }
       advance_audit_date: { Args: { _venue_id: string }; Returns: string }
@@ -6141,6 +7066,24 @@ export type Database = {
           total: number
         }[]
       }
+      get_discover_feed: {
+        Args: { _limit?: number }
+        Returns: {
+          body: string
+          cta: string
+          ends_at: string
+          image_url: string
+          kind: string
+          post_id: string
+          published_at: string
+          starts_at: string
+          title: string
+          venue_city: string
+          venue_id: string
+          venue_logo_url: string
+          venue_name: string
+        }[]
+      }
       get_item_modifiers_public: {
         Args: { _menu_item_id: string; _venue_id: string }
         Returns: Json
@@ -6281,6 +7224,10 @@ export type Database = {
       initialize_venue_audit_date: {
         Args: { _venue_id: string }
         Returns: string
+      }
+      is_active_table_session: {
+        Args: { _session_id: string }
+        Returns: boolean
       }
       is_active_venue: { Args: { _venue_id: string }; Returns: boolean }
       is_group_admin: {
@@ -6689,6 +7636,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       alert_status: ["pending", "acknowledged", "resolved"],
