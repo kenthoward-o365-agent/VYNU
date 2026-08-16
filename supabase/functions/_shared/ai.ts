@@ -21,17 +21,49 @@
 //   AI_API_KEY       that provider's key (falls back to LOVABLE_API_KEY)
 //   AI_MODEL_CHAT / AI_MODEL_CHAT_ADVANCED / AI_MODEL_IMAGE / AI_MODEL_IMAGE_EDIT
 //
-// A provider that is NOT OpenAI-compatible (e.g. the Anthropic Messages API)
-// needs a real adapter inside `aiChat` rather than an env var. That is the one
-// place to add it.
+// The Anthropic (Claude) provider has a real adapter at the bottom of this
+// file — the Messages API is not OpenAI-compatible, so env vars alone cannot
+// reach it. Activate with AI_PROVIDER=anthropic + ANTHROPIC_API_KEY; tune the
+// model per role with the same AI_MODEL_* vars (claude-* ids only). Image
+// roles always stay on the gateway — Claude does not generate images.
 //
 // Cost note: ai_usage_log prices come from the ai_model_prices table keyed by
 // model id. Changing AI_MODEL_* without adding a matching price row silently
 // logs every call at zero cost, and platform financials go quietly wrong.
 
+import Anthropic from "npm:@anthropic-ai/sdk@0.117.1";
 import { logAiUsage, logAiImageUsage } from "./ai-usage.ts";
 
 const DEFAULT_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+
+/**
+ * Provider switch. Set AI_PROVIDER=anthropic (plus ANTHROPIC_API_KEY) in
+ * Supabase secrets to serve all *chat* roles through the Claude Messages API.
+ * Unset, everything stays on the OpenAI-compatible gateway exactly as before.
+ *
+ * Image roles ("image", "image-edit") ALWAYS use the gateway path: Claude does
+ * not generate images, so those stay on the Gemini image models regardless of
+ * provider.
+ */
+function anthropicEnabled(): boolean {
+  return (
+    Deno.env.get("AI_PROVIDER")?.trim().toLowerCase() === "anthropic" &&
+    !!Deno.env.get("ANTHROPIC_API_KEY")?.trim()
+  );
+}
+
+/**
+ * Model for a chat role under the anthropic provider. The same AI_MODEL_* env
+ * vars apply, but only claude-* values are honoured — a leftover Gemini id
+ * must not be sent to the Messages API. Default claude-opus-5 for both chat
+ * tiers; tune per role via env (e.g. AI_MODEL_CHAT=claude-haiku-4-5 for the
+ * high-volume diner path) after reviewing real spend in ai_usage_log.
+ */
+function resolveAnthropicModel(role: ModelRole): string {
+  const envVal = Deno.env.get(MODEL_ENV_VAR[role])?.trim();
+  if (envVal?.startsWith("claude-")) return envVal;
+  return "claude-opus-5";
+}
 
 /** Capability a call needs, decoupled from whichever vendor model provides it. */
 export type ModelRole = "chat" | "chat-advanced" | "image" | "image-edit";
@@ -160,6 +192,11 @@ export interface AiChatResult {
  * replaces.
  */
 export async function aiChat(opts: AiChatOptions): Promise<AiChatResult> {
+  // Image-modality calls stay on the gateway (see anthropicEnabled docs).
+  if (!opts.modalities?.includes("image") && anthropicEnabled()) {
+    return await anthropicChat(opts);
+  }
+
   const model = opts.model || resolveModel(opts.role || "chat");
 
   const body: Record<string, unknown> = { model, messages: opts.messages };
@@ -323,4 +360,219 @@ export function aiErrorResponse(err: unknown, corsHeaders: Record<string, string
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     },
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Anthropic (Claude) provider adapter
+//
+// The nine chat call sites speak the OpenAI chat-completions shape — messages
+// with a "tool" role, assistant messages carrying `tool_calls`, tools wrapped
+// in {type:"function", function:{...}}. The Claude Messages API uses a
+// different wire format (top-level system, tool_use/tool_result content
+// blocks, input_schema tools), so this adapter translates BOTH directions and
+// call sites never change: aiChat() returns the same AiChatResult either way,
+// and a tool loop that pushes `ai.message` back into history round-trips
+// cleanly because that message is already in OpenAI form.
+//
+// Deliberate choices, documented once:
+//  * temperature is DROPPED — current Claude models (Opus 5 / Sonnet 5) reject
+//    sampling params with a 400; behaviour is steered by prompting instead.
+//  * max_tokens is floored at 4096 — thinking is on by default on Claude Opus 5
+//    and counts against max_tokens, so a tight text budget (diner-chat passes
+//    500) would truncate mid-answer.
+//  * forced tool_choice sends thinking:{type:"disabled"} — forced tool use and
+//    thinking are incompatible, and the response is a guaranteed tool_use
+//    block, so disabled-thinking's text-instead-of-tool-call failure mode
+//    cannot occur here.
+//  * responseFormat {type:"json_object"} becomes a system-prompt instruction —
+//    it is schema-less, and both callers already parse leniently.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** OpenAI-style multimodal content part → Anthropic content block. */
+function toAnthropicUserBlock(part: any): any {
+  if (part?.type === "text") return { type: "text", text: part.text };
+  if (part?.type === "image_url") {
+    const url: string = part.image_url?.url ?? "";
+    const dataMatch = url.match(/^data:([^;]+);base64,(.*)$/s);
+    if (dataMatch) {
+      const [, mediaType, data] = dataMatch;
+      if (mediaType === "application/pdf") {
+        return { type: "document", source: { type: "base64", media_type: mediaType, data } };
+      }
+      return { type: "image", source: { type: "base64", media_type: mediaType, data } };
+    }
+    return { type: "image", source: { type: "url", url } };
+  }
+  // Unknown part — stringify rather than drop, so nothing silently vanishes.
+  return { type: "text", text: JSON.stringify(part) };
+}
+
+/**
+ * OpenAI-style message list → { system, messages } for the Messages API.
+ * - system-role entries concatenate into the top-level system string
+ * - assistant tool_calls become tool_use blocks
+ * - consecutive "tool" results merge into ONE user turn of tool_result blocks
+ *   (the Messages API expects all results for a turn together)
+ */
+function toAnthropicMessages(input: any[]): { system: string; messages: any[] } {
+  const systemParts: string[] = [];
+  const out: any[] = [];
+  let pendingToolResults: any[] | null = null;
+
+  const flushToolResults = () => {
+    if (pendingToolResults?.length) out.push({ role: "user", content: pendingToolResults });
+    pendingToolResults = null;
+  };
+
+  for (const m of input) {
+    if (m.role === "system") {
+      flushToolResults();
+      systemParts.push(typeof m.content === "string" ? m.content : JSON.stringify(m.content));
+      continue;
+    }
+    if (m.role === "tool") {
+      (pendingToolResults ??= []).push({
+        type: "tool_result",
+        tool_use_id: m.tool_call_id,
+        content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+      });
+      continue;
+    }
+    flushToolResults();
+    if (m.role === "assistant") {
+      const blocks: any[] = [];
+      if (typeof m.content === "string" && m.content) blocks.push({ type: "text", text: m.content });
+      for (const call of m.tool_calls ?? []) {
+        let args: unknown = {};
+        try { args = JSON.parse(call.function?.arguments || "{}"); } catch { /* keep {} */ }
+        blocks.push({ type: "tool_use", id: call.id, name: call.function?.name, input: args });
+      }
+      if (blocks.length) out.push({ role: "assistant", content: blocks });
+      continue;
+    }
+    // user
+    const content = Array.isArray(m.content) ? m.content.map(toAnthropicUserBlock) : m.content;
+    out.push({ role: "user", content });
+  }
+  flushToolResults();
+  return { system: systemParts.join("\n\n"), messages: out };
+}
+
+async function anthropicChat(opts: AiChatOptions): Promise<AiChatResult> {
+  const model =
+    opts.model?.startsWith("claude-") ? opts.model : resolveAnthropicModel(opts.role || "chat");
+
+  const { system, messages } = toAnthropicMessages(opts.messages as any[]);
+  let systemPrompt = system;
+  if ((opts.responseFormat as any)?.type === "json_object") {
+    systemPrompt += "\n\nRespond with a single valid JSON object and nothing else — no prose, no markdown fences.";
+  }
+
+  const tools = (opts.tools as any[] | undefined)?.map((t) => ({
+    name: t.function?.name ?? t.name,
+    description: t.function?.description ?? t.description,
+    input_schema: t.function?.parameters ?? t.input_schema,
+  }));
+
+  const tc = opts.toolChoice as any;
+  const toolChoice =
+    tc === "auto" ? { type: "auto" as const }
+    : tc?.type === "function" && tc.function?.name ? { type: "tool" as const, name: tc.function.name }
+    : undefined;
+  const forcedTool = toolChoice?.type === "tool";
+
+  // Same combined caller-signal + timeout handling as the gateway path.
+  const controller = new AbortController();
+  const onCallerAbort = () => controller.abort();
+  opts.signal?.addEventListener("abort", onCallerAbort, { once: true });
+  const timeoutId = opts.timeoutMs !== undefined
+    ? setTimeout(() => controller.abort(), opts.timeoutMs)
+    : undefined;
+
+  const client = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY")! });
+
+  let response: Anthropic.Message;
+  try {
+    response = await client.messages.create(
+      {
+        model,
+        max_tokens: Math.max(opts.maxTokens ?? 8192, 4096),
+        ...(systemPrompt ? { system: systemPrompt } : {}),
+        messages,
+        ...(tools?.length ? { tools } : {}),
+        ...(toolChoice ? { tool_choice: toolChoice } : {}),
+        ...(forcedTool ? { thinking: { type: "disabled" as const } } : {}),
+      },
+      { signal: controller.signal },
+    );
+  } catch (e) {
+    if (e instanceof Anthropic.APIError) {
+      const status = e.status ?? 500;
+      if (status === 429) throw new AiError(429, "Rate limited, please try again shortly.", `anthropic ${status}`);
+      throw new AiError(500, "AI request failed.", `anthropic ${status} ${String(e.message).slice(0, 300)}`);
+    }
+    if (e instanceof Error && e.name === "AbortError") {
+      if (opts.timeoutMs !== undefined && !opts.signal?.aborted) {
+        throw new AiError(504, "AI request timed out.", `after ${opts.timeoutMs}ms`);
+      }
+      throw new AiError(499, "AI request cancelled.", "aborted by caller");
+    }
+    throw new AiError(500, "AI request failed.", `anthropic network: ${e instanceof Error ? e.message : String(e)}`);
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+    opts.signal?.removeEventListener("abort", onCallerAbort);
+  }
+
+  // ---- translate the response back to the OpenAI shape call sites consume ----
+  const textParts: string[] = [];
+  const toolCalls: any[] = [];
+  for (const block of response.content) {
+    if (block.type === "text") textParts.push(block.text);
+    else if (block.type === "tool_use") {
+      toolCalls.push({
+        id: block.id,
+        type: "function",
+        function: { name: block.name, arguments: JSON.stringify(block.input) },
+      });
+    }
+    // thinking blocks are omitted-by-default and never surfaced to callers
+  }
+
+  const finishReason =
+    response.stop_reason === "tool_use" ? "tool_calls"
+    : response.stop_reason === "max_tokens" ? "length"
+    : "stop";
+
+  const usage = {
+    prompt_tokens: response.usage.input_tokens,
+    completion_tokens: response.usage.output_tokens,
+    total_tokens: response.usage.input_tokens + response.usage.output_tokens,
+  };
+
+  const message = {
+    role: "assistant",
+    content: textParts.join("") || null,
+    ...(toolCalls.length ? { tool_calls: toolCalls } : {}),
+  };
+
+  if (opts.usage) {
+    await logAiUsage({
+      venueId: opts.usage.venueId,
+      feature: opts.usage.feature,
+      model,
+      usage,
+      requestId: opts.usage.requestId ?? null,
+      sessionId: opts.usage.sessionId ?? null,
+      orderId: opts.usage.orderId ?? null,
+      meta: opts.usage.meta ?? null,
+    });
+  }
+
+  return {
+    raw: { choices: [{ message, finish_reason: finishReason }], usage, model: response.model },
+    message,
+    text: textParts.join(""),
+    model,
+    usage,
+  };
 }

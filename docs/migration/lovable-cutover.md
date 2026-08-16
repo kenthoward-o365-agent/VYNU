@@ -281,13 +281,22 @@ Firecrawl account and direct Lightspeed credentials respectively.
 
 ### Choosing a provider
 
-The endpoint is OpenAI-compatible, so pointing at another OpenAI-compatible
-provider needs no code change at all now — set `AI_GATEWAY_URL` and `AI_API_KEY`.
-Moving to the Anthropic Messages API instead means writing one adapter inside
-`aiChat`, which is the single place that knows the wire format.
+Two exits now exist, both env-gated:
 
-Image generation needs separate thought either way: the image roles use Gemini
-image models, which have no drop-in Anthropic equivalent.
+1. **Any OpenAI-compatible provider** — set `AI_GATEWAY_URL` + `AI_API_KEY`.
+2. **Anthropic (Claude) — adapter built 2026-08-16.** Set `AI_PROVIDER=anthropic`
+   + `ANTHROPIC_API_KEY` in Supabase secrets and all nine chat roles route
+   through the Claude Messages API (official SDK, pinned). Model per role via
+   the same `AI_MODEL_*` vars (claude-* ids only; default `claude-opus-5` —
+   consider `claude-haiku-4-5` for the high-volume diner path and review real
+   spend in `ai_usage_log`). Until those secrets are set the adapter is inert
+   and everything stays on the current gateway. Pricing rows for the Claude
+   models are in migration `20260816230000_claude_model_prices.sql`.
+
+**Image generation stays on Gemini either way** — Claude does not generate
+images, so the `image`/`image-edit` roles always use the gateway path. Exiting
+Lovable fully means a direct Gemini API key for those two roles (or another
+image provider), a much smaller decision than the chat migration.
 
 Also repoint `connector-gateway.lovable.dev`: Firecrawl (`landing-from-url`,
 `import-menu`) needs your own Firecrawl account, and the Lightspeed connector
