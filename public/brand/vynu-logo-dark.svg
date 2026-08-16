@@ -1,36 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 240" role="img" aria-label="VYNU">
-  <!-- INTERIM MARK — hand-drawn approximation of the VYNU brand sheet
-       (V-wing: violet left wing, gold right wing; letter-spaced wordmark).
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 600" role="img" aria-label="VYNU">
+  <!-- INTERIM MARK v3 — proportions measured from the uploaded brand sheet.
        Replace with the designer's vector export when available. -->
   <defs>
-    <linearGradient id="wingL" x1="0" y1="0" x2="0.6" y2="1">
+    <linearGradient id="wingL" x1="0" y1="0" x2="0.4" y2="1">
       <stop offset="0" stop-color="#8B63F7"/>
-      <stop offset="1" stop-color="#6F3DF5"/>
+      <stop offset="0.6" stop-color="#6F3DF5"/>
+      <stop offset="1" stop-color="#4B27B8"/>
     </linearGradient>
-    <linearGradient id="wingR" x1="1" y1="0" x2="0.4" y2="1">
-      <stop offset="0" stop-color="#C9A468"/>
-      <stop offset="1" stop-color="#B68B50"/>
+    <linearGradient id="wingR" x1="1" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#D3B078"/>
+      <stop offset="0.6" stop-color="#B68B50"/>
+      <stop offset="1" stop-color="#8F6A38"/>
     </linearGradient>
   </defs>
-
-  <!-- left wing (violet) -->
-  <path d="M 196 34
-           C 206 66 222 102 252 128
-           C 246 134 240 138 232 140
-           C 204 118 190 78 186 44
-           C 186 38 190 33 196 34 Z"
+  <!-- left wing (violet), behind -->
+  <path d="M 80 98
+           L 199 90
+           C 232 210 252 320 274 399
+           C 210 330 122 210 80 98 Z"
         fill="url(#wingL)"/>
-  <!-- right wing (gold), crossing over the left -->
-  <path d="M 330 30
-           C 326 74 306 120 264 146
-           C 256 142 250 136 246 130
-           C 288 106 312 66 318 28
-           C 322 22 330 24 330 30 Z"
+  <!-- right wing (gold), crossing in front -->
+  <path d="M 432 98
+           L 313 90
+           C 280 210 262 330 250 404
+           C 316 330 394 212 432 98 Z"
         fill="url(#wingR)"/>
-
-  <!-- wordmark -->
-  <text x="260" y="212" text-anchor="middle"
+  <text x="256" y="548" text-anchor="middle"
         font-family="Avenir Next, Futura, Century Gothic, Arial, sans-serif"
-        font-size="64" font-weight="500" letter-spacing="26"
+        font-size="92" font-weight="400" letter-spacing="38"
         fill="#1A1A1D">VYNU</text>
 </svg>
