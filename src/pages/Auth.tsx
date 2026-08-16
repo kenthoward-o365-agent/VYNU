@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,17 @@ export default function Auth() {
   const [siteId, setSiteId] = useState("");
   const [loading, setLoading] = useState(false);
   const [notProvisioned, setNotProvisioned] = useState(false);
+  const navigate = useNavigate();
+
+  /**
+   * Send a freshly signed-in user to "/", which AppRoutes redirects to the right
+   * landing page for them — /admin/dashboard for platform admins, /dashboard for
+   * operators. Without this the router simply re-renders at whatever path the
+   * sign-in happened on: this screen answers `path="*"` while logged out, so
+   * signing in at a URL the authenticated router does not define (/login being
+   * the obvious one) lands on NotFound instead of the app.
+   */
+  const goToLandingPage = () => navigate("/", { replace: true });
 
   const logoSrc = "/brand/shyndig-icon.png";
 
@@ -88,6 +100,7 @@ export default function Auth() {
         if (isAdmin) {
           localStorage.removeItem("tabless_active_venue");
           toast.success("Welcome, H&L OrderNOW admin");
+          goToLandingPage();
           return;
         }
         await supabase.auth.signOut();
@@ -112,6 +125,7 @@ export default function Auth() {
         if (isAdmin) {
           localStorage.removeItem("tabless_active_venue");
           toast.error("No venue access for that Site ID — signed in as H&L OrderNOW admin");
+          goToLandingPage();
           return;
         }
         await supabase.auth.signOut();
@@ -143,6 +157,7 @@ export default function Auth() {
       await sessionClient.rpc("set_primary_venue", { _venue_id: targetVenueId });
       localStorage.setItem("tabless_active_venue", targetVenueId);
       toast.success("Welcome back!");
+      goToLandingPage();
     } catch (err: any) {
       toast.error(err.message ?? "Unable to sign in");
     } finally {
