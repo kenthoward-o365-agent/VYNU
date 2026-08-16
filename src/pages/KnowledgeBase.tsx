@@ -23,7 +23,7 @@ const tocItems: TocItem[] = [
   { id: "getting-started", label: "Getting Started", icon: Rocket },
   { id: "pos-terminal-ui", label: "POS Terminal Interface", icon: MonitorSmartphone },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "shyndig-ai-analytics", label: "Spark AI Analytics", icon: BarChart3 },
+  { id: "shyndig-ai-analytics", label: "Vee AI Analytics", icon: BarChart3 },
   { id: "menu-builder", label: "Menu Builder", icon: UtensilsCrossed },
   { id: "zones-menus", label: "Zones & Multiple Menus", icon: Layers },
   { id: "pricing", label: "Pricing", icon: Tag },
@@ -315,7 +315,7 @@ export default function KnowledgeBase() {
         {/* Dashboard */}
         <Section id="dashboard" title="Dashboard" icon={LayoutDashboard} hidden={isHidden("dashboard")}>
           <SubSection title="What it is">
-            <p>The Dashboard is your at-a-glance operating view for the venue — refreshed in near real-time. It's designed for the manager-on-shift to glance at between covers and instantly see &quot;are we on track tonight?&quot;. For deeper trend analysis use the Analytics page; for AI-specific metrics use Spark AI Analytics.</p>
+            <p>The Dashboard is your at-a-glance operating view for the venue — refreshed in near real-time. It's designed for the manager-on-shift to glance at between covers and instantly see &quot;are we on track tonight?&quot;. For deeper trend analysis use the Analytics page; for AI-specific metrics use Vee AI Analytics.</p>
           </SubSection>
 
           <SubSection title="The date picker">
@@ -359,10 +359,10 @@ export default function KnowledgeBase() {
           <Tip>Bookmark a Custom range like &quot;Last Friday&quot; and compare it to the same chart with the range set to &quot;Two Fridays ago&quot;. Week-over-week comparison on the same day of week is the single most useful trend you'll look at as a hospo operator.</Tip>
         </Section>
 
-        {/* Spark AI Analytics */}
-        <Section id="shyndig-ai-analytics" title="Spark AI Analytics" icon={BarChart3} hidden={isHidden("shyndig-ai-analytics")}>
+        {/* Vee AI Analytics */}
+        <Section id="shyndig-ai-analytics" title="Vee AI Analytics" icon={BarChart3} hidden={isHidden("shyndig-ai-analytics")}>
           <SubSection title="What it tracks">
-            <p>Spark AI Analytics is the &quot;is the AI actually working?&quot; dashboard. It tracks every conversation between a diner and your VYNU agent and shows you how well the agent is converting, upselling, and being received. Use it to tune your agent's tone, opening message, and venue context.</p>
+            <p>Vee AI Analytics is the &quot;is the AI actually working?&quot; dashboard. It tracks every conversation between a diner and your VYNU agent and shows you how well the agent is converting, upselling, and being received. Use it to tune your agent's tone, opening message, and venue context.</p>
           </SubSection>
 
           <SubSection title="Headline metrics">

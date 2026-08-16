@@ -67,7 +67,7 @@ function routeToKbSection(pathname: string): string | null {
 
 const venueNavItems: NavItem[] = [
   { path: "/dashboard", label: "Dashboard", icon: IconDashboard, navKey: "dashboard" },
-  { path: "/sippa-analytics", label: "Spark AI", icon: IconSparkAI, navKey: "sippa_analytics", feature: "ai.spark_analytics" },
+  { path: "/sippa-analytics", label: "Vee AI", icon: IconSparkAI, navKey: "sippa_analytics", feature: "ai.spark_analytics" },
   { path: "/menu", label: "Menu", icon: IconMenu, navKey: "menu", feature: "core.menu_builder" },
   { path: "/pricing", label: "Pricing", icon: IconPricing, navKey: "pricing", feature: "merch.pricing_rules" },
   { path: "/tables", label: "Tables", icon: IconTables, navKey: "tables", feature: "core.tables_qr" },

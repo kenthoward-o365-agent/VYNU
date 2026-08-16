@@ -34,7 +34,7 @@ const KB_TOPICS: { id: string; label: string; summary: string; details: string[]
       "Ticket times card shows average + p90 from order placed → completed.",
       "Hourly chart highlights peak times — use it to plan throttling and staffing.",
     ] },
-  { id: "shyndig-ai-analytics", label: "Spark AI Analytics", summary: "How diners use the AI chat — conversion rate, top intents, popular suggestions, conversation depth.",
+  { id: "shyndig-ai-analytics", label: "Vee AI Analytics", summary: "How diners use the AI chat — conversion rate, top intents, popular suggestions, conversation depth.",
     details: ["Conversion = chats that produced an order ÷ total chats.", "Top intents reveal what diners actually ask (recommendations, allergens, upsells)."] },
   { id: "menu-builder", label: "Menu Builder", summary: "Categories, items, modifiers, display areas, time frames, image enhancement, and POS sync.",
     details: [

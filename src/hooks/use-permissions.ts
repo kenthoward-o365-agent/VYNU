@@ -182,7 +182,7 @@ export const TOP_LEVEL_NAV: Array<{ key: string; label: string }> = [
   { key: "diners", label: "Diners" },
   { key: "loyalty", label: "Loyalty" },
   { key: "analytics", label: "Analytics" },
-  { key: "sippa_analytics", label: "Spark AI Analytics" },
+  { key: "sippa_analytics", label: "Vee AI Analytics" },
   { key: "knowledge_base", label: "Knowledge Base" },
   { key: "copilot", label: "CoPilot (AI assistant)" },
   { key: "settings", label: "Settings" },

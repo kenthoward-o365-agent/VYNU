@@ -32,15 +32,15 @@ export const FEATURE_GROUPS = [
   },
   {
     id: "ai",
-    label: "AI (Spark)",
+    label: "AI (Vee)",
     features: [
-      { key: "ai.chat_ordering", label: "Spark AI chat ordering" },
+      { key: "ai.chat_ordering", label: "Vee AI chat ordering" },
       { key: "ai.upsell", label: "AI upsell / cart suggestions" },
       { key: "ai.menu_import", label: "AI menu import (URL / PDF)" },
       { key: "ai.image_single", label: "AI menu image generation (single)" },
       { key: "ai.image_batch", label: "AI menu image batch generator" },
       { key: "ai.modifier_gen", label: "AI modifier generation" },
-      { key: "ai.spark_analytics", label: "Spark AI Analytics" },
+      { key: "ai.spark_analytics", label: "Vee AI Analytics" },
       { key: "ai.insights", label: "AI Insights (daily narrative, anomalies)" },
       { key: "ai.copilot_full", label: "AI Co-pilot (in-app walkthroughs + chat)" },
       { key: "ai.campaign_composer", label: "AI campaign composer" },

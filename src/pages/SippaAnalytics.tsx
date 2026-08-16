@@ -7,7 +7,7 @@ export default function SippaAnalyticsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Spark AI Analytics</h2>
+        <h2 className="text-2xl font-bold text-foreground">Vee AI Analytics</h2>
         <p className="text-muted-foreground">Chat performance and conversion insights</p>
       </div>
       <SippaAnalyticsComponent venueId={venue.id} />

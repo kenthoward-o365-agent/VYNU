@@ -214,7 +214,7 @@ Deno.serve(async (req) => {
               {
                 role: "system",
                 content:
-                  "You are Spark, an AI revenue analyst for hospitality venues. Return concise, actionable recommendations as a JSON array of short strings. No prose outside JSON.",
+                  "You are Vee, an AI revenue analyst for hospitality venues. Return concise, actionable recommendations as a JSON array of short strings. No prose outside JSON.",
               },
               { role: "user", content: prompt },
             ],
