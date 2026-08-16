@@ -158,7 +158,7 @@ export default function VenuePerformanceTab({ venueId }: { venueId: string }) {
             <CardHeader className="p-4 pb-2"><CardTitle className="text-base flex items-center gap-2"><Plug className="h-4 w-4 text-cyan-500" />POS Integration</CardTitle></CardHeader>
             <CardContent className="p-4 pt-0">
               {!data.pos ? (
-                <p className="text-sm text-muted-foreground">No POS connected — using H&L OrderNow Orders Screen.</p>
+                <p className="text-sm text-muted-foreground">No POS connected — using VYNU Orders Screen.</p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-4 text-sm">
                   <div><p className="text-xs text-muted-foreground">Provider</p><p className="font-medium capitalize">{data.pos.pos_provider}</p></div>

@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Request token from H&L OrderNOW OAuth endpoint
+    // Request token from VYNU OAuth endpoint
     const tokenUrl = `${integration.endpoint_url}/oauth/token`;
     const tokenRes = await fetch(tokenUrl, {
       method: "POST",

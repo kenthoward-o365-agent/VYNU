@@ -33,7 +33,7 @@ export default function Developers() {
       {/* Top bar */}
       <header className="border-b border-border sticky top-0 bg-background/80 backdrop-blur z-10">
         <div className="container mx-auto px-6 py-3 flex items-center justify-between">
-          <Link to="/" className="text-xl font-bold tracking-tight">H&L OrderNOW <span className="text-primary">Developers</span></Link>
+          <Link to="/" className="text-xl font-bold tracking-tight">VYNU <span className="text-primary">Developers</span></Link>
           <Button asChild variant="outline" size="sm">
             <a href="mailto:partners@shyndig.com.au?subject=API%20access%20request">Get API access</a>
           </Button>
@@ -64,8 +64,8 @@ export default function Developers() {
         </aside>
 
         <main className="space-y-12 max-w-3xl">
-          <Section id="intro" title="H&L OrderNOW Public API v1">
-            <p>The H&L OrderNOW Public API lets POS vendors and CRM/loyalty platforms integrate with venues running on H&L OrderNOW. The API is split into two strictly separated surfaces:</p>
+          <Section id="intro" title="VYNU Public API v1">
+            <p>The VYNU Public API lets POS vendors and CRM/loyalty platforms integrate with venues running on VYNU. The API is split into two strictly separated surfaces:</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 not-prose">
               <Card className="p-4 space-y-1">
                 <Badge>POS API</Badge>
@@ -119,9 +119,9 @@ sk_crm_live_xxxxxxxxxxxx.SECRET   # CRM partner`}</Code>
           </Section>
 
           <Section id="webhooks" title="Webhooks">
-            <p>H&L OrderNOW pushes events to URLs you register. Each request includes:</p>
-            <Code>{`X-H&L OrderNOW-Event: order.status_changed
-X-H&L OrderNOW-Signature: <hex HMAC-SHA256 of body using webhook secret>`}</Code>
+            <p>VYNU pushes events to URLs you register. Each request includes:</p>
+            <Code>{`X-VYNU-Event: order.status_changed
+X-VYNU-Signature: <hex HMAC-SHA256 of body using webhook secret>`}</Code>
             <p>Verify signatures before trusting payloads. Failed deliveries (non-2xx) retry at 1m, 5m, 30m, 2h, 12h.</p>
           </Section>
 

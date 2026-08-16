@@ -205,7 +205,7 @@ export default function KnowledgeBase() {
         <div className="sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 space-y-3 pb-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground mb-1">Knowledge Base</h1>
-            <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on H&L OrderNOW.</p>
+            <p className="text-sm text-muted-foreground">Everything you need to set up and run your venue on VYNU.</p>
           </div>
           <div className="relative max-w-xl">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -233,8 +233,8 @@ export default function KnowledgeBase() {
 
         {/* Getting Started */}
         <Section id="getting-started" title="Getting Started" icon={Rocket} hidden={isHidden("getting-started")}>
-          <SubSection title="Welcome to H&L OrderNOW">
-            <p>H&L OrderNOW replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue&apos;s AI assistant, and place orders — no app download required.</p>
+          <SubSection title="Welcome to VYNU">
+            <p>VYNU replaces traditional menus with an AI-powered ordering experience. Diners scan a QR code at their table, chat with your venue&apos;s AI assistant, and place orders — no app download required.</p>
           </SubSection>
           <SubSection title="First-Time Setup Checklist">
             <StepList steps={[
@@ -244,7 +244,7 @@ export default function KnowledgeBase() {
               "Set up your tables and generate QR codes in Tables &amp; QR.",
               "Set up H&L Pay payments in Settings → Payments.",
               "Set up tax rules in Settings → Taxes.",
-              "Customise your H&L OrderNOW AI agent personality in Settings → H&L OrderNOW AI.",
+              "Customise your VYNU AI agent personality in Settings → VYNU AI.",
               "Print and place QR stickers on each table — you're live!",
             ]} />
           </SubSection>
@@ -262,13 +262,13 @@ export default function KnowledgeBase() {
         {/* POS Terminal Interface */}
         <Section id="pos-terminal-ui" title="POS Terminal Interface" icon={MonitorSmartphone} hidden={isHidden("pos-terminal-ui")}>
           <SubSection title="A real terminal, in the browser">
-            <p>H&L OrderNOW runs inside a virtual <strong>POS terminal chassis</strong> — a dark, bezelled frame locked to the viewport on desktop and tablet. The frame stays fixed while only the &quot;screen&quot; inside scrolls, exactly like a physical Lightspeed/Revel-style terminal at the pass. The chassis is hidden on phones so you get the full screen on the floor.</p>
+            <p>VYNU runs inside a virtual <strong>POS terminal chassis</strong> — a dark, bezelled frame locked to the viewport on desktop and tablet. The frame stays fixed while only the &quot;screen&quot; inside scrolls, exactly like a physical Lightspeed/Revel-style terminal at the pass. The chassis is hidden on phones so you get the full screen on the floor.</p>
           </SubSection>
 
           <SubSection title="Top status bar">
             <p>The bar across the top of the terminal is always visible and shows, left to right:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>H&L OrderNOW logo</strong> — taps return you to the Dashboard.</li>
+              <li><strong>VYNU logo</strong> — taps return you to the Dashboard.</li>
               <li><strong>Venue name &amp; Site ID</strong> — the last 4 characters of the venue UUID, printed beside the venue name (e.g. <code>Bondi Bistro · #1042</code>). Click the venue name to switch venues if you operate more than one.</li>
               <li><strong>Shift label</strong> — inferred from the current time of day (Breakfast / Lunch / Dinner / Late) until a real shift table is wired in.</li>
               <li><strong>Logged-in user &amp; role</strong> — display name plus a role badge (Owner, Manager, Staff, custom role).</li>
@@ -306,7 +306,7 @@ export default function KnowledgeBase() {
           </SubSection>
 
           <SubSection title="Theme">
-            <p>The chassis renders correctly in both light and dark modes. The system follows your saved preference; toggle from the footer rail. The H&L OrderNOW logo and brand colours (H&L Blue, H&L Green) are unchanged — only the surrounding chassis darkens.</p>
+            <p>The chassis renders correctly in both light and dark modes. The system follows your saved preference; toggle from the footer rail. The VYNU logo and brand colours (H&L Blue, H&L Green) are unchanged — only the surrounding chassis darkens.</p>
           </SubSection>
 
           <Tip>Treat the terminal as a single shared workstation: pin tiles for fast access on busy nights, leave the chassis bezel on for the front-of-house Mac mini, and use the Sign Out button (footer rail) between shifts so the next operator&apos;s user, role and audit trail are recorded correctly.</Tip>
@@ -353,7 +353,7 @@ export default function KnowledgeBase() {
           </SubSection>
 
           <SubSection title="Abandonment card">
-            <p>Counts diners who scanned, opened the chat, but never placed an order. A high abandonment rate after AI changes usually means the agent's tone or opening message needs tweaking — go to Settings → H&L OrderNOW AI.</p>
+            <p>Counts diners who scanned, opened the chat, but never placed an order. A high abandonment rate after AI changes usually means the agent's tone or opening message needs tweaking — go to Settings → VYNU AI.</p>
           </SubSection>
 
           <Tip>Bookmark a Custom range like &quot;Last Friday&quot; and compare it to the same chart with the range set to &quot;Two Fridays ago&quot;. Week-over-week comparison on the same day of week is the single most useful trend you'll look at as a hospo operator.</Tip>
@@ -362,7 +362,7 @@ export default function KnowledgeBase() {
         {/* Spark AI Analytics */}
         <Section id="shyndig-ai-analytics" title="Spark AI Analytics" icon={BarChart3} hidden={isHidden("shyndig-ai-analytics")}>
           <SubSection title="What it tracks">
-            <p>Spark AI Analytics is the &quot;is the AI actually working?&quot; dashboard. It tracks every conversation between a diner and your H&L OrderNOW agent and shows you how well the agent is converting, upselling, and being received. Use it to tune your agent's tone, opening message, and venue context.</p>
+            <p>Spark AI Analytics is the &quot;is the AI actually working?&quot; dashboard. It tracks every conversation between a diner and your VYNU agent and shows you how well the agent is converting, upselling, and being received. Use it to tune your agent's tone, opening message, and venue context.</p>
           </SubSection>
 
           <SubSection title="Headline metrics">
@@ -391,7 +391,7 @@ export default function KnowledgeBase() {
           <SubSection title="Tuning loop">
             <StepList steps={[
               "Pick the worst-performing metric on the page (usually conversion or accept rate).",
-              "Open the related setting: Settings → H&L OrderNOW AI for tone/opening, Menu Builder for item descriptions and photos.",
+              "Open the related setting: Settings → VYNU AI for tone/opening, Menu Builder for item descriptions and photos.",
               "Make one change at a time so you can attribute the impact.",
               "Wait 24–72 hours for enough sessions to flow through, then re-check.",
               "Repeat. The agent gets noticeably better with 3–4 tuning passes.",
@@ -453,7 +453,7 @@ export default function KnowledgeBase() {
           </SubSection>
 
           <SubSection title="POS ID (PLU)">
-            <p>Each item and modifier has a <strong>POS ID</strong> field — the PLU H&L OrderNOW sends to your H&L Exceed POS when integration is enabled. Get the PLU from your existing H&L product file and paste it in. A wrong or missing PLU causes the POS push to be rejected. Full details under <em>POS Integration — H&L Exceed Web Orders</em>.</p>
+            <p>Each item and modifier has a <strong>POS ID</strong> field — the PLU VYNU sends to your H&L Exceed POS when integration is enabled. Get the PLU from your existing H&L product file and paste it in. A wrong or missing PLU causes the POS push to be rejected. Full details under <em>POS Integration — H&L Exceed Web Orders</em>.</p>
           </SubSection>
           <SubSection title="Modifiers">
             <p>Modifiers let diners customise their orders (e.g. &quot;Extra cheese&quot;, &quot;No onion&quot;, &quot;Medium rare&quot;).</p>
@@ -716,7 +716,7 @@ export default function KnowledgeBase() {
               <li><strong>Kitchen</strong> — Mac mini + 27&quot; wall-mounted monitor in landscape, OR an iPad Pro 12.9&quot; in a kitchen-grade splash-proof case.</li>
               <li><strong>Bar</strong> — iPad 10.9&quot; in a counter mount with a charging cable run.</li>
               <li><strong>Expo / pass</strong> — a large TV (43&quot;+) driven by an Intel NUC or Mac mini, browser launched in fullscreen kiosk mode.</li>
-              <li><strong>For all stations</strong> — disable display sleep in the OS, set the browser to auto-launch on reboot, and bookmark the H&L OrderNOW URL on the home screen.</li>
+              <li><strong>For all stations</strong> — disable display sleep in the OS, set the browser to auto-launch on reboot, and bookmark the VYNU URL on the home screen.</li>
             </ul>
             <Tip>iPads in kitchens take a beating. Always pair a device with a code — never share the URL alone — and keep a printed list of active terminals near the manager&apos;s office for quick &quot;is everything online?&quot; checks.</Tip>
           </SubSection>
@@ -1086,10 +1086,10 @@ export default function KnowledgeBase() {
           <SubSection title="What this integration does">
 
             <p>
-              When a diner places an order through H&L OrderNOW, we can push that order straight into your H&L Exceed POS via the <strong>H&L Web Orders API</strong>. The order opens on the POS exactly as if a staff member had keyed it in — same docket, same PLUs, same tender, same table. No double-handling, no re-keying at end of service.
+              When a diner places an order through VYNU, we can push that order straight into your H&L Exceed POS via the <strong>H&L Web Orders API</strong>. The order opens on the POS exactly as if a staff member had keyed it in — same docket, same PLUs, same tender, same table. No double-handling, no re-keying at end of service.
             </p>
             <p>
-              This is opt-in per venue. Until it's switched on, orders stay in the H&L OrderNOW Orders screen only. Once on, every new order is queued for push within seconds of being placed, and you can manually push or refresh any order from the order card.
+              This is opt-in per venue. Until it's switched on, orders stay in the VYNU Orders screen only. Once on, every new order is queued for push within seconds of being placed, and you can manually push or refresh any order from the order card.
             </p>
             <p className="text-xs">
               Reference: <a className="underline" href="https://developer.hlpos.com/reference/addorder" target="_blank" rel="noreferrer">developer.hlpos.com/reference/addorder</a>
@@ -1098,7 +1098,7 @@ export default function KnowledgeBase() {
 
           <SubSection title="How it works end-to-end">
             <ol className="list-decimal list-inside space-y-1 pl-1">
-              <li>Diner checks out in H&L OrderNOW → order row is written to our database and charged via H&L Pay.</li>
+              <li>Diner checks out in VYNU → order row is written to our database and charged via H&L Pay.</li>
               <li>A database trigger checks the venue's POS integration. If it's <em>connected</em> and <em>auto-push</em> is on, a <code>send_order</code> job is enqueued on our background worker.</li>
               <li>The worker fetches an OAuth bearer token from H&L (cached for ~24h), maps our order to the H&L Web Orders payload, and POSTs to <code>https://weborders.hlcloud.com.au/api/order</code>.</li>
               <li>H&L returns a success/failure. We write <code>pos_push_status</code>, <code>pos_pushed_at</code>, and any error back onto the order, and log the full request/response to <code>pos_sync_log</code>.</li>
@@ -1120,7 +1120,7 @@ export default function KnowledgeBase() {
                 <tbody className="divide-y divide-border">
                   <tr><td className="py-2 pr-3 pl-3"><code>client_id</code></td><td className="py-2 pr-3">H&L (secret)</td><td className="py-2">OAuth2 client credentials — identifies our integration to H&L's auth server.</td></tr>
                   <tr><td className="py-2 pr-3 pl-3"><code>client_secret</code></td><td className="py-2 pr-3">H&L (secret)</td><td className="py-2">OAuth2 secret. Stored encrypted; never displayed once saved.</td></tr>
-                  <tr><td className="py-2 pr-3 pl-3"><code>integrator_id</code></td><td className="py-2 pr-3">H&L</td><td className="py-2">Numeric ID H&L issues to identify H&L OrderNOW as the originating integrator on this site.</td></tr>
+                  <tr><td className="py-2 pr-3 pl-3"><code>integrator_id</code></td><td className="py-2 pr-3">H&L</td><td className="py-2">Numeric ID H&L issues to identify VYNU as the originating integrator on this site.</td></tr>
                   <tr><td className="py-2 pr-3 pl-3"><code>recipient_id</code></td><td className="py-2 pr-3">H&L</td><td className="py-2">Numeric ID of the receiving POS/site within H&L's system. Routes our orders to the right venue.</td></tr>
                   <tr><td className="py-2 pr-3 pl-3"><code>station_no</code></td><td className="py-2 pr-3">H&L / venue</td><td className="py-2">Logical station the order is keyed against (used for sales reporting and docket routing on the POS).</td></tr>
                   <tr><td className="py-2 pr-3 pl-3"><code>shared_secret</code></td><td className="py-2 pr-3">H&L (secret)</td><td className="py-2">HMAC-SHA256 key H&L uses to sign webhooks back to us (status updates). Required if you want async status reconciliation.</td></tr>
@@ -1172,12 +1172,12 @@ export default function KnowledgeBase() {
           <SubSection title="Setting it up (operator walkthrough)">
             <StepList steps={[
               "Get integrator_id, recipient_id, station_no, client_id, client_secret, and shared_secret from H&L for the venue.",
-              "In H&L OrderNOW, go to Settings → Integrations and click Connect on H&L POS.",
+              "In VYNU, go to Settings → Integrations and click Connect on H&L POS.",
               "Click Configure on the venue row to open the H&L panel.",
               "Paste in the credentials, set Station No and default tender (leave at 63 unless H&L says otherwise).",
               "Leave Test mode ON for the first push. Click Send test order — this fires a $0.01, PLU 1 test docket with test:true so H&L's environment knows to discard it.",
               "Confirm the request/response panel shows a 2xx and the docket appears on the H&L side.",
-              "Flip Test mode OFF and toggle Auto-push orders to POS on. From this point, every new H&L OrderNOW order pushes automatically.",
+              "Flip Test mode OFF and toggle Auto-push orders to POS on. From this point, every new VYNU order pushes automatically.",
               "Optionally give H&L the webhook URL (Settings → Integrations shows the per-venue webhook endpoint) so status updates flow back.",
             ]} />
           </SubSection>
@@ -1389,7 +1389,7 @@ export default function KnowledgeBase() {
         {/* Service Modes & Ready Alerts */}
         <Section id="service-modes" title="Service Modes &amp; Ready Alerts" icon={BellRing} hidden={isHidden("service-modes")}>
           <SubSection title="Not every venue runs food to the table">
-            <p>Some venues deliver every plate to the table; others call the diner to the bar, the kitchen window or a hostess station. <strong>Service mode</strong> tells H&L OrderNOW which of those two models applies, so the diner is told the right thing and gets a nudge when their food is ready.</p>
+            <p>Some venues deliver every plate to the table; others call the diner to the bar, the kitchen window or a hostess station. <strong>Service mode</strong> tells VYNU which of those two models applies, so the diner is told the right thing and gets a nudge when their food is ready.</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Delivered to table</strong> — staff run the order out. The diner sees the normal Received → Preparing → Ready → Served tracker.</li>
               <li><strong>Diner collects at the counter</strong> — the diner is told where to collect at checkout, and is alerted the moment the order is marked Ready.</li>
@@ -1441,7 +1441,7 @@ export default function KnowledgeBase() {
         <Section id="pubplus" title="Pub+ Loyalty" icon={Gift} hidden={isHidden("pubplus")}>
           <SubSection title="What Pub+ is">
             <p><strong>Pub+</strong> is a group-wide loyalty programme modelled on the ALH Pub+ scheme. Unlike a standard venue loyalty programme, Pub+ is switched on at the <strong>parent (group) level</strong> and inherited by every child venue automatically. Members are shared across the whole group: a diner who joins at one hotel earns and redeems at every other hotel in the group, regardless of where they signed up.</p>
-            <p>The difference to the ALH programme as it exists today: Pub+ currently requires a downloaded app and a barcode scan at the venue. In H&L OrderNOW the diner simply signs in (or joins) in the ordering app after scanning the table QR — no separate app, no barcode, points accrue on the order itself.</p>
+            <p>The difference to the ALH programme as it exists today: Pub+ currently requires a downloaded app and a barcode scan at the venue. In VYNU the diner simply signs in (or joins) in the ordering app after scanning the table QR — no separate app, no barcode, points accrue on the order itself.</p>
           </SubSection>
 
           <SubSection title="Turning it on (group level)">
@@ -1474,7 +1474,7 @@ export default function KnowledgeBase() {
           </SubSection>
 
           <SubSection title="Pub+ API integration — Eagle Eye AIR">
-            <p>Pub+ now has a real integration path. ALH's Pub+ runs on the <strong>Eagle Eye AIR</strong> platform, and H&L OrderNOW talks to it directly from <strong>Admin → POS Integrations → Loyalty → Pub+</strong>. The integration is configured per <em>group</em> (parent company), because Pub+ members and points are group-wide.</p>
+            <p>Pub+ now has a real integration path. ALH's Pub+ runs on the <strong>Eagle Eye AIR</strong> platform, and VYNU talks to it directly from <strong>Admin → POS Integrations → Loyalty → Pub+</strong>. The integration is configured per <em>group</em> (parent company), because Pub+ members and points are group-wide.</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Settings</strong> — environment base URL (sandbox or production), client ID, parent identity number, identity type (BARCODE by default) and an &quot;earn automatically on paid orders&quot; switch. The client secret is stored as a backend secret, never in the browser.</li>
               <li><strong>Test connection</strong> — pings Eagle Eye's wallet service with signed credentials and records the result, timestamp and message on the card.</li>
@@ -1487,7 +1487,7 @@ export default function KnowledgeBase() {
           </SubSection>
 
           <SubSection title="Replacing the barcode scan">
-            <p>Today an ALH diner opens the Pub+ app and has a barcode scanned at the bar to earn points. In H&L OrderNOW the diner links their membership <em>once</em>:</p>
+            <p>Today an ALH diner opens the Pub+ app and has a barcode scanned at the bar to earn points. In VYNU the diner links their membership <em>once</em>:</p>
             <StepList steps={[
               "Diner opens their profile in the ordering app and taps the Pub+ membership card.",
               "They either scan their physical Pub+ card with the phone camera (the app reads the barcode in-browser) or type the number printed under it.",
@@ -1498,7 +1498,7 @@ export default function KnowledgeBase() {
           </SubSection>
 
           <SubSection title="Simulation mode">
-            <p>Until ALH issue credentials, the integration runs in <strong>simulation mode</strong>: links, balances and earn events are recorded inside H&L OrderNOW so the whole diner journey can be demonstrated end to end, and every simulated call is logged as such. The moment the client ID and secret are loaded, the same flows switch to live Eagle Eye calls with no code change.</p>
+            <p>Until ALH issue credentials, the integration runs in <strong>simulation mode</strong>: links, balances and earn events are recorded inside VYNU so the whole diner journey can be demonstrated end to end, and every simulated call is logged as such. The moment the client ID and secret are loaded, the same flows switch to live Eagle Eye calls with no code change.</p>
             <Tip>When pitching to a group, run Pub+ end-to-end on a test parent company first: enable at parent, join as a diner at one child venue, order at a second child venue and show the shared balance. That demo is the whole value proposition in 90 seconds.</Tip>
           </SubSection>
         </Section>
@@ -1548,7 +1548,7 @@ export default function KnowledgeBase() {
             <p>Update your venue name, type, address, contact information, logo, and operating hours. This information is displayed to diners and used by the AI assistant.</p>
           </SubSection>
           <SubSection title="Users &amp; Roles">
-            <p>Permissions in H&L OrderNOW work in <strong>two layers</strong>: a <em>role</em> controls which sidebar areas a user can see, and <em>per-user toggles</em> refine what they can actually do inside Orders.</p>
+            <p>Permissions in VYNU work in <strong>two layers</strong>: a <em>role</em> controls which sidebar areas a user can see, and <em>per-user toggles</em> refine what they can actually do inside Orders.</p>
 
             <p className="font-semibold mt-3">Layer 1 — Roles (sidebar access)</p>
             <p>Each venue defines its own roles under <strong>Settings → Users → Roles</strong>. Three system roles are seeded automatically and cannot be deleted: <strong>Owner</strong>, <strong>Manager</strong>, and <strong>Staff</strong>. You can create additional roles like &quot;Bar Staff&quot;, &quot;Floor Lead&quot;, or &quot;Kitchen Only&quot;.</p>
@@ -1576,7 +1576,7 @@ export default function KnowledgeBase() {
             <p>Owners always have full access regardless of any per-user toggles. To assign a role and toggle order permissions, edit the user under <strong>Settings → Users</strong> and use the dialog.</p>
           </SubSection>
           <SubSection title="Loyalty">
-            <p>Loyalty in H&L OrderNOW is venue-configurable (or group-wide if you run multiple sites). Diners join from a Loyalty CTA on the Landing Page, from the AI chat (&quot;Want me to add you to our rewards?&quot;), or after their first paid order. Once joined, their points/stamps/tier sit in their diner profile and unlock automatically at checkout.</p>
+            <p>Loyalty in VYNU is venue-configurable (or group-wide if you run multiple sites). Diners join from a Loyalty CTA on the Landing Page, from the AI chat (&quot;Want me to add you to our rewards?&quot;), or after their first paid order. Once joined, their points/stamps/tier sit in their diner profile and unlock automatically at checkout.</p>
 
             <p className="font-semibold mt-3">Programme types</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
@@ -1612,13 +1612,13 @@ export default function KnowledgeBase() {
 
             <Tip>Don't over-discount. A 1pt-per-$1 programme redeeming at 100pts = $5 is a 5% effective margin hit on engaged regulars — pricier than most loyalty operators realise. Model the cost before you launch.</Tip>
           </SubSection>
-          <SubSection title="H&L OrderNOW AI">
-            <p>The H&L OrderNOW AI settings let you shape the personality, voice, and guardrails of your venue's AI dining assistant. Done well, the agent feels like a knowledgeable host who knows your menu cold. Done badly, it feels like a generic chatbot.</p>
+          <SubSection title="VYNU AI">
+            <p>The VYNU AI settings let you shape the personality, voice, and guardrails of your venue's AI dining assistant. Done well, the agent feels like a knowledgeable host who knows your menu cold. Done badly, it feels like a generic chatbot.</p>
 
             <p className="font-semibold mt-3">Identity</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Agent Name</strong> — how the agent introduces itself (e.g. &quot;Ollie&quot;, &quot;Sippa&quot;, &quot;Your Sommelier&quot;). Give it a name that fits your brand.</li>
-              <li><strong>Agent Icon</strong> — custom avatar shown next to every message. Upload a square PNG/SVG, ideally with transparent background. Falls back to the H&L OrderNOW default.</li>
+              <li><strong>Agent Icon</strong> — custom avatar shown next to every message. Upload a square PNG/SVG, ideally with transparent background. Falls back to the VYNU default.</li>
               <li><strong>Opening Message</strong> — the first thing every diner sees. Keep it warm, short, and end with a question that invites the next message (e.g. &quot;G'day! Welcome to Bondi Bistro. Are you here for a quick bite or a longer dinner tonight?&quot;).</li>
             </ul>
 
@@ -1660,7 +1660,7 @@ GF is well-handled; DF on most dishes; nut-free kitchen.`}</p>
             <Tip>If diners ask the agent the same question repeatedly (e.g. &quot;do you have parking?&quot;), add the answer to Venue Context — the agent will start answering it confidently first time.</Tip>
           </SubSection>
           <SubSection title="Payments — H&L Pay">
-            <p>H&L Pay is H&L OrderNOW&apos;s built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don&apos;t need a separate processor account or API keys.</p>
+            <p>H&L Pay is VYNU&apos;s built-in payments product. We act as your payment facilitator (PayFac) end-to-end — application, underwriting, merchant account setup, funding, fee collection, statements, and chargeback management — so you don&apos;t need a separate processor account or API keys.</p>
             <SubSection title="Onboarding flow">
               <ol className="list-decimal list-inside space-y-1 pl-1">
                 <li><strong>Application</strong> — submit your venue and business details.</li>

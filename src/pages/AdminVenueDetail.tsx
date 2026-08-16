@@ -494,7 +494,7 @@ export default function AdminVenueDetail() {
                 </div>
                 <Separator />
                 <p className="text-xs text-muted-foreground">
-                  → Configure your loyalty program (H&L OrderNOW Loyalty or your own custom programs) in the <strong>Loyalty</strong> tab.
+                  → Configure your loyalty program (VYNU Loyalty or your own custom programs) in the <strong>Loyalty</strong> tab.
                 </p>
               </CardContent>
             </Card>
@@ -677,13 +677,13 @@ export default function AdminVenueDetail() {
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>H&L OrderNOW Loyalty</CardTitle>
+                <CardTitle>VYNU Loyalty</CardTitle>
                 <CardDescription>
-                  Configure the built-in H&L OrderNOW Loyalty program for {venue?.name}. To manage custom programs and toggle activation, the venue's operators can use the <strong>Loyalty</strong> tab in their dashboard.
+                  Configure the built-in VYNU Loyalty program for {venue?.name}. To manage custom programs and toggle activation, the venue's operators can use the <strong>Loyalty</strong> tab in their dashboard.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ShyndigLoyaltyEditor scope={{ type: "venue", venue_id: venueId! }} menuVenueId={venueId!} defaultName="H&L OrderNOW Loyalty" />
+                <ShyndigLoyaltyEditor scope={{ type: "venue", venue_id: venueId! }} menuVenueId={venueId!} defaultName="VYNU Loyalty" />
               </CardContent>
             </Card>
           )}

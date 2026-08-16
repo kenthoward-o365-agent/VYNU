@@ -155,7 +155,7 @@ export const WALKTHROUGHS: Walkthrough[] = [
       { route: "/group", title: "Open the Group dashboard", body: "Pub+ is switched on at the parent company, not per venue. Pick the parent company at the top." },
       { title: "Open the Pub+ tab", body: "Configure earn rate, tiers, benefits and the join copy diners see." },
       { title: "Activate", body: "Every child venue instantly inherits Pub+ as its active loyalty programme. Members and points are shared across all venues in the group." },
-      { title: "Pub+ API (placeholder)", body: "Admin → Integrations → Pub+ holds the placeholder for the real ALH Pub+ API. Until credentials exist, all Pub+ activity stays inside H&L OrderNOW." },
+      { title: "Pub+ API (placeholder)", body: "Admin → Integrations → Pub+ holds the placeholder for the real ALH Pub+ API. Until credentials exist, all Pub+ activity stays inside VYNU." },
     ],
   },
   {

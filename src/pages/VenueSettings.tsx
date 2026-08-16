@@ -347,7 +347,7 @@ export default function VenueSettings() {
       { key: "details", label: "Details", description: "Venue name, address & contact", icon: Settings, to: "/settings?tab=details" },
       { key: "users", label: "Users & Roles", description: "Staff accounts and permissions", icon: Users, to: "/settings?tab=users" },
       { key: "loyalty", label: "Loyalty", description: "Earning rules and rewards", icon: Gift, to: "/settings?tab=loyalty" },
-      { key: "sippa", label: "H&L OrderNOW AI", description: "AI assistant configuration", icon: Bot, to: "/settings?tab=sippa" },
+      { key: "sippa", label: "VYNU AI", description: "AI assistant configuration", icon: Bot, to: "/settings?tab=sippa" },
       { key: "payments", label: "Payments", description: "H&L Pay setup and payouts", icon: CreditCard, to: "/settings?tab=payments" },
       { key: "gratuities", label: "Gratuities", description: "Tip presets and rules", icon: DollarSign, to: "/settings?tab=gratuities" },
       { key: "surcharges", label: "Surcharges", description: "Weekend & public holiday surcharges", icon: Percent, to: "/settings?tab=surcharges" },
@@ -1014,7 +1014,7 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
     if (!shyndigProgramId) { setEditorOpen(true); return; }
     const { error } = await supabase.from("loyalty_programs").update({ is_active: next }).eq("id", shyndigProgramId);
     if (error) { toast.error(error.message); return; }
-    toast.success(next ? "H&L OrderNOW Loyalty enabled" : "H&L OrderNOW Loyalty paused");
+    toast.success(next ? "VYNU Loyalty enabled" : "VYNU Loyalty paused");
     fetchPrograms();
   };
 
@@ -1061,21 +1061,21 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
 
   return (
     <div className="space-y-6">
-      {/* H&L OrderNOW Loyalty (built-in, venue-scoped) */}
+      {/* VYNU Loyalty (built-in, venue-scoped) */}
       <Card className="border-primary/30">
         <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                H&L OrderNOW Loyalty
+                VYNU Loyalty
                 <Badge variant="outline" className="ml-1 text-[10px]">Built-in · Free</Badge>
               </CardTitle>
               <CardDescription>
-                H&L OrderNOW's free built-in loyalty program. When ON, this becomes the active program for diners — your custom programs below are paused.
+                VYNU's free built-in loyalty program. When ON, this becomes the active program for diners — your custom programs below are paused.
               </CardDescription>
             </div>
-            <Switch checked={shyndigActive} onCheckedChange={toggleShyndigActive} aria-label="Toggle H&L OrderNOW Loyalty" />
+            <Switch checked={shyndigActive} onCheckedChange={toggleShyndigActive} aria-label="Toggle VYNU Loyalty" />
           </div>
         </CardHeader>
         <CardContent>
@@ -1086,8 +1086,8 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Configure H&L OrderNOW Loyalty</DialogTitle></DialogHeader>
-              {venueId && <ShyndigLoyaltyEditor scope={{ type: "venue", venue_id: venueId }} menuVenueId={venueId} defaultName="H&L OrderNOW Loyalty" />}
+              <DialogHeader><DialogTitle>Configure VYNU Loyalty</DialogTitle></DialogHeader>
+              {venueId && <ShyndigLoyaltyEditor scope={{ type: "venue", venue_id: venueId }} menuVenueId={venueId} defaultName="VYNU Loyalty" />}
             </DialogContent>
           </Dialog>
         </CardContent>
@@ -1095,7 +1095,7 @@ function VenueLoyaltyTab({ venueId, groupId }: { venueId?: string; groupId?: str
 
       {shyndigActive && (
         <p className="text-xs text-muted-foreground italic px-1">
-          H&L OrderNOW Loyalty is your active program. Custom programs below are paused for diners.
+          VYNU Loyalty is your active program. Custom programs below are paused for diners.
         </p>
       )}
 

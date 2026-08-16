@@ -17,9 +17,9 @@ export function HeroSection({
   children,
 }: HeroSectionProps) {
   return (
-    <section className="relative bg-[hsl(203,42%,9%)] text-foreground overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(203,42%,16%)] via-[hsl(203,42%,12%)] to-[hsl(203,42%,9%)]" />
-      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_right,hsl(198,70%,55%),transparent_40%)]" />
+    <section className="relative bg-[hsl(240,6%,8%)] text-foreground overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(240,5%,16%)] via-[hsl(240,5%,12%)] to-[hsl(240,6%,8%)]" />
+      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_right,hsl(256,90%,60%),transparent_40%)]" />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative pt-32 pb-20 lg:pt-40 lg:pb-28">
         <div className="max-w-4xl mx-auto text-center space-y-8">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">

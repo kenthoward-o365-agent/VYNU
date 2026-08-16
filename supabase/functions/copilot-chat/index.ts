@@ -100,7 +100,7 @@ const KB_TOPICS: { id: string; label: string; summary: string; details: string[]
       "Members and points are shared across the whole group: join at one hotel, earn and redeem at any other. Visit history, tier and preferences follow the diner between sites.",
       "Each venue still sees its own earn/redeem liability in reporting so the group can settle inter-venue redemption internally.",
       "Diner sign-up: Pub+ branded CTA on the venue landing page, Pub+ benefits on the diner sign-up form, a join prompt after the first paid order, and the AI agent can enrol or apply a redemption mid-conversation.",
-      "Difference vs the real ALH programme: ALH Pub+ needs a downloaded app and a barcode scan in venue; in H&L OrderNOW the diner just signs in after scanning the table QR.",
+      "Difference vs the real ALH programme: ALH Pub+ needs a downloaded app and a barcode scan in venue; in VYNU the diner just signs in after scanning the table QR.",
       "Pub+ API integration is LIVE-CAPABLE via the Eagle Eye AIR platform (ALH's loyalty platform): Admin → POS Integrations → Loyalty → Pub+. Configured per group with base URL (sandbox/production), client ID, parent identity number, identity type (BARCODE) and auto-earn-on-paid. The client secret is a backend secret.",
       "Eagle Eye actions supported: test connection, link a member's wallet from their card number, refresh points balance, earn (posts the paid basket line-by-line at payment), redeem (burns points).",
       "Barcode replacement: the diner links their Pub+ card once — camera scan in the diner app or typing the number under the barcode — then every QR order earns automatically with no scan at the bar.",
@@ -127,7 +127,7 @@ const KB_TOPICS: { id: string; label: string; summary: string; details: string[]
       "A listed special date always wins over the weekday rule. Surcharges are calculated on the subtotal before gratuity and appear as their own line on the bill and receipt.",
       "Best practice: load the next 12 months of state public holidays at the start of the financial year.",
     ] },
-  { id: "settings", label: "Settings", summary: "Venue details, users/roles, zones, loyalty, H&L OrderNOW AI tone, payments (H&L Pay), gratuities, surcharges, taxes (GST), table sessions, integrations.",
+  { id: "settings", label: "Settings", summary: "Venue details, users/roles, zones, loyalty, VYNU AI tone, payments (H&L Pay), gratuities, surcharges, taxes (GST), table sessions, integrations.",
     details: [
       "Users tab: invite staff, assign roles (owner, manager, staff). Role drives nav + tool access (e.g. CoPilot financials are admin-only).",
       "Zones tab (bottom-right tile): create zones, assign each a menu, and set pay-on-order vs tabs, pre-auth, tab limits and split payments. This replaced the old Open Tabs tile.",
@@ -673,7 +673,7 @@ Deno.serve(async (req) => {
       .eq("user_id", userId).eq("venue_id", venue_id).maybeSingle();
     const history: any[] = Array.isArray(convRow?.messages) ? (convRow!.messages as any[]) : [];
 
-    const systemPrompt = `You are CoPilot, the H&L OrderNOW venue assistant for ${venueName} (${timezone}).
+    const systemPrompt = `You are CoPilot, the VYNU venue assistant for ${venueName} (${timezone}).
 Today is ${new Date().toLocaleString("en-AU", { timeZone: timezone })}.
 
 PURPOSE

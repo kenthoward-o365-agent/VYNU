@@ -40,16 +40,14 @@ export function MarketingNav() {
         <nav className="flex h-16 items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <img
-              src="/brand/hl-ordernow-logo.png"
-              alt="H&L OrderNOW"
+              src="/brand/vynu-logo.svg"
+              alt="VYNU"
               className="h-8 w-auto"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
               }}
             />
-            <span className="font-semibold text-foreground tracking-tight hidden sm:inline">
-              OrderNOW
-            </span>
+
           </Link>
 
           {/* Desktop nav */}

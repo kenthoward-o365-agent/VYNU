@@ -274,7 +274,7 @@ export default function DinerProfile({ venueId, groupId, onSignup, onSignin }: D
       .eq("id", profile.id);
     setSaving(false);
     if (error) { toast.error("Failed to update profile"); return; }
-    toast.success("H&L OrderNOW ID updated");
+    toast.success("VYNU ID updated");
     setEditing(false);
     fetchAll();
   };
@@ -313,9 +313,9 @@ export default function DinerProfile({ venueId, groupId, onSignup, onSignin }: D
           </div>
           <h2 className="text-lg font-semibold text-foreground mb-2">Join as a diner</h2>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-            You're ordering as a guest. Create your H&L OrderNOW ID to earn loyalty points,
+            You're ordering as a guest. Create your VYNU ID to earn loyalty points,
             save your cards, track orders, and unlock personalised recommendations at every
-            H&L OrderNOW venue.
+            VYNU venue.
           </p>
         </div>
         <div className="space-y-2 max-w-xs mx-auto">
@@ -324,7 +324,7 @@ export default function DinerProfile({ venueId, groupId, onSignup, onSignin }: D
             onClick={() => onSignup?.()}
             disabled={!onSignup}
           >
-            Create my H&L OrderNOW ID
+            Create my VYNU ID
           </Button>
           <Button
             variant="outline"
@@ -356,14 +356,14 @@ export default function DinerProfile({ venueId, groupId, onSignup, onSignin }: D
 
   return (
     <div className="px-5 pt-6 pb-24 space-y-5">
-      {/* H&L OrderNOW ID Header Card */}
+      {/* VYNU ID Header Card */}
       <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-accent/10">
         <CardContent className="pt-4 pb-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
               <span className="text-[10px] uppercase tracking-wider font-bold text-primary">
-                Your H&L OrderNOW ID
+                Your VYNU ID
               </span>
             </div>
             <div className="flex gap-1">
@@ -437,7 +437,7 @@ export default function DinerProfile({ venueId, groupId, onSignup, onSignin }: D
                 className="mt-1"
               />
               <p className="text-[10px] text-muted-foreground mt-1">
-                Used to send you a birthday treat from venues running H&L OrderNOW Loyalty.
+                Used to send you a birthday treat from venues running VYNU Loyalty.
               </p>
             </div>
             <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
@@ -467,7 +467,7 @@ export default function DinerProfile({ venueId, groupId, onSignup, onSignin }: D
                 Allergens to avoid
               </Label>
               <p className="text-[10px] text-muted-foreground mt-0.5 mb-2">
-                Used at every H&L OrderNOW venue to filter your menu automatically.
+                Used at every VYNU venue to filter your menu automatically.
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {COMMON_ALLERGENS.map((a) => {

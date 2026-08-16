@@ -226,7 +226,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       ? "Knowledge Base"
       : location.pathname === "/orders/statuses"
       ? "Order Display System"
-      : allNavItems.find((i) => i.path === location.pathname)?.label || "H&L OrderNOW";
+      : allNavItems.find((i) => i.path === location.pathname)?.label || "VYNU";
 
   const siteIdShort = venue?.id ? venue.id.slice(0, 4).toUpperCase() : null;
   const hour = new Date().getHours();
@@ -271,8 +271,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <Menu className="h-5 w-5" />
               </button>
               <img
-                src="/brand/shyndig-icon.png"
-                alt="H&L OrderNOW"
+                src="/brand/vynu-icon.svg"
+                alt="VYNU"
                 className="h-12 w-auto object-contain shrink-0"
               />
               <div className="hidden sm:flex items-center gap-2 text-[12px]">
@@ -298,7 +298,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     <span className="font-semibold px-2">{venue?.name}</span>
                   )
                 ) : (
-                  <span className="font-semibold px-2">H&L OrderNOW</span>
+                  <span className="font-semibold px-2">VYNU</span>
                 )}
                 {siteIdShort && (
                   <>

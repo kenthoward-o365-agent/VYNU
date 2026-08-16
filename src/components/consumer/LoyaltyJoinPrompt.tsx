@@ -11,7 +11,7 @@ interface LoyaltyJoinPromptProps {
   /** When true, render the prompt (subject to internal eligibility checks). */
   show: boolean;
   /**
-   * Diner profile id when signed in (H&L OrderNOW ID holder). When provided,
+   * Diner profile id when signed in (VYNU ID holder). When provided,
    * the prompt becomes a one-tap join (no signup form needed).
    */
   dinerId?: string | null;
@@ -138,7 +138,7 @@ const LoyaltyJoinPrompt = ({
     : [
         isOneTap ? "Instant enrolment — no forms" : "Get recognised every time you return",
         isOneTap
-          ? "Rewards stack on top of your other H&L OrderNOW memberships"
+          ? "Rewards stack on top of your other VYNU memberships"
           : "Faster checkout with saved details",
         "Personalised offers just for you",
       ];
@@ -163,7 +163,7 @@ const LoyaltyJoinPrompt = ({
                     ? "One tap — no app, no barcode"
                     : "Free membership — no app to download"
                   : isOneTap
-                    ? "One tap with your H&L OrderNOW ID"
+                    ? "One tap with your VYNU ID"
                     : "Free rewards program"}
               </p>
             </div>

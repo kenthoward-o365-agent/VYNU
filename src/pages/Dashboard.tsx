@@ -94,7 +94,7 @@ export default function Dashboard() {
 
   const isToday = auditDate.label === "Today";
   const hasInclusiveTax = taxes.some((t) => t.is_inclusive);
-  const ORDER_COLORS = ["hsl(198, 70%, 55%)", "hsl(87, 50%, 51%)", "hsl(199, 63%, 44%)", "hsl(203, 42%, 21%)"];
+  const ORDER_COLORS = ["hsl(256, 90%, 64%)", "hsl(35, 41%, 55%)", "hsl(256, 60%, 45%)", "hsl(240, 10%, 70%)"];
   const orderChartData = [
     ...(isToday ? [{ name: "Active", value: stats.activeOrders }] : []),
     { name: "Completed", value: stats.completedOrders },

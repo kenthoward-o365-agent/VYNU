@@ -32,13 +32,13 @@ const footerLinks = [
 
 export function MarketingFooter() {
   return (
-    <footer className="bg-[hsl(203,42%,9%)] text-white">
+    <footer className="bg-[hsl(240,6%,8%)] text-white">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
           <div className="lg:col-span-2 space-y-4">
             <img
-              src="/brand/hl-ordernow-logo.png"
-              alt="H&L OrderNOW"
+              src="/brand/vynu-logo.svg"
+              alt="VYNU"
               className="h-8 w-auto brightness-0 invert"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
@@ -49,7 +49,7 @@ export function MarketingFooter() {
             </p>
             <Button
               variant="secondary"
-              className="bg-white text-[hsl(203,42%,21%)] hover:bg-white/90"
+              className="bg-white text-[hsl(240,5%,11%)] hover:bg-white/90"
               asChild
             >
               <a href="mailto:sales@hl-ordernow.com?subject=Book%20a%20demo">Book a demo</a>
@@ -74,7 +74,7 @@ export function MarketingFooter() {
           ))}
         </div>
         <div className="mt-16 pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-4 text-sm text-white/60">
-          <p>© {new Date().getFullYear()} H&L OrderNOW. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} VYNU. All rights reserved.</p>
           <p>Built for the H&L POS ecosystem. Australia-first.</p>
         </div>
       </div>

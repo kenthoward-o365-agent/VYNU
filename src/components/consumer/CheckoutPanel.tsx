@@ -383,7 +383,7 @@ const CheckoutPanel = ({
           spend_excl_tax: taxResult.subtotalExTax,
         } as any)
         .maybeSingle();
-      // Award H&L OrderNOW Rewards points (group/venue-aware) — fire and forget.
+      // Award VYNU Rewards points (group/venue-aware) — fire and forget.
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const headers: any = {
@@ -1018,8 +1018,8 @@ const CheckoutPanel = ({
             {storedCards.length > 0 && (
               <div className="space-y-3">
                 <div className="space-y-0.5">
-                  <Label className="text-sm font-semibold">Your H&L OrderNOW wallet</Label>
-                  <p className="text-[11px] text-muted-foreground">Cards you've saved travel with your H&L OrderNOW ID — usable at every H&L OrderNOW venue.</p>
+                  <Label className="text-sm font-semibold">Your VYNU wallet</Label>
+                  <p className="text-[11px] text-muted-foreground">Cards you've saved travel with your VYNU ID — usable at every VYNU venue.</p>
                 </div>
                 {storedCards.map((sc) => (
                   <div

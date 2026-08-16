@@ -105,11 +105,11 @@ export async function computeReadiness(sb: any, venueId: string): Promise<Readin
       blocker: true,
       status: posChoice ? "done" : "todo",
       detail: posChoice === "ornow_only"
-        ? "Manage orders in H&L OrderNOW (no POS push)."
+        ? "Manage orders in VYNU (no POS push)."
         : posChoice === "push_to_hl"
         ? "Push orders to H&L Exceed POS."
         : posChoice === "other_pos"
-        ? "Other POS — manage orders in H&L OrderNOW."
+        ? "Other POS — manage orders in VYNU."
         : "Decide where orders are managed.",
       deep_link: "/settings/integrations",
     },

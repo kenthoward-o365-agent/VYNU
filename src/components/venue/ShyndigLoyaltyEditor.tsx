@@ -1,6 +1,6 @@
-// Sectioned editor for H&L OrderNOW Loyalty programs (Toast-inspired).
+// Sectioned editor for VYNU Loyalty programs (Toast-inspired).
 // Used by both AdminVenueDetail (group programs on parent venues) and VenueSettings (solo venue programs).
-// Loads/creates the canonical H&L OrderNOW Loyalty program for the given scope (group or venue),
+// Loads/creates the canonical VYNU Loyalty program for the given scope (group or venue),
 // then exposes earn mechanic (points or stamps), redemption, signup bonus, status tiers,
 // birthday reward, and milestones — all stored in `loyalty_programs.rules` JSONB.
 import { useEffect, useState, useMemo } from "react";
@@ -168,7 +168,7 @@ interface ShyndigLoyaltyEditorProps {
   defaultName?: string;
 }
 
-export default function ShyndigLoyaltyEditor({ scope, menuVenueId, defaultName = "H&L OrderNOW Loyalty" }: ShyndigLoyaltyEditorProps) {
+export default function ShyndigLoyaltyEditor({ scope, menuVenueId, defaultName = "VYNU Loyalty" }: ShyndigLoyaltyEditorProps) {
   const [program, setProgram] = useState<ProgramRow | null>(null);
   const [name, setName] = useState(defaultName);
   const [isActive, setIsActive] = useState(true);
@@ -190,7 +190,7 @@ export default function ShyndigLoyaltyEditor({ scope, menuVenueId, defaultName =
 
   const loadProgram = async () => {
     setLoading(true);
-    // Load ONLY the H&L OrderNOW built-in program for this scope.
+    // Load ONLY the VYNU built-in program for this scope.
     // Custom programs (The Pass, Morris House, etc.) live separately and are never touched here.
     let q = supabase
       .from("loyalty_programs")
@@ -240,7 +240,7 @@ export default function ShyndigLoyaltyEditor({ scope, menuVenueId, defaultName =
         .eq("id", program.id);
       if (error) toast.error(error.message);
       else {
-        toast.success("H&L OrderNOW Loyalty saved");
+        toast.success("VYNU Loyalty saved");
         await loadProgram();
       }
     } else {
@@ -256,7 +256,7 @@ export default function ShyndigLoyaltyEditor({ scope, menuVenueId, defaultName =
       const { error } = await supabase.from("loyalty_programs").insert(insertRow);
       if (error) toast.error(error.message);
       else {
-        toast.success("H&L OrderNOW Loyalty created");
+        toast.success("VYNU Loyalty created");
         await loadProgram();
       }
     }
@@ -316,7 +316,7 @@ export default function ShyndigLoyaltyEditor({ scope, menuVenueId, defaultName =
     });
   };
 
-  if (loading) return <p className="text-sm text-muted-foreground">Loading H&L OrderNOW Loyalty…</p>;
+  if (loading) return <p className="text-sm text-muted-foreground">Loading VYNU Loyalty…</p>;
 
   const earnMode = rules.earn?.mode ?? "points";
 

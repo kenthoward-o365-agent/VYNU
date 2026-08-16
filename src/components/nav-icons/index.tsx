@@ -1,5 +1,5 @@
 /**
- * H&L OrderNOW — bespoke nav icon family.
+ * VYNU — bespoke nav icon family.
  *
  * One cohesive set, drawn on a 24px grid with a uniform 1.5px stroke,
  * 2px rounded corners, round line caps. Inherits `currentColor` so the

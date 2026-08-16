@@ -1,4 +1,4 @@
-// H&L OrderNOW CRM/Loyalty Partner API v1
+// VYNU CRM/Loyalty Partner API v1
 // Bearer auth with sk_crm_* keys only. Strict separation from POS.
 //
 // Routes:

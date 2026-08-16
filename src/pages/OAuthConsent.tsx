@@ -110,10 +110,10 @@ export default function OAuthConsent() {
         <CardHeader>
           <div className="flex items-center gap-2 text-primary">
             <ShieldCheck className="h-5 w-5" />
-            <CardTitle>Connect {clientName} to H&L OrderNOW</CardTitle>
+            <CardTitle>Connect {clientName} to VYNU</CardTitle>
           </div>
           <CardDescription>
-            This lets {clientName} use H&L OrderNOW as you{email ? ` (${email})` : ""}. It does not bypass this app's permissions
+            This lets {clientName} use VYNU as you{email ? ` (${email})` : ""}. It does not bypass this app's permissions
             or backend policies.
           </CardDescription>
         </CardHeader>
@@ -130,7 +130,7 @@ export default function OAuthConsent() {
                     : `Additional permission requested: ${s}`}
                 </li>
               ))}
-              <li>Call H&L OrderNOW tools on your behalf</li>
+              <li>Call VYNU tools on your behalf</li>
             </ul>
           </div>
           <div className="flex gap-2 pt-2">

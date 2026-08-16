@@ -55,7 +55,7 @@ export default function MarketingIndex() {
     <MarketingLayout>
       <HeroSection
         headline="The agentic ordering platform that pays for itself by Friday."
-        subheadline="H&L OrderNOW turns every QR scan into a conversation, every order into revenue, and every diner into a regular."
+        subheadline="VYNU turns every QR scan into a conversation, every order into revenue, and every diner into a regular."
         cta={{ label: "Book a demo", href: "mailto:sales@hl-ordernow.com?subject=Book%20a%20demo" }}
         secondaryCta={{ label: "See how it compares", href: "/compare" }}
       />
@@ -99,7 +99,7 @@ export default function MarketingIndex() {
       </section>
 
       {/* AI revenue proof band */}
-      <section className="bg-[hsl(203,42%,9%)] text-white py-16 lg:py-20">
+      <section className="bg-[hsl(240,6%,8%)] text-white py-16 lg:py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-white/70 text-sm uppercase tracking-wide mb-2">Across the network</p>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
@@ -125,7 +125,7 @@ export default function MarketingIndex() {
           <div className="max-w-3xl mx-auto text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">Works alone. Better together.</h2>
             <p className="text-muted-foreground text-lg">
-              Run H&L OrderNOW standalone, or plug it straight into H&L POS for a unified stack.
+              Run VYNU standalone, or plug it straight into H&L POS for a unified stack.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
@@ -190,7 +190,7 @@ export default function MarketingIndex() {
 
       <CtaBand
         headline="Live in a weekend. Book a 20-minute demo."
-        subheadline="See how H&L OrderNOW fits your venue, group, or POS stack."
+        subheadline="See how VYNU fits your venue, group, or POS stack."
       />
     </MarketingLayout>
   );

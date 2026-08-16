@@ -7,7 +7,7 @@ const CORS = {
     "authorization, x-client-info, apikey, content-type, x-signature, x-location-id",
 };
 
-// Allergen ID → label mapping per H&L OrderNOW API spec
+// Allergen ID → label mapping per VYNU API spec
 const ALLERGEN_MAP: Record<number, string> = {
   1: "Gluten",
   2: "Peanuts",

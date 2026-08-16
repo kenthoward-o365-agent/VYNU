@@ -110,7 +110,7 @@ const ConsumerOrder = () => {
   // the chat icon below", and the tab it refers to is hidden. The diner cannot
   // order at all. Package wins, and the flow collapses back to a usable menu.
   const effectiveChatMode = pkgChatEnabled ? chatMode : "chat_optional";
-  const [agentName, setAgentName] = useState<string>("H&L OrderNOW");
+  const [agentName, setAgentName] = useState<string>("VYNU");
   const [agentIconUrl, setAgentIconUrl] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
@@ -241,7 +241,7 @@ const ConsumerOrder = () => {
     if (!snapshotLoading && !snapshot) setLoading(false);
   }, [snapshotLoading, snapshot]);
 
-  // Check for diner profile (H&L OrderNOW ID). Only auto-resume if there's an
+  // Check for diner profile (VYNU ID). Only auto-resume if there's an
   // active visit in sessionStorage (i.e. tab wasn't closed since sign-in).
   // Otherwise show a "Continue as {Name}?" gate so a stale token can't silently
   // identify a different person who scans the same QR later.
@@ -753,7 +753,7 @@ const ConsumerOrder = () => {
         </>
       )}
 
-      {/* One-tap loyalty join for signed-in H&L OrderNOW ID holders (on session start, when no active/paid order is showing) */}
+      {/* One-tap loyalty join for signed-in VYNU ID holders (on session start, when no active/paid order is showing) */}
       {dinerId && venue && !activeOrder && (
         <LoyaltyJoinPrompt
           venueId={venue.id}

@@ -8,7 +8,7 @@ const CORS = {
     "authorization, x-client-info, apikey, content-type, x-signature",
 };
 
-// H&L OrderNOW API status codes → our order_status enum
+// VYNU API status codes → our order_status enum
 const STATUS_MAP: Record<number, string> = {
   1: "received",
   2: "preparing",
@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Format order per H&L OrderNOW API spec
+      // Format order per VYNU API spec
       const posOrder = {
         orderId: order.id,
         locationId: integration.location_id,

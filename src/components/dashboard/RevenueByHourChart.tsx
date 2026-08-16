@@ -38,7 +38,7 @@ export default function RevenueByHourChart({ orders }: Props) {
               <XAxis dataKey="hour" fontSize={11} tickLine={false} axisLine={false} />
               <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
               <Tooltip formatter={(v: number) => [`$${v.toFixed(2)}`, "Revenue"]} />
-              <Bar dataKey="revenue" fill="hsl(198, 70%, 55%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="revenue" fill="hsl(256, 90%, 64%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -207,7 +207,7 @@ Deno.serve(async (req) => {
     const loyaltyLink = extracted.loyalty_url || findLoyaltyLink(links)
     const theme = deriveTheme(branding)
 
-    const sysPrompt = `You compose landing pages for restaurants on the H&L OrderNOW platform.
+    const sysPrompt = `You compose landing pages for restaurants on the VYNU platform.
 Return strict JSON with key "sections" (array). Allowed section shapes (output only listed fields, no extras, no ids):
 - hero: { type:"hero", title, subtitle, bgColor (hex), logoEmoji, heroImageUrl?, overlayOpacity? (0..0.9) }
 - table-display: { type:"table-display", label? }

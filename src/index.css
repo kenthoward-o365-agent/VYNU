@@ -3,135 +3,137 @@
 @tailwind utilities;
 
 /*
-  H&L OrderNOW palette (from H&L POS system):
-    H&L Blue       #3BAEDC → 198 70% 55%   primary
-    H&L Blue Dark  #2A8FB8 → 199 63% 44%   primary hover/pressed
-    H&L Green      #7FC242 →  87 50% 51%   accent / success
-    Ink            #1F3B4D → 203 42% 21%   text on light
-    Surface        #FFFFFF →   0  0% 100%  app background
-    Muted Surface  #F4F8FB → 204 38% 97%   cards / panels
+  VYNU palette (brand sheet, 2026-08-16):
+    Violet     #6F3DF5 → 256 90% 60%   primary — CTAs, links, active nav
+    Gold       #B68B50 →  35 41% 51%   accent — highlights, membership, premium
+    Ink        #1A1A1D → 240  5% 11%   dark surfaces / text on light
+    Off-white  #F4F4F6 → 240 10% 96%   light surfaces
+    Elevated   #2E2E33 → 240  5% 19%   raised cards on ink
+
+  Success stays green (87 50% 45%) — gold is a brand accent, not a status
+  colour, and success/destructive must stay distinguishable.
 */
 
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 203 42% 21%;
+    --foreground: 240 5% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 203 42% 21%;
+    --card-foreground: 240 5% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 203 42% 21%;
+    --popover-foreground: 240 5% 11%;
 
-    --primary: 198 70% 55%;
+    --primary: 256 90% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 204 38% 97%;
-    --secondary-foreground: 203 42% 21%;
+    --secondary: 240 10% 96%;
+    --secondary-foreground: 240 5% 11%;
 
-    --muted: 204 38% 97%;
-    --muted-foreground: 203 20% 40%;
+    --muted: 240 10% 96%;
+    --muted-foreground: 240 5% 40%;
 
-    --accent: 87 50% 51%;
+    --accent: 35 41% 51%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 87 50% 51%;
+    --success: 87 50% 45%;
     --success-foreground: 0 0% 100%;
 
     --warning: 35 95% 55%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 204 30% 90%;
-    --input: 204 30% 90%;
-    --ring: 198 70% 55%;
+    --border: 240 8% 90%;
+    --input: 240 8% 90%;
+    --ring: 256 90% 60%;
 
     --radius: 0.75rem;
 
     /* Light-mode sidebar: matches app background for a clean unified look. */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 203 42% 21%;
-    --sidebar-primary: 198 70% 55%;
+    --sidebar-foreground: 240 5% 11%;
+    --sidebar-primary: 256 90% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 204 38% 97%;
-    --sidebar-accent-foreground: 203 42% 21%;
-    --sidebar-border: 204 30% 90%;
-    --sidebar-ring: 198 70% 55%;
-    --sidebar-muted: 203 20% 45%;
+    --sidebar-accent: 240 10% 96%;
+    --sidebar-accent-foreground: 240 5% 11%;
+    --sidebar-border: 240 8% 90%;
+    --sidebar-ring: 256 90% 60%;
+    --sidebar-muted: 240 5% 45%;
 
     /* POS terminal chassis tokens — additive, derived from existing palette. */
-    --pos-chassis: 203 42% 14%;
-    --pos-chassis-edge: 203 42% 22%;
-    --pos-chassis-highlight: 203 25% 30%;
+    --pos-chassis: 240 5% 14%;
+    --pos-chassis-edge: 240 5% 22%;
+    --pos-chassis-highlight: 240 5% 30%;
     --pos-screen: 0 0% 100%;
-    --pos-status-bar: 203 42% 11%;
+    --pos-status-bar: 240 5% 11%;
     --pos-status-fg: 0 0% 100%;
-    --pos-tile: 204 38% 97%;
-    --pos-tile-hover: 204 38% 93%;
-    --pos-tile-active: 198 70% 95%;
-    --pos-led-on: 87 50% 51%;
+    --pos-tile: 240 10% 96%;
+    --pos-tile-hover: 240 10% 92%;
+    --pos-tile-active: 256 90% 95%;
+    --pos-led-on: 87 50% 45%;
     --pos-led-off: 0 62% 55%;
   }
 
 
   .dark {
-    --background: 203 42% 11%;
+    --background: 240 5% 11%;
     --foreground: 0 0% 100%;
 
-    --card: 203 42% 16%;
+    --card: 240 5% 16%;
     --card-foreground: 0 0% 100%;
 
-    --popover: 203 42% 16%;
+    --popover: 240 5% 16%;
     --popover-foreground: 0 0% 100%;
 
-    --primary: 198 70% 55%;
+    --primary: 256 90% 64%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 203 42% 18%;
+    --secondary: 240 5% 19%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 203 42% 18%;
-    --muted-foreground: 204 15% 70%;
+    --muted: 240 5% 19%;
+    --muted-foreground: 240 10% 70%;
 
-    --accent: 87 50% 51%;
+    --accent: 35 41% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 87 50% 51%;
+    --success: 87 45% 48%;
     --success-foreground: 0 0% 100%;
 
     --warning: 35 95% 55%;
     --warning-foreground: 0 0% 100%;
 
-    --border: 203 42% 22%;
-    --input: 203 42% 22%;
-    --ring: 198 70% 55%;
+    --border: 240 5% 22%;
+    --input: 240 5% 22%;
+    --ring: 256 90% 64%;
 
-    --sidebar-background: 203 42% 9%;
+    --sidebar-background: 240 6% 8%;
     --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 198 70% 55%;
+    --sidebar-primary: 256 90% 64%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 203 42% 16%;
+    --sidebar-accent: 240 5% 16%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 203 42% 18%;
-    --sidebar-ring: 198 70% 55%;
-    --sidebar-muted: 204 15% 60%;
+    --sidebar-border: 240 5% 19%;
+    --sidebar-ring: 256 90% 64%;
+    --sidebar-muted: 240 10% 60%;
 
     /* POS terminal chassis tokens — dark mode. */
-    --pos-chassis: 203 50% 5%;
-    --pos-chassis-edge: 203 42% 18%;
-    --pos-chassis-highlight: 203 30% 22%;
-    --pos-screen: 203 42% 11%;
-    --pos-status-bar: 203 50% 6%;
+    --pos-chassis: 240 6% 5%;
+    --pos-chassis-edge: 240 5% 19%;
+    --pos-chassis-highlight: 240 5% 24%;
+    --pos-screen: 240 5% 11%;
+    --pos-status-bar: 240 6% 6%;
     --pos-status-fg: 0 0% 100%;
-    --pos-tile: 203 42% 14%;
-    --pos-tile-hover: 203 42% 18%;
-    --pos-tile-active: 198 70% 20%;
-    --pos-led-on: 87 50% 51%;
+    --pos-tile: 240 5% 14%;
+    --pos-tile-hover: 240 5% 19%;
+    --pos-tile-active: 256 60% 24%;
+    --pos-led-on: 87 50% 45%;
     --pos-led-off: 0 62% 55%;
   }
 

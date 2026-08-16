@@ -39,7 +39,7 @@ export default function Auth() {
    */
   const goToLandingPage = () => navigate("/", { replace: true });
 
-  const logoSrc = "/brand/shyndig-icon.png";
+  const logoSrc = "/brand/vynu-logo.svg";
 
   useEffect(() => {
     if (sessionStorage.getItem("shyndig_not_provisioned") === "1") {
@@ -99,7 +99,7 @@ export default function Auth() {
       if (!trimmedSiteId) {
         if (isAdmin) {
           localStorage.removeItem("tabless_active_venue");
-          toast.success("Welcome, H&L OrderNOW admin");
+          toast.success("Welcome, VYNU admin");
           goToLandingPage();
           return;
         }
@@ -124,7 +124,7 @@ export default function Auth() {
       const failSignIn = async () => {
         if (isAdmin) {
           localStorage.removeItem("tabless_active_venue");
-          toast.error("No venue access for that Site ID — signed in as H&L OrderNOW admin");
+          toast.error("No venue access for that Site ID — signed in as VYNU admin");
           goToLandingPage();
           return;
         }
@@ -169,7 +169,7 @@ export default function Auth() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-3">
-          <img src={logoSrc} alt="H&L OrderNOW" className="h-48 w-auto max-w-[640px] mx-auto object-contain" />
+          <img src={logoSrc} alt="VYNU" className="h-48 w-auto max-w-[640px] mx-auto object-contain" />
         </div>
         <Card>
           <CardHeader>

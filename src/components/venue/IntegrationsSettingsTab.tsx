@@ -318,8 +318,8 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
               <Label className="text-sm font-medium">POS manages the menu</Label>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {menuSource === "pos"
-                  ? "Your POS is the source of truth — items sync from it into H&L OrderNOW."
-                  : "Menu is edited in the H&L OrderNOW Menu Builder. Turn on to let the POS drive it instead."}
+                  ? "Your POS is the source of truth — items sync from it into VYNU."
+                  : "Menu is edited in the VYNU Menu Builder. Turn on to let the POS drive it instead."}
               </p>
             </div>
             <Switch

@@ -47,7 +47,7 @@ export default function Compare() {
     <MarketingLayout>
       <HeroSection
         headline="Built for AU hospitality groups. Benchmarked against the category."
-        subheadline="An honest, capability-by-capability comparison of H&L OrderNOW against me&u, Mr Yum, Chewzie and Square/Toast Order & Pay — with the caveats written in."
+        subheadline="An honest, capability-by-capability comparison of VYNU against me&u, Mr Yum, Chewzie and Square/Toast Order & Pay — with the caveats written in."
         cta={{ label: "Book a side-by-side demo", href: "mailto:sales@hl-ordernow.com?subject=Side-by-side%20demo" }}
         secondaryCta={{ label: "See the features", href: "/features" }}
       />
