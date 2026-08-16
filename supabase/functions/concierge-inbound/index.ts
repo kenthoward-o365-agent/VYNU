@@ -71,6 +71,26 @@ async function parseInbound(req: Request): Promise<Inbound | null> {
   };
 }
 
+/**
+ * The model gives booking date/time in the venue's local time; the edge
+ * runtime is UTC, so `new Date("YYYY-MM-DDTHH:MM")` would store 7pm UTC —
+ * 5am in Melbourne. Convert via the IANA zone's offset at that instant.
+ */
+function zonedTimeToUtc(dateStr: string, timeStr: string, timeZone: string): Date | null {
+  const asUtc = new Date(`${dateStr}T${timeStr}:00Z`);
+  if (Number.isNaN(asUtc.getTime())) return null;
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "longOffset" })
+      .formatToParts(asUtc);
+    const off = parts.find((p) => p.type === "timeZoneName")?.value ?? "GMT";
+    const m = off.match(/GMT([+-])(\d{2}):(\d{2})/);
+    const minutes = m ? (m[1] === "+" ? 1 : -1) * (Number(m[2]) * 60 + Number(m[3])) : 0;
+    return new Date(asUtc.getTime() - minutes * 60_000);
+  } catch {
+    return asUtc; // unknown zone id — better a UTC booking than none
+  }
+}
+
 /** The model is asked for strict JSON; parse defensively. */
 function parseAgentReply(text: string): {
   reply: string;
@@ -148,9 +168,10 @@ Deno.serve(async (req) => {
 
   const { data: venue } = await supabase
     .from("venues")
-    .select("name")
+    .select("name, timezone")
     .eq("id", venueId)
     .single();
+  const venueTz = venue?.timezone || "Australia/Sydney";
 
   // Find an open conversation for this guest in the last 24h, else start one.
   const since = new Date(Date.now() - 24 * 3600_000).toISOString();
@@ -198,12 +219,14 @@ Deno.serve(async (req) => {
     .limit(20);
   const transcript = (history ?? []).reverse();
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Venue-local date — the UTC date is already "yesterday" for an Australian
+  // evening, which would make the model resolve "tomorrow" to the wrong day.
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: venueTz }).format(new Date());
   const system = [
     `You are Vee, the AI concierge for the venue "${venue?.name ?? "this venue"}".`,
     settings.greeting ? `House greeting: ${settings.greeting}` : "",
     `You answer guest messages (${inbound.channel}) briefly and warmly, like a great front-of-house person. Keep replies under 60 words — this is a text conversation.`,
-    `You can take table bookings. Today is ${today}. When the guest has given a date, a time and a party size, confirm the booking.`,
+    `You can take table bookings. Today is ${today} (venue local time). When the guest has given a date, a time and a party size, confirm the booking.`,
     `Respond ONLY with JSON: {"reply": "<your message to the guest>", "booking": null | {"date": "YYYY-MM-DD", "time": "HH:MM", "party_size": <int>, "name": "<guest name or null>"}, "needs_human": <true if the guest needs a person — complaints, refunds, anything you cannot do>}.`,
     `Only include "booking" once ALL of date, time and party size are known — otherwise ask for what's missing.`,
   ].filter(Boolean).join("\n");
@@ -227,7 +250,10 @@ Deno.serve(async (req) => {
   } catch (e) {
     // No AI provider configured (or provider down): flag for a human and
     // fall back to a message-taken flow rather than dropping the guest.
-    console.error("[concierge-inbound] aiChat failed", e instanceof AiError ? e.status : e);
+    console.error(
+      "[concierge-inbound] aiChat failed",
+      e instanceof AiError ? `${e.status} ${e.message}` : e,
+    );
     await supabase
       .from("concierge_conversations")
       .update({ status: "needs_human", last_message_at: now })
@@ -247,8 +273,8 @@ Deno.serve(async (req) => {
   let bookingId: string | null = null;
 
   if (booking) {
-    const startsAt = new Date(`${booking.date}T${booking.time}`);
-    if (!Number.isNaN(startsAt.getTime()) && startsAt.getTime() > Date.now() - 3600_000) {
+    const startsAt = zonedTimeToUtc(booking.date, booking.time, venueTz);
+    if (startsAt && startsAt.getTime() > Date.now() - 3600_000) {
       const { data: bset } = await supabase
         .from("venue_booking_settings")
         .select("auto_confirm, default_duration_minutes")
