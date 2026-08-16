@@ -2,6 +2,8 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
+import { aiChat, AiError } from '../_shared/ai.ts'
+
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!
 const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY')!
 const GOOGLE_PLACES_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY') // optional
@@ -240,30 +242,22 @@ ADDRESS: ${extracted.address || ''}
 HOURS: ${extracted.hours || ''}
 MAP_URL: ${extracted.google_maps || ''}`
 
-    const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+    let content = '{}'
+    try {
+      const ai = await aiChat({
+        role: 'chat-advanced',
         messages: [
           { role: 'system', content: sysPrompt },
           { role: 'user', content: userPrompt },
         ],
-        response_format: { type: 'json_object' },
-      }),
-    })
-
-    if (!aiRes.ok) {
-      const t = await aiRes.text()
-      if (aiRes.status === 429) return j({ error: 'AI rate limit, please retry' }, 429)
-      if (aiRes.status === 402) return j({ error: 'AI credits exhausted' }, 402)
-      return j({ error: 'AI error', detail: t.slice(0, 500) }, 502)
+        responseFormat: { type: 'json_object' },
+      })
+      content = ai.text || '{}'
+    } catch (e) {
+      if (e instanceof AiError && (e.status === 429 || e.status === 402)) return j({ error: e.publicMessage }, e.status)
+      if (e instanceof AiError) return j({ error: 'AI error' }, 502)
+      throw e
     }
-    const aiData = await aiRes.json()
-    const content = aiData.choices?.[0]?.message?.content || '{}'
     let parsed: any = {}
     try { parsed = JSON.parse(content) } catch { return j({ error: 'AI returned invalid JSON' }, 502) }
 

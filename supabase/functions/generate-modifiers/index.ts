@@ -6,7 +6,7 @@ const corsHeaders = {
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireFeature } from '../_shared/require-feature.ts';
 
-const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+import { aiChat, AiError, aiErrorResponse } from '../_shared/ai.ts';
 
 const MODIFIER_SCHEMA = {
   name: "generate_modifiers",
@@ -126,21 +126,10 @@ Deno.serve(async (req) => {
       return `- [${item.id}] ${item.name} (${catName})${item.description ? ': ' + item.description : ''} — $${item.price}`;
     }).join('\n');
 
-    const apiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'AI service not configured' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    const aiRes = await fetch(LOVABLE_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+    let aiMessage: any = null;
+    try {
+      const ai = await aiChat({
+        role: 'chat-advanced',
         messages: [
           {
             role: 'system',
@@ -166,37 +155,21 @@ Rules:
           type: 'function',
           function: MODIFIER_SCHEMA
         }],
-        tool_choice: { type: 'function', function: { name: 'generate_modifiers' } }
-      })
-    });
-
-    if (!aiRes.ok) {
-      const errText = await aiRes.text();
-      console.error('AI error:', errText);
-      if (aiRes.status === 429) {
-        return new Response(JSON.stringify({ error: 'Rate limit exceeded, please try again later.' }), {
-          status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      if (aiRes.status === 402) {
-        return new Response(JSON.stringify({ error: 'AI credits exhausted. Please add funds.' }), {
-          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      return new Response(JSON.stringify({ error: 'AI generation failed' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        toolChoice: { type: 'function', function: { name: 'generate_modifiers' } }
       });
+      aiMessage = ai.message;
+    } catch (e) {
+      if (e instanceof AiError) return aiErrorResponse(e, corsHeaders);
+      throw e;
     }
-
-    const aiData = await aiRes.json();
 
     let result;
     try {
-      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+      const toolCall = aiMessage?.tool_calls?.[0];
       if (toolCall?.function?.arguments) {
         result = JSON.parse(toolCall.function.arguments);
       } else {
-        const content = aiData.choices?.[0]?.message?.content || '';
+        const content = aiMessage?.content || '';
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (jsonMatch) result = JSON.parse(jsonMatch[0]);
       }

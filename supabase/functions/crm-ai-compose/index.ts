@@ -1,8 +1,8 @@
 // AI campaign content composer - drafts subject/body/sms for a goal
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { aiChat, AiError } from '../_shared/ai.ts'
 
-const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')!
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
@@ -60,22 +60,18 @@ ${body.prompt ? `Brief: ${body.prompt}` : ''}
 
 Return JSON only.`
 
-    const aiRes = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+    let content = '{}'
+    try {
+      const ai = await aiChat({
+        role: 'chat',
         messages: [{ role: 'system', content: sysPrompt }, { role: 'user', content: userPrompt }],
-        response_format: { type: 'json_object' },
-      }),
-    })
-
-    if (!aiRes.ok) {
-      const t = await aiRes.text()
-      return j({ error: 'AI error', detail: t }, aiRes.status)
+        responseFormat: { type: 'json_object' },
+      })
+      content = ai.text || '{}'
+    } catch (e) {
+      if (e instanceof AiError) return j({ error: e.publicMessage }, e.status)
+      throw e
     }
-    const aiData = await aiRes.json()
-    const content = aiData.choices?.[0]?.message?.content || '{}'
     let parsed: any = {}
     try { parsed = JSON.parse(content) } catch { parsed = { body_text: content } }
     return j({ draft: parsed })

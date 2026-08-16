@@ -258,35 +258,26 @@ The largest piece of actual engineering, and the one with no mechanical shortcut
 `LOVABLE_API_KEY`. (`adapters/lightspeed` also uses `LOVABLE_API_KEY`, but against
 the *connector* gateway — it is not an AI call site.)
 
-### Status: partly done
+### Status: ✅ ALL 12 CALL SITES MIGRATED (2026-08-16)
 
-`supabase/functions/_shared/ai.ts` now exists and is the single owner of the
-gateway URL, the key, and the role → model mapping. Its defaults reproduce
-today's behaviour exactly, so the swap is env-only for an OpenAI-compatible
-provider:
+Every AI call now goes through `supabase/functions/_shared/ai.ts`. Zero direct
+references to `ai.gateway.lovable.dev` remain outside that module. Switching to
+any OpenAI-compatible provider is env-only:
 
 ```
 AI_GATEWAY_URL  AI_API_KEY  AI_MODEL_CHAT  AI_MODEL_CHAT_ADVANCED
 AI_MODEL_IMAGE  AI_MODEL_IMAGE_EDIT
 ```
 
-Migrated to it (all image generation):
+All twelve typecheck clean under `deno check`. Still NOT runtime-tested — no
+local Supabase stack; exercise them against a deployed environment before
+trusting the migration (the diner chat and menu import are the easiest to
+smoke-test from the app).
 
-- [x] `generate-menu-image`
-- [x] `enhance-menu-image`
-- [x] `batch-generate-images`
-
-Still building their own fetch — each needs individual review because they use
-tool-calling loops or structured output rather than a plain completion:
-
-- [ ] `diner-chat`, `copilot-chat`, `onboarding-chat` — chat, tool-calling
-- [ ] `upsell-suggest`, `generate-modifiers`, `import-menu` — tool-calling
-- [ ] `crm-ai-compose`, `landing-from-url` — `response_format`
-- [ ] `ai-insights` — plain completion
-
-**None of this is runtime-tested.** There is no local Supabase stack here, so the
-migrated functions are typechecked (`deno check`) but unexercised. Verify with
-`supabase functions serve` or a deploy to a scratch project before trusting them.
+Remaining Lovable AI-side dependency is the **connector gateway** only:
+`landing-from-url` (Firecrawl scrape) and `adapters/lightspeed` still call
+`connector-gateway.lovable.dev` with LOVABLE_API_KEY. Replacing those needs a
+Firecrawl account and direct Lightspeed credentials respectively.
 
 ### Choosing a provider
 

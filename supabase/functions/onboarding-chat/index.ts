@@ -1,8 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { computeReadiness } from "../_shared/onboarding-readiness.ts";
-
-const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+import { aiChat, AiError, aiErrorResponse } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -360,36 +359,21 @@ OPERATING RULES:
     let assistantText = "";
 
     for (let i = 0; i < 6; i++) {
-      const resp = await fetch(LOVABLE_API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+      let ai;
+      try {
+        ai = await aiChat({
+          role: "chat",
           messages,
           tools,
-          tool_choice: "auto",
+          toolChoice: "auto",
           temperature: 0.4,
-        }),
-      });
-
-      if (!resp.ok) {
-        const errText = await resp.text();
-        if (resp.status === 429) {
-          return new Response(JSON.stringify({ error: "Rate limited. Try again shortly." }),
-            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-        if (resp.status === 402) {
-          return new Response(JSON.stringify({ error: "AI credits exhausted." }),
-            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-        throw new Error(`AI gateway ${resp.status}: ${errText}`);
+        });
+      } catch (e) {
+        if (e instanceof AiError) return aiErrorResponse(e, corsHeaders);
+        throw e;
       }
 
-      const data = await resp.json();
-      const choice = data.choices?.[0];
+      const choice = ai.raw.choices?.[0];
       const msg = choice?.message;
       if (!msg) break;
 

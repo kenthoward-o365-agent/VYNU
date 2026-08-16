@@ -1,7 +1,7 @@
 // AI Insights edge function: produces product mix, loss leaders, food cost alerts,
 // and pricing optimisation recommendations for a venue using Lovable AI.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { logAiUsage } from "../_shared/ai-usage.ts";
+import { aiChat, AiError } from "../_shared/ai.ts";
 import { requireFeature } from "../_shared/require-feature.ts";
 
 const corsHeaders = {
@@ -198,48 +198,36 @@ Deno.serve(async (req) => {
     // AI recommendations via Lovable AI Gateway
     let recommendations: string[] = [];
     let aiError: string | null = null;
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (LOVABLE_API_KEY && sold.length > 0) {
+    const hasAiKey = !!(Deno.env.get("AI_API_KEY") || Deno.env.get("LOVABLE_API_KEY"));
+    if (hasAiKey && sold.length > 0) {
       try {
         const prompt = buildPrompt(summary, topSellers, slowMovers, lossLeaders, foodCostAlerts);
-        const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are Vee, an AI revenue analyst for hospitality venues. Return concise, actionable recommendations as a JSON array of short strings. No prose outside JSON.",
-              },
-              { role: "user", content: prompt },
-            ],
-          }),
+        const ai = await aiChat({
+          role: "chat",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are Vee, an AI revenue analyst for hospitality venues. Return concise, actionable recommendations as a JSON array of short strings. No prose outside JSON.",
+            },
+            { role: "user", content: prompt },
+          ],
+          usage: { venueId: venueId as string, feature: "insights" },
         });
-        if (resp.ok) {
-          const j = await resp.json();
-          logAiUsage({ venueId: venueId as string, feature: "insights", model: "google/gemini-2.5-flash", usage: j?.usage, requestId: resp.headers.get("X-Lovable-AIG-Run-ID") }).catch(() => {});
-          const text = j?.choices?.[0]?.message?.content ?? "";
-          const match = text.match(/\[[\s\S]*\]/);
-          if (match) {
-            try {
-              const parsed = JSON.parse(match[0]);
-              if (Array.isArray(parsed)) {
-                recommendations = parsed.map((x) => String(x)).slice(0, 8);
-              }
-            } catch (_) {
-              recommendations = text.split("\n").map((s: string) => s.replace(/^[-*0-9.\s]+/, "").trim()).filter(Boolean).slice(0, 8);
+        const text = ai.text;
+        const match = text.match(/\[[\s\S]*\]/);
+        if (match) {
+          try {
+            const parsed = JSON.parse(match[0]);
+            if (Array.isArray(parsed)) {
+              recommendations = parsed.map((x) => String(x)).slice(0, 8);
             }
+          } catch (_) {
+            recommendations = text.split("\n").map((s: string) => s.replace(/^[-*0-9.\s]+/, "").trim()).filter(Boolean).slice(0, 8);
           }
-        } else {
-          aiError = `AI gateway ${resp.status}`;
         }
       } catch (e) {
-        aiError = (e as Error).message;
+        aiError = e instanceof AiError ? `AI gateway ${e.status}` : (e as Error).message;
       }
     }
 

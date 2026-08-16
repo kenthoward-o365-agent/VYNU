@@ -1,9 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { logAiUsage } from "../_shared/ai-usage.ts";
+import { aiChat, AiError, aiErrorResponse, resolveModel } from "../_shared/ai.ts";
 import { safeErrorResponse } from "../_shared/safe-error.ts";
-
-const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -733,37 +732,22 @@ The user's access level: ${isAdmin ? "ADMIN (financials allowed)" : "STAFF (fina
     // Skip the LLM round-trip when we already launched a walkthrough deterministically.
     for (let i = 0; i < (assistantText ? 0 : 8); i++) {
 
-      const resp = await fetch(LOVABLE_API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+      let ai;
+      try {
+        ai = await aiChat({
+          role: "chat",
           messages,
           tools,
-          tool_choice: "auto",
+          toolChoice: "auto",
           temperature: 0.3,
-        }),
-      });
-
-      if (!resp.ok) {
-        const errText = await resp.text();
-        if (resp.status === 429) {
-          return new Response(JSON.stringify({ error: "Rate limit reached. Please wait a moment and try again." }),
-            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-        if (resp.status === 402) {
-          return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits in workspace settings." }),
-            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-        throw new Error(`AI gateway ${resp.status}: ${errText}`);
+        });
+      } catch (e) {
+        if (e instanceof AiError) return aiErrorResponse(e, corsHeaders);
+        throw e;
       }
 
-      const data = await resp.json();
-      lastUsage = data.usage ?? lastUsage;
-      const choice = data.choices?.[0];
+      lastUsage = ai.usage ?? lastUsage;
+      const choice = ai.raw.choices?.[0];
       const msg = choice?.message;
       if (!msg) break;
       messages.push(msg);
@@ -807,7 +791,7 @@ The user's access level: ${isAdmin ? "ADMIN (financials allowed)" : "STAFF (fina
       await logAiUsage({
         venueId: venue_id,
         feature: "copilot",
-        model: "google/gemini-2.5-flash",
+        model: resolveModel("chat"),
         usage: lastUsage,
         meta: { tool_calls: toolEvents.length },
       });

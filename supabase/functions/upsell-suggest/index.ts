@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { logAiUsage } from "../_shared/ai-usage.ts";
+import { aiChat, AiError } from "../_shared/ai.ts";
 import { enforceRateLimit, getClientIp, tooManyRequests } from "../_shared/rate-limit.ts";
 import { readJsonLimited, boundedArray, PayloadTooLargeError, payloadTooLarge } from "../_shared/http.ts";
 import { hasFeature } from "../_shared/require-feature.ts";
@@ -33,9 +33,6 @@ serve(async (req) => {
     };
     const menu_items = boundedArray<any>(reqBody.menu_items, 200);
     const cart_items = boundedArray<any>(reqBody.cart_items, 100);
-
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     if (!menu_items.length) {
       return new Response(JSON.stringify({ suggestions: [] }), {
@@ -107,14 +104,10 @@ serve(async (req) => {
 
     const maxSuggestions = trigger === "cart_suggestions" ? 2 : 1;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+    let aiMessage: any = null;
+    try {
+      const ai = await aiChat({
+        role: "chat-advanced",
         messages: [
           {
             role: "system",
@@ -154,36 +147,33 @@ serve(async (req) => {
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "return_suggestions" } },
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
+        toolChoice: { type: "function", function: { name: "return_suggestions" } },
+        usage: venue_id ? { venueId: venue_id, feature: "upsell" } : undefined,
+      });
+      aiMessage = ai.message;
+    } catch (e) {
+      if (e instanceof AiError && e.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited", suggestions: [] }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
+      if (e instanceof AiError && e.status === 402) {
         return new Response(JSON.stringify({ error: "Credits exhausted", suggestions: [] }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const errText = await response.text();
-      console.error("AI gateway error:", response.status, errText);
+      // Upsell is best-effort decoration on the cart — degrade to no
+      // suggestions rather than failing the request, as before.
+      console.error("AI gateway error:", e);
       return new Response(JSON.stringify({ suggestions: [] }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const aiResult = await response.json();
-    if (venue_id) {
-      logAiUsage({ venueId: venue_id, feature: "upsell", model: "google/gemini-3-flash-preview", usage: aiResult?.usage, requestId: response.headers.get("X-Lovable-AIG-Run-ID") }).catch(() => {});
-    }
-    const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
+    const toolCall = aiMessage?.tool_calls?.[0];
     if (!toolCall?.function?.arguments) {
       return new Response(JSON.stringify({ suggestions: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -7,7 +7,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireFeature } from '../_shared/require-feature.ts';
 import { assertPublicUrl, SsrfError } from '../_shared/url-guard.ts';
 
-const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+import { aiChat, AiError, aiErrorResponse } from '../_shared/ai.ts';
 
 // HLRDRNW-68 · IVA-03 — bounds on AI-extracted menu data before it is written.
 const MAX_IMPORT_CATEGORIES = 200;
@@ -225,13 +225,6 @@ Deno.serve(async (req) => {
     console.log(pdfData ? `PDF received (${pdfData.length} chars base64)` : `Text extracted (${menuText.length} chars)`);
 
     // Call AI to extract structured menu data
-    const apiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: 'AI service not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     // Build user message content — multimodal for PDF, text for others
     const userContent = pdfData
@@ -241,14 +234,10 @@ Deno.serve(async (req) => {
         ]
       : `Extract all menu items from this text:\n\n${menuText}`;
 
-    const aiRes = await fetch(LOVABLE_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+    let aiMessage: any = null;
+    try {
+      const ai = await aiChat({
+        role: 'chat',
         messages: [
           {
             role: 'system',
@@ -266,31 +255,24 @@ Be thorough — extract every single menu item you can find.`
           type: 'function',
           function: EXTRACTION_SCHEMA
         }],
-        tool_choice: { type: 'function', function: { name: 'extract_menu' } }
-      })
-    });
-
-    if (!aiRes.ok) {
-      const errText = await aiRes.text();
-      console.error('AI error:', errText);
-      return new Response(
-        JSON.stringify({ error: 'AI extraction failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        toolChoice: { type: 'function', function: { name: 'extract_menu' } }
+      });
+      aiMessage = ai.message;
+    } catch (e) {
+      if (e instanceof AiError) return aiErrorResponse(e, corsHeaders);
+      throw e;
     }
-
-    const aiData = await aiRes.json();
     console.log('AI response received');
 
     // Parse the tool call response
     let extractedMenu;
     try {
-      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+      const toolCall = aiMessage?.tool_calls?.[0];
       if (toolCall?.function?.arguments) {
         extractedMenu = JSON.parse(toolCall.function.arguments);
       } else {
         // Fallback: try parsing from content
-        const content = aiData.choices?.[0]?.message?.content || '';
+        const content = aiMessage?.content || '';
         const jsonMatch = content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           extractedMenu = JSON.parse(jsonMatch[0]);

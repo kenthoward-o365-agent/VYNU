@@ -1,6 +1,13 @@
 // Shared helper: enforce that a venue has a given feature enabled.
 // Mirrors the client-side `resolveFlags` from src/lib/packages.ts.
-import { createClient } from "npm:@supabase/supabase-js@2";
+
+/**
+ * Structural stand-in for the Supabase client. Naming the real generic type
+ * (`ReturnType<typeof createClient>`) pulls in defaults that resolve selected
+ * rows to `never` and reject every caller's differently-parameterised client —
+ * the same failure ai-usage.ts had. Callers pass any client with .from().
+ */
+type FlagReader = { from: (table: string) => any };
 
 type FeatureFlags = Record<string, boolean>;
 type Tier = "bite" | "plate" | "feast" | "custom";
@@ -38,7 +45,7 @@ const PRESETS: Record<Exclude<Tier, "custom">, FeatureFlags> = {
 };
 
 export async function hasFeature(
-  supabase: ReturnType<typeof createClient>,
+  supabase: FlagReader,
   venueId: string,
   key: string,
 ): Promise<boolean> {
@@ -49,8 +56,9 @@ export async function hasFeature(
     .maybeSingle();
 
   // No row → default to Feast (all-on) to keep legacy venues working.
-  const tier = ((data?.tier as Tier) ?? "feast");
-  const overrides = ((data?.flags as FeatureFlags) ?? {});
+  const row = data as { tier?: string; flags?: FeatureFlags } | null;
+  const tier = ((row?.tier as Tier) ?? "feast");
+  const overrides = (row?.flags ?? {});
   if (tier === "feast") return overrides[key] !== false;
   if (tier === "custom") return overrides[key] === true;
   const preset = PRESETS[tier];
@@ -63,7 +71,7 @@ export async function hasFeature(
  *         if (denied) return denied;`
  */
 export async function requireFeature(
-  supabase: ReturnType<typeof createClient>,
+  supabase: FlagReader,
   venueId: string,
   key: string,
   corsHeaders: Record<string, string>,

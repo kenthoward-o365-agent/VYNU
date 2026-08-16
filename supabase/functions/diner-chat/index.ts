@@ -1,11 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { logAiUsage } from "../_shared/ai-usage.ts";
+import { aiChat, AiError, aiErrorResponse } from "../_shared/ai.ts";
 import { enforceRateLimit, getClientIp, tooManyRequests } from "../_shared/rate-limit.ts";
 import { readJsonLimited, boundedArray, PayloadTooLargeError, payloadTooLarge } from "../_shared/http.ts";
 import { requireFeature } from "../_shared/require-feature.ts";
-
-const LOVABLE_API_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -170,39 +168,20 @@ where N is the number of ways to split.
       { role: "user", content: String(message ?? "").slice(0, 2000) },
     ];
 
-    const response = await fetch(LOVABLE_API_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+    let ai;
+    try {
+      ai = await aiChat({
+        role: "chat",
         messages,
-        max_tokens: 500,
+        maxTokens: 500,
         temperature: 0.7,
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited, please try again shortly." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      throw new Error(`AI API error: ${response.status} ${errText}`);
+        usage: { venueId: venue_id, feature: "diner_chat" },
+      });
+    } catch (e) {
+      if (e instanceof AiError) return aiErrorResponse(e, corsHeaders);
+      throw e;
     }
-
-    const data = await response.json();
-    const aiModel = "google/gemini-2.5-flash";
-    logAiUsage({ venueId: venue_id, feature: "diner_chat", model: aiModel, usage: data?.usage, requestId: response.headers.get("X-Lovable-AIG-Run-ID") }).catch(() => {});
-    let reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that.";
+    let reply = ai.text || "Sorry, I couldn't process that.";
 
     // Parse ADD_ITEMS
     const suggested_items: any[] = [];
