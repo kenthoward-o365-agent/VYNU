@@ -55,9 +55,6 @@ import OrderSettings from "@/pages/OrderSettings";
 import SelfOnboard from "@/pages/SelfOnboard";
 import VenueBilling from "@/pages/VenueBilling";
 import OAuthConsent from "@/pages/OAuthConsent";
-import MarketingIndex from "@/pages/Index";
-import Compare from "@/pages/Compare";
-import Features from "@/pages/Features";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -192,9 +189,10 @@ function RootRoutes() {
 
   return (
     <Routes>
-      <Route path="/" element={<MarketingIndex />} />
-      <Route path="/compare" element={<Compare />} />
-      <Route path="/features" element={<Features />} />
+      {/* "/" falls through to the auth shell below: the sign-in screen when
+          logged out, the role-appropriate dashboard when logged in. The public
+          go-to-market site is a separate build on its own host — the old
+          placeholder marketing pages were removed with it in mind. */}
       {/* Public routes — no auth required */}
       {/* Nested boundary: a failure inside the diner flow must not blank the
           whole app, and the diner needs a different message to an operator —
