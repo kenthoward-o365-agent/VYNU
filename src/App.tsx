@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,54 +13,66 @@ import { AuditDateProvider } from "@/contexts/AuditDateContext";
 import DashboardLayout from "@/components/DashboardLayout";
 import { RequireFeature } from "@/components/RequireFeature";
 import { RequireAdmin } from "@/components/RequireAdmin";
-import Auth from "@/pages/Auth";
 import { supabase } from "@/integrations/supabase/client";
-import Dashboard from "@/pages/Dashboard";
-import MenuBuilder from "@/pages/MenuBuilder";
-import Tables from "@/pages/Tables";
-import Orders from "@/pages/Orders";
-import Pricing from "@/pages/Pricing";
-import Analytics from "@/pages/Analytics";
-import SippaAnalyticsPage from "@/pages/SippaAnalytics";
-import VenueSettings from "@/pages/VenueSettings";
-import LandingPageEditor from "@/pages/LandingPageEditor";
-import RuleTypes from "@/pages/RuleTypes";
-import Diners from "@/pages/Diners";
-
-import GroupDashboard from "@/pages/GroupDashboard";
-import AdminVenues from "@/pages/AdminVenues";
-import AdminVenueDetail from "@/pages/AdminVenueDetail";
-import AdminStaff from "@/pages/AdminStaff";
-import AdminDashboard from "@/pages/AdminDashboard";
-import AdminPartners from "@/pages/AdminPartners";
-import AdminIntegrations from "@/pages/AdminIntegrations";
-import AdminKnowledgeBase from "@/pages/AdminKnowledgeBase";
-import AdminFinancials from "@/pages/AdminFinancials";
-import AdminBilling from "@/pages/AdminBilling";
-import BillingSetup from "@/pages/BillingSetup";
-
-import Developers from "@/pages/Developers";
-import NotFound from "@/pages/NotFound";
-import ConsumerOrder from "@/pages/ConsumerOrder";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { AppErrorFallback, ConsumerErrorFallback } from "@/components/ErrorFallbacks";
-import ResetPassword from "@/pages/ResetPassword";
-import Modifiers from "@/pages/Modifiers";
-import DinerPreferences from "@/pages/DinerPreferences";
-import KnowledgeBase from "@/pages/KnowledgeBase";
-import Reporting from "@/pages/Reporting";
-import OrderStatuses from "@/pages/OrderStatuses";
-import OrderThrottling from "@/pages/OrderThrottling";
-import OrderSettings from "@/pages/OrderSettings";
-import SelfOnboard from "@/pages/SelfOnboard";
-import VenueBilling from "@/pages/VenueBilling";
-import OAuthConsent from "@/pages/OAuthConsent";
-import Concierge from "@/pages/Concierge";
-import Reserve from "@/pages/Reserve";
-import FunctionsEvents from "@/pages/FunctionsEvents";
-import Club from "@/pages/Club";
-import DiscoverManage from "@/pages/DiscoverManage";
-import DiscoverFeed from "@/pages/DiscoverFeed";
+// Eager: the sign-in screen is the entry experience and NotFound is tiny.
+import Auth from "@/pages/Auth";
+import NotFound from "@/pages/NotFound";
+
+// Every other page is a lazy route chunk. Before this, App.tsx imported all
+// ~40 pages statically, so a diner scanning a QR sticker downloaded the whole
+// platform — admin pages, CRM, the lot — before seeing a menu.
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const MenuBuilder = lazy(() => import("@/pages/MenuBuilder"));
+const Tables = lazy(() => import("@/pages/Tables"));
+const Orders = lazy(() => import("@/pages/Orders"));
+const Pricing = lazy(() => import("@/pages/Pricing"));
+const Analytics = lazy(() => import("@/pages/Analytics"));
+const SippaAnalyticsPage = lazy(() => import("@/pages/SippaAnalytics"));
+const VenueSettings = lazy(() => import("@/pages/VenueSettings"));
+const LandingPageEditor = lazy(() => import("@/pages/LandingPageEditor"));
+const RuleTypes = lazy(() => import("@/pages/RuleTypes"));
+const Diners = lazy(() => import("@/pages/Diners"));
+const GroupDashboard = lazy(() => import("@/pages/GroupDashboard"));
+const AdminVenues = lazy(() => import("@/pages/AdminVenues"));
+const AdminVenueDetail = lazy(() => import("@/pages/AdminVenueDetail"));
+const AdminStaff = lazy(() => import("@/pages/AdminStaff"));
+const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
+const AdminPartners = lazy(() => import("@/pages/AdminPartners"));
+const AdminIntegrations = lazy(() => import("@/pages/AdminIntegrations"));
+const AdminKnowledgeBase = lazy(() => import("@/pages/AdminKnowledgeBase"));
+const AdminFinancials = lazy(() => import("@/pages/AdminFinancials"));
+const AdminBilling = lazy(() => import("@/pages/AdminBilling"));
+const BillingSetup = lazy(() => import("@/pages/BillingSetup"));
+const Developers = lazy(() => import("@/pages/Developers"));
+const ConsumerOrder = lazy(() => import("@/pages/ConsumerOrder"));
+const ResetPassword = lazy(() => import("@/pages/ResetPassword"));
+const Modifiers = lazy(() => import("@/pages/Modifiers"));
+const DinerPreferences = lazy(() => import("@/pages/DinerPreferences"));
+const KnowledgeBase = lazy(() => import("@/pages/KnowledgeBase"));
+const Reporting = lazy(() => import("@/pages/Reporting"));
+const OrderStatuses = lazy(() => import("@/pages/OrderStatuses"));
+const OrderThrottling = lazy(() => import("@/pages/OrderThrottling"));
+const OrderSettings = lazy(() => import("@/pages/OrderSettings"));
+const SelfOnboard = lazy(() => import("@/pages/SelfOnboard"));
+const VenueBilling = lazy(() => import("@/pages/VenueBilling"));
+const OAuthConsent = lazy(() => import("@/pages/OAuthConsent"));
+const Concierge = lazy(() => import("@/pages/Concierge"));
+const Reserve = lazy(() => import("@/pages/Reserve"));
+const FunctionsEvents = lazy(() => import("@/pages/FunctionsEvents"));
+const Club = lazy(() => import("@/pages/Club"));
+const DiscoverManage = lazy(() => import("@/pages/DiscoverManage"));
+const DiscoverFeed = lazy(() => import("@/pages/DiscoverFeed"));
+
+/** Suspense fallback while a route chunk downloads — matches the app shell. */
+function RouteLoading() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center bg-background">
+      <p className="text-muted-foreground">Loading…</p>
+    </div>
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -140,6 +152,7 @@ function AppRoutes() {
 
   return (
     <DashboardLayout>
+      <Suspense fallback={<RouteLoading />}>
       <Routes>
         <Route path="/" element={<Navigate to={defaultRoute} replace />} />
         <Route path="/dashboard" element={hasVenueContext ? <Dashboard /> : isTablessAdmin ? <Navigate to="/admin/dashboard" replace /> : <Dashboard />} />
@@ -181,6 +194,7 @@ function AppRoutes() {
         <Route path="/billing" element={<VenueBilling />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
     </DashboardLayout>
   );
 }
@@ -199,6 +213,7 @@ function RootRoutes() {
   }
 
   return (
+    <Suspense fallback={<RouteLoading />}>
     <Routes>
       {/* "/" falls through to the auth shell below: the sign-in screen when
           logged out, the role-appropriate dashboard when logged in. The public
@@ -247,6 +262,7 @@ function RootRoutes() {
         </AuthProvider>
       } />
     </Routes>
+    </Suspense>
   );
 }
 
