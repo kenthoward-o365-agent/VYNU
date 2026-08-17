@@ -8,6 +8,7 @@ import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/componen
 import VenueRevenueTable from "@/components/admin/VenueRevenueTable";
 import DeferredRevenueSchedule from "@/components/admin/DeferredRevenueSchedule";
 import ContractsOverview from "@/components/admin/ContractsOverview";
+import AiSpendCard from "@/components/admin/AiSpendCard";
 
 export interface FinancialsVenueRow {
   venue_id: string;
@@ -153,6 +154,7 @@ export default function AdminFinancials() {
           <TabsTrigger value="venues">Venue Revenue</TabsTrigger>
           <TabsTrigger value="deferred">Deferred Revenue Schedule</TabsTrigger>
           <TabsTrigger value="contracts">Contracts</TabsTrigger>
+          <TabsTrigger value="ai">AI Spend</TabsTrigger>
         </TabsList>
         <TabsContent value="venues">
           <Card className="shadow-sm">
@@ -170,6 +172,9 @@ export default function AdminFinancials() {
         </TabsContent>
         <TabsContent value="contracts">
           <ContractsOverview venues={venues} />
+        </TabsContent>
+        <TabsContent value="ai">
+          <AiSpendCard />
         </TabsContent>
       </Tabs>
     </div>
