@@ -17,6 +17,7 @@ import ProcessorCredentialsTab from "@/components/admin/ProcessorCredentialsTab"
 import VenuePerformanceTab from "@/components/admin/VenuePerformanceTab";
 import PackageFeaturesTab from "@/components/admin/PackageFeaturesTab";
 import GroupLoyaltyManager from "@/components/venue/GroupLoyaltyManager";
+import { TimezoneSelect } from "@/components/venue/TimezoneSelect";
 import ChildVenueLoyaltyViewer from "@/components/venue/ChildVenueLoyaltyViewer";
 import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
 import PubPlusManager from "@/components/venue/PubPlusManager";
@@ -68,7 +69,7 @@ export default function AdminVenueDetail() {
 
   const [form, setForm] = useState({
     name: "", venue_type: "restaurant", address: "", city: "", state: "NSW",
-    postcode: "", phone: "", email: "", group_id: "__none__",
+    postcode: "", phone: "", email: "", timezone: "", group_id: "__none__",
     subscription_status: "trial", subscription_plan: "bite", subscription_notes: "",
   });
   const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
@@ -110,6 +111,7 @@ export default function AdminVenueDetail() {
         name: data.name, venue_type: data.venue_type, address: data.address || "",
         city: data.city || "", state: data.state || "NSW", postcode: data.postcode || "",
         phone: adminRow?.phone || "", email: adminRow?.email || "",
+        timezone: data.timezone || "",
         group_id: data.group_id || "__none__",
         subscription_status: adminRow?.subscription_status || "trial",
         subscription_plan: normalizePlan(adminRow?.subscription_plan),
@@ -247,6 +249,7 @@ export default function AdminVenueDetail() {
       name: parsed.data.name, venue_type: form.venue_type, address: parsed.data.address ?? null,
       city: parsed.data.city ?? null, state: parsed.data.state ?? null, postcode: parsed.data.postcode ?? null,
       phone: parsed.data.phone, email: parsed.data.email,
+      timezone: form.timezone || null,
       group_id: form.group_id === "__none__" ? null : form.group_id,
       subscription_status: form.subscription_status,
       subscription_plan: form.subscription_plan,
@@ -414,6 +417,10 @@ export default function AdminVenueDetail() {
                   <Input placeholder="Email *" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                   <FieldError message={detailErrs.email} />
                 </div>
+              </div>
+              <div>
+                <Label>Timezone</Label>
+                <TimezoneSelect value={form.timezone} onChange={(tz) => setForm({ ...form, timezone: tz })} />
               </div>
               <div>
                 <Label>Parent Company</Label>

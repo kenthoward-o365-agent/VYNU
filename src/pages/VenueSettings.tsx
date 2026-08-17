@@ -29,6 +29,7 @@ import RolesManager from "@/components/venue/RolesManager";
 import TableSessionsSettingsTab from "@/components/venue/TableSessionsSettingsTab";
 import ZonesSettingsTab from "@/components/venue/ZonesSettingsTab";
 import ShyndigLoyaltyEditor from "@/components/venue/ShyndigLoyaltyEditor";
+import { TimezoneSelect } from "@/components/venue/TimezoneSelect";
 
 const venueTypes = [
   { value: "restaurant", label: "Restaurant" },
@@ -72,7 +73,7 @@ export default function VenueSettings() {
 
   const [form, setForm] = useState({
     name: "", venue_type: "restaurant", address: "", city: "", state: "NSW",
-    postcode: "", phone: "", email: "",
+    postcode: "", phone: "", email: "", timezone: "",
   });
   const [loading, setLoading] = useState(false);
   // Populated on submit, so the operator is not scolded mid-typing.
@@ -107,7 +108,7 @@ export default function VenueSettings() {
       setForm({
         name: venue.name, venue_type: venue.venue_type, address: venue.address || "",
         city: venue.city || "", state: venue.state || "NSW", postcode: venue.postcode || "",
-        phone: "", email: "",
+        phone: "", email: "", timezone: venue.timezone || "",
       });
       // Sensitive contact fields are only readable via SECURITY DEFINER RPC
       supabase.rpc("get_venue_admin_detail", { _venue_id: venue.id }).then(({ data }) => {
@@ -208,6 +209,7 @@ export default function VenueSettings() {
       postcode: parsed.data.postcode ?? null,
       phone: parsed.data.phone,
       email: parsed.data.email,
+      timezone: form.timezone || null,
     }).eq("id", venue.id);
     if (error) toast.error(error.message);
     else { toast.success("Settings saved"); await refetch(); }
@@ -463,6 +465,13 @@ export default function VenueSettings() {
               <div>
                 <Input type="email" placeholder="Email *" value={form.email} onChange={(e) => update("email", e.target.value)} />
                 <FieldError message={formErrs.email} />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Timezone</p>
+                <TimezoneSelect value={form.timezone} onChange={(tz) => update("timezone", tz)} />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Drives booking times, the concierge's clock, and reporting days.
+                </p>
               </div>
               <Button onClick={save} disabled={loading}>{loading ? "Saving..." : "Save Changes"}</Button>
             </CardContent>
