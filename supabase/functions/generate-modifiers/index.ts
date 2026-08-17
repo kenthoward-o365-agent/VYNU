@@ -34,7 +34,10 @@ const MODIFIER_SCHEMA = {
             suggested_items: {
               type: "array",
               items: { type: "string" },
-              description: "Menu item IDs this category should be assigned to"
+              // Indexes, not UUIDs: echoing 36-char UUIDs for a 100+ item menu
+              // blows the output budget (the original cause of "none could be
+              // generated" truncations). Mapped back to UUIDs after parsing.
+              description: "Menu item index numbers from the list, e.g. [\"3\", \"17\"]"
             },
             is_required: { type: "boolean", description: "Whether this modifier category should be required (e.g. meat temp for steak) or optional (e.g. extras)" }
           },
@@ -121,9 +124,11 @@ Deno.serve(async (req) => {
       .eq('venue_id', venue_id);
 
     // Build menu summary for AI
-    const menuSummary = menuItems.map(item => {
+    // Items are numbered [1..n] in the prompt and the model returns indexes;
+    // UUIDs are mapped back after parsing (see suggested_items in the schema).
+    const menuSummary = menuItems.map((item, i) => {
       const catName = categories?.find(c => c.id === item.category_id)?.name || 'Uncategorized';
-      return `- [${item.id}] ${item.name} (${catName})${item.description ? ': ' + item.description : ''} — $${item.price}`;
+      return `- [${i + 1}] ${item.name} (${catName})${item.description ? ': ' + item.description : ''} — $${item.price}`;
     }).join('\n');
 
     let aiMessage: any = null;
@@ -141,7 +146,7 @@ Rules:
 - For items that could have extras/add-ons, create "Extras" or "Add-ons" categories with prices. Mark as optional.
 - For items with size options, create "Size" category. Mark as required.
 - For items with sauce/dressing choices, create appropriate categories. Mark as optional or required based on context.
-- Use the exact menu item IDs provided in brackets [id] for suggested_items.
+- Use the item index numbers provided in brackets [n] for suggested_items (e.g. ["3", "17"]). Never invent indexes.
 - Be thorough but practical — only suggest modifiers that make culinary sense.
 - Prices for extras should be reasonable (typically $1-5 AUD for add-ons).
 - Removal modifiers and temperature choices should be free (price: 0).`
@@ -155,9 +160,24 @@ Rules:
           type: 'function',
           function: MODIFIER_SCHEMA
         }],
-        toolChoice: { type: 'function', function: { name: 'generate_modifiers' } }
+        toolChoice: { type: 'function', function: { name: 'generate_modifiers' } },
+        // A 100+ item menu's modifier JSON easily exceeded the 8192 default
+        // when suggested_items carried UUIDs; a truncated tool call surfaces
+        // as "no tool_calls" and read as "none could be generated". Indexes
+        // shrink the output ~4x; 16k is comfortable and keeps the
+        // non-streaming request inside HTTP timeout territory.
+        maxTokens: 16384,
+        timeoutMs: 120_000,
+        usage: { venueId: venue_id, feature: 'modifier_gen', meta: { items: menuItems.length } }
       });
       aiMessage = ai.message;
+      const finish = ai.raw?.choices?.[0]?.finish_reason;
+      if (finish === 'length') {
+        console.error(`generate-modifiers: output truncated at max_tokens (${menuItems.length} items)`);
+        return new Response(JSON.stringify({
+          error: 'The menu is too large to analyse in one pass — try disabling some items and re-running.'
+        }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
     } catch (e) {
       if (e instanceof AiError) return aiErrorResponse(e, corsHeaders);
       throw e;
@@ -181,9 +201,30 @@ Rules:
     }
 
     if (!result?.categories) {
+      // Log enough to diagnose the next occurrence without guessing.
+      console.error('generate-modifiers: no categories in AI response', JSON.stringify({
+        had_tool_calls: !!aiMessage?.tool_calls?.length,
+        content_head: (aiMessage?.content || '').slice(0, 300),
+      }));
       return new Response(JSON.stringify({ error: 'No modifiers could be generated' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
+    }
+
+    // Map the model's 1-based item indexes back to menu item UUIDs. Tolerates
+    // numbers or numeric strings; anything unmappable (including a stray UUID
+    // from a model that ignored the format) is passed through only if it is a
+    // real item id, otherwise dropped.
+    const validIds = new Set(menuItems.map(i => i.id));
+    for (const cat of result.categories) {
+      if (!Array.isArray(cat?.suggested_items)) { cat.suggested_items = []; continue; }
+      cat.suggested_items = cat.suggested_items
+        .map((ref: unknown) => {
+          const n = Number(ref);
+          if (Number.isInteger(n) && n >= 1 && n <= menuItems.length) return menuItems[n - 1].id;
+          return typeof ref === 'string' && validIds.has(ref) ? ref : null;
+        })
+        .filter((id: string | null): id is string => id !== null);
     }
 
     // Return suggestions (not auto-inserted — operator reviews first)
