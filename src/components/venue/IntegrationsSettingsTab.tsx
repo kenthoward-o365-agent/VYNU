@@ -178,14 +178,14 @@ export default function IntegrationsSettingsTab({ venueId }: { venueId: string }
             <Cable className="h-5 w-5" /> POS Integrations
           </CardTitle>
           <CardDescription>
-            Connect your Point-of-Sale so H&amp;L OrderNOW can push diner orders straight into it.
+            Connect your Point-of-Sale so VYNU can push diner orders straight into it.
             You can decide who owns the menu after the connection is live.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {providers.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No POS providers are enabled for your workspace yet. Contact H&amp;L OrderNOW support to enable H&amp;L Exceed.
+              No POS providers are enabled for your workspace yet. Contact VYNU support to enable H&amp;L Exceed.
             </p>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">

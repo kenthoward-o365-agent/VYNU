@@ -28,7 +28,7 @@ export function FeatureGate({ feature, children, silent, fallback }: FeatureGate
       <Lock className="h-5 w-5 mx-auto text-muted-foreground" />
       <p className="text-sm font-medium text-foreground">Not included in your package</p>
       <p className="text-xs text-muted-foreground">
-        Contact H&amp;L to upgrade and unlock this feature.
+        Contact VYNU to upgrade and unlock this feature.
       </p>
     </div>
   );

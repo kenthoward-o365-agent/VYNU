@@ -238,7 +238,7 @@ export const TIER_LABEL: Record<PackageTier, string> = {
 };
 
 export const TIER_DESCRIPTION: Record<PackageTier, string> = {
-  bite: "Essentials to run a venue on OrderNOW — QR ordering, menu, payments, basic AI.",
+  bite: "Essentials to run a venue on VYNU — QR ordering, menu, payments, basic AI.",
   plate: "Bite + merchandising, loyalty, POS push, group tooling.",
   feast: "Full platform — CRM campaigns, advanced AI, group loyalty, developer API.",
   custom: "Bespoke — manually toggled flags for this venue.",

@@ -279,7 +279,7 @@ export default function KnowledgeBase() {
           <SubSection title="Tile navigation (left rail)">
             <p>The sidebar is a vertical stack of <strong>chunky POS tiles</strong> — icon on top, label beneath — grouped into Operations and (where applicable) Group + Admin, separated by hairline dividers with small uppercase group labels.</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li>The <strong>active tile</strong> shows an H&L Blue accent strip down its left edge plus a tinted background.</li>
+              <li>The <strong>active tile</strong> shows a brand-accent strip down its left edge plus a tinted background.</li>
               <li>Hovering any tile gives a subtle blue glow.</li>
               <li>The <strong>pin toggle</strong> at the bottom of the rail collapses tiles to icon-only (64px) or expands them with labels (88px). The state persists per browser.</li>
               <li>On phones the rail collapses to a hamburger drawer — same items, same order.</li>
@@ -289,7 +289,7 @@ export default function KnowledgeBase() {
           <SubSection title="Status footer rail">
             <p>The bar across the bottom of the chassis is the system health strip:</p>
             <ul className="list-disc list-inside space-y-1 pl-1">
-              <li><strong>Online LED</strong> — H&L Green when the browser reports network up, red when offline. Reacts immediately to <code>online</code> / <code>offline</code> events.</li>
+              <li><strong>Online LED</strong> — green when the browser reports network up, red when offline. Reacts immediately to <code>online</code> / <code>offline</code> events.</li>
               <li><strong>Printer</strong> — placeholder &quot;Ready&quot; LED today; will read from real docket-printer status when that signal lands.</li>
               <li><strong>Card Terminal</strong> — same — &quot;Ready&quot; placeholder until live VYNU Pay terminal status is wired in.</li>
               <li><strong>Version</strong> — current app build (<code>VITE_APP_VERSION</code>, defaults to <code>v1.0</code>).</li>
@@ -306,7 +306,7 @@ export default function KnowledgeBase() {
           </SubSection>
 
           <SubSection title="Theme">
-            <p>The chassis renders correctly in both light and dark modes. The system follows your saved preference; toggle from the footer rail. The VYNU logo and brand colours (H&L Blue, H&L Green) are unchanged — only the surrounding chassis darkens.</p>
+            <p>The chassis renders correctly in both light and dark modes. The system follows your saved preference; toggle from the footer rail. The VYNU logo and brand colours are unchanged — only the surrounding chassis darkens.</p>
           </SubSection>
 
           <Tip>Treat the terminal as a single shared workstation: pin tiles for fast access on busy nights, leave the chassis bezel on for the front-of-house Mac mini, and use the Sign Out button (footer rail) between shifts so the next operator&apos;s user, role and audit trail are recorded correctly.</Tip>
@@ -1478,7 +1478,7 @@ export default function KnowledgeBase() {
             <ul className="list-disc list-inside space-y-1 pl-1">
               <li><strong>Settings</strong> — environment base URL (sandbox or production), client ID, parent identity number, identity type (BARCODE by default) and an &quot;earn automatically on paid orders&quot; switch. The client secret is stored as a backend secret, never in the browser.</li>
               <li><strong>Test connection</strong> — pings Eagle Eye's wallet service with signed credentials and records the result, timestamp and message on the card.</li>
-              <li><strong>Link</strong> — resolves a diner's Pub+ wallet from their membership number and stores the wallet, account and current points balance against their OrderNOW profile.</li>
+              <li><strong>Link</strong> — resolves a diner's Pub+ wallet from their membership number and stores the wallet, account and current points balance against their VYNU profile.</li>
               <li><strong>Balance</strong> — refreshes the live points balance from Eagle Eye.</li>
               <li><strong>Earn</strong> — posts the paid basket (line items, quantities, unit costs, venue site ID) to Eagle Eye so points land on the member's real Pub+ wallet. One earn per order, guarded against duplicates.</li>
               <li><strong>Redeem</strong> — burns points against the Eagle Eye account and re-syncs the balance.</li>

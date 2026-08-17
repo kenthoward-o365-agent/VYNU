@@ -207,7 +207,7 @@ export default function ProcessorCredentialsTab({ venueId }: { venueId: string }
         <CardContent className="pt-4 flex gap-3 text-sm">
           <ShieldAlert className="h-5 w-5 text-warning shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <p className="font-semibold">Internal credentials — H&amp;L Pay admins only</p>
+            <p className="font-semibold">Internal credentials — VYNU Pay admins only</p>
             <p className="text-muted-foreground">
               These configure the underlying payment processor for this venue. Without them, the
               consumer checkout runs in <strong>simulated mode</strong> and never charges any card.

@@ -142,7 +142,7 @@ export default function AdminKnowledgeBase() {
           </h1>
           <p className="max-w-3xl text-sm text-muted-foreground">
             Central library of compliance and security documents used to respond to customer IT,
-            Security, and Risk teams. Only H&amp;L OrderNOW platform admins can view, upload, or replace
+            Security, and Risk teams. Only VYNU platform admins can view, upload, or replace
             files here. All downloads use short-lived signed links.
           </p>
         </div>
@@ -216,7 +216,7 @@ export default function AdminKnowledgeBase() {
           <CardContent className="flex items-center gap-3 p-4">
             <ShieldCheck className="h-6 w-6 text-primary" />
             <div>
-              <p className="text-sm font-semibold">H&amp;L OrderNOW admins only</p>
+              <p className="text-sm font-semibold">VYNU admins only</p>
               <p className="text-xs text-muted-foreground">RLS on storage.objects</p>
             </div>
           </CardContent>

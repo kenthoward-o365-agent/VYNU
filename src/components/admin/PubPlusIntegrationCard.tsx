@@ -174,7 +174,7 @@ export default function PubPlusIntegrationCard() {
           <ul className="list-disc pl-5 space-y-1">
             <li>
               <strong>Member identity match</strong> — a diner links their existing Pub+ card by typing or
-              scanning its barcode; OrderNOW resolves the Eagle Eye wallet behind that identity.
+              scanning its barcode; VYNU resolves the Eagle Eye wallet behind that identity.
             </li>
             <li>
               <strong>Points earn</strong> — when an order is paid, the basket is posted to Eagle Eye so points
