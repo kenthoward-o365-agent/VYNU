@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Flame, Leaf, AlertTriangle, Ban, Filter, ChevronRight } from "lucide-react";
+import { Flame, Leaf, AlertTriangle, Ban, Filter, ChevronRight, Search, X } from "lucide-react";
 import { optimizedImageUrl } from "@/lib/image-utils";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -192,6 +192,7 @@ const MenuFeed = ({
   defaultAllergens,
 }: MenuFeedProps) => {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
   const [activeAllergenAvoid, setActiveAllergenAvoid] = useState<string[]>(defaultAllergens ?? []);
   const [allergensFromProfile, setAllergensFromProfile] = useState<boolean>(
@@ -204,13 +205,22 @@ const MenuFeed = ({
 
   // Memoised so the `sections` grouping below has a stable input: a fresh array
   // each render would defeat its useMemo whenever only filter state changes.
+  // Search matches names and descriptions and deliberately overrides the
+  // category chip — typing means "find it anywhere on the menu".
+  const searchQuery = search.trim().toLowerCase();
   const filteredItems = useMemo(
     () =>
       items.filter((item) => {
+        if (searchQuery) {
+          return (
+            item.name.toLowerCase().includes(searchQuery) ||
+            (item.description ?? "").toLowerCase().includes(searchQuery)
+          );
+        }
         if (activeCategory && item.category_id !== activeCategory) return false;
         return true;
       }),
-    [items, activeCategory],
+    [items, activeCategory, searchQuery],
   );
 
   const itemMatchesFilters = (item: MenuItem) => {
@@ -233,7 +243,9 @@ const MenuFeed = ({
     [filteredItems, categories],
   );
 
-  if (filteredItems.length === 0) {
+  // Only short-circuit when the menu is genuinely empty — an empty *search*
+  // result must keep the search box on screen so the diner can clear it.
+  if (filteredItems.length === 0 && !searchQuery) {
     return (
       <div className="flex items-center justify-center h-[calc(100dvh-8rem)] px-6">
         <p className="text-muted-foreground">No items available</p>
@@ -256,11 +268,38 @@ const MenuFeed = ({
           </span>
         </div>
       )}
-      <CategoryChips
-        categories={categories}
-        activeCategory={activeCategory}
-        onSelect={setActiveCategory}
-      />
+      {/* Menu search — names and descriptions */}
+      <div className="px-4 pb-2 shrink-0">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search the menu…"
+            aria-label="Search the menu"
+            className="w-full h-9 rounded-full bg-card border border-border pl-9 pr-9 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 [&::-webkit-search-cancel-button]:hidden"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {!searchQuery && (
+        <CategoryChips
+          categories={categories}
+          activeCategory={activeCategory}
+          onSelect={setActiveCategory}
+        />
+      )}
 
       {/* Allergen avoidance row (auto-applied from VYNU ID profile) */}
       {activeAllergenAvoid.length > 0 && (
@@ -337,6 +376,19 @@ const MenuFeed = ({
       )}
 
       <div className="flex-1 overflow-y-auto px-3 pb-24">
+        {searchQuery && filteredItems.length === 0 && (
+          <div className="flex flex-col items-center gap-3 py-16 px-6 text-center">
+            <p className="text-muted-foreground text-sm">
+              Nothing on the menu matches "{search.trim()}".
+            </p>
+            <button
+              onClick={() => setSearch("")}
+              className="px-4 py-1.5 rounded-full text-xs font-medium bg-card border border-border text-foreground hover:bg-accent"
+            >
+              Clear search
+            </button>
+          </div>
+        )}
         {sections.map((section) => (
           <section key={section.id} aria-labelledby={`menu-section-${section.id}`}>
             {/* Sticky so the diner can always see which category they are in
