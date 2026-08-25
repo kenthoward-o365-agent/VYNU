@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban, Clock, AlertTriangle, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban, Clock, AlertTriangle, RefreshCw, Search } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import ImageEnhancerDialog from "@/components/menu/ImageEnhancerDialog";
 import DisplayAreaPicker, { type DisplayAreaOption } from "@/components/menu/DisplayAreaPicker";
@@ -66,6 +66,7 @@ export default function MenuBuilder() {
   const [posIntegration, setPosIntegration] = useState<{ pos_provider: string; last_sync_at: string | null; sync_status: string } | null>(null);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
+  const [menuSearch, setMenuSearch] = useState("");
   const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [menus, setMenus] = useState<VenueMenu[]>([]);
@@ -454,6 +455,16 @@ export default function MenuBuilder() {
     );
   };
 
+  // Free-text search across item names and descriptions — large menus (100+
+  // items) are unmanageable by scrolling alone.
+  const searchQuery = menuSearch.trim().toLowerCase();
+  const matchesSearch = (item: MenuItem) =>
+    !searchQuery ||
+    item.name.toLowerCase().includes(searchQuery) ||
+    (item.description ?? "").toLowerCase().includes(searchQuery);
+  const filterItems = (itemList: MenuItem[]) =>
+    filterByDietary(itemList).filter(matchesSearch);
+
   const margin = (price: string, cost: string) => {
     const p = parseFloat(price), c = parseFloat(cost);
     if (!p || !c) return null;
@@ -520,6 +531,35 @@ export default function MenuBuilder() {
       />
 
 
+      {/* Search — name and description */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={menuSearch}
+            onChange={(e) => setMenuSearch(e.target.value)}
+            placeholder="Search items by name or description…"
+            className="pl-8 pr-8"
+            aria-label="Search menu items"
+          />
+          {menuSearch && (
+            <button
+              type="button"
+              onClick={() => setMenuSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        {searchQuery && (
+          <span className="text-sm text-muted-foreground">
+            {filterItems(visibleItems).length} match{filterItems(visibleItems).length === 1 ? "" : "es"}
+          </span>
+        )}
+      </div>
+
       {/* Dietary tag filter row */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm font-medium text-muted-foreground mr-1">Filter:</span>
@@ -577,7 +617,7 @@ export default function MenuBuilder() {
           <div className="space-y-6">
             {/* Uncategorized items */}
             {(() => {
-              const uncatItems = filterByDietary(visibleItems.filter((i) => !i.category_id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              const uncatItems = filterItems(visibleItems.filter((i) => !i.category_id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
               return uncatItems.length > 0 ? (
                 <div>
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">Uncategorized</h3>
@@ -608,7 +648,9 @@ export default function MenuBuilder() {
               ) : null;
             })()}
             {visibleCategories.map((cat) => {
-              const catItems = filterByDietary(items.filter((i) => i.category_id === cat.id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              const catItems = filterItems(items.filter((i) => i.category_id === cat.id)).sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+              // While searching, collapse categories with no hits entirely.
+              if (searchQuery && catItems.length === 0) return null;
               const catAreaIds = categoryAreas[cat.id] || [];
               const catAreaObjs = catAreaIds.map(id => displayAreas.find(a => a.id === id)).filter(Boolean) as DisplayAreaOption[];
               return (
