@@ -2314,6 +2314,39 @@ export type Database = {
           },
         ]
       }
+      dish_image_library: {
+        Row: {
+          created_at: string
+          dish_key: string
+          display_name: string
+          id: string
+          image_url: string
+          source: string
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          created_at?: string
+          dish_key: string
+          display_name: string
+          id?: string
+          image_url: string
+          source?: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          created_at?: string
+          dish_key?: string
+          display_name?: string
+          id?: string
+          image_url?: string
+          source?: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: []
+      }
       display_terminal_areas: {
         Row: {
           created_at: string
@@ -5718,6 +5751,7 @@ export type Database = {
         Row: {
           created_at: string
           flags: Json
+          image_gen_limit: number
           tier: string
           updated_at: string
           updated_by: string | null
@@ -5726,6 +5760,7 @@ export type Database = {
         Insert: {
           created_at?: string
           flags?: Json
+          image_gen_limit?: number
           tier?: string
           updated_at?: string
           updated_by?: string | null
@@ -5734,6 +5769,7 @@ export type Database = {
         Update: {
           created_at?: string
           flags?: Json
+          image_gen_limit?: number
           tier?: string
           updated_at?: string
           updated_by?: string | null
@@ -6942,6 +6978,7 @@ export type Database = {
         Args: { _order_id: string; _token: string }
         Returns: string
       }
+      bump_dish_image_usage: { Args: { _dish_key: string }; Returns: undefined }
       bump_pos_job_attempt: {
         Args: { _error?: string; _msg_id: number; _queue: string }
         Returns: number

@@ -109,11 +109,39 @@ async function triggerNextBatch(
   await response.text();
 }
 
+/**
+ * Normalised library key for a dish name: lowercased, parentheticals stripped
+ * ("Chicken Parmigiana (GF)" and "Chicken Parmigiana" share one image),
+ * non-alphanumerics collapsed to single spaces.
+ */
+export function normalizeDishKey(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\(.*?\)/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/** Apply a library image to an item — no AI call, no cap draw. */
+async function applyLibraryImage(
+  item: ItemToGenerate,
+  dishKey: string,
+  imageUrl: string,
+  supabaseAdmin: ReturnType<typeof createClient>,
+) {
+  await supabaseAdmin
+    .from("menu_items")
+    .update({ image_url: imageUrl, image_ai_status: "generated" })
+    .eq("id", item.id);
+  await supabaseAdmin.rpc("bump_dish_image_usage", { _dish_key: dishKey });
+  console.log(`✓ Library image applied for: ${item.name}`);
+}
+
 async function generateAndSaveImage(
   item: ItemToGenerate,
   venueId: string,
   supabaseAdmin: ReturnType<typeof createClient>,
-) {
+): Promise<boolean> {
   await supabaseAdmin
     .from("menu_items")
     .update({ image_ai_status: "processing" })
@@ -127,14 +155,17 @@ async function generateAndSaveImage(
   // stops a run of 429s from hammering the gateway.
   let base64Url: string;
   try {
-    ({ imageUrl: base64Url } = await aiImage({ prompt }));
+    ({ imageUrl: base64Url } = await aiImage({
+      prompt,
+      usage: { venueId, feature: "menu_image_batch", meta: { item: item.name } },
+    }));
   } catch (e) {
     console.error(`AI error for ${item.name}:`, e instanceof AiError ? e.message : e);
     await supabaseAdmin
       .from("menu_items")
       .update({ image_ai_status: "failed" })
       .eq("id", item.id);
-    return;
+    return false;
   }
 
   // Detect actual MIME type from data URI prefix
@@ -158,7 +189,8 @@ async function generateAndSaveImage(
       .from("menu_items")
       .update({ image_ai_status: "failed" })
       .eq("id", item.id);
-    return;
+    // The provider call succeeded (and drew cap) even though storage failed.
+    return true;
   }
 
   const { data: urlData } = supabaseAdmin.storage.from("venue-assets").getPublicUrl(path);
@@ -168,19 +200,66 @@ async function generateAndSaveImage(
     .update({ image_url: urlData.publicUrl, image_ai_status: "generated" })
     .eq("id", item.id);
 
+  // Seed the shared library so the next venue with this dish reuses the image
+  // free. A dedicated library copy keeps it independent of this venue's files.
+  const dishKey = normalizeDishKey(item.name);
+  if (dishKey) {
+    try {
+      const libPath = `library/dishes/${dishKey.replace(/ /g, "-")}.${ext}`;
+      const { error: libUpload } = await supabaseAdmin.storage
+        .from("venue-assets")
+        .upload(libPath, bytes, { contentType, upsert: false });
+      if (!libUpload || libUpload.message?.includes("already exists")) {
+        const { data: libUrl } = supabaseAdmin.storage.from("venue-assets").getPublicUrl(libPath);
+        await supabaseAdmin.from("dish_image_library").upsert(
+          { dish_key: dishKey, display_name: item.name, image_url: libUrl.publicUrl },
+          { onConflict: "dish_key", ignoreDuplicates: true },
+        );
+      }
+    } catch (e) {
+      // Library seeding is best-effort — never fail the venue's own image.
+      console.error(`Library seed failed for ${item.name}:`, e);
+    }
+  }
+
   console.log(`✓ Generated image for: ${item.name}`);
+  return true;
 }
 
 async function processInBackground(
   items: ItemToGenerate[],
   venueId: string,
+  libraryMap: Map<string, string>,
+  aiAllowance: number,
   supabaseAdmin: ReturnType<typeof createClient>,
   supabaseUrl: string,
   supabaseServiceKey: string
 ) {
+  let capSkipped = 0;
   for (const item of items) {
     try {
-      await generateAndSaveImage(item, venueId, supabaseAdmin);
+      const dishKey = normalizeDishKey(item.name);
+      const libraryUrl = dishKey ? libraryMap.get(dishKey) : undefined;
+
+      if (libraryUrl) {
+        // Free: reuse the shared library image. No provider call, no cap draw.
+        await applyLibraryImage(item, dishKey, libraryUrl, supabaseAdmin);
+        continue;
+      }
+
+      if (aiAllowance <= 0) {
+        // Out of allowance (or no provider configured): leave the item
+        // untouched rather than parking it in a fake queue.
+        await supabaseAdmin
+          .from("menu_items")
+          .update({ image_ai_status: null })
+          .eq("id", item.id);
+        capSkipped++;
+        continue;
+      }
+
+      const usedProvider = await generateAndSaveImage(item, venueId, supabaseAdmin);
+      if (usedProvider) aiAllowance--;
       await new Promise((r) => setTimeout(r, 1000));
     } catch (err) {
       console.error(`Unexpected error for ${item.name}:`, err);
@@ -189,6 +268,13 @@ async function processInBackground(
         .update({ image_ai_status: "failed" })
         .eq("id", item.id);
     }
+  }
+
+  // Re-triggering after a cap/provider skip would loop forever over the same
+  // unservable items — the response already told the UI why we stopped.
+  if (capSkipped > 0) {
+    console.log(`Batch complete. ${capSkipped} item(s) left for later (cap/provider).`);
+    return;
   }
 
   try {
@@ -217,18 +303,9 @@ serve(async (req) => {
       });
     }
 
-    // Fail fast when no image provider is configured. Without this, every item
-    // in the batch fails individually and the UI reports a finished run with
-    // zero images. Image roles always use the gateway — the Anthropic key
-    // covers chat only; Claude does not generate images.
-    if (!gatewayConfigured()) {
-      return new Response(JSON.stringify({
-        error: "AI image generation is not configured — set AI_API_KEY (and AI_MODEL_IMAGE) in the platform's Supabase secrets. The Anthropic key covers chat only.",
-      }), {
-        status: 422,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // NOTE: a missing image provider no longer hard-fails the request — the
+    // batch still applies free shared-library images and simply skips AI
+    // generation (library-only mode) until AI_API_KEY is configured.
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -263,6 +340,50 @@ serve(async (req) => {
       }
     }
 
+
+    // Shared helper: the venue's AI-generation allowance (library reuse is
+    // free and never counted). Usage = provider calls logged to ai_usage_log.
+    const readCap = async () => {
+      const { data: flags } = await supabaseAdmin
+        .from("venue_feature_flags")
+        .select("image_gen_limit")
+        .eq("venue_id", venueId)
+        .maybeSingle();
+      const limit = flags?.image_gen_limit ?? 100;
+      const { count: used } = await supabaseAdmin
+        .from("ai_usage_log")
+        .select("id", { count: "exact", head: true })
+        .eq("venue_id", venueId)
+        .in("feature", ["menu_image_batch", "menu_image_single"]);
+      return { limit, used: used ?? 0, remaining: Math.max(0, limit - (used ?? 0)) };
+    };
+
+    // Preflight probe for the UI: provider status, cap, and how many of the
+    // venue's missing images the shared library already covers.
+    if (body?.probe === true) {
+      const cap = await readCap();
+      const { data: missing } = await supabaseAdmin
+        .from("menu_items")
+        .select("name")
+        .eq("venue_id", venueId)
+        .is("image_url", null);
+      const keys = [...new Set((missing ?? []).map((m) => normalizeDishKey(m.name)).filter(Boolean))];
+      let libraryCoverage = 0;
+      if (keys.length) {
+        const { count } = await supabaseAdmin
+          .from("dish_image_library")
+          .select("id", { count: "exact", head: true })
+          .in("dish_key", keys);
+        libraryCoverage = count ?? 0;
+      }
+      return new Response(JSON.stringify({
+        configured: gatewayConfigured(),
+        capUsed: cap.used,
+        capLimit: cap.limit,
+        missingImages: missing?.length ?? 0,
+        libraryCoverage,
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // Feature gate — AI image batch is Feast-only in the default preset.
     const denied = await requireFeature(supabaseAdmin, venueId, "ai.image_batch", corsHeaders);
@@ -316,10 +437,48 @@ serve(async (req) => {
       throw new Error(`Failed to count remaining image jobs: ${remainingError.message}`);
     }
 
+    // Split the batch: shared-library hits are free; the rest need the
+    // provider and draw the venue's allowance.
+    const cap = await readCap();
+    const batchKeys = [...new Set(batch.map((i) => normalizeDishKey(i.name)).filter(Boolean))];
+    const libraryMap = new Map<string, string>();
+    if (batchKeys.length) {
+      const { data: libRows } = await supabaseAdmin
+        .from("dish_image_library")
+        .select("dish_key, image_url")
+        .in("dish_key", batchKeys);
+      for (const row of libRows ?? []) libraryMap.set(row.dish_key, row.image_url);
+    }
+    const libraryHits = batch.filter((i) => libraryMap.has(normalizeDishKey(i.name))).length;
+    const aiNeeded = batch.length - libraryHits;
+    const providerConfigured = gatewayConfigured();
+    const aiAllowance = providerConfigured ? cap.remaining : 0;
+    const capReached = aiNeeded > aiAllowance;
+
+    // Nothing in this batch is servable: no library hits, and either the
+    // provider is missing or the allowance is spent. Un-queue and say why.
+    if (libraryHits === 0 && aiNeeded > 0 && aiAllowance === 0) {
+      await supabaseAdmin
+        .from("menu_items")
+        .update({ image_ai_status: null })
+        .in("id", ids);
+      return new Response(JSON.stringify({
+        error: providerConfigured
+          ? `AI image limit reached (${cap.used} of ${cap.limit} used). Contact VYNU to raise it.`
+          : "AI image generation isn't available yet — the platform's image provider is not configured. Items matching the shared dish library will still receive images automatically.",
+        capReached: providerConfigured,
+        providerConfigured,
+        capUsed: cap.used,
+        capLimit: cap.limit,
+      }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     EdgeRuntime.waitUntil(
       processInBackground(
         batch,
         venueId,
+        libraryMap,
+        aiAllowance,
         supabaseAdmin,
         supabaseUrl,
         supabaseServiceKey
@@ -327,7 +486,17 @@ serve(async (req) => {
     );
 
     return new Response(
-      JSON.stringify({ message: "Generation started", count: batch.length, remaining: remaining ?? 0 }),
+      JSON.stringify({
+        message: "Generation started",
+        count: batch.length,
+        remaining: remaining ?? 0,
+        libraryHits,
+        aiNeeded,
+        providerConfigured,
+        capReached,
+        capUsed: cap.used,
+        capLimit: cap.limit,
+      }),
       { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
