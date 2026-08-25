@@ -316,7 +316,33 @@ platform financials reporting will be wrong.
 
 ---
 
-## Phase 7 — Storage, Auth and cron
+## Phase 7 — Storage, Auth and cron ✅ SWEPT (2026-08-25)
+
+Full audit of the dashboard-era config that migrations couldn't carry:
+
+- **Storage**: `venue-assets` policies were broken two ways (legacy path shape
+  + revoked `is_venue_staff` helper) — fixed in migration `20260826000500`,
+  verified with positive and negative uploads as plain staff. `admin-kb`
+  policies clean. Bucket rows fine. (No objects to copy — clean start.)
+- **Auth**: site_url and redirect allowlist pointed at `localhost:3000`
+  (password-reset emails linked there) — now `https://vynu-chi.vercel.app`
+  (+ `localhost:8080` for dev). `mailer_autoconfirm` enabled: diners
+  self-signup at checkout and the built-in email sender (2/hr) can't carry
+  confirmation volume. **Revert autoconfirm when custom SMTP lands — SMTP is
+  still unconfigured and is the remaining gap** (password resets and admin
+  invites are limited to ~2 emails/hour until then). Email templates are
+  GoTrue defaults referencing {{ .SiteURL }}, so the URL fix repairs them too.
+- **Realtime**: `supabase_realtime` publication covers every table the app
+  subscribes to (orders, table_sessions, venue_display_areas + notifications,
+  staff_alerts). No action.
+- **Cron**: all 5 jobs healthy, zero failures in 24h (`drop-old-log-partitions`
+  is monthly and simply hasn't had a 1st-of-month yet).
+- Apple Pay domain verification (Phase 8 item) still pending — file is
+  domain-scoped and payments aren't live yet.
+
+Original checklist for reference:
+
+## Phase 7 — Storage, Auth and cron (original)
 
 **Storage.** One bucket: `venue-assets` (menu images, venue logos). The bucket
 row is created by a migration; the objects are not. Copy them across and verify
