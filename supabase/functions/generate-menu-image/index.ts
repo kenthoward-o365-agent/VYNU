@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { enforceRateLimit, getClientIp, tooManyRequests } from "../_shared/rate-limit.ts";
 import { readJsonLimited, PayloadTooLargeError, payloadTooLarge } from "../_shared/http.ts";
-import { aiImage, AiError, aiErrorResponse } from "../_shared/ai.ts";
+import { aiImage, AiError, aiErrorResponse, gatewayConfigured } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,6 +60,14 @@ serve(async (req) => {
     const prompt = `Generate a professional, appetizing food photography image of "${itemName}"${desc}. The image should look like a high-quality menu photo: well-lit, vibrant colors, clean plating on a neutral background. Top-down or 45-degree angle. No text, no watermarks, no logos. Photorealistic style.`;
 
     console.log("Generating image for:", itemName);
+
+    // Fail fast with a clear config error — image roles always use the gateway
+    // (the Anthropic key covers chat only; Claude does not generate images).
+    if (!gatewayConfigured()) {
+      return new Response(JSON.stringify({
+        error: "AI image generation is not configured — set AI_API_KEY (and AI_MODEL_IMAGE) in the platform's Supabase secrets.",
+      }), { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     // Not logged to ai_usage_log: the payload carries no venue_id, so there is
     // no venue to attribute the spend to. logAiImageUsage would no-op anyway.

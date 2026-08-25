@@ -279,8 +279,17 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
         );
         const failed = (completed || []).filter((c) => c.image_ai_status === "failed");
 
+        // remainingMissing counts every item with no image_url — which already
+        // includes the pending and failed ones. Adding them all produced a
+        // denominator ~2x the real target (e.g. "85/181" for a 90-image run),
+        // and re-queued failures made the numerator go backwards. Count only
+        // items no attempt has touched yet as "still to come".
+        const untouched = Math.max(
+          0,
+          (remainingMissing || 0) - (pending?.length || 0) - failed.length,
+        );
         setGenProgress(generated.length + failed.length);
-        setGenTotal(generated.length + failed.length + (pending?.length || 0) + (remainingMissing || 0));
+        setGenTotal(generated.length + failed.length + (pending?.length || 0) + untouched);
 
         const newResults: GeneratedResult[] = generated.map((g) => ({
           itemId: g.id,
@@ -321,7 +330,11 @@ export default function ImageEnhancerDialog({ open, onOpenChange, venueId, items
           clearTimeout(staleTimerRef.current);
           staleTimerRef.current = null;
         }
-        if (failed.length > 0) {
+        if (failed.length > 0 && generated.length === 0) {
+          toast.error(
+            "No images were generated — every attempt failed. This usually means the platform's AI image provider isn't configured; contact VYNU support.",
+          );
+        } else if (failed.length > 0) {
           toast.error(`${failed.length} image(s) failed to generate`);
         }
         if (generated.length > 0) {

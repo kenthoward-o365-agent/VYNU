@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { requireFeature } from "../_shared/require-feature.ts";
-import { aiImage, AiError } from "../_shared/ai.ts";
+import { aiImage, AiError, gatewayConfigured } from "../_shared/ai.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -213,6 +213,19 @@ serve(async (req) => {
     if (!venueId) {
       return new Response(JSON.stringify({ error: "venueId is required" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Fail fast when no image provider is configured. Without this, every item
+    // in the batch fails individually and the UI reports a finished run with
+    // zero images. Image roles always use the gateway — the Anthropic key
+    // covers chat only; Claude does not generate images.
+    if (!gatewayConfigured()) {
+      return new Response(JSON.stringify({
+        error: "AI image generation is not configured — set AI_API_KEY (and AI_MODEL_IMAGE) in the platform's Supabase secrets. The Anthropic key covers chat only.",
+      }), {
+        status: 422,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

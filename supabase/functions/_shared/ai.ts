@@ -88,6 +88,16 @@ export function resolveModel(role: ModelRole): string {
   return Deno.env.get(MODEL_ENV_VAR[role])?.trim() || DEFAULT_MODELS[role];
 }
 
+/**
+ * Whether the gateway path (image roles, and chat when Anthropic is off) has a
+ * key at all. Image features should fail fast with a clear config error rather
+ * than march a whole batch of items into per-item "AI is not configured"
+ * failures — that read as "finished but generated nothing" in the UI.
+ */
+export function gatewayConfigured(): boolean {
+  return !!(Deno.env.get("AI_API_KEY")?.trim() || Deno.env.get("LOVABLE_API_KEY")?.trim());
+}
+
 function gatewayUrl(): string {
   return Deno.env.get("AI_GATEWAY_URL")?.trim() || DEFAULT_GATEWAY_URL;
 }
