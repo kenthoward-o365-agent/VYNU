@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useVenue } from "@/contexts/VenueContext";
 
 const createSessionClient = (accessToken: string) =>
   createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, {
@@ -28,6 +29,11 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [notProvisioned, setNotProvisioned] = useState(false);
   const navigate = useNavigate();
+  // VenueContext fetches the moment auth state changes — BEFORE the venue
+  // lookup below pins tabless_active_venue — and admins never refetch on
+  // their own ("saved selection only"). Without an explicit refetch after
+  // pinning, an admin signing in with a Site ID lands without their venue.
+  const { refetch: refetchVenues } = useVenue();
 
   /**
    * Send a freshly signed-in user to "/", which AppRoutes redirects to the right
@@ -99,6 +105,7 @@ export default function Auth() {
       if (!trimmedSiteId) {
         if (isAdmin) {
           localStorage.removeItem("tabless_active_venue");
+          await refetchVenues();
           toast.success("Welcome, VYNU admin");
           goToLandingPage();
           return;
@@ -124,6 +131,7 @@ export default function Auth() {
       const failSignIn = async () => {
         if (isAdmin) {
           localStorage.removeItem("tabless_active_venue");
+          await refetchVenues();
           toast.error("No venue access for that Site ID — signed in as VYNU admin");
           goToLandingPage();
           return;
@@ -156,6 +164,7 @@ export default function Auth() {
       // Pin as primary so future logins land here automatically
       await sessionClient.rpc("set_primary_venue", { _venue_id: targetVenueId });
       localStorage.setItem("tabless_active_venue", targetVenueId);
+      await refetchVenues();
       toast.success("Welcome back!");
       goToLandingPage();
     } catch (err: any) {

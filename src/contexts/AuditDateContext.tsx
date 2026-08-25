@@ -6,12 +6,15 @@ interface AuditDateContextType {
   auditDate: string | null; // YYYY-MM-DD
   loading: boolean;
   advanceDay: () => Promise<string | null>;
+  /** Re-read the audit date, e.g. after the dayend-close function advanced it. */
+  refresh: () => Promise<void>;
 }
 
 const AuditDateContext = createContext<AuditDateContextType>({
   auditDate: null,
   loading: true,
   advanceDay: async () => null,
+  refresh: async () => {},
 });
 
 export function useAuditDate() {
@@ -49,6 +52,16 @@ export function AuditDateProvider({ children }: { children: ReactNode }) {
     init();
   }, [venue?.id]);
 
+  const refresh = useCallback(async () => {
+    if (!venue) return;
+    const { data } = await supabase
+      .from("venue_audit_dates")
+      .select("audit_date")
+      .eq("venue_id", venue.id)
+      .maybeSingle();
+    if (data?.audit_date) setAuditDate(data.audit_date);
+  }, [venue?.id]);
+
   const advanceDay = useCallback(async () => {
     if (!venue) return null;
     const { data, error } = await supabase.rpc("advance_audit_date", {
@@ -61,7 +74,7 @@ export function AuditDateProvider({ children }: { children: ReactNode }) {
   }, [venue?.id]);
 
   return (
-    <AuditDateContext.Provider value={{ auditDate, loading, advanceDay }}>
+    <AuditDateContext.Provider value={{ auditDate, loading, advanceDay, refresh }}>
       {children}
     </AuditDateContext.Provider>
   );

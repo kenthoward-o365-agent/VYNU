@@ -76,6 +76,9 @@ verify_jwt = false           # Bearer sk_crm_* API keys via _shared/api-auth.ts
 [functions.concierge-inbound]
 verify_jwt = false           # provider webhook; x-concierge-token compared in body (fail-closed)
 
+[functions.dayend-close]
+verify_jwt = false           # dual-auth in body: CRON_SECRET (tick) or user JWT + owner/manager check (manual)
+
 # --- Enforce user auth in-body (auth.getUser()); gateway JWT check would
 # --- reject the anon-key flows these support, so verification stays in-body ---
 [functions.pubplus-air]

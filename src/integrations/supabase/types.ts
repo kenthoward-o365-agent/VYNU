@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.17"
   }
   graphql_public: {
     Tables: {
@@ -3535,6 +3535,7 @@ export type Database = {
           gratuity_amount: number
           id: string
           payment_is_mock: boolean
+          payment_method: string | null
           payment_psp_reference: string | null
           payment_status: string
           pos_order_id: string | null
@@ -3563,6 +3564,7 @@ export type Database = {
           gratuity_amount?: number
           id?: string
           payment_is_mock?: boolean
+          payment_method?: string | null
           payment_psp_reference?: string | null
           payment_status?: string
           pos_order_id?: string | null
@@ -3591,6 +3593,7 @@ export type Database = {
           gratuity_amount?: number
           id?: string
           payment_is_mock?: boolean
+          payment_method?: string | null
           payment_psp_reference?: string | null
           payment_status?: string
           pos_order_id?: string | null
@@ -5573,6 +5576,8 @@ export type Database = {
           closed_at: string
           closed_by: string | null
           id: string
+          mode: string
+          orders_autoclosed: number
           venue_id: string
         }
         Insert: {
@@ -5580,6 +5585,8 @@ export type Database = {
           closed_at?: string
           closed_by?: string | null
           id?: string
+          mode?: string
+          orders_autoclosed?: number
           venue_id: string
         }
         Update: {
@@ -5587,6 +5594,8 @@ export type Database = {
           closed_at?: string
           closed_by?: string | null
           id?: string
+          mode?: string
+          orders_autoclosed?: number
           venue_id?: string
         }
         Relationships: [
@@ -5594,6 +5603,41 @@ export type Database = {
             foreignKeyName: "venue_dayend_log_venue_id_fkey"
             columns: ["venue_id"]
             isOneToOne: false
+            referencedRelation: "venues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venue_dayend_settings: {
+        Row: {
+          auto_close_enabled: boolean
+          auto_close_time: string
+          created_at: string
+          open_order_strategy: string
+          updated_at: string
+          venue_id: string
+        }
+        Insert: {
+          auto_close_enabled?: boolean
+          auto_close_time?: string
+          created_at?: string
+          open_order_strategy?: string
+          updated_at?: string
+          venue_id: string
+        }
+        Update: {
+          auto_close_enabled?: boolean
+          auto_close_time?: string
+          created_at?: string
+          open_order_strategy?: string
+          updated_at?: string
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venue_dayend_settings_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: true
             referencedRelation: "venues"
             referencedColumns: ["id"]
           },
@@ -6961,6 +7005,10 @@ export type Database = {
           _venue_type?: string
         }
         Returns: string
+      }
+      dayend_close: {
+        Args: { _actor: string; _mode: string; _venue_id: string }
+        Returns: Json
       }
       dequeue_jobs: {
         Args: { _qty?: number; _queue: string; _vt_seconds?: number }

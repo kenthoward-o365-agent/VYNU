@@ -19,12 +19,18 @@ import { CalendarCheck, ChevronRight, Loader2, Download, DollarSign } from "luci
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import AuditDatePicker, { getDefaultAuditDate, type DateRange } from "@/components/AuditDatePicker";
+import { Badge } from "@/components/ui/badge";
+import { functionErrorMessage } from "@/lib/function-errors";
+import DayendSettingsCard from "@/components/reporting/DayendSettingsCard";
+import AutoClosedOrdersCard from "@/components/reporting/AutoClosedOrdersCard";
 
 interface DayEndLogEntry {
   id: string;
   audit_date: string;
   closed_at: string;
   closed_by: string | null;
+  mode: string;
+  orders_autoclosed: number;
 }
 
 interface GratuityRow {
@@ -38,7 +44,7 @@ interface GratuityRow {
 }
 
 export default function Reporting() {
-  const { auditDate, advanceDay, loading: auditLoading } = useAuditDate();
+  const { auditDate, refresh, loading: auditLoading } = useAuditDate();
   const { venue } = useVenue();
   const { toast } = useToast();
   const [log, setLog] = useState<DayEndLogEntry[]>([]);
@@ -58,7 +64,7 @@ export default function Reporting() {
     if (!venue) return;
     supabase
       .from("venue_dayend_log")
-      .select("id, audit_date, closed_at, closed_by")
+      .select("id, audit_date, closed_at, closed_by, mode, orders_autoclosed")
       .eq("venue_id", venue.id)
       .order("closed_at", { ascending: false })
       .limit(30)
@@ -113,14 +119,40 @@ export default function Reporting() {
   }, [gratuityRows]);
 
   const handleAdvance = async () => {
+    if (!venue) return;
     setAdvancing(true);
-    const newDate = await advanceDay();
+    // The dayend-close function applies the venue's open-order gate: with the
+    // 'halt' strategy it refuses while open orders exist; with 'autoclose' it
+    // sweeps them to Internal Accounting before advancing the day.
+    const res = await supabase.functions.invoke("dayend-close", {
+      body: { venue_id: venue.id },
+    });
     setAdvancing(false);
-    if (newDate) {
-      toast({ title: "Day Closed", description: `Business day advanced to ${newDate}` });
-    } else {
-      toast({ title: "Error", description: "Failed to advance audit date", variant: "destructive" });
+    const errMsg = await functionErrorMessage(res, "Failed to close the day");
+    if (errMsg) {
+      toast({ title: "Error", description: errMsg, variant: "destructive" });
+      return;
     }
+    const result = res.data as {
+      halted: boolean; open_orders: number; orders_autoclosed?: number; new_date?: string;
+    };
+    if (result.halted) {
+      toast({
+        title: "Close halted — open orders",
+        description: `${result.open_orders} open ${result.open_orders === 1 ? "order" : "orders"} must be completed, paid, or cancelled first (see the Orders board). Or switch the strategy to AutoClose below.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    await refresh();
+    toast({
+      title: "Day Closed",
+      description: `Business day advanced to ${result.new_date}${
+        result.orders_autoclosed
+          ? ` — ${result.orders_autoclosed} open ${result.orders_autoclosed === 1 ? "order" : "orders"} swept to Internal Accounting`
+          : ""
+      }`,
+    });
   };
 
   const exportCSV = () => {
@@ -229,8 +261,16 @@ export default function Reporting() {
               </div>
               {log.map((entry) => (
                 <div key={entry.id} className="grid grid-cols-2 gap-4 text-sm py-1.5 border-b border-border/50">
-                  <span className="text-foreground font-medium">
+                  <span className="text-foreground font-medium flex items-center gap-2">
                     {format(parseISO(entry.audit_date), "dd MMM yyyy")}
+                    {entry.mode === "auto" && (
+                      <Badge variant="secondary" className="text-xs">Auto</Badge>
+                    )}
+                    {entry.orders_autoclosed > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        {entry.orders_autoclosed} autoclosed
+                      </Badge>
+                    )}
                   </span>
                   <span className="text-muted-foreground">
                     {format(parseISO(entry.closed_at), "dd MMM yyyy, HH:mm")}
@@ -241,6 +281,14 @@ export default function Reporting() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dayend Close Settings + AutoClosed orders */}
+      {venue && (
+        <>
+          <DayendSettingsCard venueId={venue.id} venueTimezone={venue.timezone} />
+          <AutoClosedOrdersCard venueId={venue.id} />
+        </>
+      )}
 
       {/* Reports */}
       <div>
