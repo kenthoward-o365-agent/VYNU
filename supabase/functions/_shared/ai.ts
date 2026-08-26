@@ -507,7 +507,14 @@ async function anthropicChat(opts: AiChatOptions): Promise<AiChatResult> {
       {
         model,
         max_tokens: Math.max(opts.maxTokens ?? 8192, 4096),
-        ...(systemPrompt ? { system: systemPrompt } : {}),
+        // Request render order is tools → system → messages, so one ephemeral
+        // breakpoint on the system block caches the tool list + system prompt
+        // across turns (reads bill at 0.1×). Below the model's cacheable
+        // minimum (4096 tokens on claude-haiku-4-5) the marker is silently
+        // ignored, so small prompts are unaffected.
+        ...(systemPrompt
+          ? { system: [{ type: "text" as const, text: systemPrompt, cache_control: { type: "ephemeral" as const } }] }
+          : {}),
         messages,
         ...(tools?.length ? { tools } : {}),
         ...(toolChoice ? { tool_choice: toolChoice } : {}),
@@ -553,11 +560,21 @@ async function anthropicChat(opts: AiChatOptions): Promise<AiChatResult> {
     : response.stop_reason === "max_tokens" ? "length"
     : "stop";
 
+  // With prompt caching, input_tokens EXCLUDES cached tokens. Callers get the
+  // full context size; ai_usage_log gets a billed-equivalent input count
+  // (cache writes 1.25×, reads 0.1×) so cost_usd stays correct against the
+  // per-1k input price in ai_model_prices.
+  const cacheWrite = response.usage.cache_creation_input_tokens ?? 0;
+  const cacheRead = response.usage.cache_read_input_tokens ?? 0;
+  const fullPromptTokens = response.usage.input_tokens + cacheWrite + cacheRead;
   const usage = {
-    prompt_tokens: response.usage.input_tokens,
+    prompt_tokens: fullPromptTokens,
     completion_tokens: response.usage.output_tokens,
-    total_tokens: response.usage.input_tokens + response.usage.output_tokens,
+    total_tokens: fullPromptTokens + response.usage.output_tokens,
   };
+  const billedPromptTokens = Math.round(
+    response.usage.input_tokens + 1.25 * cacheWrite + 0.1 * cacheRead,
+  );
 
   const message = {
     role: "assistant",
@@ -570,11 +587,16 @@ async function anthropicChat(opts: AiChatOptions): Promise<AiChatResult> {
       venueId: opts.usage.venueId,
       feature: opts.usage.feature,
       model,
-      usage,
+      usage: { prompt_tokens: billedPromptTokens, completion_tokens: usage.completion_tokens },
       requestId: opts.usage.requestId ?? null,
       sessionId: opts.usage.sessionId ?? null,
       orderId: opts.usage.orderId ?? null,
-      meta: opts.usage.meta ?? null,
+      meta: cacheWrite || cacheRead
+        ? {
+            ...(opts.usage.meta ?? {}),
+            cache: { input_tokens: response.usage.input_tokens, cache_write_tokens: cacheWrite, cache_read_tokens: cacheRead },
+          }
+        : opts.usage.meta ?? null,
     });
   }
 

@@ -22,6 +22,12 @@ interface ShyndigConfig {
   venue_context: string;
 }
 
+// The whole venue_context field is injected into every diner-chat prompt
+// (no RAG/truncation server-side), so cap it before an operator can paste a
+// 200-page manual. ~20k chars ≈ 5k tokens — a rounding error for the model,
+// a real cost multiplier if left unbounded.
+const VENUE_CONTEXT_MAX = 20_000;
+
 const toneOptions = [
   {
     value: "aussie",
@@ -108,6 +114,10 @@ export default function ShyndigAISettings({ venueId }: Props) {
   }, [venueId]);
 
   const save = async () => {
+    if (config.venue_context.length > VENUE_CONTEXT_MAX) {
+      toast.error(`Venue Knowledge is over the ${VENUE_CONTEXT_MAX.toLocaleString()}-character limit — trim it down before saving.`);
+      return;
+    }
     setSaving(true);
     const payload = {
       venue_id: venueId,
@@ -343,15 +353,33 @@ export default function ShyndigAISettings({ venueId }: Props) {
             rows={8}
             placeholder={`Paste information about your venue here. For example:\n\n• Our chef Marco trained in Italy for 10 years\n• We source all seafood from the Sydney Fish Market daily\n• Live jazz every Friday & Saturday from 7pm\n• Our signature dish is the 12-hour slow-cooked lamb shoulder\n• We have a private dining room for up to 20 guests\n• Happy hour runs 4-6pm weekdays with $8 house wines`}
           />
-          <p className="text-xs text-muted-foreground">
-            This info is fed to your AI agent so it can answer diner questions like "Tell me about the chef" or "Do you have live music?"
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              This info is fed to your AI agent so it can answer diner questions like "Tell me about the chef" or "Do you have live music?"
+            </p>
+            <p
+              className={`text-xs shrink-0 tabular-nums ${
+                config.venue_context.length > VENUE_CONTEXT_MAX
+                  ? "text-destructive font-semibold"
+                  : config.venue_context.length > VENUE_CONTEXT_MAX * 0.8
+                    ? "text-amber-500"
+                    : "text-muted-foreground"
+              }`}
+            >
+              {config.venue_context.length.toLocaleString()} / {VENUE_CONTEXT_MAX.toLocaleString()}
+            </p>
+          </div>
+          {config.venue_context.length > VENUE_CONTEXT_MAX && (
+            <p className="text-xs text-destructive">
+              Over the limit — this whole field is sent with every diner message, so keep it to the essentials. Trim it down to save.
+            </p>
+          )}
         </CardContent>
       </Card>
 
       {/* Save */}
       <div className="flex justify-end">
-        <Button onClick={save} disabled={saving} size="lg">
+        <Button onClick={save} disabled={saving || config.venue_context.length > VENUE_CONTEXT_MAX} size="lg">
           <Sparkles className="h-4 w-4 mr-2" />
           {saving ? "Saving..." : "Save Vee Settings"}
         </Button>
