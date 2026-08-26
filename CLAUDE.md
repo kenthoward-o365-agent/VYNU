@@ -52,7 +52,7 @@ pre-existing errors in that mode; anything beyond those is yours.
 
 | Project | Role |
 |---|---|
-| `ewdjxdfgvpdcctqikdcy` | **VYNU's database** (org VYNU, `ap-southeast-2`). `.env`, the Vercel env vars, and `supabase/config.toml` all point here. Full schema (replayed 2026-08-14), **little to no data** — VYNU deliberately starts clean; the old data migration was dropped. |
+| `ewdjxdfgvpdcctqikdcy` | **VYNU's database** (org VYNU, `ap-southeast-2`). `.env`, the Vercel env vars, and `supabase/config.toml` all point here. Full schema (replayed 2026-08-14). Holds **real working data now**: Kent's venue "White Cockatoo Hotel" (site 1000, 129-item imported menu) and the QA fixture venue (see Test fixtures below). |
 | `hjcikekaythqjhcuznjf` | Lovable Cloud — the H&L OrderNOW instance. Holds that brand's data and users. Not reachable from our tooling; not this repo's concern anymore. |
 
 Credentials never work across the two — each has its own `auth.users`.
@@ -65,13 +65,26 @@ deployed via `npx supabase functions deploy`; the 21 public-by-design ones
 carry `verify_jwt = false` blocks in `supabase/config.toml` (each verified to
 have in-body auth first). `CRON_SECRET` + `APP_URL` are set as function
 secrets, and Vault holds matching `cron_secret` + `project_url`, so the cron
-jobs fire (verified in `cron.job_run_details`). **Vendor secrets are still
-unset** — `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `TWILIO_*`, `DOSHII_*`,
-`LIGHTSPEED_API_KEY`, `PUBPLUS_EE_CLIENT_SECRET`, and the AI provider vars
-(`AI_PROVIDER`/`ANTHROPIC_API_KEY` or `AI_GATEWAY_URL`/`AI_API_KEY`) — so
-Stripe AR, SMS, those POS connectors and all AI calls fail at runtime until
-VYNU-own accounts are provisioned. Deliberate: VYNU must not reuse the H&L
-instance's vendor credentials.
+jobs fire (verified in `cron.job_run_details`).
+
+**Secrets state (2026-08-25):** SET — `AI_PROVIDER=anthropic`,
+`ANTHROPIC_API_KEY` (Kent's real key), `AI_MODEL_CHAT=claude-haiku-4-5`,
+`CONCIERGE_WEBHOOK_TOKEN`, `CRON_SECRET`, `APP_URL`. All chat AI runs on
+Claude and is runtime-verified. STILL UNSET — `AI_API_KEY` (the gateway key
+for **image generation**; images are dead until it lands — see AI layer),
+`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `TWILIO_*`, `DOSHII_*`,
+`LIGHTSPEED_API_KEY`, `PUBPLUS_EE_CLIENT_SECRET`. Deliberate: VYNU must not
+reuse the H&L instance's vendor credentials.
+
+**Auth config (fixed 2026-08-25 via management API):** site_url is
+`https://vynu-chi.vercel.app`, redirect allowlist adds `localhost:8080`;
+`mailer_autoconfirm` is ON because diners self-signup at checkout and **no
+custom SMTP is configured** — the built-in sender caps at ~2 emails/hour, so
+password resets are throttled until an SMTP provider is chosen (the remaining
+Phase-7 gap; revert autoconfirm when it lands). Storage RLS on `venue-assets`
+was rewritten 2026-08-26 (`staff_owns_asset_path()` — the replayed policies
+allowed no real client upload path); realtime publication and cron verified
+healthy. Details: cutover runbook Phase 7.
 
 ### Migrations
 
@@ -198,10 +211,24 @@ Rules encoded in schema comments and worth keeping:
 - The public surface is exactly one: `/discover` (RootRoutes) reading the
   `get_discover_feed` SECURITY DEFINER RPC. Staff manage at `/discover/manage`.
 - `concierge-inbound` (public function) is the omnichannel webhook: token auth
-  via `CONCIERGE_WEBHOOK_TOKEN` (set 2026-08-16, fail-closed), Twilio
-  form-encoding or JSON, answers via `aiChat` role `chat`, can create bookings
-  (`source: 'concierge'`), falls back to `needs_human` when no AI provider is
-  configured.
+  via `CONCIERGE_WEBHOOK_TOKEN` (fail-closed), Twilio form-encoding or JSON,
+  answers via `aiChat` role `chat`, can create bookings
+  (`source: 'concierge'`), falls back to `needs_human` when the AI errors.
+  **Runtime-verified**: Vee books tables end-to-end on the QA venue.
+- **Times are venue-local**: `venues.timezone` (IANA id, editable in venue
+  Settings and admin venue detail via `TimezoneSelect`) drives booking
+  storage and Vee's sense of "today"; never parse a venue-local time as UTC
+  (that bug shipped once). Kent works from Palm Harbor FL — test venues run
+  `America/New_York`.
+
+### Dayend auto-close (2026-08-25)
+
+Venue-configurable day-end close: `DayendSettingsCard` (in Reporting) writes
+per-venue settings; the `dayend-close` function (cron `dayend-autoclose-tick`)
+advances the reporting date, gated on open orders — either halting for manual
+handling or auto-closing them to an **internal accounting payment type**,
+surfaced in `AutoClosedOrdersCard` where the venue can reopen/re-close to the
+right payment, comp, or void. Migration `20260825220000_dayend_autoclose.sql`.
 
 ### The AI layer — `_shared/ai.ts`
 
@@ -215,18 +242,33 @@ Providers, selected by env (Supabase secrets):
 1. **Default:** the Lovable gateway (Gemini models) — legacy, still the
    fallback until secrets change.
 2. **Any OpenAI-compatible endpoint:** `AI_GATEWAY_URL` + `AI_API_KEY`.
-3. **Anthropic (Claude):** `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY`
-   routes all chat roles through the Messages API (official SDK, pinned).
-   Model per role via `AI_MODEL_CHAT` / `AI_MODEL_CHAT_ADVANCED` (claude-* ids;
-   default `claude-opus-5`; `claude-haiku-4-5` is the margin-safe option for
-   the high-volume diner path). The adapter drops `temperature`, floors
-   `max_tokens` at 4096 (thinking counts against it), and disables thinking on
-   forced tool calls. **Not yet runtime-tested.**
+3. **Anthropic (Claude) — LIVE and runtime-verified (2026-08-25).**
+   `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` are set;
+   `AI_MODEL_CHAT=claude-haiku-4-5` (~0.1¢/diner message; `chat-advanced`
+   defaults to `claude-opus-5`). Verified end-to-end via `concierge-inbound`:
+   Vee answers, creates bookings, costs match `ai_model_prices` to the cent.
+   The adapter drops `temperature`, floors `max_tokens` at 4096, disables
+   thinking on forced tool calls.
 
-**Image roles always use the gateway** — Claude does not generate images; those
-stay on Gemini models. Usage/cost logs to `ai_usage_log`, priced from
-`ai_model_prices` — a model id without a price row logs as zero cost, which
-silently corrupts platform financials.
+Hard-won call-site rules: pass `usage: {venueId, feature}` on every aiChat/
+aiImage call or the spend is invisible; set explicit `maxTokens` + `timeoutMs`
+on forced-tool calls with large outputs (a truncated tool call surfaces as "no
+tool_calls" — generate-modifiers shipped that bug); when the model must echo
+item references, send short indexes and map back to UUIDs server-side
+(~4× smaller outputs).
+
+**Image roles always use the gateway** — Claude does not generate images —
+and **no image provider is configured**: `gatewayConfigured()` is false, so
+image functions run in **library-only mode** (shared `dish_image_library`
+matches by normalised dish name at zero cost; AI-needed items wait). Per-venue
+AI generation cap: `venue_feature_flags.image_gen_limit` (default 100), drawn
+down by `ai_usage_log` rows. Getting images live = set `AI_API_KEY` (+
+`AI_MODEL_IMAGE`) to a Gemini-compatible provider, then runtime-test the
+response shape (`choices[0].message.images[0].image_url.url`). Usage/cost logs
+to `ai_usage_log`, priced from `ai_model_prices` — a model id without a price
+row logs as zero cost, which silently corrupts platform financials. Spend is
+visible in **Admin → Finance → AI Spend** (per-feature costs + 30-day
+forecast).
 
 Still Lovable-coupled: `connector-gateway.lovable.dev` (Firecrawl in
 `landing-from-url`, the Lightspeed adapter) and the `LOVABLE_API_KEY` default.
@@ -269,9 +311,34 @@ differences live in env/deploy config.
 
 ---
 
+## Test fixtures & working state
+
+- **QA account** `qa@vynutest.com` — platform admin + owner of venue
+  **"VYNU Test Kitchen"** (Palm Harbor, `America/New_York`, feast tier, Table
+  1, two menu items, concierge enabled on `+61400118334`). Its password lived
+  in a session scratchpad and is gone — reset via the GoTrue admin API
+  (service key) if needed. Safe venue for destructive testing; **White
+  Cockatoo Hotel (site 1000) is Kent's real venue — don't test against it.**
+- `dish_image_library` has one curated row (`chicken parmigiana`).
+- Concierge test bookings/conversations exist on the QA venue.
+- A background hardening session (AI-function tokens + usage logging) may
+  have **uncommitted working-tree changes** to copilot-chat, crm-ai-compose,
+  enhance-menu-image, import-menu, landing-from-url, onboarding-chat and
+  ImageEnhancerDialog — check `git status` before assuming a clean tree, and
+  don't discard those hunks.
+
 ## Conventions
 
 - Path alias `@/` → `src/`. Vite dedupes react/react-dom/TanStack Query.
+- **Routes are code-split**: every page in `src/App.tsx` is a `React.lazy`
+  import behind Suspense (2.9MB single bundle → 782kB entry). Add new pages
+  as lazy imports, not static ones. Auth + NotFound stay eager.
+- **Menu search is operator-only by decision** (Kent, 2026-08-25): Menu
+  Builder has name+description search; the diner-facing equivalent was built
+  and deliberately reverted — finding dishes on the diner side is Vee's job
+  ("AI suggests, guest taps once"). Restore point if that changes: commit
+  `2a6d54d` (consider the search-hands-off-to-Vee integration rather than a
+  plain restore).
 - Query defaults in `App.tsx`: 1 min `staleTime`, 5 min `gcTime`, no refetch on
   focus, one retry.
 - Tests colocated (`*.test.ts[x]`), jsdom. Prefer pure helpers in `src/lib/`.
