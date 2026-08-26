@@ -3567,6 +3567,7 @@ export type Database = {
           fired_at: string | null
           gratuity_amount: number
           id: string
+          notify_phone: string | null
           payment_is_mock: boolean
           payment_method: string | null
           payment_psp_reference: string | null
@@ -3596,6 +3597,7 @@ export type Database = {
           fired_at?: string | null
           gratuity_amount?: number
           id?: string
+          notify_phone?: string | null
           payment_is_mock?: boolean
           payment_method?: string | null
           payment_psp_reference?: string | null
@@ -3625,6 +3627,7 @@ export type Database = {
           fired_at?: string | null
           gratuity_amount?: number
           id?: string
+          notify_phone?: string | null
           payment_is_mock?: boolean
           payment_method?: string | null
           payment_psp_reference?: string | null
@@ -7524,6 +7527,7 @@ export type Database = {
       }
       set_primary_venue: { Args: { _venue_id: string }; Returns: undefined }
       settle_tab: { Args: { _tab_id: string }; Returns: Json }
+      staff_owns_asset_path: { Args: { _name: string }; Returns: boolean }
       time_within_window: {
         Args: { _end: string; _start: string; _t: string }
         Returns: boolean

@@ -29,6 +29,11 @@ export interface TabZoneRules {
   max_tab_amount: number | null;
   allow_split_payments: boolean;
   open_tab_id: string | null;
+  /** Resolved (zone with venue-default fallback) by get_table_tab_rules. */
+  service_mode?: "table_delivery" | "counter_pickup" | null;
+  pickup_location?: string | null;
+  notify_sms_on_ready?: boolean;
+  notify_inapp_on_ready?: boolean;
 }
 
 export interface TabSummaryPayment {

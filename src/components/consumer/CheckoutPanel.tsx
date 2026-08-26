@@ -6,7 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { CreditCard, ArrowLeft, ShieldCheck, Trash2, Check, Receipt } from "lucide-react";
+import { CreditCard, ArrowLeft, ShieldCheck, Trash2, Check, Receipt, Smartphone } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { normalizeAuPhone } from "@/lib/phone";
 import ShyndigPayDropin from "./AdyenDropin";
 import TabBillPanel from "./TabBillPanel";
 import { money, type TabZoneRules } from "@/lib/tabs";
@@ -119,6 +121,31 @@ const CheckoutPanel = ({
   const [tabRules, setTabRules] = useState<TabZoneRules | null>(null);
   const [tabMode, setTabMode] = useState<"pay_now" | "tab">("pay_now");
   const [showTabBill, setShowTabBill] = useState(false);
+
+  // Pickup-zone SMS: a counter_pickup zone with SMS-on-ready needs a mobile to
+  // text when the order is ready, so the number gates checkout in those zones.
+  const [pickupPhone, setPickupPhone] = useState("");
+  const requiresPickupPhone =
+    tabRules?.service_mode === "counter_pickup" && tabRules?.notify_sms_on_ready !== false;
+  const normalizedPickupPhone = normalizeAuPhone(pickupPhone);
+  const pickupGateOk = !requiresPickupPhone || !!normalizedPickupPhone;
+
+  // Prefill from the signed-in diner's profile so they're never asked twice.
+  useEffect(() => {
+    if (!requiresPickupPhone || !dinerId || pickupPhone) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("diner_profiles")
+        .select("sms_e164, phone")
+        .or(`id.eq.${dinerId},user_id.eq.${dinerId}`)
+        .limit(1)
+        .maybeSingle();
+      const existing = (data as any)?.sms_e164 || (data as any)?.phone;
+      if (!cancelled && existing) setPickupPhone(existing);
+    })();
+    return () => { cancelled = true; };
+  }, [requiresPickupPhone, dinerId]);
 
   useEffect(() => {
     checkPaymentEnabled();
@@ -292,6 +319,13 @@ const CheckoutPanel = ({
    * Shared by Drop-in flow, stored-card flow, and confirm-only flow.
    */
   const createOrderRow = async (opts?: { tabId?: string | null }): Promise<string> => {
+    // Backstop for every payment path (Drop-in, stored card, mock, confirm-only,
+    // tab): the UI gate should make this unreachable.
+    if (requiresPickupPhone && !normalizedPickupPhone) {
+      toast.error("Add a mobile number so we can text you when your order is ready.");
+      throw new Error("pickup phone required");
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
     const authUserId = session?.user?.id || null;
 
@@ -332,6 +366,7 @@ const CheckoutPanel = ({
         session_id: sessionIdToStamp,
         session_mode: sessionIdToStamp ? "group" : "solo",
         tab_id: opts?.tabId ?? null,
+        notify_phone: requiresPickupPhone ? normalizedPickupPhone : null,
         // HLRDRNW-19: always 'unpaid' at insert. This row is created BEFORE the
         // payment is attempted, so claiming 'paid' here marked refused payments
         // as paid (and RLS denies the client any later correction). adyen-payment
@@ -356,6 +391,19 @@ const CheckoutPanel = ({
     }));
     const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
     if (itemsError) throw itemsError;
+
+    // Save the pickup number back to an empty profile so signed-in diners are
+    // never asked twice. Fire-and-forget — the order already carries the number.
+    if (requiresPickupPhone && normalizedPickupPhone && dinerId) {
+      supabase
+        .from("diner_profiles")
+        .update({ phone: normalizedPickupPhone } as any)
+        .or(`id.eq.${dinerId},user_id.eq.${dinerId}`)
+        .is("phone", null)
+        .then(({ error }) => {
+          if (error) console.error("pickup phone profile save failed:", error.message);
+        });
+    }
 
     return orderId;
   };
@@ -779,9 +827,13 @@ const CheckoutPanel = ({
 
   // Show Drop-in only when payments enabled, no stored card selected, we have methods + key,
   // and we're NOT in mock mode.
+  // pickupGateOk: Drop-in renders its own pay button, so hiding it (the footer
+  // button shows disabled instead) is the only way to gate that path on the
+  // pickup mobile number.
   const showDropin =
     paymentUiNeeded &&
-    paymentEnabled && !selectedStoredCard && !!paymentMethodsResponse && !!shyndigPayClientKey && !isMockMode;
+    paymentEnabled && !selectedStoredCard && !!paymentMethodsResponse && !!shyndigPayClientKey && !isMockMode &&
+    pickupGateOk;
 
   // PAY-01: mock/simulated mode collects NO card data — the diner just taps the
   // footer button and the backend authorises on its mock flag.
@@ -792,7 +844,8 @@ const CheckoutPanel = ({
   // NOT fall back to a raw card form — show an unavailable message instead.
   const showPaymentUnavailable =
     paymentUiNeeded &&
-    paymentEnabled && !isMockMode && !showDropin && !selectedStoredCard && !loadingMethods;
+    paymentEnabled && !isMockMode && !showDropin && !selectedStoredCard && !loadingMethods &&
+    pickupGateOk; // gate closed means the Drop-in is hidden on purpose, not broken
 
   // The footer button can only complete payment via a stored card or a mock
   // simulate. Adding a round to a tab needs no authorisation up front, but a
@@ -980,6 +1033,36 @@ const CheckoutPanel = ({
           </div>
         )}
 
+        {/* Pickup zones with SMS-on-ready: the mobile number gates checkout */}
+        {requiresPickupPhone && (
+          <div className="space-y-2">
+            <Separator />
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <Smartphone className="h-4 w-4" />
+              Mobile number for pickup
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              This area is collect-from-counter — we'll text you when your order is ready at{" "}
+              {tabRules?.pickup_location?.trim() || "the counter"}.
+            </p>
+            <Input
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="04xx xxx xxx"
+              value={pickupPhone}
+              onChange={(e) => setPickupPhone(e.target.value)}
+              className="h-12 rounded-xl"
+            />
+            {pickupPhone.trim() !== "" && !normalizedPickupPhone && (
+              <p className="text-xs text-destructive">Enter a valid mobile number (e.g. 0400 123 456).</p>
+            )}
+            {!pickupGateOk && pickupPhone.trim() === "" && (
+              <p className="text-xs text-muted-foreground">Required before you can place this order.</p>
+            )}
+          </div>
+        )}
+
         {paymentEnabled === false && (
           <div className="bg-muted rounded-xl p-4 text-center">
             <p className="text-sm text-muted-foreground">
@@ -1149,7 +1232,7 @@ const CheckoutPanel = ({
         >
           <Button
             onClick={processLegacyPayment}
-            disabled={processing || !canProceedLegacy}
+            disabled={processing || !canProceedLegacy || !pickupGateOk}
             className="w-full h-14 rounded-2xl text-base"
           >
             {processing

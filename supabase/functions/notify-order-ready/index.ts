@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
 
     const { data: order } = await admin
       .from("orders")
-      .select("id, venue_id, customer_id, table_id, status")
+      .select("id, venue_id, customer_id, table_id, status, notify_phone")
       .eq("id", orderId)
       .maybeSingle();
     if (!order) return json({ error: "Order not found" }, 404);
@@ -127,16 +127,21 @@ Deno.serve(async (req) => {
       inApp = !error;
     }
 
-    // SMS to the diner if we hold a number.
+    // SMS to the diner if we hold a number. The checkout-provided order.notify_phone
+    // wins (it exists for anonymous orders too); the profile lookup is the fallback
+    // for orders placed before the pickup-phone gate existed.
     let sms: Record<string, unknown> = { sent: false, reason: "no_phone" };
-    if (smsEnabled && order.customer_id) {
-      const { data: profile } = await admin
-        .from("diner_profiles")
-        .select("sms_e164, phone")
-        .or(`id.eq.${order.customer_id},user_id.eq.${order.customer_id}`)
-        .limit(1)
-        .maybeSingle();
-      const raw = profile?.sms_e164 || profile?.phone;
+    if (smsEnabled) {
+      let raw: string | null = (order as any).notify_phone || null;
+      if (!raw && order.customer_id) {
+        const { data: profile } = await admin
+          .from("diner_profiles")
+          .select("sms_e164, phone")
+          .or(`id.eq.${order.customer_id},user_id.eq.${order.customer_id}`)
+          .limit(1)
+          .maybeSingle();
+        raw = profile?.sms_e164 || profile?.phone || null;
+      }
       const to = raw ? normalizeAuPhone(raw) : null;
       if (to) {
         try {
@@ -147,7 +152,7 @@ Deno.serve(async (req) => {
           sms = { sent: false, reason: "send_failed" };
         }
       }
-    } else if (!smsEnabled) {
+    } else {
       sms = { sent: false, reason: "disabled_for_zone" };
     }
 
