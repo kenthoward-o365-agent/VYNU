@@ -175,13 +175,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
+  // pinned=true is the collapsed icon rail; default is the expanded menu.
+  // Fresh storage key: the old shyndig_sidebar_pinned value was auto-written
+  // on every mount, so it reflects the old default, not a user choice.
   const [pinned, setPinned] = useState<boolean>(() => {
-    if (typeof window === "undefined") return true;
-    const stored = localStorage.getItem("shyndig_sidebar_pinned");
-    return stored === null ? true : stored === "1";
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("vynu_sidebar_collapsed") === "1";
   });
   useEffect(() => {
-    localStorage.setItem("shyndig_sidebar_pinned", pinned ? "1" : "0");
+    localStorage.setItem("vynu_sidebar_collapsed", pinned ? "1" : "0");
   }, [pinned]);
   const perms = usePermissions();
   const features = useFeatures();
