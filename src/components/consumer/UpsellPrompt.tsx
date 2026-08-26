@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, X } from "lucide-react";
+import { optimizedImageUrl } from "@/lib/image-utils";
 
 export interface UpsellSuggestion {
   item_id: string;
@@ -52,7 +53,7 @@ const UpsellPrompt = ({ suggestion, onAdd, onDismiss }: UpsellPromptProps) => {
       <div className="bg-card border border-border rounded-2xl shadow-lg p-4 flex items-center gap-3">
         {suggestion.image_url && (
           <img
-            src={suggestion.image_url}
+            src={optimizedImageUrl(suggestion.image_url, 112, 80, 112)}
             alt={suggestion.name}
             className="w-14 h-14 rounded-xl object-cover shrink-0"
           />

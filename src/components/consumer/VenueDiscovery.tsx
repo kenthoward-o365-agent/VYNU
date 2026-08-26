@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MapPin, ExternalLink } from "lucide-react";
+import { optimizedImageUrl } from "@/lib/image-utils";
 
 interface SiblingVenue {
   id: string;
@@ -42,7 +43,7 @@ const VenueDiscovery = ({ currentVenueId, groupId }: VenueDiscoveryProps) => {
           <div key={v.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
             <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden">
               {v.logo_url ? (
-                <img src={v.logo_url} alt={v.name} className="h-full w-full object-cover" />
+                <img src={optimizedImageUrl(v.logo_url, 96, 80, 96)} alt={v.name} className="h-full w-full object-contain" />
               ) : (
                 <span className="text-xl">🍽️</span>
               )}

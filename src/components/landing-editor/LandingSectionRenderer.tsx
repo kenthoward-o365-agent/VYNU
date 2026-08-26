@@ -1,10 +1,42 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { LandingSection, LandingTheme } from "./types";
 import { createDefaultTheme } from "./types";
 import type { ReactNode } from "react";
 // HLRDRNW-68 · IVA-04 — these URLs come from venue-edited / AI-generated /
 // scraped landing content, so only render safe http(s) schemes into href/src.
 import { safeHttpUrl } from "@/lib/url";
+import { optimizedImageUrl } from "@/lib/image-utils";
+
+/**
+ * Venues upload both wide photography and square-ish logos into the hero
+ * slot. A photo should fill the banner (cover); a logo must never be blown
+ * up full-bleed and cropped — once loaded, anything squarer than 1.2:1
+ * switches to contained with padding, letterboxed on the theme background.
+ */
+function HeroImage({ src, alt }: { src: string; alt: string }) {
+  const [logoLike, setLogoLike] = useState(false);
+  // Ref callback as well as onLoad: a cached image can be complete before
+  // React attaches the load handler, and onLoad never fires for it.
+  const measure = (img: HTMLImageElement | null) => {
+    if (img?.complete && img.naturalHeight > 0 && img.naturalWidth / img.naturalHeight < 1.2) {
+      setLogoLike(true);
+    }
+  };
+  return (
+    <img
+      ref={measure}
+      src={optimizedImageUrl(src, 1200)}
+      alt={alt}
+      loading="eager"
+      onLoad={(e) => measure(e.currentTarget)}
+      className={
+        logoLike
+          ? "absolute inset-0 w-full h-full object-contain object-center p-6"
+          : "absolute inset-0 w-full h-full object-cover object-center"
+      }
+    />
+  );
+}
 
 interface Props {
   sections: LandingSection[];
@@ -68,12 +100,7 @@ function RenderSection({ section, theme, tableNumber }: { section: LandingSectio
       if (safeHeroImageUrl) {
         return (
           <div className="relative w-full overflow-hidden aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9] max-h-[60vh]">
-            <img
-              src={safeHeroImageUrl}
-              alt={section.title}
-              className="absolute inset-0 w-full h-full object-cover object-center"
-              loading="eager"
-            />
+            <HeroImage src={safeHeroImageUrl} alt={section.title} />
             <div
               className="absolute inset-0"
               style={{ background: `linear-gradient(to bottom, rgba(0,0,0,${overlayOpacity * 0.8}) 0%, rgba(0,0,0,${overlayOpacity * 0.5}) 50%, rgba(0,0,0,${overlayOpacity}) 100%)` }}

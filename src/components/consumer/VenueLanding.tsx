@@ -7,6 +7,7 @@ import { parseLandingPayload } from "@/components/landing-editor/types";
 import SessionModeChooser, { type SessionMode } from "./SessionModeChooser";
 import { supabase } from "@/integrations/supabase/client";
 import { isPubPlusProgram, pubPlusCopy, type PubPlusCopy } from "@/lib/pubplus";
+import { optimizedImageUrl } from "@/lib/image-utils";
 
 interface VenueLandingProps {
   venue: {
@@ -128,7 +129,7 @@ const VenueLanding = ({
     });
     return (
       <div className="min-h-screen relative">
-        <div dangerouslySetInnerHTML={{ __html: safeHtml }} />
+        <div className="landing-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
         <ChooserOrActions />
       </div>
     );
@@ -139,7 +140,7 @@ const VenueLanding = ({
     <div className="flex flex-col items-center justify-center min-h-screen px-6 py-12 text-center">
       <div className="mb-8">
         {venue.logo_url ? (
-          <img src={venue.logo_url} alt={venue.name} className="w-24 h-24 rounded-2xl object-cover shadow-lg" />
+          <img src={optimizedImageUrl(venue.logo_url, 192, 80, 192)} alt={venue.name} className="w-24 h-24 rounded-2xl object-contain shadow-lg" />
         ) : (
           <div className="w-24 h-24 rounded-2xl bg-primary/10 flex items-center justify-center shadow-lg">
             <Utensils className="h-10 w-10 text-primary" />

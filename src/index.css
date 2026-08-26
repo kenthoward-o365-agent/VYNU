@@ -178,3 +178,14 @@
     padding: 0 !important;
   }
 }
+
+/* Venue-authored landing HTML (VenueLanding dangerouslySetInnerHTML): uploaded
+   images arrive at natural size with whatever inline dimensions the author or
+   the landing-from-url import wrote, so clamp them to the phone viewport.
+   !important is required to beat sanitized-but-allowed inline style attrs. */
+.landing-html img {
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: 45vh;
+  object-fit: contain;
+}

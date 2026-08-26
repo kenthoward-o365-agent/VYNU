@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Plus, Sparkles } from "lucide-react";
+import { optimizedImageUrl } from "@/lib/image-utils";
 import type { UpsellSuggestion } from "./UpsellPrompt";
 
 interface CartSuggestionsProps {
@@ -86,7 +87,7 @@ const CartSuggestions = ({
           >
             {s.image_url && (
               <img
-                src={s.image_url}
+                src={optimizedImageUrl(s.image_url, 80, 80, 80)}
                 alt={s.name}
                 className="w-10 h-10 rounded-lg object-cover shrink-0"
               />
