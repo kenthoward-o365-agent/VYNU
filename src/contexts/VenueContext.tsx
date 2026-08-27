@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
+import { toast } from "sonner";
 
 // Sensitive columns (email, phone, subscription_*) are NOT selectable by
 // authenticated/anon roles — fetch them via the get_venue_admin_detail RPC.
@@ -104,25 +105,61 @@ export function VenueProvider({ children }: { children: ReactNode }) {
 
     const queryClient = createSessionClient(session.access_token);
 
-    const { data: staffData } = await queryClient
-      .from("venue_staff")
-      .select("venue_id, role, is_primary")
-      .eq("user_id", user.id)
-      .eq("is_active", true);
+    // These three queries decide whether AppRoutes signs the user out as
+    // "not provisioned", so a transient error must NEVER read as "no access"
+    // — that was the intermittent kicked-back-to-sign-in bug. Retry briefly;
+    // on persistent failure return WITHOUT setting resolvedAccessUserId, so
+    // the app stays on the loading screen and the effect refetches when a
+    // fresh token arrives, instead of resolving to an empty result.
+    const loadAccess = async () => {
+      const staffRes = await queryClient
+        .from("venue_staff")
+        .select("venue_id, role, is_primary")
+        .eq("user_id", user.id)
+        .eq("is_active", true);
+      if (staffRes.error) throw staffRes.error;
 
-    const staffRoles = Object.fromEntries((staffData || []).map((s) => [s.venue_id, s.role]));
+      const roleRes = await queryClient
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("role", "tabless_admin" as any)
+        .maybeSingle();
+      if (roleRes.error) throw roleRes.error;
+
+      const ids = (staffRes.data || []).map((s) => s.venue_id);
+      let venueRows: Venue[] = [];
+      if (ids.length > 0) {
+        const venueRes = await queryClient.from("venues").select(VENUE_COLUMNS).in("id", ids);
+        if (venueRes.error) throw venueRes.error;
+        venueRows = (venueRes.data || []) as Venue[];
+      }
+      return { staffData: staffRes.data || [], adminFlag: !!roleRes.data, venueRows };
+    };
+
+    let access: Awaited<ReturnType<typeof loadAccess>> | null = null;
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt < 3 && !access; attempt++) {
+      try {
+        access = await loadAccess();
+      } catch (e) {
+        lastError = e;
+        await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
+      }
+    }
+    if (!access) {
+      console.error("VenueContext: access fetch failed after retries:", lastError);
+      toast.error("Couldn't load your venue access — check your connection and try again.");
+      setLoading(false);
+      return;
+    }
+
+    const { staffData, adminFlag } = access;
+    const staffRoles = Object.fromEntries(staffData.map((s) => [s.venue_id, s.role]));
     setStaffRolesMap(staffRoles);
-    const venueIds = (staffData || []).map((s) => s.venue_id);
-    const primaryVenueId = (staffData || []).find((s: any) => s.is_primary)?.venue_id ?? null;
+    const venueIds = staffData.map((s) => s.venue_id);
+    const primaryVenueId = (staffData as any[]).find((s) => s.is_primary)?.venue_id ?? null;
 
-    const { data: roleData } = await queryClient
-      .from("user_roles")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("role", "tabless_admin" as any)
-      .maybeSingle();
-
-    const adminFlag = !!roleData;
     setIsTablessAdmin(adminFlag);
 
     // Venue access is earned through `venue_staff` only — the tabless_admin
@@ -130,8 +167,7 @@ export function VenueProvider({ children }: { children: ReactNode }) {
     // who is also staff somewhere gets that venue at that staff role, exactly
     // like any other operator.
     if (venueIds.length > 0) {
-      const { data: venueData } = await queryClient.from("venues").select(VENUE_COLUMNS).in("id", venueIds);
-      const allVenues = (venueData || []) as Venue[];
+      const allVenues = access.venueRows;
 
       setVenues(allVenues);
 
