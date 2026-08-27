@@ -53,6 +53,69 @@ interface Category {
 }
 
 const allergenOptions = ["Gluten", "Dairy", "Nuts", "Shellfish", "Eggs", "Soy", "Fish", "Sesame"];
+
+/**
+ * Badge-toggle editor for a tag list (allergens / dietary tags). Renders the
+ * union of the preset suggestions and whatever the item already carries —
+ * imports write arbitrary entries, and a tag the form can't render is a tag
+ * the operator can never remove — plus an input to add custom entries.
+ */
+function TagEditor({
+  label,
+  addLabel,
+  presets,
+  values,
+  onChange,
+}: {
+  label: string;
+  addLabel: string;
+  presets: string[];
+  values: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const v = draft.trim();
+    if (!v) return;
+    // Reuse the canonical casing when the entry already exists as a preset or
+    // current value; never add case-insensitive duplicates.
+    const canonical = [...presets, ...values].find((t) => t.toLowerCase() === v.toLowerCase()) ?? v;
+    if (!values.some((t) => t.toLowerCase() === v.toLowerCase())) onChange([...values, canonical]);
+    setDraft("");
+  };
+  return (
+    <div>
+      <p className="text-sm font-medium mb-2">{label}</p>
+      <div className="flex flex-wrap gap-2">
+        {[...new Set([...presets, ...values])].map((t) => (
+          <Badge
+            key={t}
+            variant={values.includes(t) ? "default" : "outline"}
+            className="cursor-pointer"
+            onClick={() => onChange(values.includes(t) ? values.filter((x) => x !== t) : [...values, t])}
+          >{t}</Badge>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 mt-2">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder={addLabel}
+          className="h-8 w-52 text-sm"
+        />
+        <Button type="button" variant="outline" size="sm" onClick={add} disabled={!draft.trim()}>
+          <Plus className="h-3.5 w-3.5 mr-1" /> Add
+        </Button>
+      </div>
+    </div>
+  );
+}
 const dietaryOptions = ["Vegan", "Vegetarian", "Gluten Free", "Dairy Free", "Keto", "Halal"];
 
 export default function MenuBuilder() {
@@ -441,9 +504,6 @@ export default function MenuBuilder() {
       handleFileSelect(file);
     }
   };
-
-  const toggleTag = (arr: string[], tag: string) =>
-    arr.includes(tag) ? arr.filter((t) => t !== tag) : [...arr, tag];
 
   const getCategoryName = (catId: string | null) =>
     categories.find((c) => c.id === catId)?.name || "Uncategorized";
@@ -912,36 +972,21 @@ export default function MenuBuilder() {
                 </div>
               )}
 
-              <div>
-                <p className="text-sm font-medium mb-2">Allergens</p>
-                <div className="flex flex-wrap gap-2">
-                  {allergenOptions.map((a) => (
-                    <Badge
-                      key={a}
-                      variant={form.allergens.includes(a) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => setForm((f) => ({ ...f, allergens: toggleTag(f.allergens, a) }))}
-                    >{a}</Badge>
-                  ))}
-                </div>
-              </div>
+              <TagEditor
+                label="Allergens"
+                addLabel="Add allergen (e.g. Lupin)…"
+                presets={allergenOptions}
+                values={form.allergens}
+                onChange={(next) => setForm((f) => ({ ...f, allergens: next }))}
+              />
 
-              <div>
-                <p className="text-sm font-medium mb-2">Dietary Tags</p>
-                <div className="flex flex-wrap gap-2">
-                  {/* Union of the suggestions and whatever the item already carries —
-                      imports write arbitrary tags (e.g. "Vegan Option"), and a tag the
-                      form can't render is a tag the operator can never remove. */}
-                  {[...new Set([...dietaryOptions, ...form.dietary_tags])].map((d) => (
-                    <Badge
-                      key={d}
-                      variant={form.dietary_tags.includes(d) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => setForm((f) => ({ ...f, dietary_tags: toggleTag(f.dietary_tags, d) }))}
-                    >{d}</Badge>
-                  ))}
-                </div>
-              </div>
+              <TagEditor
+                label="Dietary Tags"
+                addLabel="Add dietary tag (e.g. Low FODMAP)…"
+                presets={dietaryOptions}
+                values={form.dietary_tags}
+                onChange={(next) => setForm((f) => ({ ...f, dietary_tags: next }))}
+              />
 
               <div className="flex items-center gap-3">
                 <Switch checked={form.is_available} onCheckedChange={(v) => setForm((f) => ({ ...f, is_available: v }))} />
