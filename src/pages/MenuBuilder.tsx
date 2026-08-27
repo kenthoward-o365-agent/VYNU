@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban, Clock, AlertTriangle, RefreshCw, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, UtensilsCrossed, Upload, Globe, FileText, Sparkles, Loader2, ImagePlus, X, Ban, Clock, AlertTriangle, RefreshCw, Search, Check, Tags } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import ImageEnhancerDialog from "@/components/menu/ImageEnhancerDialog";
 import DisplayAreaPicker, { type DisplayAreaOption } from "@/components/menu/DisplayAreaPicker";
@@ -53,6 +53,78 @@ interface Category {
 }
 
 const allergenOptions = ["Gluten", "Dairy", "Nuts", "Shellfish", "Eggs", "Soy", "Fish", "Sesame"];
+
+/**
+ * One row of the venue-wide tag manager: rename-everywhere or
+ * delete-everywhere for a single tag, with an inline confirm on delete.
+ */
+function TagManagerRow({
+  tag,
+  count,
+  busy,
+  onRename,
+  onDelete,
+}: {
+  tag: string;
+  count: number;
+  busy: boolean;
+  onRename: (to: string) => void;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(tag);
+  const [confirming, setConfirming] = useState(false);
+
+  const commitRename = () => {
+    const v = draft.trim();
+    setEditing(false);
+    if (v && v !== tag) onRename(v);
+  };
+
+  return (
+    <div className="flex items-center gap-2 py-1.5 border-b border-border/50 last:border-0">
+      {editing ? (
+        <>
+          <Input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); commitRename(); }
+              if (e.key === "Escape") { setEditing(false); setDraft(tag); }
+            }}
+            className="h-8 text-sm flex-1"
+            autoFocus
+          />
+          <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={commitRename} disabled={busy}>
+            <Check className="h-4 w-4" />
+          </Button>
+          <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => { setEditing(false); setDraft(tag); }}>
+            <X className="h-4 w-4" />
+          </Button>
+        </>
+      ) : (
+        <>
+          <span className="text-sm flex-1 truncate">{tag}</span>
+          <Badge variant="secondary" className="text-xs shrink-0">{count} item{count === 1 ? "" : "s"}</Badge>
+          {confirming ? (
+            <Button type="button" size="sm" variant="destructive" className="h-8 text-xs" disabled={busy} onClick={onDelete}>
+              Remove from {count}?
+            </Button>
+          ) : (
+            <>
+              <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0" disabled={busy} onClick={() => { setDraft(tag); setEditing(true); }}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+              <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive/70 hover:text-destructive" disabled={busy} onClick={() => setConfirming(true)}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 /**
  * Badge-toggle editor for a tag list (allergens / dietary tags). Renders the
@@ -129,6 +201,43 @@ export default function MenuBuilder() {
   const [posIntegration, setPosIntegration] = useState<{ pos_provider: string; last_sync_at: string | null; sync_status: string } | null>(null);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [activeDietaryFilters, setActiveDietaryFilters] = useState<string[]>([]);
+  const [manageTagsOpen, setManageTagsOpen] = useState(false);
+  const [tagOpBusy, setTagOpBusy] = useState(false);
+
+  /**
+   * Venue-wide rename (to = new name) or delete (to = null) of one dietary
+   * tag / allergen across every item carrying it. Renaming onto an existing
+   * entry merges (case-insensitive dedupe).
+   */
+  const applyTagChange = async (field: "dietary_tags" | "allergens", from: string, to: string | null) => {
+    const affected = items.filter((i) => ((i[field] as string[] | null) || []).includes(from));
+    if (affected.length === 0) return;
+    setTagOpBusy(true);
+    try {
+      const results = await Promise.all(
+        affected.map((i) => {
+          const current = ((i[field] as string[] | null) || []).filter((t) => t !== from);
+          if (to && !current.some((t) => t.toLowerCase() === to.toLowerCase())) current.push(to);
+          return supabase.from("menu_items").update({ [field]: current } as any).eq("id", i.id);
+        })
+      );
+      const failed = results.filter((r) => r.error).length;
+      if (failed) {
+        toast.error(`Failed to update ${failed} of ${affected.length} items`);
+      } else {
+        toast.success(to ? `Renamed "${from}" to "${to}" on ${affected.length} item${affected.length === 1 ? "" : "s"}` : `Removed "${from}" from ${affected.length} item${affected.length === 1 ? "" : "s"}`);
+      }
+      await fetchData();
+    } finally {
+      setTagOpBusy(false);
+    }
+  };
+
+  const tagCounts = (field: "dietary_tags" | "allergens") => {
+    const counts = new Map<string, number>();
+    items.forEach((i) => ((i[field] as string[] | null) || []).forEach((t) => counts.set(t, (counts.get(t) || 0) + 1)));
+    return [...counts.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  };
   const [menuSearch, setMenuSearch] = useState("");
   const [venueTaxes, setVenueTaxes] = useState<TaxConfig[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -648,7 +757,57 @@ export default function MenuBuilder() {
             Clear
           </Button>
         )}
+        <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground" onClick={() => setManageTagsOpen(true)}>
+          <Tags className="h-3.5 w-3.5 mr-1" /> Manage
+        </Button>
       </div>
+
+      {/* Venue-wide tag manager: rename/delete a dietary tag or allergen across
+          every item — the per-item form only toggles one dish at a time. */}
+      <Dialog open={manageTagsOpen} onOpenChange={setManageTagsOpen}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Tags &amp; Allergens</DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Renaming or removing an entry applies to every menu item that carries it. Renaming onto an existing entry merges them.
+          </p>
+          <div className="space-y-5">
+            <div>
+              <p className="text-sm font-semibold mb-1">Dietary Tags</p>
+              {tagCounts("dietary_tags").length === 0 && (
+                <p className="text-xs text-muted-foreground">No dietary tags in use.</p>
+              )}
+              {tagCounts("dietary_tags").map(([tag, count]) => (
+                <TagManagerRow
+                  key={tag}
+                  tag={tag}
+                  count={count}
+                  busy={tagOpBusy}
+                  onRename={(to) => applyTagChange("dietary_tags", tag, to)}
+                  onDelete={() => applyTagChange("dietary_tags", tag, null)}
+                />
+              ))}
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-1">Allergens</p>
+              {tagCounts("allergens").length === 0 && (
+                <p className="text-xs text-muted-foreground">No allergens in use.</p>
+              )}
+              {tagCounts("allergens").map(([tag, count]) => (
+                <TagManagerRow
+                  key={tag}
+                  tag={tag}
+                  count={count}
+                  busy={tagOpBusy}
+                  onRename={(to) => applyTagChange("allergens", tag, to)}
+                  onDelete={() => applyTagChange("allergens", tag, null)}
+                />
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {venue && (
         <MenuZoneSwitcher
