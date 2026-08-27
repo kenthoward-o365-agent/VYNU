@@ -560,10 +560,11 @@ export default function MenuBuilder() {
         )}
       </div>
 
-      {/* Dietary tag filter row */}
+      {/* Dietary tag filter row — suggestions plus every tag actually in use on
+          this venue's items, so imported tags are findable (and cleanable). */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm font-medium text-muted-foreground mr-1">Filter:</span>
-        {dietaryOptions.map((tag) => (
+        {[...new Set([...dietaryOptions, ...items.flatMap((i) => i.dietary_tags || []).sort()])].map((tag) => (
           <Badge
             key={tag}
             variant={activeDietaryFilters.includes(tag) ? "default" : "outline"}
@@ -928,7 +929,10 @@ export default function MenuBuilder() {
               <div>
                 <p className="text-sm font-medium mb-2">Dietary Tags</p>
                 <div className="flex flex-wrap gap-2">
-                  {dietaryOptions.map((d) => (
+                  {/* Union of the suggestions and whatever the item already carries —
+                      imports write arbitrary tags (e.g. "Vegan Option"), and a tag the
+                      form can't render is a tag the operator can never remove. */}
+                  {[...new Set([...dietaryOptions, ...form.dietary_tags])].map((d) => (
                     <Badge
                       key={d}
                       variant={form.dietary_tags.includes(d) ? "default" : "outline"}
